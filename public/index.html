@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Culture Crew</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..700&family=Schibsted+Grotesk:wght@400..700&display=swap">
+<style>
+/* Layout: a season program. A cover with two doors, a wall of listings, and a four-question box office. */
+:root {
+  --paper: #F2F5F9;
+  --surface: #FFFFFF;
+  --ink: #141B2D;
+  --muted: #566079;
+  --line: #D3DAE5;
+  --sky: #BEE2F4;
+  --sky-ink: #0F4C75;
+  --star: #CF102D;
+  --on-star: #FFFFFF;
+  --door-a: #141B2D;
+  --on-door-a: #F2F5F9;
+  --door-b: #BEE2F4;
+  --on-door-b: #10243A;
+  --pill-run: #E7ECF3;
+  --pill-soon: #FBE3E7;
+  --pill-soon-ink: #9B0B22;
+  --pill-next: #DDF0FA;
+  --pill-next-ink: #0F4C75;
+  --display: "Bodoni Moda", "Didot", "Bodoni 72", Georgia, serif;
+  --body: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --step--1: 0.8125rem;
+  --step-0: 1rem;
+  --step-1: 1.3125rem;
+  --step-2: 1.75rem;
+  --step-3: clamp(2rem, 4.4vw, 2.9rem);
+  --step-4: clamp(2.7rem, 8vw, 5.4rem);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0D1320; --surface: #161E2E; --ink: #EAF0F7; --muted: #9BA8BF; --line: #2A364B;
+    --sky: #173B55; --sky-ink: #A9DBF5; --star: #FF6B7D; --on-star: #1A0A0E;
+    --door-a: #EAF0F7; --on-door-a: #0D1320; --door-b: #173B55; --on-door-b: #E3F3FC;
+    --pill-run: #222C3F; --pill-soon: #4A1620; --pill-soon-ink: #FFB3BD; --pill-next: #173B55; --pill-next-ink: #A9DBF5;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0D1320; --surface: #161E2E; --ink: #EAF0F7; --muted: #9BA8BF; --line: #2A364B;
+  --sky: #173B55; --sky-ink: #A9DBF5; --star: #FF6B7D; --on-star: #1A0A0E;
+  --door-a: #EAF0F7; --on-door-a: #0D1320; --door-b: #173B55; --on-door-b: #E3F3FC;
+  --pill-run: #222C3F; --pill-soon: #4A1620; --pill-soon-ink: #FFB3BD; --pill-next: #173B55; --pill-next-ink: #A9DBF5;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: var(--step-0);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, p { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+button, input, select { font: inherit; color: inherit; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--sky-ink); outline-offset: 2px; }
+[tabindex="-1"]:focus { outline: none; }
+.star { width: 1em; height: 1em; fill: var(--star); flex: none; }
+.wrap { max-width: 1120px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
+.eyebrow {
+  font-size: var(--step--1); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+}
+
+/* top bar */
+.bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding-block: 18px; }
+.brand {
+  display: inline-flex; align-items: center; gap: 10px; background: none; border: 0; padding: 4px 0; cursor: pointer;
+  font-family: var(--display); font-size: var(--step-1); font-weight: 600; font-style: italic; letter-spacing: 0.01em;
+}
+.bar nav { display: flex; gap: 4px; }
+.navlink {
+  background: none; border: 0; border-bottom: 2px solid transparent; padding: 6px 10px; cursor: pointer;
+  font-weight: 600; font-size: 0.9375rem; color: var(--muted);
+}
+.navlink:hover { color: var(--ink); }
+.navlink[aria-current="page"] { color: var(--ink); border-bottom-color: var(--star); }
+
+/* cover */
+.cover {
+  background: var(--surface); border-block: 14px solid var(--sky);
+  padding: clamp(28px, 6vw, 64px) clamp(20px, 5vw, 56px);
+  display: grid; gap: clamp(20px, 3vw, 32px);
+}
+.stars { display: flex; gap: 14px; font-size: 1.5rem; }
+.cover h1 { font-family: var(--display); font-weight: 500; font-size: var(--step-4); line-height: 0.98; letter-spacing: -0.015em; }
+.cover h1 em { font-weight: 400; }
+.lede { max-width: 54ch; font-size: 1.125rem; color: var(--muted); }
+.doors { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.door {
+  display: grid; grid-template-rows: auto 1fr auto; gap: 10px; text-align: left; cursor: pointer;
+  border: 0; border-radius: 2px; padding: clamp(20px, 3vw, 30px); min-height: 13rem;
+  transition: transform 0.18s ease;
+}
+.door:hover { transform: translateY(-3px); }
+.door-a { background: var(--door-a); color: var(--on-door-a); }
+.door-b { background: var(--door-b); color: var(--on-door-b); }
+.door .eyebrow { color: inherit; opacity: 0.75; }
+.door-title { font-family: var(--display); font-style: italic; font-weight: 500; font-size: var(--step-3); line-height: 1.05; }
+.door-desc { max-width: 34ch; align-self: start; }
+.door-go { display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
+.door-go span:last-child { font-size: 1.5rem; line-height: 1; }
+
+.soon { padding-block: clamp(32px, 5vw, 56px); display: grid; gap: 18px; }
+.soon-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; }
+.soon-head h2 { font-family: var(--display); font-weight: 500; font-size: var(--step-2); }
+.textbtn { background: none; border: 0; padding: 0; cursor: pointer; font-weight: 600; color: var(--sky-ink); text-decoration: underline; text-underline-offset: 3px; }
+.soon-list li { display: grid; min-width: 0; }
+.soon-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 12px; }
+
+/* listings */
+.card {
+  position: relative; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 2px;
+  padding: 16px 16px 14px; display: grid; grid-template-rows: auto auto 1fr auto; gap: 8px;
+  transition: border-color 0.15s ease;
+}
+.card:hover { border-color: var(--ink); }
+.card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 1.5rem; }
+.kind { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.pill { font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; background: var(--pill-run); color: var(--ink); }
+.pill.soon-t { background: var(--pill-soon); color: var(--pill-soon-ink); }
+.pill.next-t { background: var(--pill-next); color: var(--pill-next-ink); }
+.card h3 { font-family: var(--display); font-weight: 600; font-size: var(--step-1); line-height: 1.15; overflow-wrap: anywhere; }
+.card h3 a { text-decoration: none; }
+.card h3 a::after { content: ""; position: absolute; inset: 0; }
+.card:hover h3 a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.where { font-size: 0.9375rem; color: var(--muted); overflow-wrap: anywhere; }
+.where .hood { white-space: nowrap; }
+.card-foot {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; padding-top: 10px; border-top: 1px solid var(--line);
+  font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.card-foot .cost { color: var(--muted); font-weight: 500; }
+.card-foot .cost.free { color: var(--pill-next-ink); font-weight: 700; }
+
+/* catalog */
+.view-head { padding-block: clamp(20px, 4vw, 40px) 20px; display: grid; gap: 8px; }
+.view-head h1 { font-family: var(--display); font-weight: 500; font-size: var(--step-3); line-height: 1.05; }
+.view-head p { color: var(--muted); max-width: 60ch; }
+.filters { display: grid; gap: 12px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  border: 1px solid var(--line); background: var(--paper); border-radius: 999px; padding: 6px 14px; cursor: pointer;
+  font-weight: 600; font-size: 0.9375rem;
+}
+.chip:hover { border-color: var(--ink); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.chip:disabled { opacity: 0.45; cursor: not-allowed; }
+.chip .n { font-weight: 500; opacity: 0.7; margin-left: 4px; font-variant-numeric: tabular-nums; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 12px; }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.field input, .field select {
+  width: 100%; min-width: 0; background: var(--paper); border: 1px solid var(--line); border-radius: 2px; padding: 9px 10px;
+}
+.tally { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; padding-block: 18px 12px; }
+.tally strong { font-variant-numeric: tabular-nums; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 12px; }
+.empty { padding: 40px 20px; text-align: center; background: var(--surface); border: 1px dashed var(--line); border-radius: 2px; display: grid; gap: 10px; justify-items: center; }
+
+/* box office (planner) */
+.plan { max-width: 720px; }
+.progress { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.ticks { display: flex; gap: 6px; }
+.ticks i { width: 36px; height: 4px; background: var(--line); border-radius: 2px; }
+.ticks i.on { background: var(--star); }
+.opts { display: grid; gap: 10px; margin-top: 8px; }
+.opt {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 6px 16px; flex-wrap: wrap; text-align: left; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 16px 18px; width: 100%;
+}
+.opt:hover:not(:disabled) { border-color: var(--ink); }
+.opt:disabled { opacity: 0.5; cursor: not-allowed; }
+.opt[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.opt-main { font-family: var(--display); font-weight: 600; font-size: var(--step-1); line-height: 1.2; }
+.opt-sub { color: var(--muted); font-size: 0.9375rem; }
+.opt-n { color: var(--muted); font-size: 0.875rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.datepick { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 2px; }
+.datepick .field { flex: 1 1 180px; }
+.btn {
+  background: var(--star); color: var(--on-star); border: 0; border-radius: 2px; padding: 11px 18px; cursor: pointer; font-weight: 700;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.row { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.hint { color: var(--muted); font-size: 0.9375rem; }
+.hoods { display: grid; gap: 8px; margin-top: 8px; }
+.hoods h2 { font-size: var(--step--1); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-top: 10px; }
+
+/* outing */
+.outing { background: var(--surface); border-block: 10px solid var(--sky); padding: clamp(20px, 4vw, 36px); display: grid; gap: 22px; }
+.stop { display: grid; grid-template-columns: minmax(0, 7.5rem) minmax(0, 1fr); gap: 6px 20px; }
+.stop + .stop { padding-top: 22px; border-top: 1px solid var(--line); }
+.stop-slot { font-size: var(--step--1); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--star); padding-top: 6px; }
+.stop-body { display: grid; gap: 8px; min-width: 0; }
+.stop-body h2 { font-family: var(--display); font-weight: 500; font-size: var(--step-3); line-height: 1.05; overflow-wrap: anywhere; }
+.facts { font-weight: 600; font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
+.cta { justify-self: start; display: inline-block; text-decoration: none; }
+@media (max-width: 560px) { .stop { grid-template-columns: minmax(0, 1fr); } .stop-slot { padding-top: 0; } }
+.alts { display: grid; gap: 10px; }
+.alt { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 12px 16px; }
+.alt-text { min-width: 0; flex: 1 1 240px; }
+.alt-title { font-family: var(--display); font-weight: 600; font-size: 1.1875rem; line-height: 1.2; overflow-wrap: anywhere; }
+.alt-meta { color: var(--muted); font-size: 0.875rem; }
+.sharebox { display: grid; gap: 8px; }
+.sharebox input { width: 100%; min-width: 0; background: var(--paper); border: 1px solid var(--line); border-radius: 2px; padding: 9px 10px; font-size: 0.875rem; }
+.section { display: grid; gap: 14px; margin-top: 28px; }
+.section h2 { font-family: var(--display); font-weight: 500; font-size: var(--step-2); }
+
+footer { margin-top: clamp(40px, 7vw, 80px); padding-block: 24px 32px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.875rem; }
+footer p { max-width: 70ch; }
+.view { animation: rise 0.28s ease both; }
+@keyframes rise { from { transform: translateY(8px); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .view { animation: none; } .door, .card { transition: none; } .door:hover { transform: none; } }
+</style>
+
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="chi-star" viewBox="0 0 24 24"><polygon points="12,1 14.5,7.67 21.53,6.5 17,12 21.53,17.5 14.5,16.33 12,23 9.5,16.33 2.47,17.5 7,12 2.47,6.5 9.5,7.67"></polygon></symbol>
+</svg>
+
+<div class="wrap">
+  <header class="bar">
+    <button class="brand" type="button" id="brand" data-go="home">
+      <svg class="star" aria-hidden="true"><use href="#chi-star"></use></svg>Culture Crew
+    </button>
+    <nav aria-label="Sections">
+      <button class="navlink" type="button" data-go="catalog" id="nav-catalog">Catalog</button>
+      <button class="navlink" type="button" data-go="plan" id="nav-plan">Plan an outing</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Welcome -->
+    <section class="view" id="view-home">
+      <div class="cover">
+        <div class="stars" aria-hidden="true">
+          <svg class="star"><use href="#chi-star"></use></svg><svg class="star"><use href="#chi-star"></use></svg><svg class="star"><use href="#chi-star"></use></svg><svg class="star"><use href="#chi-star"></use></svg>
+        </div>
+        <p class="eyebrow">Chicago · 2026–27 season</p>
+        <h1 id="home-title" tabindex="-1">What are we <em>seeing</em> next?</h1>
+        <p class="lede" id="home-lede">A running list of what's on around Chicago. Look through all of it, or answer four questions and get one outing.</p>
+        <div class="doors">
+          <button class="door door-a" type="button" data-go="plan" id="door-plan">
+            <span class="eyebrow">Four questions</span>
+            <span class="door-title">Plan one outing</span>
+            <span class="door-go"><span class="door-desc">Tell us when, how much, what kind and where. Get one pick and a few backups.</span><span aria-hidden="true">→</span></span>
+          </button>
+          <button class="door door-b" type="button" data-go="catalog" id="door-catalog">
+            <span class="eyebrow" id="door-catalog-count">The whole list</span>
+            <span class="door-title">Browse the catalog</span>
+            <span class="door-go"><span class="door-desc">Every event, with filters for dates, cost and neighborhood.</span><span aria-hidden="true">→</span></span>
+          </button>
+        </div>
+      </div>
+      <div class="soon">
+        <div class="soon-head">
+          <h2>Last chance</h2>
+          <button class="textbtn" type="button" id="soon-more">See everything closing soon</button>
+        </div>
+        <ul class="soon-list" id="soon-list"></ul>
+      </div>
+    </section>
+
+    <!-- Catalog -->
+    <section class="view" id="view-catalog" hidden>
+      <div class="view-head">
+        <p class="eyebrow">The catalog</p>
+        <h1 id="catalog-title" tabindex="-1">Everything on the list</h1>
+        <p>Each card opens the event's own page for tickets and showtimes.</p>
+      </div>
+      <form class="filters" id="filters" autocomplete="off">
+        <div class="chips" id="type-chips" role="group" aria-label="Type of event"></div>
+        <div class="fields">
+          <div class="field"><label for="f-q">Search</label><input id="f-q" type="search" placeholder="Title or venue"></div>
+          <div class="field"><label for="f-when">When</label><select id="f-when"></select></div>
+          <div class="field"><label for="f-cost">Cost</label>
+            <select id="f-cost">
+              <option value="any">Any price</option>
+              <option value="free">Free</option>
+              <option value="u40">Tickets from under $40</option>
+              <option value="u100">Tickets from under $100</option>
+            </select>
+          </div>
+          <div class="field"><label for="f-where">Where</label><select id="f-where"></select></div>
+          <div class="field"><label for="f-sort">Sort by</label>
+            <select id="f-sort">
+              <option value="closing">Closing soonest</option>
+              <option value="opening">Opening soonest</option>
+              <option value="az">Title, A to Z</option>
+              <option value="price">Lowest price</option>
+            </select>
+          </div>
+        </div>
+      </form>
+      <div class="tally">
+        <p id="tally" aria-live="polite"></p>
+        <button class="textbtn" type="button" id="clear-filters">Clear filters</button>
+      </div>
+      <div class="grid" id="grid"></div>
+    </section>
+
+    <!-- Planner -->
+    <section class="view plan" id="view-plan" hidden>
+      <div id="plan-questions">
+        <div class="view-head">
+          <div class="progress">
+            <p class="eyebrow" id="plan-count">Question 1 of 4</p>
+            <div class="ticks" aria-hidden="true"><i id="tick-0"></i><i id="tick-1"></i><i id="tick-2"></i><i id="tick-3"></i></div>
+          </div>
+          <h1 id="plan-title" tabindex="-1"></h1>
+          <p id="plan-help"></p>
+        </div>
+        <div class="opts" id="plan-opts"></div>
+        <div class="row" style="margin-top:18px">
+          <button class="btn ghost" type="button" id="plan-back">Back</button>
+          <button class="btn" type="button" id="plan-next" hidden>Build my outing</button>
+        </div>
+      </div>
+
+      <div id="plan-result" hidden>
+        <div class="view-head">
+          <p class="eyebrow" id="res-eyebrow">Your outing</p>
+          <h1 id="res-title" tabindex="-1"></h1>
+          <p id="res-sub"></p>
+        </div>
+        <div id="res-body"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p id="foot"></p>
+    <p style="margin-top:8px"><button class="textbtn" type="button" id="reload-data" hidden>Check the sheet again</button></p>
+  </footer>
+</div>
+
+<script type="application/json" id="events-data">null</script>
+<script>
+function boot(DATA) {
+  "use strict";
+  var PAGE_URL = "";
+  var DAY = 86400000;
+
+  // ---------- dates ----------
+  function parseISO(s) { if (!s) return null; var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function today() { var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+  function add(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+  function same(a, b) { return !!a && !!b && a.getTime() === b.getTime(); }
+  function diff(a, b) { return Math.round((a - b) / DAY); }
+  function ymd(d) { return "" + d.getFullYear() + ("0" + (d.getMonth() + 1)).slice(-2) + ("0" + d.getDate()).slice(-2); }
+  function fromYmd(s) { return new Date(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8)); }
+  var T = today();
+  var F = {
+    md: new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }),
+    mdy: new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    wmd: new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric" }),
+    full: new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric" }),
+    fully: new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }),
+    wd: new Intl.DateTimeFormat("en-US", { weekday: "long" }),
+    month: new Intl.DateTimeFormat("en-US", { month: "long" }),
+    monthY: new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }),
+    long: new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" })
+  };
+  function short(d) { return d.getFullYear() === T.getFullYear() ? F.md.format(d) : F.mdy.format(d); }
+  function dayName(d) { return d.getFullYear() === T.getFullYear() ? F.full.format(d) : F.fully.format(d); }
+  function windowText(ws, we) {
+    if (same(ws, we)) return dayName(ws);
+    if (ws.getMonth() === we.getMonth() && ws.getFullYear() === we.getFullYear()) {
+      return F.month.format(ws) + " " + ws.getDate() + "–" + we.getDate() + (ws.getFullYear() === T.getFullYear() ? "" : ", " + ws.getFullYear());
+    }
+    return F.md.format(ws) + " – " + short(we);
+  }
+  function thisWeekend() {
+    var dow = T.getDay();
+    if (dow === 0) return [T, T];
+    if (dow >= 5) return [T, add(T, 7 - dow)];
+    var fri = add(T, 5 - dow);
+    return [fri, add(fri, 2)];
+  }
+  function nextWeekend() { var fri = add(thisWeekend()[1], 5); return [fri, add(fri, 2)]; }
+
+  // ---------- events ----------
+  var EVENTS = DATA.events.map(function (e) {
+    var o = {}; for (var k in e) o[k] = e[k];
+    o.b = parseISO(e.begin); o.n = parseISO(e.end);
+    return o;
+  });
+  var BY_ID = {}; EVENTS.forEach(function (e) { BY_ID[e.id] = e; });
+  var TYPE_ORDER = ["Theater", "Comedy", "Concert", "Visual Art"];
+  var TYPES = []; EVENTS.forEach(function (e) { if (TYPES.indexOf(e.type) < 0) TYPES.push(e.type); });
+  TYPES.sort(function (a, b) { var i = TYPE_ORDER.indexOf(a), j = TYPE_ORDER.indexOf(b); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j) || a.localeCompare(b); });
+  var TYPE_PLURAL = { "Theater": "theater", "Comedy": "comedy", "Concert": "concerts", "Visual Art": "visual art" };
+
+  function isPast(e) { return !!e.n && e.n < T; }
+  function oneNight(e) { return same(e.b, e.n); }
+  function overlaps(e, ws, we) { return (!e.b || !we || e.b <= we) && (!e.n || !ws || e.n >= ws); }
+  function costOk(e, key) {
+    if (key === "free") return e.min === 0;
+    if (key === "u40") return e.min !== null && e.min < 40;
+    if (key === "u100") return e.min !== null && e.min < 100;
+    return true;
+  }
+  function dateText(e) {
+    if (oneNight(e)) return e.b.getFullYear() === T.getFullYear() ? F.wmd.format(e.b) : F.mdy.format(e.b);
+    var old = e.b && diff(T, e.b) > 300;
+    if (e.openRun) return "Open run";
+    if (!e.b || old) return e.n ? "Through " + short(e.n) : "Dates not posted";
+    if (!e.n) return "From " + short(e.b);
+    var sameYear = e.b.getFullYear() === e.n.getFullYear();
+    return (sameYear ? F.md.format(e.b) : short(e.b)) + " – " + short(e.n);
+  }
+  function status(e) {
+    if (isPast(e)) return { label: "Closed", tone: "" };
+    if (oneNight(e)) return same(e.b, T) ? { label: "Tonight only", tone: "soon-t" } : { label: "One night", tone: "next-t" };
+    if (e.b && e.b > T) return { label: "Opens " + short(e.b), tone: "next-t" };
+    if (e.openRun || !e.n) return { label: "Open run", tone: "" };
+    var left = diff(e.n, T);
+    if (left === 0) return { label: "Closes today", tone: "soon-t" };
+    if (left <= 6) return { label: "Closes " + F.wd.format(e.n), tone: "soon-t" };
+    return { label: "Now playing", tone: "" };
+  }
+  function costText(e) { return e.min === null ? "Price not posted" : e.cost; }
+  function placeText(e) { return e.hood ? e.venue + " · " + e.hood : e.venue; }
+  function placeHTML(e) { return esc(e.venue) + (e.hood ? ' <span class="hood">· ' + esc(e.hood) + "</span>" : ""); }
+  function sortKey(t) { return t.replace(/^(the|a|an)\s+/i, "").toLowerCase(); }
+  function byClosing(a, b) { return (a.n ? a.n.getTime() : Infinity) - (b.n ? b.n.getTime() : Infinity) || sortKey(a.title).localeCompare(sortKey(b.title)); }
+
+  // ---------- small DOM helpers ----------
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function safeUrl(u) { return /^https?:\/\//i.test(u) ? u : "#"; }
+  function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
+  function cardHTML(e) {
+    var st = status(e);
+    return '<article class="card">' +
+      '<div class="card-top"><span class="kind">' + esc(e.type) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
+      '<h3><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a></h3>" +
+      '<p class="where">' + placeHTML(e) + "</p>" +
+      '<div class="card-foot"><span>' + esc(dateText(e)) + '</span><span class="cost' + (e.min === 0 ? " free" : "") + '">' + esc(costText(e)) + "</span></div>" +
+      "</article>";
+  }
+
+  // ---------- views ----------
+  var VIEWS = { home: "home-title", catalog: "catalog-title", plan: "plan-title" };
+  function show(name, focusId) {
+    Object.keys(VIEWS).forEach(function (v) { $("view-" + v).hidden = v !== name; });
+    ["catalog", "plan"].forEach(function (v) {
+      if (v === name) $("nav-" + v).setAttribute("aria-current", "page"); else $("nav-" + v).removeAttribute("aria-current");
+    });
+    window.scrollTo(0, 0);
+    var h = $(focusId || VIEWS[name]); if (h) h.focus({ preventScroll: true });
+  }
+  document.addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-go]"); if (!b) return;
+    var go = b.getAttribute("data-go");
+    if (go === "plan") startPlan(); else if (go === "catalog") { renderCatalog(); show("catalog"); } else show("home");
+  });
+
+  // ---------- home ----------
+  function renderHome() {
+    var live = EVENTS.filter(function (e) { return !isPast(e); });
+    $("door-catalog-count").textContent = plural(live.length, "event", "events") + " on the list";
+    var words = { "Theater": "plays and musicals", "Comedy": "comedy nights", "Concert": "concerts", "Visual Art": "exhibitions" };
+    var kinds = TYPES.map(function (t) { return words[t] || t.toLowerCase(); });
+    var listed = kinds.length > 1 ? kinds.slice(0, -1).join(", ") + " and " + kinds[kinds.length - 1] : kinds[0];
+    $("home-lede").textContent = "A running list of " + listed + " around Chicago. Look through all of it, or answer four questions and get one outing.";
+    var soon = live.filter(function (e) { return e.n && (!e.b || e.b <= T) && !e.openRun; }).sort(byClosing).slice(0, 4);
+    if (!soon.length) soon = live.slice().sort(byClosing).slice(0, 4);
+    $("soon-list").innerHTML = soon.map(function (e) { return "<li>" + cardHTML(e) + "</li>"; }).join("");
+    var asOf = parseISO(DATA.asOf);
+    var from = "Listings last updated " + F.long.format(asOf) + ".";
+    if (DATA.source === "live" && DATA.fetchedAt) {
+      from = "Read from the Google Sheet at " + new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(new Date(DATA.fetchedAt)) + ".";
+    } else if (DATA.note) { from += " " + DATA.note; }
+    $("foot").textContent = from + " " + plural(EVENTS.length, "event", "events") +
+      " in all. Dates and prices change, so check the event's page before you go.";
+    if (DATA.local) $("reload-data").hidden = false;
+  }
+  $("reload-data").addEventListener("click", function () {
+    var b = this; b.disabled = true; b.textContent = "Checking the sheet…";
+    fetch("api/events?refresh=1").then(function () { location.reload(); }, function () { b.disabled = false; b.textContent = "Could not reach the app. Try again"; });
+  });
+  $("soon-more").addEventListener("click", function () { resetCatalog(); cat.sort = "closing"; cat.when = "week"; syncCatalogControls(); renderCatalog(); show("catalog"); });
+
+  // ---------- catalog ----------
+  var cat = { q: "", types: {}, hoods: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null };
+  function resetCatalog() { cat = { q: "", types: {}, hoods: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null }; }
+  function catWindow() {
+    var w = cat.when;
+    if (w === "upcoming") return [T, null];
+    if (w === "tonight") return [T, T];
+    if (w === "weekend") return thisWeekend();
+    if (w === "week") return [T, add(T, 6)];
+    if (w === "custom" && cat.custom) return [cat.custom.ws, cat.custom.we];
+    if (w.indexOf("m-") === 0) { var p = w.split("-"); var first = new Date(+p[1], +p[2] - 1, 1); return [first < T ? T : first, new Date(+p[1], +p[2], 0)]; }
+    return [null, null];
+  }
+  function buildCatalogControls() {
+    var opts = [["upcoming", "Now and upcoming"], ["tonight", "Tonight"], ["weekend", "This weekend"], ["week", "Next 7 days"]];
+    for (var i = 0; i < 12; i++) { var m = new Date(T.getFullYear(), T.getMonth() + i, 1); opts.push(["m-" + m.getFullYear() + "-" + (m.getMonth() + 1), F.monthY.format(m)]); }
+    opts.push(["past", "Already closed"]);
+    $("f-when").innerHTML = opts.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + "</option>"; }).join("") + '<option value="custom" id="f-when-custom" hidden></option>';
+    var city = {}, burbs = {}, far = {};
+    EVENTS.forEach(function (e) { if (!e.hood) return; (e.area === "Suburbs" ? burbs : e.area === "Out of town" ? far : city)[e.hood] = 1; });
+    function group(label, set) {
+      var names = Object.keys(set).sort(); if (!names.length) return "";
+      return '<optgroup label="' + label + '">' + names.map(function (n) { return '<option value="h:' + esc(n) + '">' + esc(n) + "</option>"; }).join("") + "</optgroup>";
+    }
+    $("f-where").innerHTML = '<option value="any">Anywhere</option><option value="local">City and suburbs</option><option value="city">In the city</option><option value="suburbs">In the suburbs</option>' +
+      (Object.keys(far).length ? '<option value="far">Out of town</option>' : "") +
+      group("City neighborhoods", city) + group("Suburbs", burbs) + group("Out of town", far) + '<option value="custom" id="f-where-custom" hidden></option>';
+    $("type-chips").innerHTML = '<button type="button" class="chip" data-type="">All types</button>' +
+      TYPES.map(function (t) { return '<button type="button" class="chip" data-type="' + esc(t) + '">' + esc(t) + "</button>"; }).join("");
+  }
+  function syncCatalogControls() {
+    $("f-q").value = cat.q; $("f-cost").value = cat.cost; var wc = $("f-where-custom"), hn = Object.keys(cat.hoods);
+    if (hn.length) { wc.hidden = false; wc.textContent = "Your neighborhoods: " + hn.sort().join(", "); $("f-where").value = "custom"; } else { wc.hidden = true; $("f-where").value = cat.where; } $("f-sort").value = cat.sort;
+    var c = $("f-when-custom");
+    if (cat.when === "custom" && cat.custom) { c.hidden = false; c.textContent = "Outing dates: " + windowText(cat.custom.ws, cat.custom.we); } else { c.hidden = true; }
+    $("f-when").value = cat.when;
+    var any = Object.keys(cat.types).length === 0;
+    Array.prototype.forEach.call($("type-chips").children, function (b) {
+      var t = b.getAttribute("data-type");
+      b.setAttribute("aria-pressed", String(t ? !!cat.types[t] : any));
+    });
+  }
+  function catalogMatches() {
+    var w = catWindow(), q = cat.q.trim().toLowerCase(), anyType = Object.keys(cat.types).length === 0;
+    var list = EVENTS.filter(function (e) {
+      if (cat.when === "past") { if (!isPast(e)) return false; } else if (!overlaps(e, w[0], w[1])) return false;
+      if (!anyType && !cat.types[e.type]) return false;
+      if (!costOk(e, cat.cost)) return false;
+      if (cat.where === "city" && e.area !== "City") return false;
+      if (cat.where === "suburbs" && e.area !== "Suburbs") return false;
+      if (cat.where === "far" && e.area !== "Out of town") return false;
+      if (cat.where === "local" && e.area === "Out of town") return false;
+      if (Object.keys(cat.hoods).length && !cat.hoods[e.hood]) return false;
+      if (cat.where.indexOf("h:") === 0 && e.hood !== cat.where.slice(2)) return false;
+      if (q && (e.title + " " + e.venue + " " + e.hood).toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    });
+    if (cat.sort === "az") list.sort(function (a, b) { return sortKey(a.title).localeCompare(sortKey(b.title)); });
+    else if (cat.sort === "price") list.sort(function (a, b) { return (a.min === null ? Infinity : a.min) - (b.min === null ? Infinity : b.min) || byClosing(a, b); });
+    else if (cat.sort === "opening") list.sort(function (a, b) {
+      var ka = a.b && a.b > T ? a.b.getTime() : Infinity, kb = b.b && b.b > T ? b.b.getTime() : Infinity;
+      return ka - kb || byClosing(a, b);
+    });
+    else list.sort(byClosing);
+    return list;
+  }
+  function renderCatalog() {
+    syncCatalogControls();
+    var list = catalogMatches();
+    $("tally").innerHTML = "<strong>" + list.length + "</strong> " + (list.length === 1 ? "event" : "events") + (cat.when === "past" ? " already closed" : "");
+    $("grid").innerHTML = list.length ? list.map(cardHTML).join("") :
+      '<div class="empty" style="grid-column:1/-1"><p><strong>Nothing matches those filters.</strong></p><p class="hint">Try a wider date range or a higher price limit.</p></div>';
+  }
+  $("filters").addEventListener("submit", function (ev) { ev.preventDefault(); });
+  $("f-q").addEventListener("input", function () { cat.q = this.value; renderCatalog(); });
+  ["when", "cost", "where", "sort"].forEach(function (k) {
+    $("f-" + k).addEventListener("change", function () { cat[k] = this.value; if (k === "when" && this.value !== "custom") cat.custom = null; if (k === "where") cat.hoods = {}; renderCatalog(); });
+  });
+  $("type-chips").addEventListener("click", function (ev) {
+    var b = ev.target.closest(".chip"); if (!b) return;
+    var t = b.getAttribute("data-type");
+    if (!t) cat.types = {}; else if (cat.types[t]) delete cat.types[t]; else cat.types[t] = 1;
+    if (Object.keys(cat.types).length === TYPES.length) cat.types = {};
+    renderCatalog();
+  });
+  $("clear-filters").addEventListener("click", function () { resetCatalog(); renderCatalog(); $("f-q").focus(); });
+
+  // ---------- planner ----------
+  var plan = { step: 0, when: null, ws: null, we: null, budget: null, types: {}, hoods: {} };
+  var pick = null; // { ws, we, stops: [event], alts: [event], total, shared }
+  var BUDGETS = [["free", "Free", "No ticket cost"], ["u40", "Under $40", "Tickets start below $40"], ["u100", "Under $100", "Tickets start below $100"], ["any", "Any price", "Includes events with no price posted yet"]];
+
+  function pool(ws, we, budget, types, hoods) {
+    var anyType = !types || Object.keys(types).length === 0, anyHood = !hoods || Object.keys(hoods).length === 0;
+    return EVENTS.filter(function (e) {
+      return !isPast(e) && e.area !== "Out of town" && overlaps(e, ws, we) && costOk(e, budget || "any") && (anyType || !!types[e.type]) && (anyHood || !!hoods[e.hood]);
+    });
+  }
+  function startPlan() { plan = { step: 0, when: null, ws: null, we: null, budget: null, types: {}, hoods: {} }; pick = null; renderStep(); show("plan"); }
+  function optHTML(attrs, main, sub, n, disabled, pressed) {
+    return '<button type="button" class="opt" ' + attrs + (disabled ? " disabled" : "") + (pressed === undefined ? "" : ' aria-pressed="' + pressed + '"') + ">" +
+      '<span><span class="opt-main">' + esc(main) + "</span>" + (sub ? '<br><span class="opt-sub">' + esc(sub) + "</span>" : "") + "</span>" +
+      (n === null ? "" : '<span class="opt-n">' + plural(n, "event", "events") + "</span>") + "</button>";
+  }
+  function renderStep() {
+    $("plan-questions").hidden = false; $("plan-result").hidden = true;
+    $("plan-count").textContent = "Question " + (plan.step + 1) + " of 4";
+    for (var i = 0; i < 4; i++) $("tick-" + i).className = i <= plan.step ? "on" : "";
+    $("plan-next").hidden = plan.step < 2;
+    $("plan-next").textContent = plan.step === 2 ? "Next" : "Build my outing";
+    $("plan-back").textContent = plan.step === 0 ? "Cancel" : "Back";
+    var html = "";
+    if (plan.step === 0) {
+      $("plan-title").textContent = "When are you going?";
+      $("plan-help").textContent = "One outing in the city or suburbs, so pick the day or the stretch you have free.";
+      var wk = thisWeekend(), nwk = nextWeekend(), mo = [T, add(T, 29)];
+      var whens = [["tonight", "Tonight", dayName(T), [T, T]], ["weekend", "This weekend", windowText(wk[0], wk[1]), wk],
+        ["nextweekend", "Next weekend", windowText(nwk[0], nwk[1]), nwk], ["month", "Sometime in the next 30 days", "Through " + short(mo[1]), mo]];
+      html = whens.map(function (w) { return optHTML('data-when="' + w[0] + '"', w[1], w[2], pool(w[3][0], w[3][1]).length); }).join("") +
+        '<div class="datepick"><div class="field"><label for="plan-date">Or pick a date</label><input type="date" id="plan-date" min="' +
+        T.getFullYear() + "-" + ("0" + (T.getMonth() + 1)).slice(-2) + "-" + ("0" + T.getDate()).slice(-2) + '"></div>' +
+        '<button type="button" class="btn ghost" id="plan-date-go">Use this date</button></div>';
+    } else if (plan.step === 1) {
+      $("plan-title").textContent = "What's the budget per person?";
+      $("plan-help").textContent = "We go by the lowest ticket price listed for each event.";
+      html = BUDGETS.map(function (b) {
+        var n = pool(plan.ws, plan.we, b[0]).length;
+        return optHTML('data-budget="' + b[0] + '"', b[1], b[2], n, n === 0 && b[0] !== "any");
+      }).join("");
+    } else if (plan.step === 2) {
+      $("plan-title").textContent = "What are you in the mood for?";
+      $("plan-help").textContent = "Choose as many as you like, or leave it open.";
+      var anyN = pool(plan.ws, plan.we, plan.budget).length, noneChosen = Object.keys(plan.types).length === 0;
+      html = optHTML('data-ptype=""', "Surprise me", "Anything that fits", anyN, false, String(noneChosen)) +
+        TYPES.map(function (t) {
+          var one = {}; one[t] = 1; var n = pool(plan.ws, plan.we, plan.budget, one).length;
+          return optHTML('data-ptype="' + esc(t) + '"', t, "", n, n === 0, String(!!plan.types[t]));
+        }).join("");
+    } else {
+      $("plan-title").textContent = "Where would you like to go?";
+      $("plan-help").textContent = "Choose as many neighborhoods as you like, or leave it open.";
+      var city = {}, burbs = {};
+      EVENTS.forEach(function (e) { if (e.hood && e.area !== "Out of town") (e.area === "Suburbs" ? burbs : city)[e.hood] = 1; });
+      var chip = function (attr, label, n, disabled, pressed) {
+        return '<button type="button" class="chip" ' + attr + (disabled ? " disabled" : "") + ' aria-pressed="' + pressed + '">' + esc(label) +
+          '<span class="n">' + n + "</span></button>";
+      };
+      var group = function (label, set) {
+        var names = Object.keys(set).sort(); if (!names.length) return "";
+        return "<h2>" + label + '</h2><div class="chips">' + names.map(function (h) {
+          var one = {}; one[h] = 1; var n = pool(plan.ws, plan.we, plan.budget, plan.types, one).length;
+          return chip('data-phood="' + esc(h) + '"', h, n, n === 0, String(!!plan.hoods[h]));
+        }).join("") + "</div>";
+      };
+      var allN = pool(plan.ws, plan.we, plan.budget, plan.types).length;
+      html = '<div class="hoods"><div class="chips">' + chip('data-phood=""', "Anywhere", allN, false, String(Object.keys(plan.hoods).length === 0)) + "</div>" +
+        group("City neighborhoods", city) + group("Suburbs", burbs) + "</div>";
+    }
+    $("plan-opts").innerHTML = html;
+  }
+  $("plan-opts").addEventListener("click", function (ev) {
+    if (ev.target.id === "plan-date-go") {
+      var v = $("plan-date").value; if (!v) { $("plan-date").focus(); return; }
+      var d = parseISO(v); if (d < T) { $("plan-date").focus(); return; }
+      plan.when = "date"; plan.ws = d; plan.we = d; plan.step = 1; renderStep(); $("plan-title").focus(); return;
+    }
+    var hc = ev.target.closest("[data-phood]");
+    if (hc && !hc.disabled) {
+      var hname = hc.getAttribute("data-phood");
+      if (!hname) plan.hoods = {}; else if (plan.hoods[hname]) delete plan.hoods[hname]; else plan.hoods[hname] = 1;
+      renderStep();
+      var hagain = $("plan-opts").querySelector('[data-phood="' + (window.CSS && CSS.escape ? CSS.escape(hname) : hname) + '"]'); if (hagain) hagain.focus();
+      return;
+    }
+    var b = ev.target.closest(".opt"); if (!b || b.disabled) return;
+    if (b.hasAttribute("data-when")) {
+      var k = b.getAttribute("data-when"), w = k === "tonight" ? [T, T] : k === "weekend" ? thisWeekend() : k === "nextweekend" ? nextWeekend() : [T, add(T, 29)];
+      plan.when = k; plan.ws = w[0]; plan.we = w[1]; plan.step = 1; renderStep(); $("plan-title").focus();
+    } else if (b.hasAttribute("data-budget")) {
+      plan.budget = b.getAttribute("data-budget"); plan.types = {}; plan.hoods = {}; plan.step = 2; renderStep(); $("plan-title").focus();
+    } else if (b.hasAttribute("data-ptype")) {
+      var t = b.getAttribute("data-ptype");
+      if (!t) plan.types = {}; else if (plan.types[t]) delete plan.types[t]; else plan.types[t] = 1;
+      plan.hoods = {};
+      renderStep();
+      var again = $("plan-opts").querySelector('[data-ptype="' + (window.CSS && CSS.escape ? CSS.escape(t) : t) + '"]'); if (again) again.focus();
+    }
+  });
+  $("plan-back").addEventListener("click", function () {
+    if (plan.step === 0) { show("home"); return; }
+    plan.step -= 1; renderStep(); $("plan-title").focus();
+  });
+  $("plan-next").addEventListener("click", function () {
+    if (plan.step === 2) { plan.step = 3; renderStep(); $("plan-title").focus(); } else buildOuting();
+  });
+
+  function isArt(e) { return e.type === "Visual Art"; }
+  function buildOuting() {
+    var all = pool(plan.ws, plan.we, plan.budget, plan.types, plan.hoods).sort(byClosing);
+    var shows = all.filter(function (e) { return !isArt(e); }), art = all.filter(isArt);
+    var stops = [], main = shows[0] || art[0];
+    if (main) {
+      if (!isArt(main) && art.length) {
+        var near = art.filter(function (a) { return a.hood && a.hood === main.hood; })[0] || art.filter(function (a) { return a.area === main.area; })[0] || art[0];
+        stops.push(near);
+      }
+      stops.push(main);
+    }
+    var used = {}; stops.forEach(function (s) { used[s.id] = 1; });
+    var alts = (shows.length ? shows : art).filter(function (e) { return !used[e.id]; });
+    pick = { ws: plan.ws, we: plan.we, stops: stops, alts: alts, total: all.length, shared: false };
+    renderOuting();
+  }
+  function whyText(e, ws, we) {
+    if (oneNight(e)) return "One night only, " + dayName(e.b) + ".";
+    if (e.openRun) return "An open run with no closing date, so any night works.";
+    if (e.n && diff(e.n, we) <= 7) return "Closes " + dayName(e.n) + ", so this is the time to go.";
+    if (e.b && e.b >= ws) return "Opens " + dayName(e.b) + ".";
+    if (e.b && diff(ws, e.b) <= 10 && diff(ws, e.b) >= 0) return "Just opened, running through " + short(e.n) + ".";
+    return e.n ? "Running through " + short(e.n) + "." : "";
+  }
+  function stopHTML(e, slot, ws, we) {
+    return '<div class="stop"><p class="stop-slot">' + esc(slot) + '</p><div class="stop-body">' +
+      '<p class="kind">' + esc(e.type) + "</p><h2>" + esc(e.title) + "</h2>" +
+      '<p class="where">' + placeHTML(e) + "</p>" +
+      '<p class="facts">' + esc(dateText(e)) + " · " + esc(costText(e)) + "</p>" +
+      "<p>" + esc(whyText(e, ws, we)) + "</p>" +
+      '<a class="btn cta" href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + (isArt(e) ? "Exhibition details" : "Tickets and showtimes") + " ↗</a>" +
+      "</div></div>";
+  }
+  function shareUrl() {
+    var base = PAGE_URL && PAGE_URL.indexOf("http") === 0 ? PAGE_URL : location.href.split("#")[0];
+    return base + "#o-" + ymd(pick.ws) + "-" + ymd(pick.we) + "-" + pick.stops.map(function (s) { return s.id; }).join("-");
+  }
+  function renderOuting() {
+    $("plan-questions").hidden = true; $("plan-result").hidden = false;
+    $("res-eyebrow").textContent = pick.shared ? "An outing picked for you" : "Your outing";
+    $("res-title").textContent = windowText(pick.ws, pick.we);
+    var body = "";
+    if (!pick.stops.length) {
+      $("res-sub").textContent = pick.shared ? "The events in this link are no longer on the list." : "Nothing on the list fits all your answers.";
+      body = pick.shared ? "" : relaxHTML();
+      body += '<div class="row" style="margin-top:18px"><button class="btn" type="button" data-go="plan">Start over</button><button class="btn ghost" type="button" data-go="catalog">Browse the catalog</button></div>';
+      $("res-body").innerHTML = body; show("plan", "res-title"); return;
+    }
+    $("res-sub").textContent = pick.shared ? "Someone sent you this plan. Showtimes are on the event's page." :
+      "Picked from " + plural(pick.total, "event that fits", "events that fit") + ". Showtimes are on the event's page.";
+    var two = pick.stops.length > 1;
+    body += '<div class="outing">' + pick.stops.map(function (s, i) {
+      return stopHTML(s, two ? (i === 0 ? "Afternoon" : "Evening") : (isArt(s) ? "The visit" : "The plan"), pick.ws, pick.we);
+    }).join("") + "</div>";
+    body += '<div class="section sharebox"><div class="row"><button class="btn ghost" type="button" id="share-btn">Copy link to this outing</button>' +
+      '<span class="hint" id="share-msg" role="status"></span></div><input type="text" id="share-url" readonly hidden aria-label="Link to this outing"></div>';
+    if (!pick.shared && pick.alts.length) {
+      body += '<div class="section"><h2>Or swap in one of these</h2><div class="alts">' + pick.alts.slice(0, 4).map(function (e) {
+        return '<div class="alt"><div class="alt-text"><p class="alt-title">' + esc(e.title) + '</p><p class="alt-meta">' + esc(placeText(e)) + " · " + esc(dateText(e)) + " · " + esc(costText(e)) + "</p></div>" +
+          '<button class="btn ghost" type="button" data-swap="' + e.id + '">Swap in</button></div>';
+      }).join("") + "</div></div>";
+    }
+    body += '<div class="row" style="margin-top:28px">' +
+      (pick.shared ? '<button class="btn" type="button" data-go="plan">Plan your own</button><button class="btn ghost" type="button" data-go="catalog">Browse the catalog</button>' :
+        (pick.total > 1 ? '<button class="btn ghost" type="button" id="see-all">See all ' + pick.total + " in the catalog</button>" : "") +
+        '<button class="textbtn" type="button" data-go="plan">Start over</button>') + "</div>";
+    $("res-body").innerHTML = body;
+    show("plan", "res-title");
+  }
+  function relaxHTML() {
+    var out = [], anyTypes = Object.keys(plan.types).length === 0, anyHoods = Object.keys(plan.hoods).length === 0;
+    if (plan.budget !== "any") { var n1 = pool(plan.ws, plan.we, "any", plan.types, plan.hoods).length; if (n1) out.push(['data-relax="budget"', "Open up the budget", plural(n1, "event fits", "events fit") + " at any price"]); }
+    if (!anyTypes) { var n2 = pool(plan.ws, plan.we, plan.budget, {}, plan.hoods).length; if (n2) out.push(['data-relax="types"', "Take any type of event", plural(n2, "event fits", "events fit")]); }
+    if (!anyHoods) { var n4 = pool(plan.ws, plan.we, plan.budget, plan.types, {}).length; if (n4) out.push(['data-relax="hoods"', "Go anywhere in the city or suburbs", plural(n4, "event fits", "events fit")]); }
+    var wide = [T, add(T, 29)], n3 = pool(wide[0], wide[1], plan.budget, plan.types, plan.hoods).length;
+    if (n3 && !(same(plan.ws, wide[0]) && same(plan.we, wide[1]))) out.push(['data-relax="when"', "Look across the next 30 days", plural(n3, "event fits", "events fit")]);
+    if (!out.length) return '<p class="hint">Try the catalog, where you can loosen one filter at a time.</p>';
+    return '<div class="opts">' + out.map(function (o) { return optHTML(o[0], o[1], o[2], null); }).join("") + "</div>";
+  }
+  $("res-body").addEventListener("click", function (ev) {
+    var t = ev.target;
+    var relax = t.closest("[data-relax]");
+    if (relax) {
+      var r = relax.getAttribute("data-relax");
+      if (r === "budget") plan.budget = "any"; else if (r === "types") plan.types = {}; else if (r === "hoods") plan.hoods = {}; else { plan.ws = T; plan.we = add(T, 29); plan.when = "month"; }
+      buildOuting(); return;
+    }
+    var swap = t.closest("[data-swap]");
+    if (swap && pick) {
+      var e = BY_ID[swap.getAttribute("data-swap")], last = pick.stops.length - 1, old = pick.stops[last];
+      pick.stops[last] = e;
+      pick.alts = pick.alts.filter(function (a) { return a.id !== e.id; }); pick.alts.push(old);
+      renderOuting(); return;
+    }
+    if (t.id === "see-all" && pick) {
+      resetCatalog(); cat.cost = plan.budget || "any"; cat.types = {}; Object.keys(plan.types).forEach(function (k) { cat.types[k] = 1; });
+      cat.when = "custom"; cat.custom = { ws: pick.ws, we: pick.we }; cat.where = "local";
+      cat.hoods = {}; Object.keys(plan.hoods).forEach(function (k) { cat.hoods[k] = 1; });
+      renderCatalog(); show("catalog"); return;
+    }
+    if (t.id === "share-btn" && pick) {
+      var url = shareUrl(), field = $("share-url"), msg = $("share-msg");
+      field.value = url; field.hidden = false;
+      var fallback = function () { field.focus(); field.select(); msg.textContent = "Copy the link below."; };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function () { msg.textContent = "Link copied."; }, fallback);
+      } else fallback();
+    }
+  });
+
+  // ---------- start ----------
+  function openFromHash() {
+    var h = (location.hash || "").replace(/^#/, "");
+    var m = /^o-(\d{8})-(\d{8})((?:-[0-9a-f]{6}){1,3})$/.exec(h);
+    if (m) {
+      var stops = m[3].slice(1).split("-").map(function (id) { return BY_ID[id]; }).filter(Boolean);
+      pick = { ws: fromYmd(m[1]), we: fromYmd(m[2]), stops: stops, alts: [], total: stops.length, shared: true };
+      renderOuting(); return true;
+    }
+    if (h === "catalog") { renderCatalog(); show("catalog"); return true; }
+    if (h === "plan") { startPlan(); return true; }
+    return false;
+  }
+  buildCatalogControls();
+  renderHome();
+  renderCatalog();
+  if (!openFromHash()) { /* welcome screen is already showing */ }
+  window.addEventListener("hashchange", openFromHash);
+}
+(function () {
+  var inline = JSON.parse(document.getElementById("events-data").textContent);
+  if (inline) { boot(inline); return; }
+  fetch("api/events").then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(boot).catch(function () {
+    document.getElementById("home-lede").textContent = "The event list could not be loaded. Check that the app is still running, then reload this page.";
+  });
+})();
+</script>
+</body>
+</html>
