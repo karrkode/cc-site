@@ -1,5 +1,11 @@
 # Culture Crew, local app
 
+> **Moving to AWS.** On this branch the page (`public/index.html`) loads events and
+> accounts from the Culture Crew API, which is its own repo:
+> **cc-backend** (github.com/karrkode/cc-backend). Clone it next to this one and run
+> `docker compose --profile web up --build -d` there to get the API on :8000 and this
+> page on http://localhost:4173. The sheet-reading app described below is being retired.
+
 The Culture Crew page, run from your own computer. It reads the events from the
 Google Sheet each time it loads (cached for 5 minutes), so edits to the sheet show
 up without republishing anything.
