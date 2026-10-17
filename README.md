@@ -6,6 +6,14 @@
 > `docker compose --profile web up --build -d` there to get the API on :8000 and this
 > page on http://localhost:4173. The sheet-reading app described below is being retired.
 
+## How work flows
+
+Work is planned in Jira (project **CC** at chiculturecrew.atlassian.net), and GitHub for Jira
+links code to issues by their key: branches are named `CC-123-short-description` and commits
+start with `CC-123:`. Pull requests run the page checks (`scripts/check_pages.py` and a
+JavaScript syntax check); merging to `main` publishes the page to S3, refreshes CloudFront,
+and shows the deploy on the Jira issue. No AWS keys are stored in GitHub (OIDC).
+
 The Culture Crew page, run from your own computer. It reads the events from the
 Google Sheet each time it loads (cached for 5 minutes), so edits to the sheet show
 up without republishing anything.
