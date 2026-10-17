@@ -407,6 +407,18 @@ footer p { max-width: 70ch; }
         <div class="row"><p id="account-who"></p><button class="btn ghost" type="button" id="sign-out">Sign out</button></div>
         <div class="section"><h2>Where you've been</h2><div class="grid" id="went-grid"></div></div>
         <div class="section"><h2>Events you've sent us</h2><div class="queue" id="my-submissions"></div></div>
+        <div class="section"><h2>Your profile</h2>
+          <form class="panel" id="profile-form" novalidate>
+            <div class="fields">
+              <div class="field"><label for="p-name">Name</label><input id="p-name" type="text" maxlength="80" autocomplete="name" aria-describedby="p-name-hint"></div>
+              <div class="field"><label for="p-email">Email</label><input id="p-email" type="email" maxlength="320" autocomplete="email"></div>
+            </div>
+            <span class="hint small" id="p-name-hint">Your name is shown on events you choose to be credited for.</span>
+            <div class="field" id="p-password-field" hidden><label for="p-password">Current password</label><input id="p-password" type="password" autocomplete="current-password" aria-describedby="p-password-hint"><span class="hint small" id="p-password-hint">Needed to change your email.</span></div>
+            <p class="form-error" id="profile-error" role="alert"></p>
+            <div class="row"><button class="btn" type="submit" id="profile-btn">Save changes</button><span class="hint" id="profile-msg" role="status"></span></div>
+          </form>
+        </div>
       </div>
     </section>
 
@@ -1080,6 +1092,7 @@ function boot(ITEMS) {
     $("went-grid").innerHTML = WENT_LIST.length ? WENT_LIST.map(cardHTML).join("") :
       '<p class="hint" style="grid-column:1/-1">Mark events with "I\'ve been" and they\'ll show up here.</p>';
     if (!withSubmissions) return;
+    fillProfile();
     api("/me/submissions").then(readJSON).then(function (res) {
       if (!res.ok) return;
       var rows = res.body.map(fromApi);
@@ -1087,6 +1100,39 @@ function boot(ITEMS) {
         '<p class="hint">Nothing yet. <button class="textbtn" type="button" data-go="submit">Submit an event</button></p>';
     }, function () {});
   }
+  // ---------- profile (CC-40) ----------
+  function fillProfile() {
+    $("p-name").value = AUTH.user.display_name || ""; $("p-email").value = AUTH.user.email;
+    $("p-password").value = ""; $("p-password-field").hidden = true; $("profile-error").textContent = ""; $("profile-msg").textContent = "";
+  }
+  function emailChanged() { return $("p-email").value.trim().toLowerCase() !== AUTH.user.email; }
+  $("profile-form").addEventListener("input", function () {
+    $("profile-error").textContent = ""; $("profile-msg").textContent = "";
+    $("p-password-field").hidden = !emailChanged();
+  });
+  $("profile-form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var err = $("profile-error"), msg = $("profile-msg"), email = $("p-email").value.trim();
+    var body = { display_name: $("p-name").value.trim() };
+    if (emailChanged()) {
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = "Enter a full email address."; $("p-email").focus(); return; }
+      if (!$("p-password").value) { err.textContent = "Enter your current password to change your email."; $("p-password").focus(); return; }
+      body.email = email; body.current_password = $("p-password").value;
+    }
+    var btn = $("profile-btn"); btn.disabled = true; err.textContent = ""; msg.textContent = "Saving…";
+    api("/auth/me", { method: "PATCH", body: body }).then(readJSON, function () { return null; }).then(function (res) {
+      btn.disabled = false;
+      if (!res || !res.ok) {
+        msg.textContent = ""; err.textContent = errorText(res);
+        if (res && res.status === 403) { $("p-password").value = ""; $("p-password").focus(); }
+        else if (res && res.status === 409) $("p-email").focus();
+        return;
+      }
+      AUTH.user = res.body;
+      renderAccount(false); fillProfile();
+      msg.textContent = "Saved.";
+    });
+  });
   function authForm(form, path, body, errEl) {
     var btn = form.querySelector('button[type="submit"]');
     errEl.textContent = ""; btn.disabled = true;
