@@ -425,7 +425,7 @@ footer p { max-width: 70ch; }
           <select id="s-category" required><option value="Theater">Theater</option><option value="Comedy">Comedy</option><option value="Concert">Concert</option><option value="Visual Art">Visual Art</option></select>
         </div>
         <div class="fields">
-          <div class="field"><label for="s-venue">Venue</label><input id="s-venue" type="text" list="venue-list" maxlength="200" required autocomplete="off"><datalist id="venue-list"></datalist></div>
+          <div class="field"><label for="s-venue">Venue</label><input id="s-venue" type="text" maxlength="200" required autocomplete="off"></div>
           <div class="field"><label for="s-hood">Neighborhood or town</label><input id="s-hood" type="text" maxlength="120" placeholder="Lincoln Park, or Evanston, IL" aria-describedby="s-hood-hint"><span class="hint small" id="s-hood-hint">For a suburb, add ", IL".</span></div>
         </div>
         <div class="fields">
@@ -1128,16 +1128,21 @@ function boot(ITEMS) {
       VENUES = [];
       api("/venues").then(readJSON).then(function (res) {
         if (!res.ok) { VENUES = null; return; }
+        // No suggestion list: browsers draw <datalist> popups themselves and can place them
+        // away from the field (CC-29). Known venues are only used to fill in the neighborhood.
         VENUES = res.body;
-        var names = {}; VENUES.forEach(function (v) { names[v.name] = 1; });
-        $("venue-list").innerHTML = Object.keys(names).sort().map(function (n) { return '<option value="' + esc(n) + '">'; }).join("");
       }, function () { VENUES = null; });
     }
   }
   $("s-venue").addEventListener("change", function () {
-    var name = this.value.trim().toLowerCase();
-    var matches = (VENUES || []).filter(function (v) { return v.name.toLowerCase() === name; });
-    if (matches.length === 1 && !$("s-hood").value.trim()) $("s-hood").value = matches[0].neighborhood;
+    // Fill in the neighborhood when every known venue with this name agrees on one. Venues saved
+    // with a blank neighborhood don't count; a name in two neighborhoods (The Second City) is left to the user.
+    var name = this.value.trim().toLowerCase(), hoods = {};
+    (VENUES || []).forEach(function (v) {
+      if (v.name.toLowerCase() === name && v.neighborhood.trim()) hoods[v.neighborhood] = 1;
+    });
+    var found = Object.keys(hoods);
+    if (found.length === 1 && !$("s-hood").value.trim()) $("s-hood").value = found[0];
   });
   function publishChoice() { var r = document.querySelector('input[name="s-publish"]:checked'); return r ? r.value : null; }
   function localInputValue(d) { // a Date as the value a datetime-local input expects, in local time
