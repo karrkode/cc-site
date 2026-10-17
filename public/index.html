@@ -588,6 +588,7 @@ function boot(ITEMS) {
       area: AREA_NAMES[e.venue.area] || "City", begin: e.begin_date, end: e.end_date, openRun: e.open_run,
       beginTbd: !e.begin_date, cost: e.cost_text || "TBD", min: e.min_price, type: e.category, url: e.url,
       status: e.status, publishAt: e.publish_at ? new Date(e.publish_at) : null,
+      submitter: e.submitted_by || null, // only the admin routes send this
       b: parseISO(e.begin_date), n: parseISO(e.end_date)
     };
   }
@@ -1210,10 +1211,16 @@ function boot(ITEMS) {
   });
 
   // ---------- review queue (admins) ----------
+  function submitterText(who) { // null: came from the sheet, or the account was deleted
+    if (!who) return "No submitter on record";
+    var mail = '<a href="mailto:' + esc(who.email) + '">' + esc(who.email) + "</a>";
+    return "Submitted by " + (who.display_name.trim() ? esc(who.display_name) + " (" + mail + ")" : mail);
+  }
   function queueItemHTML(e, actions) {
     return '<div class="queue-item"><div class="alt-text"><p class="kind">' + esc(e.type) + '</p><p class="alt-title">' +
       (e.url ? '<a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" : esc(e.title)) + "</p>" +
-      '<p class="alt-meta">' + esc(placeText(e)) + " · " + esc(e.b || e.n ? dateText(e) : "Dates not given") + " · " + esc(costText(e)) + "</p></div>" +
+      '<p class="alt-meta">' + esc(placeText(e)) + " · " + esc(e.b || e.n ? dateText(e) : "Dates not given") + " · " + esc(costText(e)) + "</p>" +
+      '<p class="alt-meta">' + submitterText(e.submitter) + "</p></div>" +
       '<div class="row">' + actions + "</div></div>";
   }
   function openReview() { if (!isAdmin()) { openAccount(); return; } renderReview(); show("review"); }
