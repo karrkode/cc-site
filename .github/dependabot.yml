@@ -1,0 +1,7 @@
+# Weekly pull requests for outdated GitHub Actions; each one runs the page checks before merging.
+# (The site has no other dependencies: no build step, and the CI script uses only the standard library.)
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
