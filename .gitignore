@@ -1,3 +1,6 @@
 dist/
 __pycache__/
 .DS_Store
+.venv/
+.env
+.pytest_cache/
