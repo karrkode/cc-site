@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Culture Crew</title>
+<!-- Where the API lives. Leave empty to use api.<this host> (or localhost:8000 when running locally). -->
+<meta name="cc-api" content="">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..700&family=Schibsted+Grotesk:wght@400..700&display=swap">
 <style>
@@ -81,7 +83,7 @@ a { color: inherit; }
   display: inline-flex; align-items: center; gap: 10px; background: none; border: 0; padding: 4px 0; cursor: pointer;
   font-family: var(--display); font-size: var(--step-1); font-weight: 600; font-style: italic; letter-spacing: 0.01em;
 }
-.bar nav { display: flex; gap: 4px; }
+.bar nav { display: flex; flex-wrap: wrap; gap: 4px; }
 .navlink {
   background: none; border: 0; border-bottom: 2px solid transparent; padding: 6px 10px; cursor: pointer;
   font-weight: 600; font-size: 0.9375rem; color: var(--muted);
@@ -220,6 +222,30 @@ a { color: inherit; }
 .section { display: grid; gap: 14px; margin-top: 28px; }
 .section h2 { font-family: var(--display); font-weight: 500; font-size: var(--step-2); }
 
+/* accounts, submissions, review */
+.navlink .count:not(:empty) { margin-left: 6px; background: var(--star); color: var(--on-star); border-radius: 999px; padding: 0 7px; font-size: 0.75rem; }
+.forms { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; align-items: start; }
+.panel { display: grid; gap: 14px; padding: clamp(16px, 3vw, 24px); background: var(--surface); border: 1px solid var(--line); border-radius: 2px; }
+.panel h2 { font-family: var(--display); font-weight: 500; font-size: var(--step-2); }
+.panel .btn { justify-self: start; }
+.opt-label { text-transform: none; letter-spacing: 0; font-weight: 500; }
+.hint.small { font-size: 0.8125rem; }
+.form-error:empty { display: none; }
+.form-error { color: var(--pill-soon-ink); background: var(--pill-soon); padding: 8px 12px; border-radius: 2px; font-weight: 600; font-size: 0.9375rem; }
+.went {
+  position: relative; z-index: 1; justify-self: start; cursor: pointer; border: 1px solid var(--line); background: var(--paper);
+  border-radius: 999px; padding: 3px 12px; font-size: 0.8125rem; font-weight: 600;
+}
+.went:hover { border-color: var(--ink); }
+.went[aria-pressed="true"] { background: var(--pill-next); color: var(--pill-next-ink); border-color: transparent; }
+.went:disabled { opacity: 0.6; cursor: progress; }
+.queue { display: grid; gap: 10px; }
+.queue-item { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 14px 16px; }
+.queue-item .alt-text a { text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.state { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: var(--pill-run); }
+.state.approved { background: var(--pill-next); color: var(--pill-next-ink); }
+.state.rejected { background: var(--pill-soon); color: var(--pill-soon-ink); }
+
 footer { margin-top: clamp(40px, 7vw, 80px); padding-block: 24px 32px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.875rem; }
 footer p { max-width: 70ch; }
 .view { animation: rise 0.28s ease both; }
@@ -241,6 +267,9 @@ footer p { max-width: 70ch; }
     <nav aria-label="Sections">
       <button class="navlink" type="button" data-go="catalog" id="nav-catalog">Catalog</button>
       <button class="navlink" type="button" data-go="plan" id="nav-plan">Plan an outing</button>
+      <button class="navlink" type="button" data-go="submit" id="nav-submit">Submit an event</button>
+      <button class="navlink" type="button" data-go="review" id="nav-review" hidden>Review<span class="count" id="review-count"></span></button>
+      <button class="navlink" type="button" data-go="account" id="nav-account">Sign in</button>
     </nav>
   </header>
 
@@ -341,17 +370,157 @@ footer p { max-width: 70ch; }
         <div id="res-body"></div>
       </div>
     </section>
+
+    <!-- Account: sign in / create account, or your lists once signed in -->
+    <section class="view" id="view-account" hidden>
+      <div class="view-head">
+        <p class="eyebrow">Your account</p>
+        <h1 id="account-title" tabindex="-1">Sign in</h1>
+        <p id="account-sub">Keep a list of what you've seen, and send us events we're missing.</p>
+      </div>
+      <div class="forms" id="signed-out">
+        <form class="panel" id="login-form" novalidate>
+          <h2>Sign in</h2>
+          <div class="field"><label for="login-email">Email</label><input id="login-email" type="email" autocomplete="username" required></div>
+          <div class="field"><label for="login-password">Password</label><input id="login-password" type="password" autocomplete="current-password" required></div>
+          <p class="form-error" id="login-error" role="alert"></p>
+          <button class="btn" type="submit">Sign in</button>
+        </form>
+        <form class="panel" id="register-form" novalidate>
+          <h2>Create an account</h2>
+          <div class="field"><label for="reg-name">Name <span class="opt-label">(optional)</span></label><input id="reg-name" type="text" autocomplete="name" maxlength="80"></div>
+          <div class="field"><label for="reg-email">Email</label><input id="reg-email" type="email" autocomplete="email" required></div>
+          <div class="field"><label for="reg-password">Password</label><input id="reg-password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required aria-describedby="reg-password-hint"><span class="hint small" id="reg-password-hint">At least 8 characters.</span></div>
+          <p class="form-error" id="register-error" role="alert"></p>
+          <button class="btn" type="submit">Create account</button>
+        </form>
+      </div>
+      <div id="signed-in" hidden>
+        <div class="row"><p id="account-who"></p><button class="btn ghost" type="button" id="sign-out">Sign out</button></div>
+        <div class="section"><h2>Where you've been</h2><div class="grid" id="went-grid"></div></div>
+        <div class="section"><h2>Events you've sent us</h2><div class="queue" id="my-submissions"></div></div>
+      </div>
+    </section>
+
+    <!-- Submit an event -->
+    <section class="view plan" id="view-submit" hidden>
+      <div class="view-head">
+        <p class="eyebrow">Submit an event</p>
+        <h1 id="submit-title" tabindex="-1">Know something we're missing?</h1>
+        <p id="submit-sub">Tell us about it. Someone from the crew checks each one before it goes on the list.</p>
+      </div>
+      <div class="panel" id="submit-signin" hidden>
+        <p>You need an account to send us events, so we can follow up if anything's unclear.</p>
+        <div class="row"><button class="btn" type="button" data-go="account">Sign in or create an account</button></div>
+      </div>
+      <form class="panel" id="submit-form" novalidate hidden>
+        <div class="field"><label for="s-title">Event name</label><input id="s-title" type="text" maxlength="300" required></div>
+        <div class="field"><label for="s-category">Type</label>
+          <select id="s-category" required><option value="Theater">Theater</option><option value="Comedy">Comedy</option><option value="Concert">Concert</option><option value="Visual Art">Visual Art</option></select>
+        </div>
+        <div class="fields">
+          <div class="field"><label for="s-venue">Venue</label><input id="s-venue" type="text" list="venue-list" maxlength="200" required autocomplete="off"><datalist id="venue-list"></datalist></div>
+          <div class="field"><label for="s-hood">Neighborhood or town</label><input id="s-hood" type="text" maxlength="120" placeholder="Lincoln Park, or Evanston, IL" aria-describedby="s-hood-hint"><span class="hint small" id="s-hood-hint">For a suburb, add ", IL".</span></div>
+        </div>
+        <div class="fields">
+          <div class="field"><label for="s-begin">Opens</label><input id="s-begin" type="date"></div>
+          <div class="field"><label for="s-end">Closes</label><input id="s-end" type="date"></div>
+        </div>
+        <div class="fields">
+          <div class="field"><label for="s-cost">Price</label><input id="s-cost" type="text" maxlength="120" placeholder="$25–$60, or Free" aria-describedby="s-cost-hint"><span class="hint small" id="s-cost-hint">Leave blank if it isn't posted yet.</span></div>
+          <div class="field"><label for="s-url">Link</label><input id="s-url" type="url" maxlength="2000" placeholder="https://"></div>
+        </div>
+        <p class="form-error" id="submit-error" role="alert"></p>
+        <div class="row"><button class="btn" type="submit" id="submit-btn">Send it in</button><span class="hint" id="submit-msg" role="status"></span></div>
+      </form>
+    </section>
+
+    <!-- Review queue (admins) -->
+    <section class="view" id="view-review" hidden>
+      <div class="view-head">
+        <p class="eyebrow">Review</p>
+        <h1 id="review-title" tabindex="-1">Waiting for review</h1>
+        <p>Approve to put an event on the list. Rejected events stay out of sight.</p>
+      </div>
+      <div class="queue" id="review-list"></div>
+    </section>
   </main>
 
   <footer>
     <p id="foot"></p>
-    <p style="margin-top:8px"><button class="textbtn" type="button" id="reload-data" hidden>Check the sheet again</button></p>
   </footer>
 </div>
 
-<script type="application/json" id="events-data">null</script>
 <script>
-function boot(DATA) {
+// ---------- talking to the API ----------
+// The access token lives only in this variable (never localStorage), so other scripts on the
+// page can't lift it from storage. The refresh token is an HttpOnly cookie the API sets on
+// /auth/*; the browser sends it, but this code can't read it.
+var API = (function () {
+  var meta = document.querySelector('meta[name="cc-api"]');
+  if (meta && meta.content) return meta.content.replace(/\/$/, "");
+  var h = location.hostname;
+  if (!h || h === "localhost" || h === "127.0.0.1") return "http://" + (h || "localhost") + ":8000";
+  return "https://api." + h.replace(/^www\./, "");
+})();
+var AUTH = { token: null, user: null, refreshing: null, onChange: null };
+
+function setSession(body) {
+  var before = AUTH.user ? AUTH.user.id + AUTH.user.role : "";
+  AUTH.token = body ? body.access_token : null;
+  AUTH.user = body ? body.user : null;
+  var after = AUTH.user ? AUTH.user.id + AUTH.user.role : "";
+  // A hint (not a credential) so visitors who never signed in skip the refresh call on load.
+  try { if (body) localStorage.setItem("cc_signed_in", "1"); else localStorage.removeItem("cc_signed_in"); } catch (e) {}
+  if (before !== after && AUTH.onChange) AUTH.onChange();
+}
+function maybeSignedIn() {
+  try { return localStorage.getItem("cc_signed_in") === "1"; } catch (e) { return true; } // storage blocked: just try
+}
+// One refresh at a time: requests that hit 401 together all wait on the same call.
+function refreshSession() {
+  if (!AUTH.refreshing) {
+    AUTH.refreshing = fetch(API + "/auth/refresh", { method: "POST", credentials: "include" })
+      .then(function (r) { return r.ok ? r.json() : null; }, function () { return null; })
+      .then(function (body) { AUTH.refreshing = null; setSession(body); return !!body; });
+  }
+  return AUTH.refreshing;
+}
+// fetch() for the API: sends the access token, and on a 401 refreshes once and retries.
+function api(path, opts) {
+  opts = opts || {};
+  function send() {
+    var headers = {};
+    if (opts.body !== undefined) headers["Content-Type"] = "application/json";
+    if (AUTH.token) headers.Authorization = "Bearer " + AUTH.token;
+    return fetch(API + path, { method: opts.method || "GET", headers: headers, credentials: opts.cookies ? "include" : "omit",
+      body: opts.body === undefined ? undefined : JSON.stringify(opts.body) });
+  }
+  return send().then(function (r) {
+    if (r.status !== 401 || !AUTH.token || opts.cookies) return r;
+    return refreshSession().then(function (ok) { return ok ? send() : r; });
+  });
+}
+// Response -> { ok, status, body }, never rejecting on a non-JSON body.
+function readJSON(r) {
+  return r.json().catch(function () { return null; }).then(function (body) { return { ok: r.ok, status: r.status, body: body }; });
+}
+var FIELD_NAMES = { email: "Email", password: "Password", display_name: "Name", title: "Event name", url: "Link",
+  begin_date: "Opens", end_date: "Closes", cost_text: "Price", min_price: "Price", name: "Venue", neighborhood: "Neighborhood" };
+function errorText(res) {
+  if (!res) return "Couldn't reach Culture Crew. Check your connection and try again.";
+  var d = res.body && res.body.detail;
+  if (typeof d === "string") return d;
+  if (Array.isArray(d) && d.length) {
+    var field = d[0].loc ? d[0].loc[d[0].loc.length - 1] : "";
+    var msg = String(d[0].msg || "").replace(/^Value error, /, "");
+    return (FIELD_NAMES[field] ? FIELD_NAMES[field] + ": " : "") + msg.charAt(0).toUpperCase() + msg.slice(1) + ".";
+  }
+  if (res.status === 429) return "Too many tries. Wait a minute and try again.";
+  return "Something went wrong (error " + res.status + "). Try again.";
+}
+
+function boot(ITEMS) {
   "use strict";
   var PAGE_URL = "";
   var DAY = 86400000;
@@ -395,15 +564,29 @@ function boot(DATA) {
   function nextWeekend() { var fri = add(thisWeekend()[1], 5); return [fri, add(fri, 2)]; }
 
   // ---------- events ----------
-  var EVENTS = DATA.events.map(function (e) {
-    var o = {}; for (var k in e) o[k] = e[k];
-    o.b = parseISO(e.begin); o.n = parseISO(e.end);
-    return o;
-  });
-  var BY_ID = {}; EVENTS.forEach(function (e) { BY_ID[e.id] = e; });
   var TYPE_ORDER = ["Theater", "Comedy", "Concert", "Visual Art"];
-  var TYPES = []; EVENTS.forEach(function (e) { if (TYPES.indexOf(e.type) < 0) TYPES.push(e.type); });
-  TYPES.sort(function (a, b) { var i = TYPE_ORDER.indexOf(a), j = TYPE_ORDER.indexOf(b); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j) || a.localeCompare(b); });
+  var AREA_NAMES = { city: "City", suburbs: "Suburbs", out_of_town: "Out of town" };
+  var EVENTS = [], BY_ID = {}, TYPES = [];
+  // The API's event -> the shape the rest of this page was written for.
+  function fromApi(e) {
+    return {
+      id: String(e.id), sourceId: e.source_id, title: e.title, venue: e.venue.name, hood: e.venue.neighborhood,
+      area: AREA_NAMES[e.venue.area] || "City", begin: e.begin_date, end: e.end_date, openRun: e.open_run,
+      beginTbd: !e.begin_date, cost: e.cost_text || "TBD", min: e.min_price, type: e.category, url: e.url,
+      status: e.status, b: parseISO(e.begin_date), n: parseISO(e.end_date)
+    };
+  }
+  function setEvents(items) {
+    EVENTS = items.map(fromApi);
+    BY_ID = {};
+    EVENTS.forEach(function (e) { if (e.sourceId) BY_ID[e.sourceId] = e; }); // links shared from the old site
+    EVENTS.forEach(function (e) { BY_ID[e.id] = e; });
+    TYPES = [];
+    EVENTS.forEach(function (e) { if (TYPES.indexOf(e.type) < 0) TYPES.push(e.type); });
+    TYPES.sort(function (a, b) { var i = TYPE_ORDER.indexOf(a), j = TYPE_ORDER.indexOf(b); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j) || a.localeCompare(b); });
+  }
+  setEvents(ITEMS);
+  var WENT = {}, WENT_LIST = [];
   var TYPE_PLURAL = { "Theater": "theater", "Comedy": "comedy", "Concert": "concerts", "Visual Art": "visual art" };
 
   function isPast(e) { return !!e.n && e.n < T; }
@@ -452,14 +635,20 @@ function boot(DATA) {
       '<h3><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a></h3>" +
       '<p class="where">' + placeHTML(e) + "</p>" +
       '<div class="card-foot"><span>' + esc(dateText(e)) + '</span><span class="cost' + (e.min === 0 ? " free" : "") + '">' + esc(costText(e)) + "</span></div>" +
+      (AUTH.user ? wentHTML(e) : "") +
       "</article>";
+  }
+  function wentHTML(e) {
+    var on = !!WENT[e.id];
+    return '<button type="button" class="went" data-went="' + esc(e.id) + '" aria-pressed="' + on + '">' +
+      '<span aria-hidden="true">' + (on ? "✓ " : "+ ") + "</span>I've been</button>";
   }
 
   // ---------- views ----------
-  var VIEWS = { home: "home-title", catalog: "catalog-title", plan: "plan-title" };
+  var VIEWS = { home: "home-title", catalog: "catalog-title", plan: "plan-title", account: "account-title", submit: "submit-title", review: "review-title" };
   function show(name, focusId) {
     Object.keys(VIEWS).forEach(function (v) { $("view-" + v).hidden = v !== name; });
-    ["catalog", "plan"].forEach(function (v) {
+    ["catalog", "plan", "submit", "review", "account"].forEach(function (v) {
       if (v === name) $("nav-" + v).setAttribute("aria-current", "page"); else $("nav-" + v).removeAttribute("aria-current");
     });
     window.scrollTo(0, 0);
@@ -468,7 +657,9 @@ function boot(DATA) {
   document.addEventListener("click", function (ev) {
     var b = ev.target.closest("[data-go]"); if (!b) return;
     var go = b.getAttribute("data-go");
-    if (go === "plan") startPlan(); else if (go === "catalog") { renderCatalog(); show("catalog"); } else show("home");
+    if (go === "plan") startPlan(); else if (go === "catalog") { renderCatalog(); show("catalog"); }
+    else if (go === "account") openAccount(); else if (go === "submit") openSubmit(); else if (go === "review") openReview();
+    else show("home");
   });
 
   // ---------- home ----------
@@ -482,19 +673,9 @@ function boot(DATA) {
     var soon = live.filter(function (e) { return e.n && (!e.b || e.b <= T) && !e.openRun; }).sort(byClosing).slice(0, 4);
     if (!soon.length) soon = live.slice().sort(byClosing).slice(0, 4);
     $("soon-list").innerHTML = soon.map(function (e) { return "<li>" + cardHTML(e) + "</li>"; }).join("");
-    var asOf = parseISO(DATA.asOf);
-    var from = "Listings last updated " + F.long.format(asOf) + ".";
-    if (DATA.source === "live" && DATA.fetchedAt) {
-      from = "Read from the Google Sheet at " + new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(new Date(DATA.fetchedAt)) + ".";
-    } else if (DATA.note) { from += " " + DATA.note; }
-    $("foot").textContent = from + " " + plural(EVENTS.length, "event", "events") +
-      " in all. Dates and prices change, so check the event's page before you go.";
-    if (DATA.local) $("reload-data").hidden = false;
+    $("foot").textContent = plural(EVENTS.length, "event", "events") +
+      " on the list, past and present. Dates and prices change, so check the event's page before you go.";
   }
-  $("reload-data").addEventListener("click", function () {
-    var b = this; b.disabled = true; b.textContent = "Checking the sheet…";
-    fetch("api/events?refresh=1").then(function () { location.reload(); }, function () { b.disabled = false; b.textContent = "Could not reach the app. Try again"; });
-  });
   $("soon-more").addEventListener("click", function () { resetCatalog(); cat.sort = "closing"; cat.when = "week"; syncCatalogControls(); renderCatalog(); show("catalog"); });
 
   // ---------- catalog ----------
@@ -804,10 +985,217 @@ function boot(DATA) {
     }
   });
 
+  // ---------- signed-in state ----------
+  function isAdmin() { return !!AUTH.user && AUTH.user.role === "admin"; }
+  function visible(name) { return !$("view-" + name).hidden; }
+  function rerenderLists() {
+    renderHome();
+    if (visible("catalog")) renderCatalog();
+    if (visible("account")) renderAccount();
+  }
+  function onAuthChange() {
+    $("nav-account").textContent = AUTH.user ? "Your account" : "Sign in";
+    $("nav-review").hidden = !isAdmin();
+    WENT = {}; WENT_LIST = [];
+    if (!AUTH.user) {
+      if (visible("review")) show("home");
+      if (visible("submit")) renderSubmit();
+      rerenderLists();
+      return;
+    }
+    if (isAdmin()) updateReviewCount();
+    if (visible("account")) renderAccount(true);
+    if (visible("submit")) renderSubmit();
+    if (visible("review")) renderReview();
+    rerenderLists();
+    loadWent();
+  }
+  function loadWent() {
+    return api("/me/attended").then(readJSON).then(function (res) {
+      if (!res.ok) return;
+      WENT = {}; WENT_LIST = res.body.map(function (row) { return fromApi(row.event); });
+      WENT_LIST.forEach(function (e) { WENT[e.id] = true; });
+      rerenderLists();
+    }, function () {});
+  }
+  function reloadEvents() {
+    return api("/events?include_past=true&limit=1000").then(readJSON).then(function (res) {
+      if (!res.ok) return;
+      setEvents(res.body.items);
+      buildCatalogControls();
+      rerenderLists();
+    }, function () {});
+  }
+  document.addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-went]"); if (!b || !AUTH.user) return;
+    var id = b.getAttribute("data-went"), on = !WENT[id];
+    b.disabled = true;
+    api("/me/attended/" + encodeURIComponent(id), { method: on ? "PUT" : "DELETE" }).then(function (r) {
+      if (!r.ok) throw new Error(r.status);
+      if (on) { WENT[id] = true; if (BY_ID[id]) WENT_LIST.unshift(BY_ID[id]); }
+      else { delete WENT[id]; WENT_LIST = WENT_LIST.filter(function (e) { return e.id !== id; }); }
+      // update every copy of this card (home and catalog can both show it) without redrawing the grid
+      Array.prototype.forEach.call(document.querySelectorAll('[data-went="' + id + '"]'), function (other) {
+        other.outerHTML = wentHTML(BY_ID[id] || { id: id });
+      });
+      if (visible("account")) renderAccount();
+      var again = document.querySelector('[data-went="' + id + '"]'); if (again && document.activeElement === document.body) again.focus();
+    }).catch(function () { b.disabled = false; });
+  });
+
+  // ---------- account ----------
+  function openAccount() { renderAccount(true); show("account"); }
+  function renderAccount(withSubmissions) {
+    var u = AUTH.user;
+    $("signed-out").hidden = !!u; $("signed-in").hidden = !u;
+    $("account-title").textContent = u ? (u.display_name ? "Hi, " + u.display_name : "Your account") : "Sign in";
+    $("account-sub").textContent = u ? "What you've been to, and how the events you've sent us are doing." :
+      "Keep a list of what you've seen, and send us events we're missing.";
+    if (!u) { $("went-grid").innerHTML = ""; $("my-submissions").innerHTML = ""; return; }
+    $("account-who").textContent = "Signed in as " + u.email + (u.role === "admin" ? " · admin" : "");
+    $("went-grid").innerHTML = WENT_LIST.length ? WENT_LIST.map(cardHTML).join("") :
+      '<p class="hint" style="grid-column:1/-1">Mark events with "I\'ve been" and they\'ll show up here.</p>';
+    if (!withSubmissions) return;
+    api("/me/submissions").then(readJSON).then(function (res) {
+      if (!res.ok) return;
+      var rows = res.body.map(fromApi);
+      $("my-submissions").innerHTML = rows.length ? rows.map(function (e) { return queueItemHTML(e, '<span class="state ' + e.status + '">' + esc(e.status) + "</span>"); }).join("") :
+        '<p class="hint">Nothing yet. <button class="textbtn" type="button" data-go="submit">Submit an event</button></p>';
+    }, function () {});
+  }
+  function authForm(form, path, body, errEl) {
+    var btn = form.querySelector('button[type="submit"]');
+    errEl.textContent = ""; btn.disabled = true;
+    api(path, { method: "POST", body: body, cookies: true }).then(readJSON, function () { return null; }).then(function (res) {
+      btn.disabled = false;
+      if (!res || !res.ok) { errEl.textContent = errorText(res); return; }
+      form.reset();
+      setSession(res.body);
+      renderAccount();
+      $("account-title").focus();
+    });
+  }
+  function looksLikeEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+  $("login-form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var email = $("login-email").value.trim(), pw = $("login-password").value;
+    if (!looksLikeEmail(email)) { $("login-error").textContent = "Enter the email you signed up with."; $("login-email").focus(); return; }
+    if (!pw) { $("login-error").textContent = "Enter your password."; $("login-password").focus(); return; }
+    authForm(this, "/auth/login", { email: email, password: pw }, $("login-error"));
+  });
+  $("register-form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var email = $("reg-email").value.trim(), pw = $("reg-password").value;
+    if (!looksLikeEmail(email)) { $("register-error").textContent = "Enter a valid email address."; $("reg-email").focus(); return; }
+    if (pw.length < 8) { $("register-error").textContent = "Use a password of at least 8 characters."; $("reg-password").focus(); return; }
+    authForm(this, "/auth/register", { email: email, password: pw, display_name: $("reg-name").value.trim() }, $("register-error"));
+  });
+  ["login", "register"].forEach(function (f) {
+    $(f + "-form").addEventListener("input", function () { $(f + "-error").textContent = ""; });
+  });
+  $("sign-out").addEventListener("click", function () {
+    var b = this; b.disabled = true;
+    api("/auth/logout", { method: "POST", cookies: true }).catch(function () {}).then(function () {
+      b.disabled = false; setSession(null); renderAccount(); $("account-title").focus();
+    });
+  });
+
+  // ---------- submit an event ----------
+  var VENUES = null;
+  function openSubmit() { renderSubmit(); show("submit"); }
+  function renderSubmit() {
+    var signedIn = !!AUTH.user;
+    $("submit-signin").hidden = signedIn; $("submit-form").hidden = !signedIn;
+    $("submit-sub").textContent = isAdmin() ? "You're an admin, so what you add goes straight on the list." :
+      "Tell us about it. Someone from the crew checks each one before it goes on the list.";
+    if (signedIn && !VENUES) {
+      VENUES = [];
+      api("/venues").then(readJSON).then(function (res) {
+        if (!res.ok) { VENUES = null; return; }
+        VENUES = res.body;
+        var names = {}; VENUES.forEach(function (v) { names[v.name] = 1; });
+        $("venue-list").innerHTML = Object.keys(names).sort().map(function (n) { return '<option value="' + esc(n) + '">'; }).join("");
+      }, function () { VENUES = null; });
+    }
+  }
+  $("s-venue").addEventListener("change", function () {
+    var name = this.value.trim().toLowerCase();
+    var matches = (VENUES || []).filter(function (v) { return v.name.toLowerCase() === name; });
+    if (matches.length === 1 && !$("s-hood").value.trim()) $("s-hood").value = matches[0].neighborhood;
+  });
+  function minPrice(cost) { // same rule the sheet used: first dollar amount, or 0 for free
+    var c = cost.trim().toLowerCase();
+    if (c === "free" || c === "pay-what-you-can") return 0;
+    var m = /\$\s*([0-9]+(?:\.[0-9]+)?)/.exec(cost);
+    return m ? parseFloat(m[1]) : null;
+  }
+  $("submit-form").addEventListener("input", function () { $("submit-error").textContent = ""; $("submit-msg").textContent = ""; });
+  $("submit-form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var err = $("submit-error"), msg = $("submit-msg");
+    var title = $("s-title").value.trim(), venue = $("s-venue").value.trim(), url = $("s-url").value.trim();
+    var begin = $("s-begin").value || null, end = $("s-end").value || null, cost = $("s-cost").value.trim();
+    var bad = !title ? ["s-title", "Give the event's name."] : !venue ? ["s-venue", "Say where it's happening."] :
+      (begin && end && end < begin) ? ["s-end", "The closing date is before the opening date."] :
+      (url && !/^https?:\/\//i.test(url)) ? ["s-url", "The link should start with https://"] : null;
+    if (bad) { err.textContent = bad[1]; $(bad[0]).focus(); return; }
+    var btn = $("submit-btn"); btn.disabled = true; err.textContent = ""; msg.textContent = "Sending…";
+    api("/events", { method: "POST", body: {
+      title: title, category: $("s-category").value, venue: { name: venue, neighborhood: $("s-hood").value.trim() },
+      begin_date: begin, end_date: end, cost_text: cost, min_price: minPrice(cost), url: url
+    } }).then(readJSON, function () { return null; }).then(function (res) {
+      btn.disabled = false;
+      if (!res || !res.ok) { msg.textContent = ""; err.textContent = errorText(res); return; }
+      $("submit-form").reset();
+      if (res.body.status === "approved") { msg.textContent = "Added. It's on the list now."; reloadEvents(); VENUES = null; }
+      else msg.textContent = "Thanks! It's waiting for review. You can follow it on your account page.";
+      $("s-title").focus();
+    });
+  });
+
+  // ---------- review queue (admins) ----------
+  function queueItemHTML(e, actions) {
+    return '<div class="queue-item"><div class="alt-text"><p class="kind">' + esc(e.type) + '</p><p class="alt-title">' +
+      (e.url ? '<a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" : esc(e.title)) + "</p>" +
+      '<p class="alt-meta">' + esc(placeText(e)) + " · " + esc(e.b || e.n ? dateText(e) : "Dates not given") + " · " + esc(costText(e)) + "</p></div>" +
+      '<div class="row">' + actions + "</div></div>";
+  }
+  function openReview() { if (!isAdmin()) { openAccount(); return; } renderReview(); show("review"); }
+  function updateReviewCount(n) {
+    if (n !== undefined) { $("review-count").textContent = n ? String(n) : ""; return; }
+    api("/admin/events?limit=1").then(readJSON).then(function (res) { if (res.ok) updateReviewCount(res.body.total); }, function () {});
+  }
+  function renderReview() {
+    $("review-list").innerHTML = '<p class="hint">Loading…</p>';
+    api("/admin/events?limit=500").then(readJSON).then(function (res) {
+      if (!res.ok) { $("review-list").innerHTML = '<p class="form-error">' + esc(errorText(res)) + "</p>"; return; }
+      updateReviewCount(res.body.total);
+      $("review-list").innerHTML = res.body.items.length ? res.body.items.map(function (raw) {
+        var e = fromApi(raw);
+        return queueItemHTML(e, '<button class="btn" type="button" data-review="approve" data-id="' + esc(e.id) + '">Approve</button>' +
+          '<button class="btn ghost" type="button" data-review="reject" data-id="' + esc(e.id) + '">Reject</button>');
+      }).join("") : '<p class="hint">Nothing waiting for review.</p>';
+    }, function () { $("review-list").innerHTML = '<p class="form-error">' + esc(errorText(null)) + "</p>"; });
+  }
+  $("review-list").addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-review]"); if (!b) return;
+    var action = b.getAttribute("data-review"), item = b.closest(".queue-item");
+    Array.prototype.forEach.call(item.querySelectorAll("button"), function (x) { x.disabled = true; });
+    api("/admin/events/" + encodeURIComponent(b.getAttribute("data-id")) + "/" + action, { method: "POST" }).then(function (r) {
+      if (!r.ok) throw new Error(r.status);
+      var next = item.nextElementSibling || item.previousElementSibling;
+      item.remove();
+      if (!$("review-list").children.length) $("review-list").innerHTML = '<p class="hint">Nothing waiting for review.</p>';
+      updateReviewCount();
+      if (action === "approve") reloadEvents();
+      var focusTo = next && next.querySelector && next.querySelector("button"); (focusTo || $("review-title")).focus();
+    }).catch(function () { Array.prototype.forEach.call(item.querySelectorAll("button"), function (x) { x.disabled = false; }); });
+  });
+
   // ---------- start ----------
   function openFromHash() {
     var h = (location.hash || "").replace(/^#/, "");
-    var m = /^o-(\d{8})-(\d{8})((?:-[0-9a-f]{6}){1,3})$/.exec(h);
+    var m = /^o-(\d{8})-(\d{8})((?:-[0-9a-z]{1,12}){1,3})$/.exec(h); // ids: new numbers, or the old site's 6-hex ids
     if (m) {
       var stops = m[3].slice(1).split("-").map(function (id) { return BY_ID[id]; }).filter(Boolean);
       pick = { ws: fromYmd(m[1]), we: fromYmd(m[2]), stops: stops, alts: [], total: stops.length, shared: true };
@@ -815,6 +1203,9 @@ function boot(DATA) {
     }
     if (h === "catalog") { renderCatalog(); show("catalog"); return true; }
     if (h === "plan") { startPlan(); return true; }
+    if (h === "account") { openAccount(); return true; }
+    if (h === "submit") { openSubmit(); return true; }
+    if (h === "review") { openReview(); return true; }
     return false;
   }
   buildCatalogControls();
@@ -822,13 +1213,16 @@ function boot(DATA) {
   renderCatalog();
   if (!openFromHash()) { /* welcome screen is already showing */ }
   window.addEventListener("hashchange", openFromHash);
+  AUTH.onChange = onAuthChange;
+  if (maybeSignedIn()) refreshSession(); // signed in on an earlier visit? the refresh cookie brings the session back
 }
 (function () {
-  var inline = JSON.parse(document.getElementById("events-data").textContent);
-  if (inline) { boot(inline); return; }
-  fetch("api/events").then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(boot).catch(function () {
-    document.getElementById("home-lede").textContent = "The event list could not be loaded. Check that the app is still running, then reload this page.";
-  });
+  // Past events too: the catalog's "Already closed" filter and old share links need them.
+  api("/events?include_past=true&limit=1000").then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (page) { boot(page.items); })
+    .catch(function () {
+      document.getElementById("home-lede").textContent = "The event list couldn't be loaded right now. Try reloading the page in a minute.";
+    });
 })();
 </script>
 </body>
