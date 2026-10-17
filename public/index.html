@@ -141,6 +141,8 @@ a { color: inherit; }
 .card:hover h3 a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .where { font-size: 0.9375rem; color: var(--muted); overflow-wrap: anywhere; }
 .where .hood { white-space: nowrap; }
+.card-body { display: grid; align-content: start; gap: 4px; }
+.credit { font-size: 0.8125rem; color: var(--muted); font-style: italic; overflow-wrap: anywhere; }
 .card-foot {
   display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; padding-top: 10px; border-top: 1px solid var(--line);
   font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums;
@@ -436,6 +438,10 @@ footer p { max-width: 70ch; }
           <div class="field"><label for="s-cost">Price</label><input id="s-cost" type="text" maxlength="120" placeholder="$25–$60, or Free" aria-describedby="s-cost-hint"><span class="hint small" id="s-cost-hint">Leave blank if it isn't posted yet.</span></div>
           <div class="field"><label for="s-url">Link</label><input id="s-url" type="url" maxlength="2000" placeholder="https://"></div>
         </div>
+        <div class="field">
+          <label class="radio"><input type="checkbox" id="s-credit" aria-describedby="s-credit-hint"> Credit me as the person who suggested this</label>
+          <span class="hint small" id="s-credit-hint"></span>
+        </div>
         <fieldset class="publish" id="s-publish" hidden>
           <legend>When should it go live?</legend>
           <label class="radio"><input type="radio" name="s-publish" value="now"> Publish now</label>
@@ -588,7 +594,8 @@ function boot(ITEMS) {
       area: AREA_NAMES[e.venue.area] || "City", begin: e.begin_date, end: e.end_date, openRun: e.open_run,
       beginTbd: !e.begin_date, cost: e.cost_text || "TBD", min: e.min_price, type: e.category, url: e.url,
       status: e.status, publishAt: e.publish_at ? new Date(e.publish_at) : null,
-      submitter: e.submitted_by || null, // only the admin routes send this
+      submitter: e.submitted_by, // only the admin routes send this (undefined elsewhere; null = none on record)
+      creditMe: !!e.credit_me, suggestedBy: e.submitted_by_name || null, // the opt-in "Suggested by" credit (CC-30)
       b: parseISO(e.begin_date), n: parseISO(e.end_date)
     };
   }
@@ -649,7 +656,8 @@ function boot(ITEMS) {
     return '<article class="card">' +
       '<div class="card-top"><span class="kind">' + esc(e.type) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
       '<h3><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a></h3>" +
-      '<p class="where">' + placeHTML(e) + "</p>" +
+      '<div class="card-body"><p class="where">' + placeHTML(e) + "</p>" +
+      (e.suggestedBy ? '<p class="credit">Suggested by ' + esc(e.suggestedBy) + "</p>" : "") + "</div>" +
       '<div class="card-foot"><span>' + esc(dateText(e)) + '</span><span class="cost' + (e.min === 0 ? " free" : "") + '">' + esc(costText(e)) + "</span></div>" +
       (AUTH.user ? wentHTML(e) : "") +
       "</article>";
@@ -1125,6 +1133,10 @@ function boot(ITEMS) {
     $("submit-sub").textContent = isAdmin() ? "You're an admin: choose whether it goes live now, at a set time, or waits for review." :
       "Tell us about it. Someone from the crew checks each one before it goes on the list.";
     $("s-publish").hidden = !isAdmin();
+    var name = signedIn ? (AUTH.user.display_name || "").trim() : "";
+    $("s-credit").disabled = !name; if (!name) $("s-credit").checked = false;
+    $("s-credit-hint").textContent = name ? 'Optional. The event will say "Suggested by ' + name + '".' :
+      "Your account doesn't have a name to show yet, so there's nothing to credit.";
     if (signedIn && !VENUES) {
       VENUES = [];
       api("/venues").then(readJSON).then(function (res) {
@@ -1179,7 +1191,8 @@ function boot(ITEMS) {
     if (bad) { err.textContent = bad[1]; $(bad[0]).focus(); return; }
     var body = {
       title: title, category: $("s-category").value, venue: { name: venue, neighborhood: $("s-hood").value.trim() },
-      begin_date: begin, end_date: end, cost_text: cost, min_price: minPrice(cost), url: url
+      begin_date: begin, end_date: end, cost_text: cost, min_price: minPrice(cost), url: url,
+      credit_me: $("s-credit").checked
     };
     if (isAdmin()) {
       body.publish = publishChoice();
@@ -1216,11 +1229,13 @@ function boot(ITEMS) {
     var mail = '<a href="mailto:' + esc(who.email) + '">' + esc(who.email) + "</a>";
     return "Submitted by " + (who.display_name.trim() ? esc(who.display_name) + " (" + mail + ")" : mail);
   }
+  function creditText(e) { return e.suggestedBy ? " · wants public credit" : e.creditMe ? " · wants credit, but has no name to show" : ""; }
   function queueItemHTML(e, actions) {
     return '<div class="queue-item"><div class="alt-text"><p class="kind">' + esc(e.type) + '</p><p class="alt-title">' +
       (e.url ? '<a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" : esc(e.title)) + "</p>" +
       '<p class="alt-meta">' + esc(placeText(e)) + " · " + esc(e.b || e.n ? dateText(e) : "Dates not given") + " · " + esc(costText(e)) + "</p>" +
-      '<p class="alt-meta">' + submitterText(e.submitter) + "</p></div>" +
+      (e.submitter !== undefined ? '<p class="alt-meta">' + submitterText(e.submitter) + creditText(e) + "</p>" :
+        e.suggestedBy ? '<p class="alt-meta">Credited as "Suggested by ' + esc(e.suggestedBy) + '"</p>' : "") + "</div>" +
       '<div class="row">' + actions + "</div></div>";
   }
   function openReview() { if (!isAdmin()) { openAccount(); return; } renderReview(); show("review"); }
