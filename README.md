@@ -1,93 +1,59 @@
-# Culture Crew, local app
+# Culture Crew — the site
 
-> **Moving to AWS.** On this branch the page (`public/index.html`) loads events and
-> accounts from the Culture Crew API, which is its own repo:
-> **cc-backend** (github.com/karrkode/cc-backend). Clone it next to this one and run
-> `docker compose --profile web up --build -d` there to get the API on :8000 and this
-> page on http://localhost:4173. The sheet-reading app described below is being retired.
+The page at **https://chiculturecrew.com**: a running list of plays, comedy, concerts and
+exhibitions around Chicago, with a catalog, a four-question outing planner, accounts, an
+"I've been" list, event submissions and an admin review queue.
+
+It's a single static page (`public/index.html`, no build step) served from S3 through
+CloudFront. Everything dynamic comes from the Culture Crew API at
+**https://api.chiculturecrew.com** ([karrkode/cc-backend](https://github.com/karrkode/cc-backend)),
+which the page calls from the browser. The infrastructure for both lives in cc-backend's
+`infra/` folder.
+
+## Files
+
+```
+public/index.html        the page (HTML, CSS and JavaScript in one file)
+public/404.html          shown by CloudFront for any missing path
+scripts/check_pages.py   checks run in CI before every deploy
+.github/workflows/       CI/CD
+```
+
+## Run it locally
+
+The page needs the API. With [cc-backend](https://github.com/karrkode/cc-backend) cloned next
+to this repo:
+
+```
+cd ../cc-backend
+docker compose --profile web up --build -d
+docker compose run --rm api python -m scripts.seed
+```
+
+The page is then on http://localhost:4173 and the API on http://localhost:8000. Edits to
+`public/index.html` show up on reload. The page finds the API by itself (`localhost:8000`
+locally, `api.<its own domain>` in production); the `cc-api` meta tag overrides it.
+
+Without Docker, any static server works, e.g. `python3 -m http.server 4173 -d public`,
+as long as the API is running on port 8000.
 
 ## How work flows
 
 Work is planned in Jira (project **CC** at chiculturecrew.atlassian.net), and GitHub for Jira
 links code to issues by their key: branches are named `CC-123-short-description` and commits
-start with `CC-123:`. Pull requests run the page checks (`scripts/check_pages.py` and a
-JavaScript syntax check); merging to `main` publishes the page to S3, refreshes CloudFront,
-and shows the deploy on the Jira issue. No AWS keys are stored in GitHub (OIDC).
+start with `CC-123:`.
 
-The Culture Crew page, run from your own computer. It reads the events from the
-Google Sheet each time it loads (cached for 5 minutes), so edits to the sheet show
-up without republishing anything.
+- **Pull request** into `main`: CI runs `scripts/check_pages.py` (each page parses and has a
+  title, and every element the script looks up exists) and a JavaScript syntax check.
+- **Merge**: CI uploads the pages to S3, refreshes CloudFront, checks that
+  chiculturecrew.com serves the page, and records the deploy on the Jira issue.
 
-## Run it
+The deploy job gets short-lived AWS credentials through OIDC; no AWS keys are stored in
+GitHub. Only the `production` environment may use them, and only `main` may use that
+environment.
 
-Needs Python 3.8 or newer. Nothing to install.
+## History
 
-```
-cd culture-crew-app
-python3 app.py --open
-```
-
-Or double-click `start.command` on a Mac. The page opens at http://localhost:4173/.
-Stop it with Ctrl+C.
-
-To let other people on your Wi-Fi open it:
-
-```
-python3 app.py --host 0.0.0.0
-```
-
-They go to `http://<your computer's name or IP>:4173/`.
-
-## Where the events come from
-
-1. **The sheet, live.** This works only when the sheet is shared as
-   "Anyone with the link can view". The app has no Google sign-in.
-2. **The saved copy** in `data/events.json`, used whenever the sheet can't be read
-   (private sheet, no internet). The footer of the page says which one you are
-   looking at and why. Each successful live read replaces the saved copy.
-
-`python3 app.py --check` reads the sheet once, prints what happened, and exits.
-"Check the sheet again" in the page footer skips the 5-minute cache.
-
-The saved copy shipped here was read from the sheet on October 7, 2026 (321 events).
-
-## What the app does with the sheet
-
-It looks for the header row (Event, Venue, Begin Date, End, Neighborhood,
-Entry Cost, Category) and reads every row under it. Columns can be reordered;
-the header names have to stay the same. The link on the Event cell becomes the
-card's link.
-
-- **Neighborhood** decides the area filter: a plain name is the city,
-  "Town, IL" is the suburbs, another state (or Rockford) is out of town. The
-  outing builder skips out-of-town events.
-- **Category** is shown as written, with one exception: rows marked Theater
-  whose titles look like concerts (Candlelight, "In Concert", Trans-Siberian
-  Orchestra) or are on a short list of stand-up and improv shows appear as
-  Concert or Comedy. Write Concert or Comedy in the sheet and the app uses that.
-- A blank Category takes the category of the venue's other rows.
-- **Entry Cost**: the first dollar amount is the "from" price used by the
-  budget filters. "Free" and "Pay-what-you-can" count as free; anything without
-  a dollar amount shows as "Price not posted".
-
-## Settings
-
-`config.json` holds the sheet ID, the tab's gid, the port, and the cache time.
-
-## Files
-
-```
-app.py              the server and the sheet reader
-config.json         settings
-public/index.html   the page
-data/events.json    saved copy of the events
-start.command       double-click starter for macOS
-```
-
-## Tested
-
-The page, the outing builder, share links and the saved-copy fallback were run
-in a browser against this app. The live sheet reader was tested against a
-stand-in copy of the sheet's web page, not against Google itself, because the
-sheet is private. The first run with the sheet shared by link is the real test;
-`python3 app.py --check` will say whether it worked.
+Until October 2026 the site was built on Netlify from a Google Sheet (`app.py`, `build.py`).
+The move to AWS is described in cc-backend's `infra/README.md`; the sheet still feeds the
+API through a nightly sync.
