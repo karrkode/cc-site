@@ -20,7 +20,7 @@ jobs:
     name: Page checks
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Pages parse, and every element the script uses exists
         run: python3 scripts/check_pages.py
       - name: JavaScript syntax
@@ -42,7 +42,7 @@ jobs:
       contents: read
       id-token: write # lets the job ask GitHub for an OIDC token to trade for AWS credentials
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: aws-actions/configure-aws-credentials@v6
         with:
