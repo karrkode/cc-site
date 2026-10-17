@@ -240,11 +240,17 @@ a { color: inherit; }
 .went[aria-pressed="true"] { background: var(--pill-next); color: var(--pill-next-ink); border-color: transparent; }
 .went:disabled { opacity: 0.6; cursor: progress; }
 .queue { display: grid; gap: 10px; }
+.publish { border: 1px solid var(--line); border-radius: 2px; padding: 12px 16px 14px; margin: 0; display: grid; gap: 10px; }
+.publish legend { padding: 0 6px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.radio { display: flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; }
+.radio input { width: 1.1rem; height: 1.1rem; margin: 0; accent-color: var(--star); }
+.publish .field { margin-left: 1.6rem; max-width: 18rem; }
 .queue-item { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 14px 16px; }
 .queue-item .alt-text a { text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .state { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: var(--pill-run); }
 .state.approved { background: var(--pill-next); color: var(--pill-next-ink); }
 .state.rejected { background: var(--pill-soon); color: var(--pill-soon-ink); }
+.state.scheduled { background: var(--sky); color: var(--sky-ink); text-transform: none; letter-spacing: 0; }
 
 footer { margin-top: clamp(40px, 7vw, 80px); padding-block: 24px 32px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.875rem; }
 footer p { max-width: 70ch; }
@@ -430,6 +436,13 @@ footer p { max-width: 70ch; }
           <div class="field"><label for="s-cost">Price</label><input id="s-cost" type="text" maxlength="120" placeholder="$25–$60, or Free" aria-describedby="s-cost-hint"><span class="hint small" id="s-cost-hint">Leave blank if it isn't posted yet.</span></div>
           <div class="field"><label for="s-url">Link</label><input id="s-url" type="url" maxlength="2000" placeholder="https://"></div>
         </div>
+        <fieldset class="publish" id="s-publish" hidden>
+          <legend>When should it go live?</legend>
+          <label class="radio"><input type="radio" name="s-publish" value="now"> Publish now</label>
+          <label class="radio"><input type="radio" name="s-publish" value="later"> Publish later</label>
+          <div class="field" id="s-publish-at-field" hidden><label for="s-publish-at">Goes live on</label><input id="s-publish-at" type="datetime-local"></div>
+          <label class="radio"><input type="radio" name="s-publish" value="review"> Save for review</label>
+        </fieldset>
         <p class="form-error" id="submit-error" role="alert"></p>
         <div class="row"><button class="btn" type="submit" id="submit-btn">Send it in</button><span class="hint" id="submit-msg" role="status"></span></div>
       </form>
@@ -443,6 +456,7 @@ footer p { max-width: 70ch; }
         <p>Approve to put an event on the list. Rejected events stay out of sight.</p>
       </div>
       <div class="queue" id="review-list"></div>
+      <div class="section"><h2>Scheduled</h2><p class="hint">Approved, and waiting for their publish time.</p><div class="queue" id="scheduled-list"></div></div>
     </section>
   </main>
 
@@ -573,7 +587,8 @@ function boot(ITEMS) {
       id: String(e.id), sourceId: e.source_id, title: e.title, venue: e.venue.name, hood: e.venue.neighborhood,
       area: AREA_NAMES[e.venue.area] || "City", begin: e.begin_date, end: e.end_date, openRun: e.open_run,
       beginTbd: !e.begin_date, cost: e.cost_text || "TBD", min: e.min_price, type: e.category, url: e.url,
-      status: e.status, b: parseISO(e.begin_date), n: parseISO(e.end_date)
+      status: e.status, publishAt: e.publish_at ? new Date(e.publish_at) : null,
+      b: parseISO(e.begin_date), n: parseISO(e.end_date)
     };
   }
   function setEvents(items) {
@@ -1059,7 +1074,7 @@ function boot(ITEMS) {
     api("/me/submissions").then(readJSON).then(function (res) {
       if (!res.ok) return;
       var rows = res.body.map(fromApi);
-      $("my-submissions").innerHTML = rows.length ? rows.map(function (e) { return queueItemHTML(e, '<span class="state ' + e.status + '">' + esc(e.status) + "</span>"); }).join("") :
+      $("my-submissions").innerHTML = rows.length ? rows.map(function (e) { return queueItemHTML(e, stateHTML(e)); }).join("") :
         '<p class="hint">Nothing yet. <button class="textbtn" type="button" data-go="submit">Submit an event</button></p>';
     }, function () {});
   }
@@ -1106,8 +1121,9 @@ function boot(ITEMS) {
   function renderSubmit() {
     var signedIn = !!AUTH.user;
     $("submit-signin").hidden = signedIn; $("submit-form").hidden = !signedIn;
-    $("submit-sub").textContent = isAdmin() ? "You're an admin, so what you add goes straight on the list." :
+    $("submit-sub").textContent = isAdmin() ? "You're an admin: choose whether it goes live now, at a set time, or waits for review." :
       "Tell us about it. Someone from the crew checks each one before it goes on the list.";
+    $("s-publish").hidden = !isAdmin();
     if (signedIn && !VENUES) {
       VENUES = [];
       api("/venues").then(readJSON).then(function (res) {
@@ -1123,6 +1139,22 @@ function boot(ITEMS) {
     var matches = (VENUES || []).filter(function (v) { return v.name.toLowerCase() === name; });
     if (matches.length === 1 && !$("s-hood").value.trim()) $("s-hood").value = matches[0].neighborhood;
   });
+  function publishChoice() { var r = document.querySelector('input[name="s-publish"]:checked'); return r ? r.value : null; }
+  function localInputValue(d) { // a Date as the value a datetime-local input expects, in local time
+    function p(n) { return ("0" + n).slice(-2); }
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "T" + p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+  $("s-publish").addEventListener("change", function () {
+    var later = publishChoice() === "later";
+    $("s-publish-at-field").hidden = !later;
+    if (later) { $("s-publish-at").min = localInputValue(new Date()); $("s-publish-at").focus(); }
+  });
+  var WHEN = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  function stateHTML(e) {
+    if (e.status === "approved" && e.publishAt && e.publishAt > new Date())
+      return '<span class="state scheduled">Scheduled · ' + esc(WHEN.format(e.publishAt)) + "</span>";
+    return '<span class="state ' + esc(e.status) + '">' + esc(e.status) + "</span>";
+  }
   function minPrice(cost) { // same rule the sheet used: first dollar amount, or 0 for free
     var c = cost.trim().toLowerCase();
     if (c === "free" || c === "pay-what-you-can") return 0;
@@ -1139,16 +1171,35 @@ function boot(ITEMS) {
       (begin && end && end < begin) ? ["s-end", "The closing date is before the opening date."] :
       (url && !/^https?:\/\//i.test(url)) ? ["s-url", "The link should start with https://"] : null;
     if (bad) { err.textContent = bad[1]; $(bad[0]).focus(); return; }
-    var btn = $("submit-btn"); btn.disabled = true; err.textContent = ""; msg.textContent = "Sending…";
-    api("/events", { method: "POST", body: {
+    var body = {
       title: title, category: $("s-category").value, venue: { name: venue, neighborhood: $("s-hood").value.trim() },
       begin_date: begin, end_date: end, cost_text: cost, min_price: minPrice(cost), url: url
-    } }).then(readJSON, function () { return null; }).then(function (res) {
+    };
+    if (isAdmin()) {
+      body.publish = publishChoice();
+      if (!body.publish) { err.textContent = "Choose when it should go live."; document.querySelector('input[name="s-publish"]').focus(); return; }
+      if (body.publish === "later") {
+        var at = $("s-publish-at").value ? new Date($("s-publish-at").value) : null; // read as local time
+        if (!at || isNaN(at)) { err.textContent = "Pick the date and time it should go live."; $("s-publish-at").focus(); return; }
+        if (at <= new Date()) { err.textContent = "Pick a time in the future."; $("s-publish-at").focus(); return; }
+        body.publish_at = at.toISOString();
+      }
+    }
+    var btn = $("submit-btn"); btn.disabled = true; err.textContent = ""; msg.textContent = "Sending…";
+    api("/events", { method: "POST", body: body }).then(readJSON, function () { return null; }).then(function (res) {
       btn.disabled = false;
       if (!res || !res.ok) { msg.textContent = ""; err.textContent = errorText(res); return; }
-      $("submit-form").reset();
-      if (res.body.status === "approved") { msg.textContent = "Added. It's on the list now."; reloadEvents(); VENUES = null; }
-      else msg.textContent = "Thanks! It's waiting for review. You can follow it on your account page.";
+      $("submit-form").reset(); $("s-publish-at-field").hidden = true;
+      var made = fromApi(res.body);
+      if (made.status === "approved" && made.publishAt) {
+        msg.textContent = "Scheduled. It goes live " + WHEN.format(made.publishAt) + ".";
+      } else if (made.status === "approved") {
+        msg.textContent = "Published. It's on the list now."; reloadEvents(); VENUES = null;
+      } else if (isAdmin()) {
+        msg.textContent = "Saved for review. It's waiting in the Review queue."; updateReviewCount();
+      } else {
+        msg.textContent = "Thanks! It's waiting for review. You can follow it on your account page.";
+      }
       $("s-title").focus();
     });
   });
@@ -1165,7 +1216,9 @@ function boot(ITEMS) {
     if (n !== undefined) { $("review-count").textContent = n ? String(n) : ""; return; }
     api("/admin/events?limit=1").then(readJSON).then(function (res) { if (res.ok) updateReviewCount(res.body.total); }, function () {});
   }
+  var EMPTY = { "review-list": "Nothing waiting for review.", "scheduled-list": "Nothing scheduled." };
   function renderReview() {
+    renderScheduled();
     $("review-list").innerHTML = '<p class="hint">Loading…</p>';
     api("/admin/events?limit=500").then(readJSON).then(function (res) {
       if (!res.ok) { $("review-list").innerHTML = '<p class="form-error">' + esc(errorText(res)) + "</p>"; return; }
@@ -1177,20 +1230,31 @@ function boot(ITEMS) {
       }).join("") : '<p class="hint">Nothing waiting for review.</p>';
     }, function () { $("review-list").innerHTML = '<p class="form-error">' + esc(errorText(null)) + "</p>"; });
   }
-  $("review-list").addEventListener("click", function (ev) {
+  function renderScheduled() {
+    api("/admin/events/scheduled").then(readJSON).then(function (res) {
+      if (!res.ok) { $("scheduled-list").innerHTML = '<p class="form-error">' + esc(errorText(res)) + "</p>"; return; }
+      $("scheduled-list").innerHTML = res.body.length ? res.body.map(function (raw) {
+        var e = fromApi(raw);
+        return queueItemHTML(e, stateHTML(e) + '<button class="btn ghost" type="button" data-review="approve" data-id="' + esc(e.id) + '">Publish now</button>');
+      }).join("") : '<p class="hint">' + EMPTY["scheduled-list"] + "</p>";
+    }, function () {});
+  }
+  function reviewClick(ev) {
     var b = ev.target.closest("[data-review]"); if (!b) return;
-    var action = b.getAttribute("data-review"), item = b.closest(".queue-item");
+    var action = b.getAttribute("data-review"), item = b.closest(".queue-item"), list = item.parentNode;
     Array.prototype.forEach.call(item.querySelectorAll("button"), function (x) { x.disabled = true; });
     api("/admin/events/" + encodeURIComponent(b.getAttribute("data-id")) + "/" + action, { method: "POST" }).then(function (r) {
       if (!r.ok) throw new Error(r.status);
       var next = item.nextElementSibling || item.previousElementSibling;
       item.remove();
-      if (!$("review-list").children.length) $("review-list").innerHTML = '<p class="hint">Nothing waiting for review.</p>';
+      if (!list.children.length) list.innerHTML = '<p class="hint">' + EMPTY[list.id] + "</p>";
       updateReviewCount();
       if (action === "approve") reloadEvents();
       var focusTo = next && next.querySelector && next.querySelector("button"); (focusTo || $("review-title")).focus();
     }).catch(function () { Array.prototype.forEach.call(item.querySelectorAll("button"), function (x) { x.disabled = false; }); });
-  });
+  }
+  $("review-list").addEventListener("click", reviewClick);
+  $("scheduled-list").addEventListener("click", reviewClick);
 
   // ---------- start ----------
   function openFromHash() {

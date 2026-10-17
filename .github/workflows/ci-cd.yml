@@ -1,0 +1,74 @@
+# Checks every pull request; on main, also publishes the page to S3 and refreshes CloudFront.
+# AWS access is through OIDC (no stored keys): the deploy job runs in the "production"
+# environment, which only main may use, and assumes the role in vars.AWS_DEPLOY_ROLE_ARN.
+name: CI/CD
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Page checks
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pages parse, and every element the script uses exists
+        run: python3 scripts/check_pages.py
+      - name: JavaScript syntax
+        run: |
+          for f in build/scripts/*.js; do node --check "$f" && echo "ok: $f"; done
+
+  deploy:
+    name: Deploy to production
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: check
+    runs-on: ubuntu-24.04
+    environment:
+      name: production
+      url: https://chiculturecrew.com
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write # lets the job ask GitHub for an OIDC token to trade for AWS credentials
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-2
+
+      - name: Upload the pages
+        env:
+          BUCKET: ${{ vars.SITE_BUCKET }}
+        run: |
+          # index.html is revalidated on every visit; the 404 page can be cached briefly
+          aws s3 cp public/index.html "s3://$BUCKET/index.html" --cache-control no-cache --content-type "text/html; charset=utf-8"
+          aws s3 cp public/404.html "s3://$BUCKET/404.html" --cache-control max-age=300 --content-type "text/html; charset=utf-8"
+
+      - name: Refresh CloudFront
+        run: |
+          aws cloudfront create-invalidation --distribution-id "${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}" \
+            --paths '/*' --query 'Invalidation.[Id,Status]' --output text
+
+      - name: Check the live site
+        run: |
+          for _ in $(seq 1 20); do
+            if curl -fsS -o /dev/null https://chiculturecrew.com/ && curl -fsS https://chiculturecrew.com/ | grep -q '<title>Culture Crew</title>'; then
+              echo "chiculturecrew.com is up"; exit 0
+            fi
+            sleep 3
+          done
+          echo "chiculturecrew.com isn't serving the page" >&2
+          exit 1
