@@ -235,6 +235,9 @@ a { color: inherit; }
 .opt-label { text-transform: none; letter-spacing: 0; font-weight: 500; }
 .hint.small { font-size: 0.8125rem; }
 .form-error:empty { display: none; }
+.notice { background: var(--sky); color: var(--sky-ink); padding: 10px 14px; border-radius: 2px; font-weight: 600; font-size: 0.9375rem; }
+.notice:empty { display: none; }
+.notice .textbtn { color: inherit; }
 .form-error { color: var(--pill-soon-ink); background: var(--pill-soon); padding: 8px 12px; border-radius: 2px; font-weight: 600; font-size: 0.9375rem; }
 .went {
   position: relative; z-index: 1; justify-self: start; cursor: pointer; border: 1px solid var(--line); background: var(--paper);
@@ -388,13 +391,21 @@ footer p { max-width: 70ch; }
         <h1 id="account-title" tabindex="-1">Sign in</h1>
         <p id="account-sub">Keep a list of what you've seen, and send us events we're missing.</p>
       </div>
+      <p class="notice" id="account-notice" role="status"></p>
       <div class="forms" id="signed-out">
         <form class="panel" id="login-form" novalidate>
           <h2>Sign in</h2>
           <div class="field"><label for="login-email">Email</label><input id="login-email" type="email" autocomplete="username" required></div>
           <div class="field"><label for="login-password">Password</label><input id="login-password" type="password" autocomplete="current-password" required></div>
           <p class="form-error" id="login-error" role="alert"></p>
-          <button class="btn" type="submit">Sign in</button>
+          <div class="row"><button class="btn" type="submit">Sign in</button><button class="textbtn" type="button" id="forgot-open" aria-expanded="false" aria-controls="forgot-form">Forgot password?</button></div>
+        </form>
+        <form class="panel" id="forgot-form" novalidate hidden>
+          <h2>Reset your password</h2>
+          <p class="hint">We'll email you a link to choose a new one.</p>
+          <div class="field"><label for="forgot-email">Email</label><input id="forgot-email" type="email" autocomplete="email" required></div>
+          <p class="form-error" id="forgot-error" role="alert"></p>
+          <div class="row"><button class="btn" type="submit" id="forgot-btn">Email me a link</button><span class="hint" id="forgot-msg" role="status"></span></div>
         </form>
         <form class="panel" id="register-form" novalidate>
           <h2>Create an account</h2>
@@ -480,6 +491,23 @@ footer p { max-width: 70ch; }
     </section>
 
     <!-- Review queue (admins) -->
+    <section class="view" id="view-reset" hidden>
+      <div class="view-head">
+        <p class="eyebrow">Your account</p>
+        <h1 id="reset-title" tabindex="-1">Choose a new password</h1>
+        <p>Once it's changed you'll be signed in here, and signed out everywhere else.</p>
+      </div>
+      <form class="panel" id="reset-form" novalidate>
+        <div class="fields">
+          <div class="field"><label for="reset-new">New password</label><input id="reset-new" type="password" autocomplete="new-password" minlength="8" maxlength="72" required aria-describedby="reset-hint"></div>
+          <div class="field"><label for="reset-confirm">New password again</label><input id="reset-confirm" type="password" autocomplete="new-password" maxlength="72" required></div>
+        </div>
+        <span class="hint small" id="reset-hint">At least 8 characters.</span>
+        <p class="form-error" id="reset-error" role="alert"></p>
+        <div class="row"><button class="btn" type="submit" id="reset-btn">Set new password</button></div>
+      </form>
+    </section>
+
     <section class="view" id="view-review" hidden>
       <div class="view-head">
         <p class="eyebrow">Review</p>
@@ -696,7 +724,7 @@ function boot(ITEMS) {
   }
 
   // ---------- views ----------
-  var VIEWS = { home: "home-title", catalog: "catalog-title", plan: "plan-title", account: "account-title", submit: "submit-title", review: "review-title" };
+  var VIEWS = { home: "home-title", catalog: "catalog-title", plan: "plan-title", account: "account-title", submit: "submit-title", review: "review-title", reset: "reset-title" };
   function show(name, focusId) {
     Object.keys(VIEWS).forEach(function (v) { $("view-" + v).hidden = v !== name; });
     ["catalog", "plan", "submit", "review", "account"].forEach(function (v) {
@@ -1095,7 +1123,11 @@ function boot(ITEMS) {
   });
 
   // ---------- account ----------
-  function openAccount() { renderAccount(true); show("account"); }
+  var NOTICE_SET = false; // a one-off message (e.g. "email confirmed") showing instead of the usual notice
+  function openAccount(notice) {
+    NOTICE_SET = !!notice; $("account-notice").textContent = notice || "";
+    renderAccount(true); show("account");
+  }
   function renderAccount(withSubmissions) {
     var u = AUTH.user;
     $("signed-out").hidden = !!u; $("signed-in").hidden = !u;
@@ -1104,6 +1136,12 @@ function boot(ITEMS) {
       "Keep a list of what you've seen, and send us events we're missing.";
     if (!u) { $("went-grid").innerHTML = ""; $("my-submissions").innerHTML = ""; return; }
     $("account-who").textContent = "Signed in as " + u.email + (u.role === "admin" ? " · admin" : "");
+    if (!u.email_verified && !NOTICE_SET) {
+      $("account-notice").innerHTML = "Please confirm your email address: open the link we sent to " + esc(u.email) +
+        '. <button class="textbtn" type="button" id="verify-resend">Send a new link</button>';
+    } else if (u.email_verified && !NOTICE_SET) {
+      $("account-notice").textContent = "";
+    }
     $("went-grid").innerHTML = WENT_LIST.length ? WENT_LIST.map(cardHTML).join("") :
       '<p class="hint" style="grid-column:1/-1">Mark events with "I\'ve been" and they\'ll show up here.</p>';
     if (!withSubmissions) return;
@@ -1149,6 +1187,80 @@ function boot(ITEMS) {
       msg.textContent = "Saved.";
     });
   });
+  // ---------- email links, forgotten passwords (CC-44) ----------
+  // Links arrive as #verify=TOKEN or #reset=TOKEN. The fragment never reaches a server; it's
+  // taken off the address bar straight away so it doesn't linger in history or get shared.
+  function takeLinkToken(prefix) {
+    var h = (location.hash || "").replace(/^#/, "");
+    if (h.indexOf(prefix + "=") !== 0) return null;
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+    return h.slice(prefix.length + 1);
+  }
+  function confirmEmail(token) {
+    openAccount("Confirming your email address…");
+    api("/auth/verify-email", { method: "POST", body: { token: token } }).then(readJSON, function () { return null; }).then(function (res) {
+      if (!res || !res.ok) {
+        openAccount((res && res.status === 400 ? "That confirmation link has expired or was already used." : errorText(res)) +
+          (AUTH.user ? " You can send a new one below." : " Sign in to send a new one."));
+        return;
+      }
+      openAccount("Thanks! Your email address is confirmed.");
+      if (AUTH.user && AUTH.user.id === res.body.id) { AUTH.user = res.body; renderAccount(false); }
+    });
+  }
+  var RESET_TOKEN = null;
+  function openReset(token) {
+    RESET_TOKEN = token;
+    $("reset-form").reset(); $("reset-error").textContent = "";
+    show("reset", "reset-new");
+  }
+  $("reset-form").addEventListener("input", function () { $("reset-error").textContent = ""; });
+  $("reset-form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var err = $("reset-error"), next = $("reset-new").value, again = $("reset-confirm").value;
+    var bad = next.length < 8 ? ["reset-new", "Use a password of at least 8 characters."] :
+      next !== again ? ["reset-confirm", "The two passwords don't match."] : null;
+    if (bad) { err.textContent = bad[1]; $(bad[0]).focus(); return; }
+    var btn = $("reset-btn"); btn.disabled = true;
+    api("/auth/reset-password", { method: "POST", body: { token: RESET_TOKEN, new_password: next }, cookies: true })
+      .then(readJSON, function () { return null; }).then(function (res) {
+        btn.disabled = false;
+        if (!res || !res.ok) {
+          err.textContent = res && res.status === 400 ?
+            "That reset link has expired or was already used. Ask for a new one from the sign-in page." : errorText(res);
+          return;
+        }
+        RESET_TOKEN = null; $("reset-form").reset();
+        setSession(res.body);
+        openAccount("Your password has been changed and you're signed in. Any other devices have been signed out.");
+      });
+  });
+  $("forgot-open").addEventListener("click", function () {
+    var form = $("forgot-form"), open = form.hidden;
+    form.hidden = !open; this.setAttribute("aria-expanded", String(open));
+    if (open) { $("forgot-email").value = $("login-email").value.trim(); $("forgot-msg").textContent = ""; $("forgot-email").focus(); }
+  });
+  $("forgot-form").addEventListener("input", function () { $("forgot-error").textContent = ""; });
+  $("forgot-form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var email = $("forgot-email").value.trim(), err = $("forgot-error"), msg = $("forgot-msg");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = "Enter the email address you signed up with."; $("forgot-email").focus(); return; }
+    var btn = $("forgot-btn"); btn.disabled = true; msg.textContent = "Sending…";
+    api("/auth/forgot-password", { method: "POST", body: { email: email } }).then(readJSON, function () { return null; }).then(function (res) {
+      btn.disabled = false;
+      if (!res || !res.ok) { msg.textContent = ""; err.textContent = errorText(res); return; }
+      msg.textContent = res.body.detail + " It expires in an hour.";
+    });
+  });
+  $("account-notice").addEventListener("click", function (ev) {
+    var b = ev.target.closest("#verify-resend"); if (!b) return;
+    b.disabled = true;
+    api("/auth/verify-email/send", { method: "POST" }).then(readJSON, function () { return null; }).then(function (res) {
+      NOTICE_SET = true;
+      $("account-notice").textContent = res && res.ok ? res.body.detail + " Open it to confirm your address." : errorText(res);
+    });
+  });
+
   // ---------- change password (CC-42) ----------
   function clearPasswordForm() { ["pw-current", "pw-new", "pw-confirm"].forEach(function (id) { $(id).value = ""; }); }
   $("password-form").addEventListener("input", function () { $("password-error").textContent = ""; $("password-msg").textContent = ""; });
@@ -1373,6 +1485,8 @@ function boot(ITEMS) {
 
   // ---------- start ----------
   function openFromHash() {
+    var verify = takeLinkToken("verify"); if (verify) { confirmEmail(verify); return true; }
+    var reset = takeLinkToken("reset"); if (reset) { openReset(reset); return true; }
     var h = (location.hash || "").replace(/^#/, "");
     var m = /^o-(\d{8})-(\d{8})((?:-[0-9a-z]{1,12}){1,3})$/.exec(h); // ids: new numbers, or the old site's 6-hex ids
     if (m) {
