@@ -36,6 +36,7 @@
   --neutral-soft: #1E2940;
   --danger-soft: #3D1420; --on-danger-soft: #FFB3BD;
   --focus: #5CC8F5;
+  --plan: #5CC8F5; /* the going date beside the dolphin (CC-55) */
   color-scheme: dark;
 }
 :root[data-theme="light"] {
@@ -48,6 +49,7 @@
   --neutral-soft: #ECECE6;
   --danger-soft: #FBE4E6; --on-danger-soft: #9E1B28;
   --focus: #1D4ED8;
+  --plan: #1D4ED8;
   color-scheme: light;
 }
 :root {
@@ -268,6 +270,22 @@ a { color: inherit; }
 .went:hover { border-color: var(--lead); }
 .went[aria-pressed="true"] { background: var(--info-soft); color: var(--on-info-soft); border-color: transparent; }
 .went:disabled { opacity: 0.6; cursor: progress; }
+/* plans (CC-55): a dolphin for interested, the ringed dolphin for going, and the picker under each card */
+.marks { display: flex; align-items: center; gap: 6px; }
+.dolphin { display: block; flex: none; width: 30px; height: 30px; margin-block: -4px; }
+.dolphin.going { width: 38px; height: 38px; margin-block: -8px; }
+.card-foot .going-on { color: var(--plan); font-weight: 700; }
+.card-actions { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 8px; }
+.myplan { /* pops over the cards below, so opening it doesn't stretch the row */
+  position: absolute; z-index: 3; top: calc(100% - 8px); left: 8px; right: 8px; display: grid; gap: 10px; padding: 12px;
+  background: var(--surface); border: 1px solid var(--field-line); border-radius: var(--r-ctl); box-shadow: 0 10px 28px rgb(0 0 0 / 0.28);
+}
+.myplan .row { gap: 8px; }
+.myplan .row + .row { align-items: end; }
+.myplan .field { flex: 1 1 140px; }
+.myplan .field input { padding: 6px 8px; }
+.myplan .went { padding: 6px 12px; }
+.myplan .form-error { font-size: 0.875rem; }
 .queue { display: grid; gap: 10px; }
 .publish { border: 1px solid var(--line); border-radius: var(--r-card); padding: 12px 16px 14px; margin: 0; display: grid; gap: 10px; }
 .publish legend { padding: 0 6px; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
@@ -291,6 +309,7 @@ footer p { max-width: 70ch; }
 
 </head>
 <body>
+<p class="sr-only" id="myplan-live" role="status"></p>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <symbol id="chi-star" viewBox="0 0 24 24"><polygon points="12,1 14.5,7.67 21.53,6.5 17,12 21.53,17.5 14.5,16.33 12,23 9.5,16.33 2.47,17.5 7,12 2.47,6.5 9.5,7.67"></polygon></symbol>
 </svg>
@@ -447,6 +466,7 @@ footer p { max-width: 70ch; }
       </div>
       <div id="signed-in" hidden>
         <div class="row"><p id="account-who"></p><button class="btn ghost" type="button" id="sign-out">Sign out</button></div>
+        <div class="section"><h2 id="myplans-title" tabindex="-1">Your plans</h2><div class="grid" id="myplans-grid"></div></div>
         <div class="section"><h2>Where you've been</h2><div class="grid" id="went-grid"></div></div>
         <div class="section"><h2>Events you've sent us</h2><div class="queue" id="my-submissions"></div></div>
         <div class="section"><h2>Your profile</h2>
@@ -736,6 +756,8 @@ function boot(FACETS_IN) {
   }
   setFacets(FACETS_IN);
   var WENT = {}, WENT_LIST = [];
+  // Your plans (CC-55): MYPLANS[id] = { status: "interested" | "going", date: "YYYY-MM-DD" | null }.
+  var MYPLANS = {}, MYPLAN_LIST = [], MYPLAN_SEQ = 0;
   var TYPE_PLURAL = { "Theater": "theater", "Comedy": "comedy", "Concert": "concerts", "Visual Art": "visual art" };
 
   function isPast(e) { return !!e.n && e.n < T; }
@@ -778,15 +800,53 @@ function boot(FACETS_IN) {
   function safeUrl(u) { return /^https?:\/\//i.test(u) ? u : "#"; }
   function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
   function cardHTML(e) {
-    var st = status(e);
-    return '<article class="card">' +
-      '<div class="card-top"><span class="kind">' + esc(e.type) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
+    var st = status(e), mine = AUTH.user ? MYPLANS[e.id] : null, going = mine && mine.status === "going";
+    var dolphin = !mine ? "" : going ? '<img class="dolphin going" src="img/dolphin-going.webp" width="38" height="38" alt="">' :
+      '<img class="dolphin" src="img/dolphin-interested.webp" width="30" height="30" alt="Interested">';
+    return '<article class="card" data-card="' + esc(e.id) + '">' +
+      '<div class="card-top"><span class="kind">' + esc(e.type) + '</span><span class="marks">' + dolphin +
+      '<span class="pill ' + st.tone + '">' + esc(st.label) + "</span></span></div>" +
       '<h3><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a></h3>" +
       '<div class="card-body"><p class="where">' + placeHTML(e) + "</p>" +
       (e.suggestedBy ? '<p class="credit">Suggested by ' + esc(e.suggestedBy) + "</p>" : "") + "</div>" +
-      '<div class="card-foot"><span>' + esc(dateText(e)) + '</span><span class="cost' + (e.min === 0 ? " free" : "") + '">' + esc(costText(e)) + "</span></div>" +
-      (AUTH.user ? wentHTML(e) : "") +
+      '<div class="card-foot">' + (going ? '<span class="going-on">Going ' + esc(goingDay(mine.date)) + "</span>" : "<span>" + esc(dateText(e)) + "</span>") +
+      '<span class="cost' + (e.min === 0 ? " free" : "") + '">' + esc(costText(e)) + "</span></div>" +
+      (AUTH.user ? '<div class="card-actions">' + wentHTML(e) + myplanToggleHTML(e) + "</div>" + myplanHTML(e) : "") +
       "</article>";
+  }
+  function goingDay(iso) { var d = parseISO(iso); return d.getFullYear() === T.getFullYear() ? F.wmd.format(d) : F.mdy.format(d); }
+  // The days you can say you're going: from today (or opening) to closing, at most two years out (the API's rule).
+  function goingRange(e) {
+    var lo = e.b && e.b > T ? e.b : T, far = add(T, 730), hi = e.n && e.n < far ? e.n : far;
+    return lo <= hi ? [lo, hi] : null;
+  }
+  function myplanToggleHTML(e) {
+    var mine = MYPLANS[e.id];
+    if (!mine && !goingRange(e)) return ""; // closed: nothing left to plan
+    MYPLAN_SEQ += 1;
+    return '<button type="button" class="went" data-myplan-toggle="' + esc(e.id) + '" aria-expanded="false" aria-controls="myplan-' + MYPLAN_SEQ + '">' +
+      '<span aria-hidden="true">' + (mine ? "" : "+ ") + "</span>" + (mine ? "Change plan" : "Add to plans") + "</button>";
+  }
+  // The picker under a card: Interested, Going on a date (one-night events need no date field), or Clear.
+  function myplanHTML(e) {
+    var mine = MYPLANS[e.id], range = goingRange(e), n = MYPLAN_SEQ, id = esc(e.id);
+    if (!mine && !range) return "";
+    var going = "";
+    if (range && same(range[0], range[1])) {
+      going = '<button type="button" class="went" data-myplan-going="' + id + '" data-date="' + isoDate(range[0]) + '" aria-pressed="' +
+        !!(mine && mine.status === "going") + '">Going ' + esc(goingDay(isoDate(range[0]))) + "</button>";
+    } else if (range) {
+      var value = mine && mine.date ? mine.date : isoDate(range[0]);
+      going = '<div class="field"><label for="myplan-date-' + n + '">Going on</label><input type="date" id="myplan-date-' + n +
+        '" min="' + isoDate(range[0]) + '" max="' + isoDate(range[1]) + '" value="' + esc(value) + '"></div>' +
+        '<button type="button" class="went" data-myplan-going="' + id + '" aria-pressed="' + !!(mine && mine.status === "going") + '">' +
+        (mine && mine.status === "going" ? "Change date" : "I'm going") + "</button>";
+    }
+    return '<div class="myplan" id="myplan-' + n + '" role="group" aria-label="Your plan for ' + esc(e.title) + '" hidden>' +
+      '<div class="row"><button type="button" class="went" data-myplan-set="' + id + '" aria-pressed="' + !!(mine && mine.status === "interested") +
+      '">Interested</button>' + (mine ? '<button type="button" class="textbtn" data-myplan-clear="' + id + '">Clear plan</button>' : "") + "</div>" +
+      (going ? '<div class="row">' + going + "</div>" : "") +
+      '<p class="form-error" role="alert"></p></div>';
   }
   function wentHTML(e) {
     var on = !!WENT[e.id];
@@ -1184,7 +1244,7 @@ function boot(FACETS_IN) {
   function onAuthChange() {
     $("nav-account").textContent = AUTH.user ? "Your account" : "Sign in";
     $("nav-review").hidden = !isAdmin();
-    WENT = {}; WENT_LIST = [];
+    WENT = {}; WENT_LIST = []; MYPLANS = {}; MYPLAN_LIST = [];
     if (!AUTH.user) {
       NOTICE_SET = false; $("account-notice").textContent = "";
       if (visible("review")) show("home");
@@ -1197,7 +1257,7 @@ function boot(FACETS_IN) {
     if (visible("submit")) renderSubmit();
     if (visible("review")) renderReview();
     rerenderLists();
-    loadWent();
+    loadWent(); loadMyPlans().then(rerenderLists);
   }
   function loadWent() {
     return api("/me/attended").then(readJSON).then(function (res) {
@@ -1232,6 +1292,82 @@ function boot(FACETS_IN) {
     }).catch(function () { b.disabled = false; });
   });
 
+  // ---------- your plans (CC-55) ----------
+  function loadMyPlans() {
+    return api("/me/plans").then(readJSON).then(function (res) {
+      if (!res.ok) return;
+      MYPLANS = {}; MYPLAN_LIST = res.body.map(function (row) {
+        var e = toEvent(row.event); MYPLANS[e.id] = { status: row.status, date: row.date }; return e;
+      });
+    }, function () {});
+  }
+  function myplanSaid(mine) {
+    return !mine ? "Plan cleared" : mine.status === "going" ? "Going on " + dayName(parseISO(mine.date)) : "Marked interested";
+  }
+  // Redraw every copy of this event's card (home, catalog and account can all show it), then put focus back
+  // on the same card's plan button, or on the "Your plans" heading if the card left that list.
+  function redrawCards(id, from) {
+    var list = from && from.parentElement.closest("[id]"), listId = list ? list.id : null; // the grid this card was in
+    Array.prototype.forEach.call(document.querySelectorAll('[data-card="' + id + '"]'), function (c) { c.outerHTML = cardHTML(KNOWN[id]); });
+    return loadMyPlans().then(function () {
+      if (visible("account")) renderAccount();
+      var card = listId && $(listId) ? $(listId).querySelector('[data-card="' + id + '"]') : null;
+      var target = card ? card.querySelector("[data-myplan-toggle]") : listId === "myplans-grid" ? $("myplans-title") : null;
+      if (target) target.focus();
+    });
+  }
+  function saveMyPlan(id, body, panel) {
+    var card = panel.closest("[data-card]"), err = panel.querySelector(".form-error");
+    var buttons = panel.querySelectorAll("button"); Array.prototype.forEach.call(buttons, function (b) { b.disabled = true; });
+    err.textContent = "";
+    var req = body ? api("/me/plans/" + encodeURIComponent(id) + "?today=" + isoDate(T), { method: "PUT", body: body })
+                   : api("/me/plans/" + encodeURIComponent(id), { method: "DELETE" });
+    req.then(readJSON).then(function (res) {
+      if (!res.ok) throw res;
+      if (body) MYPLANS[id] = { status: body.status, date: body.date || null }; else delete MYPLANS[id];
+      $("myplan-live").textContent = myplanSaid(MYPLANS[id]) + ": " + KNOWN[id].title;
+      return redrawCards(id, card);
+    }).catch(function (res) {
+      Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
+      err.textContent = res && res.status ? errorText(res) : "Couldn't save your plan. Check your connection and try again.";
+    });
+  }
+  function closeMyPlan(toggle) {
+    var panel = $(toggle.getAttribute("aria-controls"));
+    toggle.setAttribute("aria-expanded", "false"); if (panel) panel.hidden = true;
+  }
+  document.addEventListener("click", function (ev) {
+    // one picker open at a time: a click anywhere else closes it
+    Array.prototype.forEach.call(document.querySelectorAll('[data-myplan-toggle][aria-expanded="true"]'), function (open) {
+      var panel = $(open.getAttribute("aria-controls"));
+      if (!open.contains(ev.target) && !(panel && panel.contains(ev.target))) closeMyPlan(open);
+    });
+    if (!AUTH.user) return;
+    var t = ev.target.closest("[data-myplan-toggle],[data-myplan-set],[data-myplan-going],[data-myplan-clear]"); if (!t) return;
+    if (t.hasAttribute("data-myplan-toggle")) {
+      var open = t.getAttribute("aria-expanded") !== "true", panel = $(t.getAttribute("aria-controls"));
+      t.setAttribute("aria-expanded", String(open)); panel.hidden = !open;
+      if (open) panel.querySelector("button, input").focus();
+      return;
+    }
+    var box = t.closest(".myplan");
+    if (t.hasAttribute("data-myplan-set")) return saveMyPlan(t.getAttribute("data-myplan-set"), { status: "interested" }, box);
+    if (t.hasAttribute("data-myplan-clear")) return saveMyPlan(t.getAttribute("data-myplan-clear"), null, box);
+    var input = box.querySelector('input[type="date"]'), day = t.getAttribute("data-date") || (input && input.value);
+    if (input && (!day || day < input.min || day > input.max)) {
+      box.querySelector(".form-error").textContent = !day ? "Choose a date." :
+        "Choose a date from " + goingDay(input.min) + " to " + goingDay(input.max) + ".";
+      input.focus(); return;
+    }
+    saveMyPlan(t.getAttribute("data-myplan-going"), { status: "going", date: day }, box);
+  });
+  document.addEventListener("keydown", function (ev) { // Escape closes the picker and returns to its button
+    if (ev.key !== "Escape") return;
+    var box = ev.target.closest && ev.target.closest(".myplan"); if (!box) return;
+    var toggle = document.querySelector('[aria-controls="' + box.id + '"]');
+    if (toggle) { closeMyPlan(toggle); toggle.focus(); }
+  });
+
   // ---------- account ----------
   var NOTICE_SET = false; // a one-off message (e.g. "email confirmed") showing instead of the usual notice
   function openAccount(notice) {
@@ -1242,9 +1378,9 @@ function boot(FACETS_IN) {
     var u = AUTH.user;
     $("signed-out").hidden = !!u; $("signed-in").hidden = !u;
     $("account-title").textContent = u ? (u.display_name ? "Hi, " + u.display_name : "Your account") : "Sign in";
-    $("account-sub").textContent = u ? "What you've been to, and how the events you've sent us are doing." :
+    $("account-sub").textContent = u ? "Your plans, what you've been to, and how the events you've sent us are doing." :
       "Keep a list of what you've seen, and send us events we're missing.";
-    if (!u) { $("went-grid").innerHTML = ""; $("my-submissions").innerHTML = ""; return; }
+    if (!u) { $("myplans-grid").innerHTML = ""; $("went-grid").innerHTML = ""; $("my-submissions").innerHTML = ""; return; }
     $("account-who").textContent = "Signed in as " + u.email + (u.role === "admin" ? " · admin" : "");
     if (!u.email_verified && !NOTICE_SET) {
       $("account-notice").innerHTML = "Please confirm your email address: open the link we sent to " + esc(u.email) +
@@ -1252,6 +1388,8 @@ function boot(FACETS_IN) {
     } else if (u.email_verified && !NOTICE_SET) {
       $("account-notice").textContent = "";
     }
+    $("myplans-grid").innerHTML = MYPLAN_LIST.length ? MYPLAN_LIST.map(cardHTML).join("") :
+      '<p class="hint" style="grid-column:1/-1">Use "Add to plans" on any event to mark it Interested, or say which day you\'re going.</p>';
     $("went-grid").innerHTML = WENT_LIST.length ? WENT_LIST.map(cardHTML).join("") :
       '<p class="hint" style="grid-column:1/-1">Mark events with "I\'ve been" and they\'ll show up here.</p>';
     if (!withSubmissions) return;
