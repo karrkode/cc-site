@@ -172,6 +172,7 @@ a { color: inherit; }
 }
 .tally { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; padding-block: 18px 12px; }
 .tally strong { font-variant-numeric: tabular-nums; }
+.more-row { display: flex; justify-content: center; margin-top: 18px; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 12px; }
 .empty { padding: 40px 20px; text-align: center; background: var(--surface); border: 1px dashed var(--line); border-radius: 2px; display: grid; gap: 10px; justify-items: center; }
 
@@ -354,6 +355,7 @@ footer p { max-width: 70ch; }
         <button class="textbtn" type="button" id="clear-filters">Clear filters</button>
       </div>
       <div class="grid" id="grid"></div>
+      <div class="more-row" id="more-row" hidden><button class="btn ghost" type="button" id="more-btn">Show more</button></div>
     </section>
 
     <!-- Planner -->
@@ -607,7 +609,7 @@ function errorText(res) {
   return "Something went wrong (error " + res.status + "). Try again.";
 }
 
-function boot(ITEMS) {
+function boot(FACETS_IN) {
   "use strict";
   var PAGE_URL = "";
   var DAY = 86400000;
@@ -653,7 +655,10 @@ function boot(ITEMS) {
   // ---------- events ----------
   var TYPE_ORDER = ["Theater", "Comedy", "Concert", "Visual Art"];
   var AREA_NAMES = { city: "City", suburbs: "Suburbs", out_of_town: "Out of town" };
-  var EVENTS = [], BY_ID = {}, TYPES = [];
+  // The page no longer downloads every event (CC-33): each view asks the API for what it shows.
+  // FACETS: the categories and neighborhoods in use, plus counts (GET /events/facets).
+  // KNOWN: every event fetched so far, by id, for "I've been" buttons and outing swaps.
+  var FACETS = null, KNOWN = {}, TYPES = [];
   // The API's event -> the shape the rest of this page was written for.
   function fromApi(e) {
     return {
@@ -666,16 +671,26 @@ function boot(ITEMS) {
       b: parseISO(e.begin_date), n: parseISO(e.end_date)
     };
   }
-  function setEvents(items) {
-    EVENTS = items.map(fromApi);
-    BY_ID = {};
-    EVENTS.forEach(function (e) { if (e.sourceId) BY_ID[e.sourceId] = e; }); // links shared from the old site
-    EVENTS.forEach(function (e) { BY_ID[e.id] = e; });
-    TYPES = [];
-    EVENTS.forEach(function (e) { if (TYPES.indexOf(e.type) < 0) TYPES.push(e.type); });
+  function toEvent(raw) { var e = fromApi(raw); KNOWN[e.id] = e; return e; }
+  function isoDate(d) { return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  // Query string from [key, value] pairs (repeated keys allowed); empty values are left out.
+  function qs(pairs) {
+    return pairs.filter(function (p) { return p[1] !== null && p[1] !== undefined && p[1] !== ""; })
+      .map(function (p) { return encodeURIComponent(p[0]) + "=" + encodeURIComponent(p[1]); }).join("&");
+  }
+  // Every list asks with the visitor's own "today", so a Chicago evening isn't "tomorrow" on the server.
+  function fetchEvents(pairs) {
+    return api("/events?" + qs([["include_past", "true"]].concat(pairs))).then(readJSON).then(function (res) {
+      if (!res.ok) throw new Error(res.status);
+      return { items: res.body.items.map(toEvent), total: res.body.total };
+    });
+  }
+  function setFacets(f) {
+    FACETS = f;
+    TYPES = f.categories.slice();
     TYPES.sort(function (a, b) { var i = TYPE_ORDER.indexOf(a), j = TYPE_ORDER.indexOf(b); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j) || a.localeCompare(b); });
   }
-  setEvents(ITEMS);
+  setFacets(FACETS_IN);
   var WENT = {}, WENT_LIST = [];
   var TYPE_PLURAL = { "Theater": "theater", "Comedy": "comedy", "Concert": "concerts", "Visual Art": "visual art" };
 
@@ -754,20 +769,25 @@ function boot(ITEMS) {
   });
 
   // ---------- home ----------
+  var SOON = [];
+  function loadHome() { // events running today, soonest to close (open runs come last, then fall back to anything)
+    return fetchEvents([["from", isoDate(T)], ["to", isoDate(T)], ["sort", "closing"], ["limit", 12]]).then(function (page) {
+      var soon = page.items.filter(function (e) { return e.n && (!e.b || e.b <= T) && !e.openRun; }).slice(0, 4);
+      if (soon.length) return soon;
+      return fetchEvents([["from", isoDate(T)], ["sort", "closing"], ["limit", 4]]).then(function (p) { return p.items; });
+    }).then(function (soon) { SOON = soon; renderHome(); }, function () {});
+  }
   function renderHome() {
-    var live = EVENTS.filter(function (e) { return !isPast(e); });
-    $("door-catalog-count").textContent = plural(live.length, "event", "events") + " on the list";
+    $("door-catalog-count").textContent = plural(FACETS.current, "event", "events") + " on the list";
     var words = { "Theater": "plays and musicals", "Comedy": "comedy nights", "Concert": "concerts", "Visual Art": "exhibitions" };
     var kinds = TYPES.map(function (t) { return words[t] || t.toLowerCase(); });
     var listed = kinds.length > 1 ? kinds.slice(0, -1).join(", ") + " and " + kinds[kinds.length - 1] : kinds[0];
     $("home-lede").textContent = "A running list of " + listed + " around Chicago. Look through all of it, or answer four questions and get one outing.";
-    var soon = live.filter(function (e) { return e.n && (!e.b || e.b <= T) && !e.openRun; }).sort(byClosing).slice(0, 4);
-    if (!soon.length) soon = live.slice().sort(byClosing).slice(0, 4);
-    $("soon-list").innerHTML = soon.map(function (e) { return "<li>" + cardHTML(e) + "</li>"; }).join("");
-    $("foot").textContent = plural(EVENTS.length, "event", "events") +
+    $("soon-list").innerHTML = SOON.map(function (e) { return "<li>" + cardHTML(e) + "</li>"; }).join("");
+    $("foot").textContent = plural(FACETS.total, "event", "events") +
       " on the list, past and present. Dates and prices change, so check the event's page before you go.";
   }
-  $("soon-more").addEventListener("click", function () { resetCatalog(); cat.sort = "closing"; cat.when = "week"; syncCatalogControls(); renderCatalog(); show("catalog"); });
+  $("soon-more").addEventListener("click", function () { resetCatalog(); cat.sort = "closing"; cat.when = "week"; loadCatalog(); show("catalog"); });
 
   // ---------- catalog ----------
   var cat = { q: "", types: {}, hoods: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null };
@@ -788,7 +808,7 @@ function boot(ITEMS) {
     opts.push(["past", "Already closed"]);
     $("f-when").innerHTML = opts.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + "</option>"; }).join("") + '<option value="custom" id="f-when-custom" hidden></option>';
     var city = {}, burbs = {}, far = {};
-    EVENTS.forEach(function (e) { if (!e.hood) return; (e.area === "Suburbs" ? burbs : e.area === "Out of town" ? far : city)[e.hood] = 1; });
+    FACETS.neighborhoods.forEach(function (h) { (h.area === "suburbs" ? burbs : h.area === "out_of_town" ? far : city)[h.name] = 1; });
     function group(label, set) {
       var names = Object.keys(set).sort(); if (!names.length) return "";
       return '<optgroup label="' + label + '">' + names.map(function (n) { return '<option value="h:' + esc(n) + '">' + esc(n) + "</option>"; }).join("") + "</optgroup>";
@@ -811,39 +831,50 @@ function boot(ITEMS) {
       b.setAttribute("aria-pressed", String(t ? !!cat.types[t] : any));
     });
   }
-  function catalogMatches() {
-    var w = catWindow(), q = cat.q.trim().toLowerCase(), anyType = Object.keys(cat.types).length === 0;
-    var list = EVENTS.filter(function (e) {
-      if (cat.when === "past") { if (!isPast(e)) return false; } else if (!overlaps(e, w[0], w[1])) return false;
-      if (!anyType && !cat.types[e.type]) return false;
-      if (!costOk(e, cat.cost)) return false;
-      if (cat.where === "city" && e.area !== "City") return false;
-      if (cat.where === "suburbs" && e.area !== "Suburbs") return false;
-      if (cat.where === "far" && e.area !== "Out of town") return false;
-      if (cat.where === "local" && e.area === "Out of town") return false;
-      if (Object.keys(cat.hoods).length && !cat.hoods[e.hood]) return false;
-      if (cat.where.indexOf("h:") === 0 && e.hood !== cat.where.slice(2)) return false;
-      if (q && (e.title + " " + e.venue + " " + e.hood).toLowerCase().indexOf(q) < 0) return false;
-      return true;
-    });
-    if (cat.sort === "az") list.sort(function (a, b) { return sortKey(a.title).localeCompare(sortKey(b.title)); });
-    else if (cat.sort === "price") list.sort(function (a, b) { return (a.min === null ? Infinity : a.min) - (b.min === null ? Infinity : b.min) || byClosing(a, b); });
-    else if (cat.sort === "opening") list.sort(function (a, b) {
-      var ka = a.b && a.b > T ? a.b.getTime() : Infinity, kb = b.b && b.b > T ? b.b.getTime() : Infinity;
-      return ka - kb || byClosing(a, b);
-    });
-    else list.sort(byClosing);
-    return list;
+  var PAGE = 24, CAT_ITEMS = [], CAT_TOTAL = 0, CAT_REQ = 0;
+  var COST_MAX = { free: "0", u40: "39.99", u100: "99.99" }; // "under $40" = a lowest price below 40
+  var WHERE_AREAS = { city: ["city"], suburbs: ["suburbs"], far: ["out_of_town"], local: ["city", "suburbs"] };
+  function catalogParams() {
+    var p = [], w = catWindow();
+    if (cat.when === "past") p.push(["ended_before", isoDate(T)]);
+    else { if (w[0]) p.push(["from", isoDate(w[0])]); if (w[1]) p.push(["to", isoDate(w[1])]); }
+    Object.keys(cat.types).forEach(function (t) { p.push(["category", t]); });
+    if (COST_MAX[cat.cost]) p.push(["max_price", COST_MAX[cat.cost]]);
+    (WHERE_AREAS[cat.where] || []).forEach(function (a) { p.push(["area", a]); });
+    if (cat.where.indexOf("h:") === 0) p.push(["hood", cat.where.slice(2)]);
+    Object.keys(cat.hoods).forEach(function (h) { p.push(["hood", h]); });
+    if (cat.q.trim()) p.push(["q", cat.q.trim()]);
+    p.push(["sort", cat.sort === "az" || cat.sort === "price" || cat.sort === "opening" ? cat.sort : "closing"]);
+    return p;
   }
-  function renderCatalog() {
+  function loadCatalog(more) { // a fresh first page, or (more) the next one; replies to stale requests are dropped
     syncCatalogControls();
-    var list = catalogMatches();
-    $("tally").innerHTML = "<strong>" + list.length + "</strong> " + (list.length === 1 ? "event" : "events") + (cat.when === "past" ? " already closed" : "");
-    $("grid").innerHTML = list.length ? list.map(cardHTML).join("") :
-      '<div class="empty" style="grid-column:1/-1"><p><strong>Nothing matches those filters.</strong></p><p class="hint">Try a wider date range or a higher price limit.</p></div>';
+    var req = ++CAT_REQ, offset = more ? CAT_ITEMS.length : 0;
+    if (!more) { $("tally").textContent = "Loading…"; }
+    $("more-btn").disabled = true;
+    return fetchEvents(catalogParams().concat([["limit", PAGE], ["offset", offset]])).then(function (page) {
+      if (req !== CAT_REQ) return;
+      CAT_ITEMS = more ? CAT_ITEMS.concat(page.items) : page.items; CAT_TOTAL = page.total;
+      paintCatalog(more ? offset : 0);
+    }, function () {
+      if (req !== CAT_REQ) return;
+      $("tally").textContent = "The events couldn't be loaded. Check your connection and try again.";
+      $("more-btn").disabled = false;
+    });
   }
+  function paintCatalog(focusFrom) {
+    $("tally").innerHTML = "<strong>" + CAT_TOTAL + "</strong> " + (CAT_TOTAL === 1 ? "event" : "events") + (cat.when === "past" ? " already closed" : "") +
+      (CAT_ITEMS.length < CAT_TOTAL ? ", showing " + CAT_ITEMS.length : "");
+    $("grid").innerHTML = CAT_ITEMS.length ? CAT_ITEMS.map(cardHTML).join("") :
+      '<div class="empty" style="grid-column:1/-1"><p><strong>Nothing matches those filters.</strong></p><p class="hint">Try a wider date range or a higher price limit.</p></div>';
+    $("more-row").hidden = CAT_ITEMS.length >= CAT_TOTAL; $("more-btn").disabled = false;
+    if (focusFrom) { var first = $("grid").children[focusFrom]; var a = first && first.querySelector("h3 a"); if (a) a.focus(); }
+  }
+  function renderCatalog() { loadCatalog(false); }
   $("filters").addEventListener("submit", function (ev) { ev.preventDefault(); });
-  $("f-q").addEventListener("input", function () { cat.q = this.value; renderCatalog(); });
+  var Q_TIMER = null; // wait for a pause in typing before asking the API
+  $("f-q").addEventListener("input", function () { cat.q = this.value; clearTimeout(Q_TIMER); Q_TIMER = setTimeout(renderCatalog, 250); });
+  $("more-btn").addEventListener("click", function () { loadCatalog(true); });
   ["when", "cost", "where", "sort"].forEach(function (k) {
     $("f-" + k).addEventListener("change", function () { cat[k] = this.value; if (k === "when" && this.value !== "custom") cat.custom = null; if (k === "where") cat.hoods = {}; renderCatalog(); });
   });
@@ -861,13 +892,29 @@ function boot(ITEMS) {
   var pick = null; // { ws, we, stops: [event], alts: [event], total, shared }
   var BUDGETS = [["free", "Free", "No ticket cost"], ["u40", "Under $40", "Tickets start below $40"], ["u100", "Under $100", "Tickets start below $100"], ["any", "Any price", "Includes events with no price posted yet"]];
 
+  // The planner only needs city and suburb events in the window being planned, so it loads those
+  // (the next five weeks to start with: every preset fits) instead of the whole list.
+  var PLAN_EVENTS = [], PLAN_RANGE = null;
+  function withPlanEvents(ws, we, then) {
+    if (PLAN_RANGE && ws >= PLAN_RANGE[0] && we <= PLAN_RANGE[1]) { then(); return; }
+    var from = ws < T ? T : ws, to = we;
+    if (!PLAN_RANGE && same(from, T)) to = add(T, 34);
+    $("plan-opts").innerHTML = '<p class="hint">Finding events…</p>';
+    fetchEvents([["from", isoDate(from)], ["to", isoDate(to)], ["area", "city"], ["area", "suburbs"], ["sort", "closing"], ["limit", 1000]])
+      .then(function (page) { PLAN_EVENTS = page.items; PLAN_RANGE = [from, to]; then(); },
+            function () { $("plan-opts").innerHTML = '<p class="form-error">The events couldn\'t be loaded. Check your connection and try again.</p>'; });
+  }
   function pool(ws, we, budget, types, hoods) {
     var anyType = !types || Object.keys(types).length === 0, anyHood = !hoods || Object.keys(hoods).length === 0;
-    return EVENTS.filter(function (e) {
+    return PLAN_EVENTS.filter(function (e) {
       return !isPast(e) && e.area !== "Out of town" && overlaps(e, ws, we) && costOk(e, budget || "any") && (anyType || !!types[e.type]) && (anyHood || !!hoods[e.hood]);
     });
   }
-  function startPlan() { plan = { step: 0, when: null, ws: null, we: null, budget: null, types: {}, hoods: {} }; pick = null; renderStep(); show("plan"); }
+  function startPlan() {
+    plan = { step: 0, when: null, ws: null, we: null, budget: null, types: {}, hoods: {} }; pick = null;
+    show("plan"); $("plan-questions").hidden = false; $("plan-result").hidden = true;
+    withPlanEvents(T, add(T, 34), renderStep);
+  }
   function optHTML(attrs, main, sub, n, disabled, pressed) {
     return '<button type="button" class="opt" ' + attrs + (disabled ? " disabled" : "") + (pressed === undefined ? "" : ' aria-pressed="' + pressed + '"') + ">" +
       '<span><span class="opt-main">' + esc(main) + "</span>" + (sub ? '<br><span class="opt-sub">' + esc(sub) + "</span>" : "") + "</span>" +
@@ -911,7 +958,7 @@ function boot(ITEMS) {
       $("plan-title").textContent = "Where would you like to go?";
       $("plan-help").textContent = "Choose as many neighborhoods as you like, or leave it open.";
       var city = {}, burbs = {};
-      EVENTS.forEach(function (e) { if (e.hood && e.area !== "Out of town") (e.area === "Suburbs" ? burbs : city)[e.hood] = 1; });
+      PLAN_EVENTS.forEach(function (e) { if (e.hood && e.area !== "Out of town") (e.area === "Suburbs" ? burbs : city)[e.hood] = 1; });
       var chip = function (attr, label, n, disabled, pressed) {
         return '<button type="button" class="chip" ' + attr + (disabled ? " disabled" : "") + ' aria-pressed="' + pressed + '">' + esc(label) +
           '<span class="n">' + n + "</span></button>";
@@ -933,7 +980,8 @@ function boot(ITEMS) {
     if (ev.target.id === "plan-date-go") {
       var v = $("plan-date").value; if (!v) { $("plan-date").focus(); return; }
       var d = parseISO(v); if (d < T) { $("plan-date").focus(); return; }
-      plan.when = "date"; plan.ws = d; plan.we = d; plan.step = 1; renderStep(); $("plan-title").focus(); return;
+      plan.when = "date"; plan.ws = d; plan.we = d; plan.step = 1;
+      withPlanEvents(d, d, function () { renderStep(); $("plan-title").focus(); }); return;
     }
     var hc = ev.target.closest("[data-phood]");
     if (hc && !hc.disabled) {
@@ -959,7 +1007,9 @@ function boot(ITEMS) {
   });
   $("plan-back").addEventListener("click", function () {
     if (plan.step === 0) { show("home"); return; }
-    plan.step -= 1; renderStep(); $("plan-title").focus();
+    plan.step -= 1;
+    var back = function () { renderStep(); $("plan-title").focus(); };
+    if (plan.step === 0) withPlanEvents(T, add(T, 34), back); else back(); // the presets need the five weeks loaded
   });
   $("plan-next").addEventListener("click", function () {
     if (plan.step === 2) { plan.step = 3; renderStep(); $("plan-title").focus(); } else buildOuting();
@@ -1040,8 +1090,9 @@ function boot(ITEMS) {
     if (plan.budget !== "any") { var n1 = pool(plan.ws, plan.we, "any", plan.types, plan.hoods).length; if (n1) out.push(['data-relax="budget"', "Open up the budget", plural(n1, "event fits", "events fit") + " at any price"]); }
     if (!anyTypes) { var n2 = pool(plan.ws, plan.we, plan.budget, {}, plan.hoods).length; if (n2) out.push(['data-relax="types"', "Take any type of event", plural(n2, "event fits", "events fit")]); }
     if (!anyHoods) { var n4 = pool(plan.ws, plan.we, plan.budget, plan.types, {}).length; if (n4) out.push(['data-relax="hoods"', "Go anywhere in the city or suburbs", plural(n4, "event fits", "events fit")]); }
-    var wide = [T, add(T, 29)], n3 = pool(wide[0], wide[1], plan.budget, plan.types, plan.hoods).length;
-    if (n3 && !(same(plan.ws, wide[0]) && same(plan.we, wide[1]))) out.push(['data-relax="when"', "Look across the next 30 days", plural(n3, "event fits", "events fit")]);
+    var wide = [T, add(T, 29)], covered = PLAN_RANGE && wide[0] >= PLAN_RANGE[0] && wide[1] <= PLAN_RANGE[1];
+    var n3 = covered ? pool(wide[0], wide[1], plan.budget, plan.types, plan.hoods).length : 1; // not loaded: offer it anyway
+    if (n3 && !(same(plan.ws, wide[0]) && same(plan.we, wide[1]))) out.push(['data-relax="when"', "Look across the next 30 days", covered ? plural(n3, "event fits", "events fit") : "See what else is coming up"]);
     if (!out.length) return '<p class="hint">Try the catalog, where you can loosen one filter at a time.</p>';
     return '<div class="opts">' + out.map(function (o) { return optHTML(o[0], o[1], o[2], null); }).join("") + "</div>";
   }
@@ -1051,11 +1102,13 @@ function boot(ITEMS) {
     if (relax) {
       var r = relax.getAttribute("data-relax");
       if (r === "budget") plan.budget = "any"; else if (r === "types") plan.types = {}; else if (r === "hoods") plan.hoods = {}; else { plan.ws = T; plan.we = add(T, 29); plan.when = "month"; }
-      buildOuting(); return;
+      withPlanEvents(plan.ws, plan.we, buildOuting); return;
     }
     var swap = t.closest("[data-swap]");
     if (swap && pick) {
-      var e = BY_ID[swap.getAttribute("data-swap")], last = pick.stops.length - 1, old = pick.stops[last];
+      var sid = swap.getAttribute("data-swap"), e = pick.alts.filter(function (a) { return a.id === sid; })[0];
+      if (!e) return;
+      var last = pick.stops.length - 1, old = pick.stops[last];
       pick.stops[last] = e;
       pick.alts = pick.alts.filter(function (a) { return a.id !== e.id; }); pick.alts.push(old);
       renderOuting(); return;
@@ -1064,7 +1117,7 @@ function boot(ITEMS) {
       resetCatalog(); cat.cost = plan.budget || "any"; cat.types = {}; Object.keys(plan.types).forEach(function (k) { cat.types[k] = 1; });
       cat.when = "custom"; cat.custom = { ws: pick.ws, we: pick.we }; cat.where = "local";
       cat.hoods = {}; Object.keys(plan.hoods).forEach(function (k) { cat.hoods[k] = 1; });
-      renderCatalog(); show("catalog"); return;
+      loadCatalog(); show("catalog"); return;
     }
     if (t.id === "share-btn" && pick) {
       var url = shareUrl(), field = $("share-url"), msg = $("share-msg");
@@ -1081,7 +1134,7 @@ function boot(ITEMS) {
   function visible(name) { return !$("view-" + name).hidden; }
   function rerenderLists() {
     renderHome();
-    if (visible("catalog")) renderCatalog();
+    if (visible("catalog")) paintCatalog();
     if (visible("account")) renderAccount();
   }
   function onAuthChange() {
@@ -1105,17 +1158,17 @@ function boot(ITEMS) {
   function loadWent() {
     return api("/me/attended").then(readJSON).then(function (res) {
       if (!res.ok) return;
-      WENT = {}; WENT_LIST = res.body.map(function (row) { return fromApi(row.event); });
+      WENT = {}; WENT_LIST = res.body.map(function (row) { return toEvent(row.event); });
       WENT_LIST.forEach(function (e) { WENT[e.id] = true; });
       rerenderLists();
     }, function () {});
   }
-  function reloadEvents() {
-    return api("/events?include_past=true&limit=1000").then(readJSON).then(function (res) {
+  function reloadEvents() { // something was published: fresh counts, home list and catalog page
+    PLAN_RANGE = null;
+    return api("/events/facets?today=" + isoDate(T)).then(readJSON).then(function (res) {
       if (!res.ok) return;
-      setEvents(res.body.items);
-      buildCatalogControls();
-      rerenderLists();
+      setFacets(res.body); buildCatalogControls(); renderHome(); loadHome();
+      if (visible("catalog")) loadCatalog();
     }, function () {});
   }
   document.addEventListener("click", function (ev) {
@@ -1124,11 +1177,11 @@ function boot(ITEMS) {
     b.disabled = true;
     api("/me/attended/" + encodeURIComponent(id), { method: on ? "PUT" : "DELETE" }).then(function (r) {
       if (!r.ok) throw new Error(r.status);
-      if (on) { WENT[id] = true; if (BY_ID[id]) WENT_LIST.unshift(BY_ID[id]); }
+      if (on) { WENT[id] = true; if (KNOWN[id]) WENT_LIST.unshift(KNOWN[id]); }
       else { delete WENT[id]; WENT_LIST = WENT_LIST.filter(function (e) { return e.id !== id; }); }
       // update every copy of this card (home and catalog can both show it) without redrawing the grid
       Array.prototype.forEach.call(document.querySelectorAll('[data-went="' + id + '"]'), function (other) {
-        other.outerHTML = wentHTML(BY_ID[id] || { id: id });
+        other.outerHTML = wentHTML(KNOWN[id] || { id: id });
       });
       if (visible("account")) renderAccount();
       var again = document.querySelector('[data-went="' + id + '"]'); if (again && document.activeElement === document.body) again.focus();
@@ -1536,9 +1589,18 @@ function boot(ITEMS) {
     var h = (location.hash || "").replace(/^#/, "");
     var m = /^o-(\d{8})-(\d{8})((?:-[0-9a-z]{1,12}){1,3})$/.exec(h); // ids: new numbers, or the old site's 6-hex ids
     if (m) {
-      var stops = m[3].slice(1).split("-").map(function (id) { return BY_ID[id]; }).filter(Boolean);
-      pick = { ws: fromYmd(m[1]), we: fromYmd(m[2]), stops: stops, alts: [], total: stops.length, shared: true };
-      renderOuting(); return true;
+      var ids = m[3].slice(1).split("-");
+      api("/events/lookup?" + qs(ids.map(function (id) { return ["ids", id]; }))).then(readJSON).then(function (res) {
+        var found = res.ok ? res.body.map(toEvent) : [];
+        var stops = ids.map(function (id) { // keep the link's order; old links use the sheet's ids
+          return found.filter(function (e) { return e.id === id || e.sourceId === id; })[0];
+        }).filter(Boolean);
+        pick = { ws: fromYmd(m[1]), we: fromYmd(m[2]), stops: stops, alts: [], total: stops.length, shared: true };
+        renderOuting();
+      }, function () {
+        pick = { ws: fromYmd(m[1]), we: fromYmd(m[2]), stops: [], alts: [], total: 0, shared: true }; renderOuting();
+      });
+      return true;
     }
     if (h === "catalog") { renderCatalog(); show("catalog"); return true; }
     if (h === "plan") { startPlan(); return true; }
@@ -1549,16 +1611,17 @@ function boot(ITEMS) {
   }
   buildCatalogControls();
   renderHome();
-  renderCatalog();
+  loadHome();
   if (!openFromHash()) { /* welcome screen is already showing */ }
   window.addEventListener("hashchange", openFromHash);
   AUTH.onChange = onAuthChange;
   if (maybeSignedIn()) refreshSession(); // signed in on an earlier visit? the refresh cookie brings the session back
 }
 (function () {
-  // Past events too: the catalog's "Already closed" filter and old share links need them.
-  api("/events?include_past=true&limit=1000").then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-    .then(function (page) { boot(page.items); })
+  // Just the filter options and counts; each view then asks for the events it shows (CC-33).
+  var t = new Date(), today = t.getFullYear() + "-" + ("0" + (t.getMonth() + 1)).slice(-2) + "-" + ("0" + t.getDate()).slice(-2);
+  api("/events/facets?today=" + today).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (facets) { boot(facets); })
     .catch(function () {
       document.getElementById("home-lede").textContent = "The event list couldn't be loaded right now. Try reloading the page in a minute.";
     });
