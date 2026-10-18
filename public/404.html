@@ -8,29 +8,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@1,6..96,500&family=Schibsted+Grotesk:wght@400..700&display=swap">
 <style>
-/* Shown by CloudFront for any path that isn't on the site. Colors match index.html. */
-:root {
-  --paper: #F2F5F9; --surface: #FFFFFF; --ink: #141B2D; --sky: #BEE2F4; --sky-ink: #0F4C75; --star: #CF102D;
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --paper: #0D1320; --surface: #161E2E; --ink: #EAF0F7; --sky: #173B55; --sky-ink: #A9DBF5; --star: #FF6B7D;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --paper: #0D1320; --surface: #161E2E; --ink: #EAF0F7; --sky: #173B55; --sky-ink: #A9DBF5; --star: #FF6B7D;
+/* Shown by CloudFront for any path that isn't on the site. Colors match index.html (CC-48). */
+:root, :root[data-theme="dark"] {
+  --page: #0B1220; --surface: #141D2F; --text: #EAF0F8; --lead: #5CC8F5; --star: #FF5C70; --focus: #5CC8F5;
   color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --page: #F6F6F3; --surface: #FFFFFF; --text: #111111; --lead: #D62839; --star: #D62839; --focus: #1D4ED8;
+  color-scheme: light;
 }
 *, *::before, *::after { box-sizing: border-box; }
 body {
   margin: 0; min-height: 100vh; min-height: 100dvh; display: grid; place-items: center;
-  padding: 24px 16px; background: var(--paper); color: var(--ink);
+  padding: 24px 16px; background: var(--page); color: var(--text);
   font-family: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased;
 }
 main {
-  max-width: 34rem; text-align: center; background: var(--surface); border-block: 14px solid var(--sky);
+  max-width: 34rem; text-align: center; background: var(--surface); border-block: 14px solid var(--lead);
   padding: clamp(32px, 7vw, 56px) clamp(20px, 6vw, 48px); display: grid; gap: 18px; justify-items: center;
 }
 .star { width: 1.6rem; height: 1.6rem; fill: var(--star); }
@@ -39,8 +33,8 @@ h1 {
   font-size: clamp(1.6rem, 5vw, 2.3rem); line-height: 1.15; text-wrap: balance;
 }
 p { margin: 0; font-size: 1.125rem; }
-a { color: var(--sky-ink); font-weight: 700; text-underline-offset: 3px; }
-a:focus-visible { outline: 3px solid var(--sky-ink); outline-offset: 3px; }
+a { color: var(--lead); font-weight: 700; text-underline-offset: 3px; }
+a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 </style>
 </head>
 <body>
