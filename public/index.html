@@ -1077,6 +1077,7 @@ function boot(ITEMS) {
     $("nav-review").hidden = !isAdmin();
     WENT = {}; WENT_LIST = [];
     if (!AUTH.user) {
+      NOTICE_SET = false; $("account-notice").textContent = "";
       if (visible("review")) show("home");
       if (visible("submit")) renderSubmit();
       rerenderLists();
@@ -1252,12 +1253,34 @@ function boot(ITEMS) {
       msg.textContent = res.body.detail + " It expires in an hour.";
     });
   });
+  var RESEND_WAIT = 60; // seconds before "Send again" can be used, so a slow email isn't sent five times
+  function resendButton(label) { return ' <button class="textbtn" type="button" id="verify-resend">' + label + "</button>"; }
+  function resendCooldown() {
+    var b = $("verify-resend"), left = RESEND_WAIT; if (!b) return;
+    b.disabled = true; b.textContent = "Send again (" + left + "s)";
+    var t = setInterval(function () {
+      var cur = $("verify-resend");
+      if (!cur) { clearInterval(t); return; }
+      left -= 1;
+      if (left > 0) { cur.textContent = "Send again (" + left + "s)"; return; }
+      clearInterval(t); cur.disabled = false; cur.textContent = "Send again";
+    }, 1000);
+  }
   $("account-notice").addEventListener("click", function (ev) {
     var b = ev.target.closest("#verify-resend"); if (!b) return;
     b.disabled = true;
     api("/auth/verify-email/send", { method: "POST" }).then(readJSON, function () { return null; }).then(function (res) {
       NOTICE_SET = true;
-      $("account-notice").textContent = res && res.ok ? res.body.detail + " Open it to confirm your address." : errorText(res);
+      if (res && res.ok) {
+        $("account-notice").innerHTML = esc(res.body.detail) + " It can take a few minutes, so check your junk folder too. Didn't get it?" +
+          resendButton("Send again");
+        resendCooldown();
+      } else if (res && res.status === 400) { // confirmed in the meantime (e.g. on another device)
+        $("account-notice").textContent = errorText(res) + ".";
+        if (AUTH.user) AUTH.user.email_verified = true;
+      } else {
+        $("account-notice").innerHTML = esc(errorText(res)) + resendButton("Try again");
+      }
     });
   });
 
