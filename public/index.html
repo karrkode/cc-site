@@ -81,6 +81,7 @@ button, input, select { font: inherit; color: inherit; }
 a { color: inherit; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 [tabindex="-1"]:focus { outline: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .star { width: 1em; height: 1em; fill: var(--star); flex: none; }
 .wrap { max-width: 1120px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
 .eyebrow {
@@ -180,7 +181,8 @@ a { color: inherit; }
 .chip:hover { border-color: var(--lead); }
 .chip[aria-pressed="true"] { background: var(--lead); color: var(--on-lead); border-color: var(--lead); }
 .chip:disabled { opacity: 0.45; cursor: not-allowed; }
-.chip .n { font-weight: 500; opacity: 0.7; margin-left: 4px; font-variant-numeric: tabular-nums; }
+.chip .n { font-weight: 500; color: var(--muted); margin-left: 4px; font-variant-numeric: tabular-nums; }
+.chip[aria-pressed="true"] .n { color: inherit; } /* full contrast on the accent (CC-52: opacity made it 3.1:1) */
 .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 12px; }
 .field { display: grid; gap: 4px; min-width: 0; }
 .field label { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
@@ -378,6 +380,7 @@ footer p { max-width: 70ch; }
         <p id="tally" aria-live="polite"></p>
         <button class="textbtn" type="button" id="clear-filters">Clear filters</button>
       </div>
+      <h2 class="sr-only">Results</h2>
       <div class="grid" id="grid"></div>
       <div class="more-row" id="more-row" hidden><button class="btn ghost" type="button" id="more-btn">Show more</button></div>
     </section>
