@@ -230,6 +230,8 @@ a { color: inherit; }
 .panel { display: grid; gap: 14px; padding: clamp(16px, 3vw, 24px); background: var(--surface); border: 1px solid var(--line); border-radius: 2px; }
 .panel h2 { font-family: var(--display); font-weight: 500; font-size: var(--step-2); }
 .panel .btn { justify-self: start; }
+.panel-title { font-size: 1rem; font-weight: 700; }
+#password-form { margin-top: 12px; }
 .opt-label { text-transform: none; letter-spacing: 0; font-weight: 500; }
 .hint.small { font-size: 0.8125rem; }
 .form-error:empty { display: none; }
@@ -418,6 +420,17 @@ footer p { max-width: 70ch; }
             <p class="form-error" id="profile-error" role="alert"></p>
             <div class="row"><button class="btn" type="submit" id="profile-btn">Save changes</button><span class="hint" id="profile-msg" role="status"></span></div>
           </form>
+          <form class="panel" id="password-form" novalidate>
+            <h3 class="panel-title">Change password</h3>
+            <div class="field"><label for="pw-current">Current password</label><input id="pw-current" type="password" autocomplete="current-password" maxlength="200" required></div>
+            <div class="fields">
+              <div class="field"><label for="pw-new">New password</label><input id="pw-new" type="password" autocomplete="new-password" minlength="8" maxlength="72" required></div>
+              <div class="field"><label for="pw-confirm">New password again</label><input id="pw-confirm" type="password" autocomplete="new-password" maxlength="72" required></div>
+            </div>
+            <span class="hint small" id="pw-hint">At least 8 characters. Changing it signs you out on your other devices.</span>
+            <p class="form-error" id="password-error" role="alert"></p>
+            <div class="row"><button class="btn" type="submit" id="password-btn">Change password</button><span class="hint" id="password-msg" role="status"></span></div>
+          </form>
         </div>
       </div>
     </section>
@@ -529,7 +542,9 @@ function api(path, opts) {
       body: opts.body === undefined ? undefined : JSON.stringify(opts.body) });
   }
   return send().then(function (r) {
-    if (r.status !== 401 || !AUTH.token || opts.cookies) return r;
+    // Sign-in and sign-up send cookies and answer 401 for a wrong password, so they never retry;
+    // cookie requests that only 401 when the sign-in has expired opt in with refreshable.
+    if (r.status !== 401 || !AUTH.token || (opts.cookies && !opts.refreshable)) return r;
     return refreshSession().then(function (ok) { return ok ? send() : r; });
   });
 }
@@ -1104,6 +1119,7 @@ function boot(ITEMS) {
   function fillProfile() {
     $("p-name").value = AUTH.user.display_name || ""; $("p-email").value = AUTH.user.email;
     $("p-password").value = ""; $("p-password-field").hidden = true; $("profile-error").textContent = ""; $("profile-msg").textContent = "";
+    clearPasswordForm(); $("password-error").textContent = ""; $("password-msg").textContent = "";
   }
   function emailChanged() { return $("p-email").value.trim().toLowerCase() !== AUTH.user.email; }
   $("profile-form").addEventListener("input", function () {
@@ -1132,6 +1148,32 @@ function boot(ITEMS) {
       renderAccount(false); fillProfile();
       msg.textContent = "Saved.";
     });
+  });
+  // ---------- change password (CC-42) ----------
+  function clearPasswordForm() { ["pw-current", "pw-new", "pw-confirm"].forEach(function (id) { $(id).value = ""; }); }
+  $("password-form").addEventListener("input", function () { $("password-error").textContent = ""; $("password-msg").textContent = ""; });
+  $("password-form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var err = $("password-error"), msg = $("password-msg");
+    var current = $("pw-current").value, next = $("pw-new").value, again = $("pw-confirm").value;
+    var bad = !current ? ["pw-current", "Enter your current password."] :
+      next.length < 8 ? ["pw-new", "Use a new password of at least 8 characters."] :
+      next !== again ? ["pw-confirm", "The two new passwords don't match."] :
+      next === current ? ["pw-new", "The new password is the same as the current one."] : null;
+    if (bad) { err.textContent = bad[1]; $(bad[0]).focus(); return; }
+    var btn = $("password-btn"); btn.disabled = true; err.textContent = ""; msg.textContent = "Changing…";
+    api("/auth/password", { method: "POST", body: { current_password: current, new_password: next }, cookies: true, refreshable: true })
+      .then(readJSON, function () { return null; }).then(function (res) {
+        btn.disabled = false;
+        if (!res || !res.ok) {
+          msg.textContent = ""; err.textContent = errorText(res);
+          if (res && res.status === 403) { $("pw-current").value = ""; $("pw-current").focus(); }
+          return;
+        }
+        setSession(res.body); // this tab's new session; every other one has been signed out
+        clearPasswordForm();
+        msg.textContent = "Password changed. You're signed out on your other devices.";
+      });
   });
   function authForm(form, path, body, errEl) {
     var btn = form.querySelector('button[type="submit"]');
