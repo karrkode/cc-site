@@ -272,8 +272,8 @@ a { color: inherit; }
 .went:disabled { opacity: 0.6; cursor: progress; }
 /* plans (CC-55): a dolphin for interested, the ringed dolphin for going, and the picker under each card */
 .marks { display: flex; align-items: center; gap: 6px; }
-.dolphin { display: block; flex: none; width: 30px; height: 30px; margin-block: -4px; }
-.dolphin.going { width: 38px; height: 38px; margin-block: -8px; }
+.dolphin { display: block; flex: none; width: 26px; height: 26px; margin-block: -3px; }
+.dolphin.going { width: 33px; height: 33px; margin-block: -6px; }
 .card-foot .going-on { color: var(--plan); font-weight: 700; }
 .card-actions { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 8px; }
 .myplan { /* pops over the cards below, so opening it doesn't stretch the row */
@@ -281,9 +281,8 @@ a { color: inherit; }
   background: var(--surface); border: 1px solid var(--field-line); border-radius: var(--r-ctl); box-shadow: 0 10px 28px rgb(0 0 0 / 0.28);
 }
 .myplan .row { gap: 8px; }
-.myplan .row + .row { align-items: end; }
-.myplan .field { flex: 1 1 140px; }
-.myplan .field input { padding: 6px 8px; }
+.myplan .row + .row { flex-wrap: nowrap; }
+.myplan input[type="date"] { flex: 1 1 auto; min-width: 0; background: var(--page); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 5px 8px; }
 .myplan .went { padding: 6px 12px; }
 .myplan .form-error { font-size: 0.875rem; }
 .queue { display: grid; gap: 10px; }
@@ -801,8 +800,8 @@ function boot(FACETS_IN) {
   function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
   function cardHTML(e) {
     var st = status(e), mine = AUTH.user ? MYPLANS[e.id] : null, going = mine && mine.status === "going";
-    var dolphin = !mine ? "" : going ? '<img class="dolphin going" src="img/dolphin-going.webp" width="38" height="38" alt="">' :
-      '<img class="dolphin" src="img/dolphin-interested.webp" width="30" height="30" alt="Interested">';
+    var dolphin = !mine ? "" : going ? '<img class="dolphin going" src="img/dolphin-going.webp" width="33" height="33" alt="">' :
+      '<img class="dolphin" src="img/dolphin-interested.webp" width="26" height="26" alt="Interested">';
     return '<article class="card" data-card="' + esc(e.id) + '">' +
       '<div class="card-top"><span class="kind">' + esc(e.type) + '</span><span class="marks">' + dolphin +
       '<span class="pill ' + st.tone + '">' + esc(st.label) + "</span></span></div>" +
@@ -811,9 +810,11 @@ function boot(FACETS_IN) {
       (e.suggestedBy ? '<p class="credit">Suggested by ' + esc(e.suggestedBy) + "</p>" : "") + "</div>" +
       '<div class="card-foot">' + (going ? '<span class="going-on">Going ' + esc(goingDay(mine.date)) + "</span>" : "<span>" + esc(dateText(e)) + "</span>") +
       '<span class="cost' + (e.min === 0 ? " free" : "") + '">' + esc(costText(e)) + "</span></div>" +
-      (AUTH.user ? '<div class="card-actions">' + wentHTML(e) + myplanToggleHTML(e) + "</div>" + myplanHTML(e) : "") +
+      (AUTH.user ? '<div class="card-actions">' + (goingLater(e) && !WENT[e.id] ? "" : wentHTML(e)) + myplanToggleHTML(e) + "</div>" + myplanHTML(e) : "") +
       "</article>";
   }
+  // Committed to a day after today: "I've been" would be premature, so the card doesn't offer it.
+  function goingLater(e) { var mine = MYPLANS[e.id]; return !!mine && mine.status === "going" && parseISO(mine.date) > T; }
   function goingDay(iso) { var d = parseISO(iso); return d.getFullYear() === T.getFullYear() ? F.wmd.format(d) : F.mdy.format(d); }
   // The days you can say you're going: from today (or opening) to closing, at most two years out (the API's rule).
   function goingRange(e) {
@@ -825,7 +826,7 @@ function boot(FACETS_IN) {
     if (!mine && !goingRange(e)) return ""; // closed: nothing left to plan
     MYPLAN_SEQ += 1;
     return '<button type="button" class="went" data-myplan-toggle="' + esc(e.id) + '" aria-expanded="false" aria-controls="myplan-' + MYPLAN_SEQ + '">' +
-      '<span aria-hidden="true">' + (mine ? "" : "+ ") + "</span>" + (mine ? "Change plan" : "Add to plans") + "</button>";
+      (mine ? "Change plan" : "Interested?") + "</button>";
   }
   // The picker under a card: Interested, Going on a date (one-night events need no date field), or Clear.
   function myplanHTML(e) {
@@ -834,13 +835,13 @@ function boot(FACETS_IN) {
     var going = "";
     if (range && same(range[0], range[1])) {
       going = '<button type="button" class="went" data-myplan-going="' + id + '" data-date="' + isoDate(range[0]) + '" aria-pressed="' +
-        !!(mine && mine.status === "going") + '">Going ' + esc(goingDay(isoDate(range[0]))) + "</button>";
+        !!(mine && mine.status === "going") + '">Commit to ' + esc(goingDay(isoDate(range[0]))) + "</button>";
     } else if (range) {
       var value = mine && mine.date ? mine.date : isoDate(range[0]);
-      going = '<div class="field"><label for="myplan-date-' + n + '">Going on</label><input type="date" id="myplan-date-' + n +
-        '" min="' + isoDate(range[0]) + '" max="' + isoDate(range[1]) + '" value="' + esc(value) + '"></div>' +
-        '<button type="button" class="went" data-myplan-going="' + id + '" aria-pressed="' + !!(mine && mine.status === "going") + '">' +
-        (mine && mine.status === "going" ? "Change date" : "I'm going") + "</button>";
+      going = '<button type="button" class="went" data-myplan-going="' + id + '" aria-pressed="' + !!(mine && mine.status === "going") +
+        '" aria-describedby="myplan-date-' + n + '">Commit to</button>' +
+        '<input type="date" id="myplan-date-' + n + '" aria-label="Date for ' + esc(e.title) + '" min="' + isoDate(range[0]) +
+        '" max="' + isoDate(range[1]) + '" value="' + esc(value) + '">';
     }
     return '<div class="myplan" id="myplan-' + n + '" role="group" aria-label="Your plan for ' + esc(e.title) + '" hidden>' +
       '<div class="row"><button type="button" class="went" data-myplan-set="' + id + '" aria-pressed="' + !!(mine && mine.status === "interested") +
@@ -1389,7 +1390,7 @@ function boot(FACETS_IN) {
       $("account-notice").textContent = "";
     }
     $("myplans-grid").innerHTML = MYPLAN_LIST.length ? MYPLAN_LIST.map(cardHTML).join("") :
-      '<p class="hint" style="grid-column:1/-1">Use "Add to plans" on any event to mark it Interested, or say which day you\'re going.</p>';
+      '<p class="hint" style="grid-column:1/-1">Use "Interested?" on any event to mark it, or commit to the day you\'re going.</p>';
     $("went-grid").innerHTML = WENT_LIST.length ? WENT_LIST.map(cardHTML).join("") :
       '<p class="hint" style="grid-column:1/-1">Mark events with "I\'ve been" and they\'ll show up here.</p>';
     if (!withSubmissions) return;
