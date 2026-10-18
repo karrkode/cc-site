@@ -15,6 +15,7 @@ which the page calls from the browser. The infrastructure for both lives in cc-b
 ```
 public/index.html        the page (HTML, CSS and JavaScript in one file)
 public/404.html          shown by CloudFront for any missing path
+public/img/              images the page uses (the plan dolphins)
 scripts/check_pages.py   checks run in CI before every deploy
 .github/workflows/       CI/CD
 ```

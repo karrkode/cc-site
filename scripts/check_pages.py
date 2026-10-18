@@ -2,7 +2,7 @@
 
 For each page in public/: it parses, has a <title>, and every element the page's script
 looks up with $("id") exists somewhere in the file (in the HTML or in markup the script
-builds). Inline scripts are written to build/scripts/ so CI can syntax-check them with node.
+builds), and every img/ file it uses is in public/img/. Inline scripts are written to build/scripts/ so CI can syntax-check them with node.
 
     python3 scripts/check_pages.py
 """
@@ -64,6 +64,9 @@ def main() -> int:
         defined = set(re.findall(r'id="([\w-]+)"', text))
         for missing in sorted(looked_up - defined):
             problems.append(f'{path.name}: script looks up $("{missing}") but no element has that id')
+        for src in sorted(set(re.findall(r'src="(img/[^"]+)"', text))):
+            if not (PUBLIC / src).is_file():
+                problems.append(f"{path.name}: uses {src}, which isn't in public/")
         print(f"{path.name}: title {page.title.strip()!r}, {len(page.scripts)} inline script(s), "
               f"{len(looked_up)} element lookups checked")
     for p in problems:

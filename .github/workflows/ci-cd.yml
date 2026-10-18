@@ -56,6 +56,8 @@ jobs:
           # index.html is revalidated on every visit; the 404 page can be cached briefly
           aws s3 cp public/index.html "s3://$BUCKET/index.html" --cache-control no-cache --content-type "text/html; charset=utf-8"
           aws s3 cp public/404.html "s3://$BUCKET/404.html" --cache-control max-age=300 --content-type "text/html; charset=utf-8"
+          # images (the plan dolphins, CC-55): a day in browsers; the invalidation below refreshes CloudFront
+          aws s3 cp public/img "s3://$BUCKET/img/" --recursive --cache-control max-age=86400
 
       - name: Refresh CloudFront
         run: |
