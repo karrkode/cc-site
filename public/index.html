@@ -491,6 +491,18 @@ footer p { max-width: 70ch; }
     </section>
 
     <!-- Review queue (admins) -->
+    <section class="view" id="view-verify" hidden>
+      <div class="view-head">
+        <p class="eyebrow">Your account</p>
+        <h1 id="verify-title" tabindex="-1">Confirm your email address</h1>
+        <p>One click and you're done.</p>
+      </div>
+      <div class="panel">
+        <div class="row"><button class="btn" type="button" id="verify-btn">Confirm my email address</button></div>
+        <p class="form-error" id="verify-error" role="alert"></p>
+      </div>
+    </section>
+
     <section class="view" id="view-reset" hidden>
       <div class="view-head">
         <p class="eyebrow">Your account</p>
@@ -724,7 +736,7 @@ function boot(ITEMS) {
   }
 
   // ---------- views ----------
-  var VIEWS = { home: "home-title", catalog: "catalog-title", plan: "plan-title", account: "account-title", submit: "submit-title", review: "review-title", reset: "reset-title" };
+  var VIEWS = { home: "home-title", catalog: "catalog-title", plan: "plan-title", account: "account-title", submit: "submit-title", review: "review-title", reset: "reset-title", verify: "verify-title" };
   function show(name, focusId) {
     Object.keys(VIEWS).forEach(function (v) { $("view-" + v).hidden = v !== name; });
     ["catalog", "plan", "submit", "review", "account"].forEach(function (v) {
@@ -1197,6 +1209,17 @@ function boot(ITEMS) {
     try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
     return h.slice(prefix.length + 1);
   }
+  // The link opens a page with a button rather than confirming straight away: mail scanners
+  // (Outlook, Gmail, Proofpoint…) open every link in an email, but they don't press buttons.
+  var VERIFY_TOKEN = null;
+  function openVerify(token) {
+    VERIFY_TOKEN = token; $("verify-error").textContent = ""; $("verify-btn").disabled = false;
+    show("verify", "verify-btn");
+  }
+  $("verify-btn").addEventListener("click", function () {
+    if (!VERIFY_TOKEN) return;
+    this.disabled = true; confirmEmail(VERIFY_TOKEN); VERIFY_TOKEN = null;
+  });
   function confirmEmail(token) {
     openAccount("Confirming your email address…");
     api("/auth/verify-email", { method: "POST", body: { token: token } }).then(readJSON, function () { return null; }).then(function (res) {
@@ -1508,7 +1531,7 @@ function boot(ITEMS) {
 
   // ---------- start ----------
   function openFromHash() {
-    var verify = takeLinkToken("verify"); if (verify) { confirmEmail(verify); return true; }
+    var verify = takeLinkToken("verify"); if (verify) { openVerify(verify); return true; }
     var reset = takeLinkToken("reset"); if (reset) { openReset(reset); return true; }
     var h = (location.hash || "").replace(/^#/, "");
     var m = /^o-(\d{8})-(\d{8})((?:-[0-9a-z]{1,12}){1,3})$/.exec(h); // ids: new numbers, or the old site's 6-hex ids
