@@ -150,7 +150,8 @@ a { color: inherit; }
 .card:hover { border-color: var(--lead); }
 .card:has(h3 a:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; } /* keyboard focus on the card's link */
 .card h3 a:focus-visible { outline: none; } /* the whole card shows the focus ring */
-.card-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; min-height: 1.5rem; } /* the dolphin and pill drop to their own line when they don't fit (CC-62) */
+.card-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; min-height: 1.5rem; } /* never past the edge (CC-62) */
+.card-top .pill { margin-left: auto; }
 .kind { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .pill { font-size: 0.8125rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; background: var(--neutral-soft); color: var(--text); }
 .pill.soon-t { background: var(--second); color: var(--on-second); }
@@ -284,9 +285,9 @@ a { color: inherit; }
 .went[aria-pressed="true"] { background: var(--info-soft); color: var(--on-info-soft); border-color: transparent; }
 .went:disabled { opacity: 0.6; cursor: progress; }
 /* plans (CC-55): a dolphin for interested, the ringed dolphin for going, and the picker under each card */
-.marks { display: flex; align-items: center; gap: 6px; margin-left: auto; }
-.dolphin { display: block; flex: none; width: 26px; height: 26px; margin-block: -3px; }
-.dolphin.going { width: 33px; height: 33px; margin-block: -6px; }
+.card-foot .when { display: inline-flex; align-items: center; gap: 6px; }
+.dolphin { display: block; flex: none; width: 24px; height: 24px; margin-block: -4px; }
+.dolphin.going { width: 30px; height: 30px; margin-block: -7px; }
 .pill.mine { background: var(--info-soft); color: var(--on-info-soft); }
 .card-foot .going-on { color: var(--plan); font-weight: 700; }
 .card-actions { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 8px; }
@@ -854,21 +855,23 @@ function boot(FACETS_IN) {
   function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
   function cardHTML(e) {
     var st = status(e), mine = AUTH.user ? MYPLANS[e.id] : null, going = mine && mine.status === "going";
+    // The plan mark sits next to the date at the bottom of the card (CC-64; the top row had no room for it).
     // The dolphins are only for accounts that have them (CC-61, the owner's); everyone else gets a plain
-    // "Interested" label until their own look is designed. Going shows its date at the bottom either way.
-    var dolphin = !mine ? "" : !AUTH.user.dolphins ? (going ? "" : '<span class="pill mine">Interested</span>') :
-      going ? '<img class="dolphin going" src="img/dolphin-going.webp" width="33" height="33" alt="">' :
-      '<img class="dolphin" src="img/dolphin-interested.webp" width="26" height="26" alt="Interested">';
+    // "Interested" label until their own look is designed. Going shows "Going <date>" either way.
+    var mark = !mine ? "" : !AUTH.user.dolphins ? (going ? "" : '<span class="pill mine">Interested</span>') :
+      going ? '<img class="dolphin going" src="img/dolphin-going.webp" width="30" height="30" alt="">' :
+      '<img class="dolphin" src="img/dolphin-interested.webp" width="24" height="24" alt="Interested">';
     return '<article class="card" data-card="' + esc(e.id) + '">' +
-      '<div class="card-top"><span class="kind">' + esc(e.type) + '</span><span class="marks">' + dolphin +
-      '<span class="pill ' + st.tone + '">' + esc(st.label) + "</span></span></div>" +
+      '<div class="card-top"><span class="kind">' + esc(e.type) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
       '<h3><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a></h3>" +
       '<div class="card-body"><p class="where">' + placeHTML(e) + "</p>" +
       (e.suggestedBy ? '<p class="credit">Suggested by ' + esc(e.suggestedBy) + "</p>" : "") + "</div>" +
-      '<div class="card-foot">' + (going ? '<span class="going-on">Going ' + esc(goingDay(mine.date)) + "</span>" : "<span>" + esc(dateText(e)) + "</span>") +
+      '<div class="card-foot"><span class="when">' + mark + (going ? '<span class="going-on">Going ' + esc(goingDay(mine.date)) + "</span>" :
+        "<span>" + esc(dateText(e)) + "</span>") + "</span>" +
       '<span class="cost' + (e.min === 0 ? " free" : "") + '">' + esc(costText(e)) + "</span></div>" +
-      (AUTH.user ? '<div class="card-actions">' + (goingLater(e) && !WENT[e.id] ? "" : wentHTML(e)) + myplanToggleHTML(e) +
-        (isAdmin() ? editButtonHTML(e, "went") : "") + "</div>" + myplanHTML(e) : "") +
+      (AUTH.user ? '<div class="card-actions">' + (goingLater(e) && !WENT[e.id] ? "" : wentHTML(e)) +
+        (WENT[e.id] ? "" : myplanToggleHTML(e)) + // been already: nothing left to plan
+        (isAdmin() ? editButtonHTML(e, "went") : "") + "</div>" + (WENT[e.id] ? "" : myplanHTML(e)) : "") +
       "</article>";
   }
   // Committed to a day after today: "I've been" would be premature, so the card doesn't offer it.
@@ -1345,14 +1348,10 @@ function boot(FACETS_IN) {
       if (on && MYPLANS[id]) { // been: the server cleared the plan, so the card moves from plans to gone (CC-63)
         delete MYPLANS[id];
         $("myplan-live").textContent = "Moved to places you've gone: " + KNOWN[id].title;
-        return redrawCards(id, b.closest("[data-card]"), "[data-went]");
       }
-      // update every copy of this card (home and catalog can both show it) without redrawing the grid
-      Array.prototype.forEach.call(document.querySelectorAll('[data-went="' + id + '"]'), function (other) {
-        other.outerHTML = wentHTML(KNOWN[id] || { id: id });
-      });
-      if (visible("account")) renderAccount();
-      var again = document.querySelector('[data-went="' + id + '"]'); if (again && document.activeElement === document.body) again.focus();
+      // Redraw every copy of the card (home, catalog and account can all show it): marking it also takes
+      // away the plan button, and un-marking brings it back.
+      return redrawCards(id, b.closest("[data-card]"), "[data-went]");
     }).catch(function () { b.disabled = false; });
   });
 
