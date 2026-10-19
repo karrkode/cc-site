@@ -274,6 +274,7 @@ a { color: inherit; }
 .marks { display: flex; align-items: center; gap: 6px; }
 .dolphin { display: block; flex: none; width: 26px; height: 26px; margin-block: -3px; }
 .dolphin.going { width: 33px; height: 33px; margin-block: -6px; }
+.pill.mine { background: var(--info-soft); color: var(--on-info-soft); }
 .card-foot .going-on { color: var(--plan); font-weight: 700; }
 .card-actions { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 8px; }
 .myplan { /* pops over the cards below, so opening it doesn't stretch the row */
@@ -800,7 +801,10 @@ function boot(FACETS_IN) {
   function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
   function cardHTML(e) {
     var st = status(e), mine = AUTH.user ? MYPLANS[e.id] : null, going = mine && mine.status === "going";
-    var dolphin = !mine ? "" : going ? '<img class="dolphin going" src="img/dolphin-going.webp" width="33" height="33" alt="">' :
+    // The dolphins are only for accounts that have them (CC-61, the owner's); everyone else gets a plain
+    // "Interested" label until their own look is designed. Going shows its date at the bottom either way.
+    var dolphin = !mine ? "" : !AUTH.user.dolphins ? (going ? "" : '<span class="pill mine">Interested</span>') :
+      going ? '<img class="dolphin going" src="img/dolphin-going.webp" width="33" height="33" alt="">' :
       '<img class="dolphin" src="img/dolphin-interested.webp" width="26" height="26" alt="Interested">';
     return '<article class="card" data-card="' + esc(e.id) + '">' +
       '<div class="card-top"><span class="kind">' + esc(e.type) + '</span><span class="marks">' + dolphin +
