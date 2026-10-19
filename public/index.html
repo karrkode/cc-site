@@ -150,7 +150,7 @@ a { color: inherit; }
 .card:hover { border-color: var(--lead); }
 .card:has(h3 a:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; } /* keyboard focus on the card's link */
 .card h3 a:focus-visible { outline: none; } /* the whole card shows the focus ring */
-.card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 1.5rem; }
+.card-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; min-height: 1.5rem; } /* the dolphin and pill drop to their own line when they don't fit (CC-62) */
 .kind { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .pill { font-size: 0.8125rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; background: var(--neutral-soft); color: var(--text); }
 .pill.soon-t { background: var(--second); color: var(--on-second); }
@@ -271,7 +271,7 @@ a { color: inherit; }
 .went[aria-pressed="true"] { background: var(--info-soft); color: var(--on-info-soft); border-color: transparent; }
 .went:disabled { opacity: 0.6; cursor: progress; }
 /* plans (CC-55): a dolphin for interested, the ringed dolphin for going, and the picker under each card */
-.marks { display: flex; align-items: center; gap: 6px; }
+.marks { display: flex; align-items: center; gap: 6px; margin-left: auto; }
 .dolphin { display: block; flex: none; width: 26px; height: 26px; margin-block: -3px; }
 .dolphin.going { width: 33px; height: 33px; margin-block: -6px; }
 .pill.mine { background: var(--info-soft); color: var(--on-info-soft); }
