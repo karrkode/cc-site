@@ -18,6 +18,7 @@ public/404.html          shown by CloudFront for any missing path
 public/img/              images the page uses (the plan dolphins)
 scripts/check_pages.py   checks run in CI before every deploy
 .github/workflows/       CI/CD
+ARCHITECTURE.md          how the site, API, database and AWS parts fit together
 ```
 
 ## Run it locally
