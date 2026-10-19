@@ -150,7 +150,7 @@ a { color: inherit; }
 .card:hover { border-color: var(--lead); }
 .card:has(h3 a:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; } /* keyboard focus on the card's link */
 .card h3 a:focus-visible { outline: none; } /* the whole card shows the focus ring */
-.card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 1.5rem; }
+.card-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; min-height: 1.5rem; } /* the dolphin and pill drop to their own line when they don't fit (CC-62) */
 .kind { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .pill { font-size: 0.8125rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; background: var(--neutral-soft); color: var(--text); }
 .pill.soon-t { background: var(--second); color: var(--on-second); }
@@ -271,9 +271,10 @@ a { color: inherit; }
 .went[aria-pressed="true"] { background: var(--info-soft); color: var(--on-info-soft); border-color: transparent; }
 .went:disabled { opacity: 0.6; cursor: progress; }
 /* plans (CC-55): a dolphin for interested, the ringed dolphin for going, and the picker under each card */
-.marks { display: flex; align-items: center; gap: 6px; }
+.marks { display: flex; align-items: center; gap: 6px; margin-left: auto; }
 .dolphin { display: block; flex: none; width: 26px; height: 26px; margin-block: -3px; }
 .dolphin.going { width: 33px; height: 33px; margin-block: -6px; }
+.pill.mine { background: var(--info-soft); color: var(--on-info-soft); }
 .card-foot .going-on { color: var(--plan); font-weight: 700; }
 .card-actions { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 8px; }
 .myplan { /* pops over the cards below, so opening it doesn't stretch the row */
@@ -465,8 +466,8 @@ footer p { max-width: 70ch; }
       </div>
       <div id="signed-in" hidden>
         <div class="row"><p id="account-who"></p><button class="btn ghost" type="button" id="sign-out">Sign out</button></div>
-        <div class="section"><h2 id="myplans-title" tabindex="-1">Your plans</h2><div class="grid" id="myplans-grid"></div></div>
-        <div class="section"><h2>Where you've been</h2><div class="grid" id="went-grid"></div></div>
+        <div class="section"><h2 id="myplans-title" tabindex="-1">Oh the places you'll go</h2><div class="grid" id="myplans-grid"></div></div>
+        <div class="section"><h2>Oh the places you've gone…</h2><div class="grid" id="went-grid"></div></div>
         <div class="section"><h2>Events you've sent us</h2><div class="queue" id="my-submissions"></div></div>
         <div class="section"><h2>Your profile</h2>
           <form class="panel" id="profile-form" novalidate>
@@ -755,7 +756,7 @@ function boot(FACETS_IN) {
   }
   setFacets(FACETS_IN);
   var WENT = {}, WENT_LIST = [];
-  // Your plans (CC-55): MYPLANS[id] = { status: "interested" | "going", date: "YYYY-MM-DD" | null }.
+  // Your plans (CC-55; "Oh the places you'll go" on the account page): MYPLANS[id] = { status: "interested" | "going", date: "YYYY-MM-DD" | null }.
   var MYPLANS = {}, MYPLAN_LIST = [], MYPLAN_SEQ = 0;
   var TYPE_PLURAL = { "Theater": "theater", "Comedy": "comedy", "Concert": "concerts", "Visual Art": "visual art" };
 
@@ -800,7 +801,10 @@ function boot(FACETS_IN) {
   function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
   function cardHTML(e) {
     var st = status(e), mine = AUTH.user ? MYPLANS[e.id] : null, going = mine && mine.status === "going";
-    var dolphin = !mine ? "" : going ? '<img class="dolphin going" src="img/dolphin-going.webp" width="33" height="33" alt="">' :
+    // The dolphins are only for accounts that have them (CC-61, the owner's); everyone else gets a plain
+    // "Interested" label until their own look is designed. Going shows its date at the bottom either way.
+    var dolphin = !mine ? "" : !AUTH.user.dolphins ? (going ? "" : '<span class="pill mine">Interested</span>') :
+      going ? '<img class="dolphin going" src="img/dolphin-going.webp" width="33" height="33" alt="">' :
       '<img class="dolphin" src="img/dolphin-interested.webp" width="26" height="26" alt="Interested">';
     return '<article class="card" data-card="' + esc(e.id) + '">' +
       '<div class="card-top"><span class="kind">' + esc(e.type) + '</span><span class="marks">' + dolphin +
@@ -1284,6 +1288,11 @@ function boot(FACETS_IN) {
       if (!r.ok) throw new Error(r.status);
       if (on) { WENT[id] = true; if (KNOWN[id]) WENT_LIST.unshift(KNOWN[id]); }
       else { delete WENT[id]; WENT_LIST = WENT_LIST.filter(function (e) { return e.id !== id; }); }
+      if (on && MYPLANS[id]) { // been: the server cleared the plan, so the card moves from plans to gone (CC-63)
+        delete MYPLANS[id];
+        $("myplan-live").textContent = "Moved to places you've gone: " + KNOWN[id].title;
+        return redrawCards(id, b.closest("[data-card]"), "[data-went]");
+      }
       // update every copy of this card (home and catalog can both show it) without redrawing the grid
       Array.prototype.forEach.call(document.querySelectorAll('[data-went="' + id + '"]'), function (other) {
         other.outerHTML = wentHTML(KNOWN[id] || { id: id });
@@ -1306,14 +1315,16 @@ function boot(FACETS_IN) {
     return !mine ? "Plan cleared" : mine.status === "going" ? "Going on " + dayName(parseISO(mine.date)) : "Marked interested";
   }
   // Redraw every copy of this event's card (home, catalog and account can all show it), then put focus back
-  // on the same card's plan button, or on the "Your plans" heading if the card left that list.
-  function redrawCards(id, from) {
+  // on the same card's plan button (or focusOn), on the card in "places you've gone" if "I've been" moved
+  // it there, or on the plans heading if the card left that list.
+  function redrawCards(id, from, focusOn) {
     var list = from && from.parentElement.closest("[id]"), listId = list ? list.id : null; // the grid this card was in
     Array.prototype.forEach.call(document.querySelectorAll('[data-card="' + id + '"]'), function (c) { c.outerHTML = cardHTML(KNOWN[id]); });
     return loadMyPlans().then(function () {
       if (visible("account")) renderAccount();
       var card = listId && $(listId) ? $(listId).querySelector('[data-card="' + id + '"]') : null;
-      var target = card ? card.querySelector("[data-myplan-toggle]") : listId === "myplans-grid" ? $("myplans-title") : null;
+      if (!card && listId === "myplans-grid" && WENT[id]) card = $("went-grid").querySelector('[data-card="' + id + '"]');
+      var target = card ? card.querySelector(focusOn || "[data-myplan-toggle]") : listId === "myplans-grid" ? $("myplans-title") : null;
       if (target) target.focus();
     });
   }
