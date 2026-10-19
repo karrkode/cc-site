@@ -2,6 +2,20 @@
 
 This document uses the rules of ASD-STE100 Simplified Technical English. No STE checker has verified it.
 
+## Diagrams
+
+The overview shows the parts and how they connect.
+
+![Overview: the browser, the site, the API server and the AWS services](docs/architecture/1-overview.svg)
+
+This diagram shows what runs on the API server and the tables in the database.
+
+![Inside the API server: Caddy, the api container, the jobs and the database](docs/architecture/2-api-server.svg)
+
+This diagram shows how a change goes from a pull request to production.
+
+![How a change ships: pull request, checks, merge, then the site and API deploys](docs/architecture/3-deploy.svg)
+
 ## 1. General
 
 The Culture Crew app shows a list of cultural events in Chicago.
