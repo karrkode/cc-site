@@ -46,6 +46,23 @@
     <div class="row"><button class="btn" type="submit" id="vd-go">Save changes</button><button class="btn ghost" type="button" id="vd-cancel">Cancel</button></div>
   </form>
 </dialog>
+<dialog class="editor" id="hours-dialog" aria-labelledby="hd-heading">
+  <form id="hours-form" novalidate>
+    <h2 id="hd-heading">Hours</h2>
+    <p class="hint" id="hd-from"></p>
+    <fieldset class="hours"><legend>Opening hours</legend>
+      <p class="hint small">For museums and galleries, or a theater's box office. A late night is just that day's hours; a closing time after midnight is fine.</p>
+      <div class="hours-grid" id="hd-open"></div>
+    </fieldset>
+    <fieldset class="hours"><legend>Usual show times</legend>
+      <p class="hint small" id="hd-shows-hint">Start times, like “7:30 PM” or “2 PM, 7:30 PM”. Leave a day blank if there are no shows.</p>
+      <div class="hours-grid" id="hd-shows"></div>
+    </fieldset>
+    <p class="hint small">Used later to recommend only what's open or playing; not shown on event cards. Your changes are never replaced by what the checker finds.</p>
+    <p class="form-error" id="hd-error" role="alert"></p>
+    <div class="row"><button class="btn" type="submit" id="hd-save">Save hours</button><button class="btn ghost" type="button" id="hd-cancel">Cancel</button></div>
+  </form>
+</dialog>
 <dialog class="editor" id="edit-dialog" aria-labelledby="ed-heading">
   <form id="edit-form" novalidate>
     <h2 id="ed-heading">Edit event</h2>
@@ -443,6 +460,7 @@
         <div class="row"><button class="textbtn" type="button" data-go="review">Back to review</button></div>
       </div>
       <div class="filters"><div class="field"><label for="v-q">Find a venue</label><input id="v-q" type="search" maxlength="100" placeholder="Name or neighborhood" autocomplete="off"></div>
+        <div class="field"><label for="v-hours">Opening hours</label><select id="v-hours"><option value="">Any</option><option value="full">Every day filled in</option><option value="gaps">Some days missing</option></select></div>
         <label class="radio"><input type="checkbox" id="v-noregion"> Only venues without a side of town</label></div>
       <p class="hint" id="v-count" role="status" style="margin-top:14px"></p>
       <div class="queue" id="venue-list" style="margin-top:10px"></div>
@@ -463,6 +481,7 @@
 <script src="js/account.js?v=dev"></script>
 <script src="js/submit.js?v=dev"></script>
 <script src="js/admin.js?v=dev"></script>
+<script src="js/hours.js?v=dev"></script>
 <script src="js/found.js?v=dev"></script>
 <script src="js/start.js?v=dev"></script>
 </body>

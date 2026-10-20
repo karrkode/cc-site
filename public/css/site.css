@@ -377,3 +377,23 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .changes li { margin: 2px 0; }
 .skip-form { flex-basis: 100%; display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; }
 .skip-form fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+/* CC-78: venue hours */
+.editor fieldset.hours { border: 1px solid var(--line); border-radius: var(--r-card); padding: 12px 14px 14px; margin: 0; display: grid; gap: 10px; }
+.editor fieldset.hours legend { font-weight: 700; padding: 0 6px; }
+.hours-grid { display: grid; gap: 8px; }
+.hours-row { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); align-items: center; gap: 6px 12px; }
+.hours-row .day { font-weight: 600; }
+.hours-row select, .hours-row input { background: var(--page); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 7px 9px; min-width: 0; }
+.hours-row .times { grid-column: 2; display: flex; align-items: center; gap: 8px; }
+.hours-row .times input { flex: 1 1 0; min-width: 0; max-width: 9rem; }
+.hours-row .times[hidden] { display: none; }
+.hours-row:has(select) { grid-template-columns: 7.5rem auto minmax(0, 1fr); }
+.hours-row:has(select) .times { grid-column: auto; }
+@media (max-width: 520px) {
+  .hours-row, .hours-row:has(select) { grid-template-columns: 1fr 1fr; }
+  .hours-row .day { grid-column: 1 / -1; }
+  .hours-row:has(select) .times { grid-column: 1 / -1; gap: 6px; }
+  #hours-dialog { padding: 14px; }
+  .editor fieldset.hours { padding: 10px 8px 12px; }
+  .hours-row .times input { padding: 7px 6px; }
+}
