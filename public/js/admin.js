@@ -93,11 +93,15 @@ function loadVenues(focusId) {
 }
 function venueLabel(v) { return v.neighborhood ? v.name + " · " + v.neighborhood : v.name; }
 function venueMatches(v, q) { q = q.trim().toLowerCase(); return !q || (v.name + " " + v.neighborhood).toLowerCase().indexOf(q) >= 0; }
+// CC-78: opening hours are "filled in" for a day when it's open (with times) or closed; a day left out isn't known.
+function hoursComplete(v) { var h = v.open_hours || {}; return ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].every(function (d) { return d in h; }); }
 function paintVenues() {
-  var q = $("v-q").value, onlyUnplaced = $("v-noregion").checked;
-  var rows = VLIST.filter(function (v) { return venueMatches(v, q) && (!onlyUnplaced || !v.region); });
+  var q = $("v-q").value, onlyUnplaced = $("v-noregion").checked, hours = $("v-hours").value;
+  var rows = VLIST.filter(function (v) {
+    return venueMatches(v, q) && (!onlyUnplaced || !v.region) && (!hours || hoursComplete(v) === (hours === "full"));
+  });
   var unplaced = VLIST.filter(function (v) { return !v.region; }).length;
-  $("v-count").textContent = plural(rows.length, "venue", "venues") + (q.trim() || onlyUnplaced ? " match" : "") +
+  $("v-count").textContent = plural(rows.length, "venue", "venues") + (q.trim() || onlyUnplaced || hours ? " match" : "") +
     (rows.length > 200 ? ", showing the first 200. Search to narrow it down." : ".") +
     (unplaced && !onlyUnplaced ? " " + plural(unplaced, "venue has", "venues have") + " no side of town yet." : "");
   $("venue-list").innerHTML = rows.slice(0, 200).map(function (v) {
@@ -114,6 +118,7 @@ function paintVenues() {
 }
 $("v-q").addEventListener("input", paintVenues);
 $("v-noregion").addEventListener("change", paintVenues);
+$("v-hours").addEventListener("change", paintVenues);
 $("venue-list").addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-venue-edit],[data-venue-merge],[data-venue-delete]"); if (!b) return;
   var mode = b.hasAttribute("data-venue-edit") ? "edit" : b.hasAttribute("data-venue-merge") ? "merge" : "delete";
