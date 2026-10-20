@@ -1,5 +1,5 @@
 // Culture Crew site: opening the right view for the link, and starting the page.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, start); they share one
+// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- start ----------
@@ -30,11 +30,11 @@ function openFromHash() {
   if (h === "plan") { startPlan(); return true; }
   if (h === "account") { openAccount(); return true; }
   if (h === "submit") { openSubmit(); return true; }
-  // admin pages (the recap email links here, CC-77/81): #found, #found/<show> (e.g. #found/skipped), #sources,
+  // admin pages (the recap email links here, CC-77/81/84): #issues, #found, #found/<show> (e.g. #found/skipped), #sources,
   // and #source-<id> (Event sources, at that source's "Check by hand only" button)
   var fm = /^found\/(waiting|new|update|approved|rejected|skipped|listed|all)$/.exec(h), sm = /^source-(\d+)$/.exec(h);
-  if (h === "review" || h === "found" || h === "sources" || fm || sm) {
-    var open = h === "review" ? openReview : (h === "found" || fm) ? function () { if (fm) { FOUND.show = fm[1]; FOUND.source = ""; } openFound(); } :
+  if (h === "review" || h === "found" || h === "sources" || h === "issues" || fm || sm) {
+    var open = h === "review" ? openReview : h === "issues" ? openIssues : (h === "found" || fm) ? function () { if (fm) { FOUND.show = fm[1]; FOUND.source = ""; } openFound(); } :
       sm ? function () { openSources('[data-src-manual="' + sm[1] + '"]'); } : openSources;
     // On a fresh visit the sign-in comes back from the refresh cookie first; then open the page (or Sign in).
     (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(open);

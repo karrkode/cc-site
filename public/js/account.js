@@ -1,5 +1,5 @@
 // Culture Crew site: Signing in, your plans, "I've been", the account page, profile, email links and passwords.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, start); they share one
+// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- signed-in state ----------
@@ -11,14 +11,16 @@ function rerenderLists() {
   if (visible("account")) renderAccount();
 }
 function onAuthChange() {
+  showReportLink(); // "Report an issue" in the footer, signed in only (CC-84; issues.js)
   $("nav-account").innerHTML = AUTH.user ? 'Your account<span class="count" id="account-count"></span>' : "Sign in";
   $("nav-review").hidden = !isAdmin();
   WENT = {}; WENT_LIST = []; MYPLANS = {}; MYPLAN_LIST = [];
   if (!AUTH.user) {
     NOTICE_SET = false; $("account-notice").textContent = "";
-    if (visible("review") || visible("venues") || visible("stats") || visible("sources") || visible("found")) show("home");
+    if (visible("review") || visible("venues") || visible("stats") || visible("sources") || visible("found") || visible("issues")) show("home");
     if (visible("submit")) renderSubmit();
-    CREWS = []; buildCrewFilter(); PENDING = []; paintPending();
+    CREWS = []; buildCrewFilter(); PENDING = []; paintPending(); $("my-issues-section").hidden = true;
+    if ($("issue-dialog").open) $("issue-dialog").close();
     rerenderLists();
     return;
   }
@@ -30,6 +32,7 @@ function onAuthChange() {
   loadWent(); loadMyPlans().then(rerenderLists);
   loadCrews().then(function () { buildCrewFilter(); rerenderLists(); }); // crews to share plans with (CC-75)
   loadPending(true); // crew invites waiting for you (CC-59): the notice on sign-in
+  if (isAdmin()) updateIssuesCount();
 }
 function loadWent() {
   return api("/me/attended").then(readJSON).then(function (res) {
@@ -185,6 +188,7 @@ function renderAccount(withSubmissions) {
   if (!withSubmissions) return;
   fillProfile();
   loadCrews();
+  loadMyIssues(); // CC-84
   api("/me/submissions").then(readJSON).then(function (res) {
     if (!res.ok) return;
     var rows = res.body.map(fromApi);

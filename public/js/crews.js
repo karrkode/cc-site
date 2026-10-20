@@ -1,5 +1,5 @@
 // Culture Crew site: Culture crews (CC-74): "Your crews" on the account page, invite links, and joining.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, start); they share one
+// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // A member can be in several crews; any member can make an invite link (7 days, revocable by its maker or
