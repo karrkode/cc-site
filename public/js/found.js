@@ -1,5 +1,5 @@
 // Culture Crew site: Found events (admins, CC-71): what the event checker found, for review.
-// Loaded by index.html in order (core, util, catalog, planner, account, submit, admin, found, start); they share one
+// Loaded by index.html in order (core, util, catalog, planner, account, submit, admin, hours, found, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // GET /admin/discovery/items lists new events and proposed updates ("waiting"), or one status. New events are

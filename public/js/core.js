@@ -1,5 +1,5 @@
 // Culture Crew site: the theme button and talking to the API (sign-in, tokens, errors).
-// Loaded by index.html in order (core, util, catalog, planner, account, submit, admin, found, start); they share one
+// Loaded by index.html in order (core, util, catalog, planner, account, submit, admin, hours, found, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- light/dark switch (CC-49) ----------
