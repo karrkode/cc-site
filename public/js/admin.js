@@ -440,3 +440,68 @@ function paintTraffic(t) {
   var views = Object.keys(t.by_view).map(function (k) { return (VIEW_NAMES[k] || k) + " " + t.by_view[k]; });
   $("traffic-views").textContent = views.length ? "Views by section: " + views.join(" · ") : "";
 }
+
+// ---------- event sources (admins, CC-70) ----------
+// The discovery job runs hourly on the server and checks only the sources that are due. Here an
+// admin sees each source's last check (and why one couldn't be read), changes how often it's checked,
+// turns it off, or asks for a check at the next hourly run.
+var SOURCE_KINDS = { theater: "Theater", opera: "Opera", museum: "Museum", music: "Music", comedy: "Comedy" };
+var SOURCE_STATUS = { ok: ["Found changes", "ok"], unchanged: ["No changes", ""], blocked: ["Can't be read", "bad"], error: ["Check failed", "bad"], "": ["Not checked yet", ""] };
+var EVERY = [[7, "Every week"], [14, "Every 2 weeks"], [30, "Every month"], [60, "Every 2 months"]];
+function openSources() { if (!isAdmin()) { openAccount(); return; } show("sources"); loadSources(); }
+function loadSources(focusId) {
+  $("sources-status").textContent = "Loading…";
+  api("/admin/discovery/sources").then(readJSON).then(function (res) {
+    if (!res.ok) { $("sources-status").textContent = errorText(res); return; }
+    $("sources-status").textContent = ""; paintSources(res.body);
+    var b = focusId && $("sources-list").querySelector(focusId); if (b) b.focus();
+  }, function () { $("sources-status").textContent = errorText(null); });
+}
+function whenText(iso) { return iso ? short(new Date(iso)) : "never"; }
+function paintSources(o) {
+  var bad = o.sources.filter(function (s) { return s.last_status === "blocked" || s.last_status === "error"; }).length;
+  $("sources-summary").innerHTML =
+    "<div><strong>" + o.sources.length + "</strong><span>sources" + (bad ? ", " + bad + " to look at" : "") + "</span></div>" +
+    "<div><strong>" + o.sources.reduce(function (n, s) { return n + s.waiting; }, 0) + "</strong><span>found, waiting for review</span></div>" +
+    "<div><strong>$" + o.cost_30d_usd.toFixed(2) + "</strong><span>reading cost, last 30 days (" +
+      Math.round((o.tokens_in_30d + o.tokens_out_30d) / 1000) + "K tokens)</span></div>";
+  $("sources-list").innerHTML = o.sources.map(function (s) {
+    var st = SOURCE_STATUS[s.last_status] || [s.last_status, ""], id = esc(s.id);
+    var every = EVERY.some(function (e) { return e[0] === s.every_days; }) ? EVERY : EVERY.concat([[s.every_days, "Every " + s.every_days + " days"]]);
+    return '<div class="queue-item source"><div class="alt-text">' +
+      '<p class="alt-title">' + esc(s.name) + ' <span class="state ' + st[1] + '">' + esc(st[0]) + "</span>" + (s.active ? "" : ' <span class="state">Off</span>') + "</p>" +
+      '<p class="alt-meta">' + esc(SOURCE_KINDS[s.kind] || s.kind) + " · " + (s.reader === "aic_api" ? "the museum's own API" : plural(s.pages.length, "page", "pages")) +
+        " · last checked " + esc(whenText(s.last_checked_at)) + " · next " + (s.active ? (s.next_check_on ? esc(short(parseISO(s.next_check_on))) : "within the hour") : "off") +
+        (s.waiting ? " · " + plural(s.waiting, "item", "items") + " waiting" : "") + "</p>" +
+      (s.last_error ? '<p class="alt-meta source-error">' + esc(s.last_error) + "</p>" : "") +
+      (s.reader === "aic_api" ? "" : '<p class="alt-meta">' + s.pages.map(function (p) { return '<a href="' + esc(safeUrl(p)) + '" target="_blank" rel="noopener">' + esc(p.replace(/^https?:\/\/(www\.)?/, "")) + "</a>"; }).join(" · ") + "</p>") +
+      "</div>" +
+      '<div class="row"><label class="sr-only" for="src-every-' + id + '">How often to check ' + esc(s.name) + "</label>" +
+      '<select id="src-every-' + id + '" data-src-every="' + id + '">' + every.map(function (e) {
+        return '<option value="' + e[0] + '"' + (e[0] === s.every_days ? " selected" : "") + ">" + esc(e[1]) + "</option>"; }).join("") + "</select>" +
+      '<button class="btn neutral" type="button" data-src-check="' + id + '"' + (s.active ? "" : " disabled") + ' aria-label="Check ' + esc(s.name) + ' now">Check now</button>' +
+      '<button class="btn ghost" type="button" data-src-toggle="' + id + '" data-on="' + s.active + '" aria-label="' + (s.active ? "Turn off " : "Turn on ") + esc(s.name) + '">' + (s.active ? "Turn off" : "Turn on") + "</button>" +
+      "</div></div>";
+  }).join("");
+}
+$("sources-list").addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-src-check],[data-src-toggle]"); if (!b) return;
+  var check = b.hasAttribute("data-src-check"), id = b.getAttribute(check ? "data-src-check" : "data-src-toggle");
+  b.disabled = true;
+  var req = check ? api("/admin/discovery/sources/" + id + "/check", { method: "POST" })
+    : api("/admin/discovery/sources/" + id, { method: "PATCH", body: { active: b.getAttribute("data-on") !== "true" } });
+  req.then(readJSON).then(function (res) {
+    if (!res.ok) { b.disabled = false; $("sources-status").textContent = errorText(res); return; }
+    $("edit-live").textContent = check ? res.body.name + " will be checked within the hour." : res.body.name + (res.body.active ? " turned on." : " turned off.");
+    loadSources(check ? '[data-src-check="' + id + '"]' : '[data-src-toggle="' + id + '"]');
+  }, function () { b.disabled = false; $("sources-status").textContent = errorText(null); });
+});
+$("sources-list").addEventListener("change", function (ev) {
+  var sel = ev.target.closest("[data-src-every]"); if (!sel) return;
+  var id = sel.getAttribute("data-src-every");
+  api("/admin/discovery/sources/" + id, { method: "PATCH", body: { every_days: +sel.value } }).then(readJSON).then(function (res) {
+    if (!res.ok) { $("sources-status").textContent = errorText(res); return; }
+    $("edit-live").textContent = res.body.name + ": " + sel.options[sel.selectedIndex].text.toLowerCase() + ".";
+    loadSources('[data-src-every="' + id + '"]');
+  }, function () { $("sources-status").textContent = errorText(null); });
+});

@@ -217,11 +217,11 @@ function wentHTML(e) {
 }
 
 // ---------- views ----------
-var VIEWS = { home: "home-title", catalog: "catalog-title", plan: "plan-title", account: "account-title", submit: "submit-title", review: "review-title", venues: "venues-title", stats: "stats-title", reset: "reset-title", verify: "verify-title" };
+var VIEWS = { home: "home-title", catalog: "catalog-title", plan: "plan-title", account: "account-title", submit: "submit-title", review: "review-title", venues: "venues-title", stats: "stats-title", sources: "sources-title", reset: "reset-title", verify: "verify-title" };
 function show(name, focusId) {
   Object.keys(VIEWS).forEach(function (v) { $("view-" + v).hidden = v !== name; });
   ["catalog", "plan", "submit", "review", "account"].forEach(function (v) {
-    if (v === name || (v === "review" && (name === "venues" || name === "stats"))) $("nav-" + v).setAttribute("aria-current", "page"); else $("nav-" + v).removeAttribute("aria-current");
+    if (v === name || (v === "review" && (name === "venues" || name === "stats" || name === "sources"))) $("nav-" + v).setAttribute("aria-current", "page"); else $("nav-" + v).removeAttribute("aria-current");
   });
   window.scrollTo(0, 0);
   var h = $(focusId || VIEWS[name]); if (h) h.focus({ preventScroll: true });
@@ -236,6 +236,6 @@ document.addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-go]"); if (!b || !FACETS) return; // the views need the filter options; they load first
   var go = b.getAttribute("data-go");
   if (go === "plan") startPlan(); else if (go === "catalog") { renderCatalog(); show("catalog"); }
-  else if (go === "account") openAccount(); else if (go === "submit") openSubmit(); else if (go === "review") openReview(); else if (go === "venues") openVenues(); else if (go === "stats") openStats();
+  else if (go === "account") openAccount(); else if (go === "submit") openSubmit(); else if (go === "review") openReview(); else if (go === "venues") openVenues(); else if (go === "stats") openStats(); else if (go === "sources") openSources();
   else show("home");
 });

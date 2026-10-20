@@ -359,3 +359,11 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .traffic-chart rect.new { fill: var(--second); }
 .traffic-chart rect.ret { fill: var(--lead); }
 .sw.going + .sw, .interest-legend .sw:nth-of-type(2) { margin-left: 12px; }
+
+/* event sources (admins, CC-70) */
+.queue-item.source { align-items: start; }
+.queue-item.source .alt-title .state { font-size: 0.75rem; vertical-align: middle; margin-left: 4px; }
+.state.ok { background: var(--info-soft); color: var(--on-info-soft); }
+.state.bad { background: var(--danger-soft); color: var(--on-danger-soft); }
+.source-error { color: var(--on-danger-soft) !important; }
+.queue-item.source select { background: var(--page); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 8px 10px; color: var(--text); }
