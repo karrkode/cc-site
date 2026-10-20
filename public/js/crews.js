@@ -80,18 +80,73 @@ function capCrewHeights() {
   });
 }
 window.addEventListener("resize", function () { if (CREWS.length && visible("account")) capCrewHeights(); });
-// The crew's shared plans (CC-75): each event once, soonest first, with who's going or interested.
+// The crew's shared plans (CC-75): each event once, soonest first, with who's going or interested, in the
+// product owner's words: "Only you are interested in this…for now.", "Jordan R. is interested!",
+// "Three others are interested!" (the number is a button: hover shows the names; a tap opens them below).
+var NUMBER_WORDS = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve",
+  "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty", "Twenty-one", "Twenty-two",
+  "Twenty-three", "Twenty-four", "Twenty-five"];
+var CREWCOUNT_SEQ = 0;
+function shortName(name) { // "Jordan Reyes" -> "Jordan R."; one word stays as it is
+  var parts = String(name || "").trim().split(/\s+/);
+  return parts.length > 1 && /^[A-Za-z]/.test(parts[parts.length - 1]) ? parts[0] + " " + parts[parts.length - 1][0].toUpperCase() + "." : parts.join(" ");
+}
+function othersHTML(people, verb) { // "Jordan R. is interested!" or "<b><i>Three</i></b> others are interested!"
+  if (people.length === 1) {
+    var p = people[0];
+    return esc(shortName(p.name)) + " is " + verb + (verb === "going" && p.date ? " " + esc(goingDay(p.date)) : "") + "!";
+  }
+  CREWCOUNT_SEQ += 1;
+  var names = people.map(function (p) { return shortName(p.name) + (verb === "going" && p.date ? " (" + goingDay(p.date) + ")" : ""); }).join(", ");
+  var n = NUMBER_WORDS[people.length] || String(people.length);
+  return '<button type="button" class="crew-count" data-crew-count aria-expanded="false" aria-controls="crew-count-' + CREWCOUNT_SEQ + '" aria-label="' +
+    esc(n + " others: " + names) + '" data-names="' + esc(names) + '"><b><i>' + esc(n) + "</i></b></button> others are " + verb + "!" +
+    '<span class="crew-count-names" id="crew-count-' + CREWCOUNT_SEQ + '" hidden>' + esc(names) + "</span>";
+}
+function crewLineHTML(people) {
+  var you = people.filter(function (p) { return p.you; })[0], others = people.filter(function (p) { return !p.you; });
+  var going = others.filter(function (p) { return p.status === "going"; }), interested = others.filter(function (p) { return p.status !== "going"; });
+  var parts = [];
+  if (you && you.status === "going") parts.push("You\u2019re going" + (you.date ? " " + esc(goingDay(you.date)) : "") + ".");
+  if (going.length) parts.push(othersHTML(going, "going"));
+  if (interested.length) parts.push(othersHTML(interested, "interested"));
+  if (you && you.status !== "going") {
+    parts.push(interested.length ? "You are too." : going.length ? "You\u2019re interested." : "Only you are interested in this\u2026for now.");
+  }
+  return parts.join(" ");
+}
 function crewPlansHTML(c) {
   if (!c.plans.length) return '<p class="hint small">No plans shared yet. Use \u201cAdd to your crew?\u201d on an event you\u2019re interested in.</p>';
   return '<ul class="crew-plans" aria-labelledby="crew-p-' + esc(c.id) + '">' + c.plans.map(function (row) {
     var e = toEvent(row.event);
-    var who = row.people.map(function (p) {
-      return esc(p.you ? "You" : p.name) + " " + (p.status === "going" ? "going" + (p.date ? " " + esc(goingDay(p.date)) : "") : "interested");
-    }).join(" · ");
     return '<li><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" +
-      '<span class="hint small">' + esc(placeText(e)) + " · " + esc(dateText(e)) + "</span><span>" + who + "</span></li>";
+      '<span class="hint small">' + esc(placeText(e)) + " · " + esc(dateText(e)) + '</span><span class="crew-line">' + crewLineHTML(row.people) + "</span></li>";
   }).join("") + "</ul>";
 }
+// The names under a count: a tap (phones) opens them below the line; hovering or focusing shows them in one shared
+// tip on the page body (the views' fade-in transform would throw off a tip placed inside them).
+var CREW_TIP = null;
+function crewTip(b) {
+  if (!CREW_TIP) { CREW_TIP = document.createElement("div"); CREW_TIP.className = "crew-tip"; CREW_TIP.setAttribute("aria-hidden", "true"); document.body.appendChild(CREW_TIP); }
+  if (!b) { CREW_TIP.hidden = true; return; }
+  var r = b.getBoundingClientRect();
+  CREW_TIP.textContent = b.getAttribute("data-names"); CREW_TIP.hidden = false;
+  CREW_TIP.style.left = Math.max(8, Math.min(r.left, window.innerWidth - CREW_TIP.offsetWidth - 8)) + "px";
+  CREW_TIP.style.top = Math.max(8, r.top - CREW_TIP.offsetHeight - 8) + "px";
+}
+document.addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-crew-count]"); if (!b) return;
+  var names = $(b.getAttribute("aria-controls")), open = b.getAttribute("aria-expanded") !== "true";
+  b.setAttribute("aria-expanded", String(open)); if (names) names.hidden = !open;
+  crewTip(null);
+});
+document.addEventListener("pointerover", function (ev) {
+  var b = ev.target.closest && ev.target.closest("[data-crew-count]");
+  if (b && ev.pointerType === "mouse") crewTip(b); else if (!b) crewTip(null);
+});
+document.addEventListener("focusin", function (ev) { var b = ev.target.closest && ev.target.closest("[data-crew-count]"); crewTip(b || null); });
+window.addEventListener("scroll", function () { crewTip(null); }, true);
+
 function paintCrews() {
   $("crew-list").innerHTML = CREWS.map(crewHTML).join("");
   capCrewHeights();

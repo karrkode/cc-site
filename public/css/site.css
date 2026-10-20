@@ -431,3 +431,14 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .card .crew-note { margin-top: 6px; font-size: 0.875rem; color: var(--muted); }
 .crewshare .crewshare-h { font-weight: 600; margin-bottom: 2px; }
 .crewshare .radio { margin: 4px 0; }
+/* CC-75: "Three others are interested!": the number is a button; hover shows the names, a tap opens them below. */
+.crew-count { position: relative; padding: 0 1px; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+.crew-count:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+.crew-tip {
+  position: fixed; z-index: 30; max-width: 240px; padding: 6px 10px; border-radius: var(--r-ctl); background: var(--text); color: var(--page);
+  font-size: 0.8125rem; font-weight: 600; line-height: 1.35; pointer-events: none;
+}
+.crew-tip[hidden] { display: none; }
+.crew-count-names { display: block; margin-top: 4px; padding: 6px 10px; border-radius: var(--r-ctl); background: var(--info-soft); color: var(--on-info-soft); font-size: 0.875rem; font-weight: 600; }
+.crew-count-names[hidden] { display: none; }
+

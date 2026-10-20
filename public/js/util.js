@@ -183,9 +183,13 @@ document.addEventListener("click", function (ev) {
   b.setAttribute("aria-expanded", String(open)); if (note) note.hidden = !open;
 });
 // Committed to a day after today: "I've been" would be premature, so the card doesn't offer it.
-// "Ben and Maya from Thursday Theater are going" / "3 from Laughin Times are interested" (CC-75), per crew.
+// "Ben K. and Maya C. from Thursday Theater are going" / "3 from Laughin Times are interested" (CC-75), per crew.
 function crewNoteText(e) {
-  function who(names) { return names.length > 2 ? String(names.length) : names.length === 2 ? names[0] + " and " + names[1] : names[0]; }
+  function who(names) {
+    names = names.map(shortName); // "Maya C.", as on the crew boxes (crews.js)
+    return names.length > 2 ? (NUMBER_WORDS[names.length] || String(names.length)).toLowerCase() + " more" :
+      names.length === 2 ? names[0] + " and " + names[1] : names[0];
+  }
   return e.crewPlans.map(function (c) {
     var parts = [];
     if (c.going.length) parts.push(who(c.going) + " from " + c.crew_name + (c.going.length === 1 ? " is going" : " are going"));
