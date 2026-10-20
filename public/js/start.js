@@ -1,11 +1,15 @@
 // Culture Crew site: opening the right view for the link, and starting the page.
-// Loaded by index.html in order (core, util, catalog, planner, account, submit, admin, hours, found, start); they share one
+// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- start ----------
 function openFromHash() {
   var verify = takeLinkToken("verify"); if (verify) { openVerify(verify); return true; }
   var reset = takeLinkToken("reset"); if (reset) { openReset(reset); return true; }
+  var join = takeLinkToken("join"); if (join) { // an invite to a crew (CC-74): wait for the sign-in to come back, then show it
+    (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(function () { openJoin(join); });
+    return true;
+  }
   var h = (location.hash || "").replace(/^#/, "");
   var m = /^o-(\d{8})-(\d{8})((?:-[0-9a-z]{1,12}){1,3})$/.exec(h); // ids: new numbers, or the old site's 6-hex ids
   if (m) {

@@ -1,5 +1,5 @@
 // Culture Crew site: Plan an outing: the four questions, the pick and its backups, share links.
-// Loaded by index.html in order (core, util, catalog, planner, account, submit, admin, hours, found, start); they share one
+// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- planner ----------

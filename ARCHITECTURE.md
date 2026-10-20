@@ -77,6 +77,7 @@ The API has these groups of routes:
 | `/admin` | Review queue, scheduled events, withdrawn events, site stats | Admins only |
 | `/admin/discovery` | Event sources, found events, skip rules, the CSV download, the monthly budget | Admins only |
 | `/venues` | Show, rename, merge and delete venues. Set opening hours and show times. | All users can read. Admins can change. |
+| `/crews` | Start a crew, make invite links, join, leave. The owner renames, removes members, hands over or deletes. | Signed-in users. Only a crew's members can see it. |
 | `/traffic` | Count a page view, a click to an event's page, or a planned outing. No cookies. | All visitors (the site sends it) |
 
 ## 4. The database
@@ -93,6 +94,7 @@ The database has these main tables:
 - `venues`: the places where the events occur. Each venue keeps its opening hours and its usual show times.
 - `attended`: the "I've been" marks.
 - `plans`: the "interested" and "going" plans.
+- `crews`, `crew_members` and `crew_invites`: the culture crews. An invite keeps only a hash of its link.
 - `discovery_sources`, `discovered_items`, `discovery_checks` and `discovery_skip_rules`: event discovery (section 5).
 - `traffic_counts`, `traffic_visitors`, `traffic_visitor_days` and `user_active_days`: the counts for Site stats. These tables do not keep names or IP addresses.
 - `app_settings`: settings that an admin can change, for example the discovery budget.
