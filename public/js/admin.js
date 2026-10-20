@@ -1,0 +1,322 @@
+// Culture Crew site: Admin tools: the review queue, venues, and editing events.
+// Loaded by index.html in order (core, util, catalog, planner, account, submit, admin, start); they share one
+// global scope, so anything declared here is visible to the files after it.
+"use strict";
+// ---------- review queue (admins) ----------
+function submitterText(who) { // null: came from the sheet, or the account was deleted
+  if (!who) return "No submitter on record";
+  var mail = '<a href="mailto:' + esc(who.email) + '">' + esc(who.email) + "</a>";
+  return "Submitted by " + (who.display_name.trim() ? esc(who.display_name) + " (" + mail + ")" : mail);
+}
+function creditText(e) { return e.suggestedBy ? " · wants public credit" : e.creditMe ? " · wants credit, but has no name to show" : ""; }
+function queueItemHTML(e, actions) {
+  return '<div class="queue-item"><div class="alt-text"><p class="kind">' + esc(e.type) + '</p><p class="alt-title">' +
+    (e.url ? '<a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" : esc(e.title)) + "</p>" +
+    '<p class="alt-meta">' + esc(placeText(e)) + " · " + esc(e.b || e.n ? dateText(e) : "Dates not given") + " · " + esc(costText(e)) + "</p>" +
+    (e.submitter !== undefined ? '<p class="alt-meta">' + submitterText(e.submitter) + creditText(e) + "</p>" :
+      e.suggestedBy ? '<p class="alt-meta">Credited as "Suggested by ' + esc(e.suggestedBy) + '"</p>' : "") + "</div>" +
+    '<div class="row">' + actions + "</div></div>";
+}
+function openReview() { if (!isAdmin()) { openAccount(); return; } renderReview(); show("review"); }
+function updateReviewCount(n) {
+  if (n !== undefined) { $("review-count").textContent = n ? String(n) : ""; return; }
+  api("/admin/events?limit=1").then(readJSON).then(function (res) { if (res.ok) updateReviewCount(res.body.total); }, function () {});
+}
+var EMPTY = { "review-list": "Nothing waiting for review.", "scheduled-list": "Nothing scheduled.", "withdrawn-list": "Nothing withdrawn." };
+function renderReview() {
+  renderScheduled(); renderWithdrawn();
+  $("review-list").innerHTML = '<p class="hint">Loading…</p>';
+  api("/admin/events?limit=500").then(readJSON).then(function (res) {
+    if (!res.ok) { $("review-list").innerHTML = '<p class="form-error">' + esc(errorText(res)) + "</p>"; return; }
+    updateReviewCount(res.body.total);
+    $("review-list").innerHTML = res.body.items.length ? res.body.items.map(function (raw) {
+      var e = toEvent(raw);
+      return queueItemHTML(e, '<button class="btn" type="button" data-review="approve" data-id="' + esc(e.id) + '">Approve</button>' +
+        '<button class="btn ghost" type="button" data-review="reject" data-id="' + esc(e.id) + '">Reject</button>' + editButtonHTML(e, "btn ghost"));
+    }).join("") : '<p class="hint">Nothing waiting for review.</p>';
+    refocusAfterEdit();
+  }, function () { $("review-list").innerHTML = '<p class="form-error">' + esc(errorText(null)) + "</p>"; });
+}
+function renderScheduled() {
+  api("/admin/events/scheduled").then(readJSON).then(function (res) {
+    if (!res.ok) { $("scheduled-list").innerHTML = '<p class="form-error">' + esc(errorText(res)) + "</p>"; return; }
+    $("scheduled-list").innerHTML = res.body.length ? res.body.map(function (raw) {
+      var e = toEvent(raw);
+      return queueItemHTML(e, stateHTML(e) + '<button class="btn ghost" type="button" data-review="approve" data-id="' + esc(e.id) + '">Publish now</button>' +
+        editButtonHTML(e, "btn ghost"));
+    }).join("") : '<p class="hint">' + EMPTY["scheduled-list"] + "</p>";
+    refocusAfterEdit();
+  }, function () {});
+}
+function renderWithdrawn() { // CC-56: put back with Restore (approve), or edit / delete
+  api("/admin/events?status=withdrawn&limit=500").then(readJSON).then(function (res) {
+    if (!res.ok) { $("withdrawn-list").innerHTML = '<p class="form-error">' + esc(errorText(res)) + "</p>"; return; }
+    $("withdrawn-list").innerHTML = res.body.items.length ? res.body.items.map(function (raw) {
+      var e = toEvent(raw);
+      return queueItemHTML(e, '<button class="btn ghost" type="button" data-review="approve" data-id="' + esc(e.id) + '">Restore</button>' +
+        editButtonHTML(e, "btn ghost"));
+    }).join("") : '<p class="hint">' + EMPTY["withdrawn-list"] + "</p>";
+    refocusAfterEdit();
+  }, function () {});
+}
+function reviewClick(ev) {
+  var b = ev.target.closest("[data-review]"); if (!b) return;
+  var action = b.getAttribute("data-review"), item = b.closest(".queue-item"), list = item.parentNode;
+  Array.prototype.forEach.call(item.querySelectorAll("button"), function (x) { x.disabled = true; });
+  api("/admin/events/" + encodeURIComponent(b.getAttribute("data-id")) + "/" + action, { method: "POST" }).then(function (r) {
+    if (!r.ok) throw new Error(r.status);
+    var next = item.nextElementSibling || item.previousElementSibling;
+    item.remove();
+    if (!list.children.length) list.innerHTML = '<p class="hint">' + EMPTY[list.id] + "</p>";
+    updateReviewCount();
+    if (action === "approve") reloadEvents();
+    var focusTo = next && next.querySelector && next.querySelector("button"); (focusTo || $("review-title")).focus();
+  }).catch(function () { Array.prototype.forEach.call(item.querySelectorAll("button"), function (x) { x.disabled = false; }); });
+}
+$("review-list").addEventListener("click", reviewClick);
+$("scheduled-list").addEventListener("click", reviewClick);
+$("withdrawn-list").addEventListener("click", reviewClick);
+
+// ---------- venues (admins, CC-57) ----------
+// The list comes from GET /venues/manage (every venue, with how many events use it) and is filtered here.
+// One dialog does rename, merge (with a preview of what moves) and delete (only for unused venues).
+var VLIST = [], VDLG = null; // VDLG: { mode: "edit" | "merge" | "delete", v, opener }
+var AREA_LABEL = { city: "City", suburbs: "Suburbs", out_of_town: "Out of town" };
+function openVenues() { if (!isAdmin()) { openAccount(); return; } show("venues"); loadVenues(); }
+function loadVenues(focusId) {
+  $("v-count").textContent = "Loading…";
+  return api("/venues/manage").then(readJSON).then(function (res) {
+    if (!res.ok) { $("v-count").textContent = errorText(res); return; }
+    VLIST = res.body; paintVenues();
+    var b = focusId && $("venue-list").querySelector('[data-venue-edit="' + focusId + '"]');
+    if (b) b.focus();
+  }, function () { $("v-count").textContent = errorText(null); });
+}
+function venueLabel(v) { return v.neighborhood ? v.name + " · " + v.neighborhood : v.name; }
+function venueMatches(v, q) { q = q.trim().toLowerCase(); return !q || (v.name + " " + v.neighborhood).toLowerCase().indexOf(q) >= 0; }
+function paintVenues() {
+  var q = $("v-q").value, rows = VLIST.filter(function (v) { return venueMatches(v, q); });
+  $("v-count").textContent = plural(rows.length, "venue", "venues") + (q.trim() ? " match" : "") +
+    (rows.length > 200 ? ", showing the first 200. Search to narrow it down." : ".");
+  $("venue-list").innerHTML = rows.slice(0, 200).map(function (v) {
+    var id = esc(v.id);
+    return '<div class="queue-item"><div class="alt-text"><p class="alt-title">' + esc(v.name) + '</p><p class="alt-meta">' +
+      esc(v.neighborhood || "No neighborhood") + " · " + esc(AREA_LABEL[v.area] || v.area) + " · " + plural(v.events, "event", "events") +
+      (v.sheet_events ? " (" + v.sheet_events + " from the sheet)" : "") + "</p></div>" +
+      '<div class="row"><button class="btn ghost" type="button" data-venue-edit="' + id + '" aria-label="Edit ' + esc(venueLabel(v)) + '">Edit</button>' +
+      '<button class="btn ghost" type="button" data-venue-merge="' + id + '" aria-label="Merge ' + esc(venueLabel(v)) + ' into another venue">Merge…</button>' +
+      (v.events ? "" : '<button class="btn danger" type="button" data-venue-delete="' + id + '" aria-label="Delete ' + esc(venueLabel(v)) + '">Delete</button>') +
+      "</div></div>";
+  }).join("");
+}
+$("v-q").addEventListener("input", paintVenues);
+$("venue-list").addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-venue-edit],[data-venue-merge],[data-venue-delete]"); if (!b) return;
+  var mode = b.hasAttribute("data-venue-edit") ? "edit" : b.hasAttribute("data-venue-merge") ? "merge" : "delete";
+  var id = +b.getAttribute("data-venue-" + mode), v = VLIST.filter(function (x) { return x.id === id; })[0];
+  if (v) openVenueDialog(mode, v, b);
+});
+function openVenueDialog(mode, v, opener) {
+  VDLG = { mode: mode, v: v, opener: opener };
+  $("vd-heading").textContent = mode === "edit" ? "Edit " + v.name : mode === "merge" ? "Merge " + v.name + " into another venue" : "Delete " + v.name + "?";
+  $("vd-edit").hidden = mode !== "edit"; $("vd-merge").hidden = mode !== "merge"; $("vd-delete").hidden = mode !== "delete";
+  $("vd-go").textContent = mode === "edit" ? "Save changes" : mode === "merge" ? "Merge" : "Delete venue";
+  $("vd-go").className = mode === "delete" ? "btn danger solid" : "btn";
+  $("vd-sheet").hidden = !v.sheet_events || mode === "delete";
+  $("vd-sheet").textContent = plural(v.sheet_events, "of its events comes", "of its events come") + " from the Google Sheet. " +
+    "The nightly sync uses the sheet's venue names, so after a rename or merge those events go back to a venue with the sheet's name. Fix the name in the sheet as well.";
+  $("vd-error").textContent = ""; setVenueBusy(false);
+  if (mode === "edit") { $("vd-name").value = v.name; $("vd-hood").value = v.neighborhood; $("vd-area").value = v.area; }
+  if (mode === "merge") { $("vd-find").value = ""; fillMergeTargets(); }
+  if (mode === "delete") $("vd-delete").textContent = "No events use " + venueLabel(v) + ", so it can go. This can't be undone.";
+  $("venue-dialog").showModal();
+  (mode === "edit" ? $("vd-name") : mode === "merge" ? $("vd-find") : $("vd-cancel")).focus();
+}
+function fillMergeTargets() {
+  var v = VDLG.v, q = $("vd-find").value, keep = $("vd-into").value;
+  var others = VLIST.filter(function (x) { return x.id !== v.id && venueMatches(x, q); }).slice(0, 200);
+  $("vd-into").innerHTML = others.map(function (x) {
+    return '<option value="' + esc(x.id) + '">' + esc(venueLabel(x)) + " (" + plural(x.events, "event", "events") + ")</option>";
+  }).join("");
+  if (keep && $("vd-into").querySelector('option[value="' + keep + '"]')) $("vd-into").value = keep;
+  mergePreview();
+}
+function mergePreview() {
+  var v = VDLG.v, into = VLIST.filter(function (x) { return String(x.id) === $("vd-into").value; })[0];
+  $("vd-preview").textContent = !into ? ($("vd-into").options.length ? "Choose the venue to keep." : "No other venue matches.") :
+    plural(v.events, "event", "events") + " will move to " + venueLabel(into) + ", and " + venueLabel(v) + " will be removed.";
+}
+$("vd-find").addEventListener("input", fillMergeTargets);
+$("vd-into").addEventListener("change", mergePreview);
+function setVenueBusy(on) { Array.prototype.forEach.call($("venue-form").querySelectorAll("button, input, select"), function (x) { x.disabled = on; }); }
+$("vd-cancel").addEventListener("click", function () { $("venue-dialog").close(); });
+$("venue-form").addEventListener("input", function () { $("vd-error").textContent = ""; });
+$("venue-dialog").addEventListener("close", function () {
+  var was = VDLG; VDLG = null;
+  if (was && was.opener && document.contains(was.opener)) was.opener.focus();
+});
+$("venue-form").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var d = VDLG; if (!d) return;
+  var v = d.v, req, said, after = null;
+  if (d.mode === "edit") {
+    var name = $("vd-name").value.trim(), hood = $("vd-hood").value.trim(), body = {};
+    if (!name) { $("vd-error").textContent = "Give the venue a name."; $("vd-name").focus(); return; }
+    if (name !== v.name) body.name = name;
+    if (hood !== v.neighborhood) body.neighborhood = hood;
+    if ($("vd-area").value !== v.area) body.area = $("vd-area").value;
+    if (!Object.keys(body).length) { $("venue-dialog").close(); return; }
+    req = api("/venues/" + v.id, { method: "PATCH", body: body }); said = "Saved " + name + "."; after = v.id;
+  } else if (d.mode === "merge") {
+    var into = VLIST.filter(function (x) { return String(x.id) === $("vd-into").value; })[0];
+    if (!into) { $("vd-error").textContent = "Choose the venue to merge into."; $("vd-into").focus(); return; }
+    req = api("/venues/" + v.id + "/merge-into/" + into.id, { method: "POST" });
+    said = "Merged " + venueLabel(v) + " into " + venueLabel(into) + "."; after = into.id;
+  } else {
+    req = api("/venues/" + v.id, { method: "DELETE" }); said = "Deleted " + venueLabel(v) + ".";
+  }
+  setVenueBusy(true);
+  req.then(readJSON).then(function (res) {
+    if (!res.ok) { setVenueBusy(false); $("vd-error").textContent = errorText(res); return; }
+    $("edit-live").textContent = said;
+    VDLG = null; $("venue-dialog").close();
+    VENUES = null; // the submit form's venue list is out of date now
+    reloadEvents(); // cards show venue names
+    loadVenues(after).then(function () { if (!after || !document.activeElement || document.activeElement === document.body) $("venues-title").focus(); });
+  }, function () { setVenueBusy(false); $("vd-error").textContent = errorText(null); });
+});
+
+// ---------- edit, withdraw or delete an event (admins, CC-56) ----------
+// One dialog for every place an event shows (cards, the review lists). It sends only the fields that
+// changed, so an untouched price keeps the sheet's exact lowest price. Afterwards every list on the
+// page is updated in place, and focus goes back to the Edit button (or the view's heading if it's gone).
+var EDITING = null, REFOCUS = null; // the open edit; the event whose Edit button should get focus back
+function editButtonHTML(e, cls) {
+  return '<button type="button" class="' + cls + '" data-edit="' + esc(e.id) + '" aria-label="Edit ' + esc(e.title) + '">Edit</button>';
+}
+function openEditor(e, opener) {
+  EDITING = { e: e, opener: opener };
+  $("ed-heading").textContent = "Edit " + e.title;
+  $("ed-sheet").hidden = !e.sourceId;
+  $("ed-title").value = e.title; $("ed-category").value = e.type; $("ed-status").value = e.status || "approved";
+  $("ed-venue").value = e.venue; $("ed-hood").value = e.hood || "";
+  $("ed-begin").value = e.begin || ""; $("ed-end").value = e.end || ""; $("ed-open-run").checked = !!e.openRun;
+  $("ed-cost").value = e.costRaw || ""; $("ed-url").value = e.url || "";
+  $("ed-publish-at").value = e.publishAt ? localInputValue(e.publishAt) : "";
+  $("ed-withdraw").textContent = e.status === "withdrawn" ? "Restore" : "Withdraw";
+  $("ed-error").textContent = ""; $("ed-confirm").hidden = true; setEditorBusy(false);
+  $("edit-dialog").showModal(); $("ed-title").focus();
+}
+function closeEditor() { if ($("edit-dialog").open) $("edit-dialog").close(); }
+$("edit-dialog").addEventListener("close", function () { // Escape, Cancel or done: back to where the admin was
+  var was = EDITING; EDITING = null; if (!was) return;
+  REFOCUS = was.e.id;
+  var back = was.opener && document.contains(was.opener) ? was.opener :
+    Array.prototype.filter.call(document.querySelectorAll('[data-edit="' + was.e.id + '"]'), function (b) { return b.offsetParent; })[0];
+  var view = Object.keys(VIEWS).filter(function (v) { return visible(v); })[0];
+  (back || $(VIEWS[view] || "home-title")).focus();
+});
+// The review lists reload after an edit; if that took away the focused button, put focus back.
+function refocusAfterEdit() {
+  if (!REFOCUS || (document.activeElement && document.activeElement !== document.body)) return;
+  var b = Array.prototype.filter.call(document.querySelectorAll('[data-edit="' + REFOCUS + '"]'), function (x) { return x.offsetParent; })[0];
+  (b || $("review-title")).focus();
+}
+function setEditorBusy(on) {
+  Array.prototype.forEach.call($("edit-form").querySelectorAll("button, input, select"), function (x) { x.disabled = on; });
+}
+document.addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-edit]"); if (!b || !isAdmin()) return;
+  var e = KNOWN[b.getAttribute("data-edit")]; if (e) openEditor(e, b);
+});
+$("ed-cancel").addEventListener("click", closeEditor);
+$("edit-form").addEventListener("input", function () { $("ed-error").textContent = ""; });
+$("ed-open-run").addEventListener("change", function () { if (this.checked) $("ed-end").value = ""; });
+function editorFail(res, fieldId, text) {
+  setEditorBusy(false); $("ed-error").textContent = text || errorText(res); if (fieldId) $(fieldId).focus();
+}
+// The venue as an id: a known venue with this name and neighborhood, or a new one (admins may add venues).
+function venueIdFor(name, hood) {
+  function find(list) {
+    return (list || []).filter(function (v) { return v.name.toLowerCase() === name.toLowerCase() && v.neighborhood.toLowerCase() === hood.toLowerCase(); })[0];
+  }
+  var known = find(VENUES);
+  if (known) return Promise.resolve(known.id);
+  return api("/venues", { method: "POST", body: { name: name, neighborhood: hood } }).then(readJSON).then(function (res) {
+    if (res.ok) { if (VENUES) VENUES.push(res.body); return res.body.id; }
+    if (res.status !== 409) throw res;
+    return api("/venues?q=" + encodeURIComponent(name)).then(readJSON).then(function (r) { // added since we last looked
+      var v = r.ok && find(r.body); if (!v) throw res; return v.id;
+    });
+  });
+}
+$("edit-form").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var e = EDITING && EDITING.e; if (!e) return;
+  var title = $("ed-title").value.trim(), venue = $("ed-venue").value.trim(), hood = $("ed-hood").value.trim();
+  var begin = $("ed-begin").value || null, end = $("ed-end").value || null, url = $("ed-url").value.trim(), cost = $("ed-cost").value.trim();
+  var at = $("ed-publish-at").value ? new Date($("ed-publish-at").value) : null; // read as local time
+  var bad = !title ? ["ed-title", "Give the event's name."] : !venue ? ["ed-venue", "Say where it's happening."] :
+    (begin && end && end < begin) ? ["ed-end", "The closing date is before the opening date."] :
+    (url && !/^https?:\/\//i.test(url)) ? ["ed-url", "The link should start with https://"] :
+    (at && isNaN(at)) ? ["ed-publish-at", "Pick a date and time, or leave it blank."] : null;
+  if (bad) { editorFail(null, bad[0], bad[1]); return; }
+  var body = {}, openRun = $("ed-open-run").checked;
+  if (title !== e.title) body.title = title;
+  if ($("ed-category").value !== e.type) body.category = $("ed-category").value;
+  if ($("ed-status").value !== e.status) body.status = $("ed-status").value;
+  if (begin !== (e.begin || null)) body.begin_date = begin;
+  if (end !== (e.end || null)) body.end_date = end;
+  if (openRun !== !!e.openRun) body.open_run = openRun;
+  if (cost !== (e.costRaw || "")) { body.cost_text = cost; body.min_price = minPrice(cost); }
+  if (url !== (e.url || "")) body.url = url;
+  var wasAt = e.publishAt ? e.publishAt.getTime() : null, nowAt = at ? at.getTime() : null;
+  if (Math.floor((wasAt || 0) / 60000) !== Math.floor((nowAt || 0) / 60000)) body.publish_at = at ? at.toISOString() : null;
+  var venueChanged = venue.toLowerCase() !== e.venue.toLowerCase() || hood.toLowerCase() !== (e.hood || "").toLowerCase();
+  setEditorBusy(true); $("ed-error").textContent = "";
+  (venueChanged ? venueIdFor(venue, hood) : Promise.resolve(null)).then(function (venueId) {
+    if (venueId !== null && venueId !== e.venueId) body.venue_id = venueId;
+    if (!Object.keys(body).length) { closeEditor(); return; } // nothing changed
+    return saveEvent(e, body, "Saved changes to " + title + ".");
+  }).catch(function (res) { editorFail(res, "ed-venue"); });
+});
+function saveEvent(e, body, said) {
+  return api("/events/" + encodeURIComponent(e.id), { method: "PATCH", body: body }).then(readJSON).then(function (res) {
+    if (!res.ok) { editorFail(res); return; }
+    var updated = toEvent(res.body);
+    eventChanged(e.id, updated); $("edit-live").textContent = said; closeEditor();
+  }, function () { editorFail(null); });
+}
+$("ed-withdraw").addEventListener("click", function () {
+  var e = EDITING && EDITING.e; if (!e) return;
+  var restore = e.status === "withdrawn"; setEditorBusy(true);
+  saveEvent(e, { status: restore ? "approved" : "withdrawn" }, (restore ? "Restored " : "Withdrew ") + e.title + ".");
+});
+$("ed-delete").addEventListener("click", function () {
+  var e = EDITING && EDITING.e; if (!e) return;
+  $("ed-confirm-text").textContent = "Delete \u201c" + e.title + "\u201d for good? Everyone's \u201cI've been\u201d marks and plans for it go too, and it can't be undone." +
+    (e.sourceId ? " It's from the Google Sheet, so the nightly sync adds it back unless it's removed there." : "");
+  $("ed-confirm").hidden = false; $("ed-delete-no").focus();
+});
+$("ed-delete-no").addEventListener("click", function () { $("ed-confirm").hidden = true; $("ed-delete").focus(); });
+$("ed-delete-yes").addEventListener("click", function () {
+  var e = EDITING && EDITING.e; if (!e) return;
+  setEditorBusy(true);
+  api("/events/" + encodeURIComponent(e.id), { method: "DELETE" }).then(function (r) {
+    if (!r.ok && r.status !== 404) return readJSON(r).then(function (res) { editorFail(res); });
+    eventChanged(e.id, null); $("edit-live").textContent = "Deleted " + e.title + "."; closeEditor();
+  }, function () { editorFail(null); });
+});
+// Bring every list on the page in line with an edited (or deleted: null) event, without reloading them.
+function eventChanged(id, e) {
+  var live = !!e && e.status === "approved" && !(e.publishAt && e.publishAt > new Date());
+  function swap(list, keep) {
+    return keep ? list.map(function (x) { return x.id === id ? e : x; }) : list.filter(function (x) { return x.id !== id; });
+  }
+  if (!e) { delete KNOWN[id]; delete WENT[id]; delete MYPLANS[id]; }
+  var shown = CAT_ITEMS.length; CAT_ITEMS = swap(CAT_ITEMS, live); CAT_TOTAL -= shown - CAT_ITEMS.length;
+  SOON = swap(SOON, live); WENT_LIST = swap(WENT_LIST, !!e); MYPLAN_LIST = swap(MYPLAN_LIST, live);
+  rerenderLists();
+  if (visible("review")) renderReview();
+  if (isAdmin()) updateReviewCount();
+}
