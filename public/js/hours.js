@@ -81,7 +81,23 @@ function hoursFail(text, focusId) { setHoursBusy(false); $("hd-error").textConte
 $("hd-open").addEventListener("change", function (ev) {
   var sel = ev.target.closest("[data-hours-state]"); if (!sel) return;
   var k = sel.closest("[data-day]").getAttribute("data-day"); syncHoursRow(k);
-  if (sel.value === "open" && !$("hd-opens-" + k).value) $("hd-opens-" + k).focus();
+  if (sel.value === "open") { fillLikeEarlierDay(k); $("hd-opens-" + k).focus(); }
+});
+// Opening a day fills in real times (not just hints), so Tab keeps them: the nearest earlier open day's
+// hours, or 10 AM to 5 PM. Only empty boxes are filled.
+function fillLikeEarlierDay(k) {
+  var i = HOUR_DAYS.map(function (d) { return d[0]; }).indexOf(k), from = ["10 AM", "5 PM"];
+  for (var j = i - 1; j >= 0; j--) {
+    var p = HOUR_DAYS[j][0];
+    if ($("hd-state-" + p).value === "open" && $("hd-opens-" + p).value.trim() && $("hd-closes-" + p).value.trim()) {
+      from = [$("hd-opens-" + p).value.trim(), $("hd-closes-" + p).value.trim()]; break;
+    }
+  }
+  if (!$("hd-opens-" + k).value.trim()) $("hd-opens-" + k).value = from[0];
+  if (!$("hd-closes-" + k).value.trim()) $("hd-closes-" + k).value = from[1];
+}
+$("hours-form").addEventListener("focusin", function (ev) { // typing replaces a filled-in time
+  if (ev.target.matches && ev.target.matches('input[type="text"]')) ev.target.select();
 });
 $("hd-open").addEventListener("blur", function (ev) { // tidy a typed time: "9pm" -> "9 PM"
   var input = ev.target; if (!input.matches || !input.matches(".times input")) return;
