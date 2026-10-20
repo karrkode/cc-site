@@ -429,7 +429,5 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .crew ul.crew-plans a { font-weight: 600; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 @media (max-width: 700px) { .crew-cols { grid-template-columns: minmax(0, 1fr); } }
 .card .crew-note { margin-top: 6px; font-size: 0.875rem; color: var(--muted); }
-.crewshare { border: 0; margin: 0; }
-.crewshare legend { float: left; width: 100%; font-weight: 600; padding: 0; margin-bottom: 6px; } /* inside the box, not on its border */
-.crewshare legend + * { clear: both; }
+.crewshare .crewshare-h { font-weight: 600; margin-bottom: 2px; }
 .crewshare .radio { margin: 4px 0; }

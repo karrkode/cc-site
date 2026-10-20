@@ -217,13 +217,15 @@ function crewShareHTML(e) {
   var mine = MYPLANS[e.id];
   if (!mine || !CREWS.length) return "";
   var n = CREWSHARE_SEQ, on = mine.crews || [];
-  return '<fieldset class="myplan crewshare" id="crewshare-' + n + '" hidden><legend>Which crews can see your plan?</legend>' +
+  // a labelled group, not a fieldset: Safari draws a fieldset's legend outside a popover's border
+  return '<div class="myplan crewshare" id="crewshare-' + n + '" role="group" aria-labelledby="crewshare-h-' + n + '" hidden>' +
+    '<p class="crewshare-h" id="crewshare-h-' + n + '">Which crews can see your plan?</p>' +
     CREWS.map(function (c) {
       return '<label class="radio"><input type="checkbox" value="' + esc(c.id) + '"' + (on.indexOf(c.id) >= 0 ? " checked" : "") + "> " + esc(c.name) + "</label>";
     }).join("") +
     '<p class="hint small">Only members of the crews you tick see it.</p>' +
     '<div class="row"><button type="button" class="went" data-crewshare-save="' + esc(e.id) + '">Save</button></div>' +
-    '<p class="form-error" role="alert"></p></fieldset>';
+    '<p class="form-error" role="alert"></p></div>';
 }
 document.addEventListener("click", function (ev) {
   Array.prototype.forEach.call(document.querySelectorAll('[data-crewshare-toggle][aria-expanded="true"]'), function (open) {
