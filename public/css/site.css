@@ -484,4 +484,12 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .where-hoods { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 12px; padding-left: 4px; }
 .where-hoods .radio { font-weight: 400; }
 .where-foot { position: sticky; bottom: -14px; justify-content: flex-end; padding: 10px 0 0; background: var(--surface); }
+/* The dolphin filter buttons' hover text ("Events yours truly is interested in"), like the cards' dolphins */
+.chip.mine { position: relative; }
+.chip.mine .tip {
+  display: none; position: absolute; z-index: 5; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); width: max-content; max-width: 240px;
+  padding: 6px 10px; border-radius: var(--r-ctl); background: var(--text); color: var(--page);
+  font-size: 0.8125rem; font-weight: 600; line-height: 1.35; text-align: center; white-space: normal; pointer-events: none;
+}
+@media (hover: hover) { .chip.mine:hover .tip, .chip.mine:focus-visible .tip { display: block; } }
 
