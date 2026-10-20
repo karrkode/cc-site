@@ -146,6 +146,7 @@ function buildOuting() {
   var alts = (shows.length ? shows : art).filter(function (e) { return !used[e.id]; });
   pick = { ws: plan.ws, we: plan.we, stops: stops, alts: alts, total: all.length, shared: false };
   renderOuting();
+  if (stops.length) track("outing"); // an outing was actually planned (CC-68)
 }
 function whyText(e, ws, we) {
   if (oneNight(e)) return "One night only, " + dayName(e.b) + ".";

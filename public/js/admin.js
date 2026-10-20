@@ -332,7 +332,7 @@ var STAT_METRICS = [
   ["attended", "“I've been” marks", function () { return "events members say they went to"; }],
   ["submitted", "Events sent in", function () { return "suggestions from members"; }]
 ];
-function openStats() { if (!isAdmin()) { openAccount(); return; } show("stats"); loadStats(); loadInterest(); }
+function openStats() { if (!isAdmin()) { openAccount(); return; } show("stats"); loadStats(); loadTraffic(); loadInterest(); }
 function loadStats() {
   $("stats-status").textContent = "Loading…";
   api("/admin/stats?weeks=12&today=" + isoDate(T)).then(readJSON).then(function (res) {
@@ -399,3 +399,40 @@ function paintInterest(rows) {
 $("i-type").addEventListener("change", loadInterest);
 $("i-range").addEventListener("change", loadInterest);
 $("i-closed").addEventListener("change", loadInterest);
+
+// CC-68: visits over the last 30 days: totals, a daily chart of visitors (returning ones stacked under
+// new ones), and views of each part of the site. Counts only.
+var VIEW_NAMES = { home: "Home", catalog: "Catalog", plan: "Plan an outing", submit: "Submit", account: "Account",
+  review: "Review", venues: "Venues", stats: "Stats", reset: "Password reset", verify: "Email confirmation" };
+function loadTraffic() {
+  $("traffic-status").textContent = "Loading…";
+  api("/admin/stats/traffic?days=30&today=" + isoDate(T)).then(readJSON).then(function (res) {
+    if (!res.ok) { $("traffic-status").textContent = errorText(res); return; }
+    $("traffic-status").textContent = res.body.counting_since ? "" : "No visits counted yet.";
+    paintTraffic(res.body);
+  }, function () { $("traffic-status").textContent = errorText(null); });
+}
+function paintTraffic(t) {
+  var sum = function (k) { return t.days.reduce(function (n, d) { return n + d[k]; }, 0); };
+  $("traffic-summary").innerHTML =
+    "<div><strong>" + t.visitors + "</strong><span>visitors</span></div>" +
+    "<div><strong>" + pct(t.returning_visitors, t.visitors) + "</strong><span>came back (" + t.returning_visitors + ")</span></div>" +
+    "<div><strong>" + sum("views") + "</strong><span>page views</span></div>" +
+    "<div><strong>" + sum("tickets") + "</strong><span>clicks to an event's page</span></div>" +
+    "<div><strong>" + sum("outings") + "</strong><span>outings planned</span></div>";
+  var max = Math.max.apply(null, t.days.map(function (d) { return d.visitors; }).concat([1]));
+  var W = 600, H = 120, gap = 3, bw = (W - gap * (t.days.length - 1)) / t.days.length;
+  var bars = t.days.map(function (d, i) {
+    var x = (i * (bw + gap)).toFixed(1), hAll = d.visitors ? Math.max(3, Math.round(d.visitors / max * (H - 6))) : 1;
+    var hRet = d.visitors ? Math.round(hAll * d.returning / d.visitors) : 0, label = esc(short(parseISO(d.day))) + ": " +
+      plural(d.visitors, "visitor", "visitors") + ", " + d.returning + " returning, " + plural(d.views, "view", "views");
+    return '<g><title>' + label + '</title><rect x="' + x + '" y="' + (H - hAll) + '" width="' + bw.toFixed(1) + '" height="' + hAll + '" rx="2" class="new"></rect>' +
+      (hRet ? '<rect x="' + x + '" y="' + (H - hRet) + '" width="' + bw.toFixed(1) + '" height="' + hRet + '" rx="2" class="ret"></rect>' : "") + "</g>";
+  }).join("");
+  $("traffic-chart").innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="' +
+    esc("Visitors per day for 30 days, from " + Math.min.apply(null, t.days.map(function (d) { return d.visitors; })) + " to " + max +
+      "; today " + t.days[t.days.length - 1].visitors) + '">' + bars + "</svg>" +
+    '<div class="bars-axis"><span>' + esc(short(parseISO(t.days[0].day))) + "</span><span>Today</span></div>";
+  var views = Object.keys(t.by_view).map(function (k) { return (VIEW_NAMES[k] || k) + " " + t.by_view[k]; });
+  $("traffic-views").textContent = views.length ? "Views by section: " + views.join(" · ") : "";
+}

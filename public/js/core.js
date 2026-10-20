@@ -88,3 +88,42 @@ function errorText(res) {
   if (res.status === 429) return "Too many tries. Wait a minute and try again.";
   return "Something went wrong (error " + res.status + "). Try again.";
 }
+
+// ---------- counting visits (CC-68) ----------
+// No cookies. The browser keeps a random ID (localStorage) so the Stats page can tell new visitors from
+// returning ones; the footer says so and lets people turn it off. Nothing is sent when the browser asks
+// not to be tracked (Global Privacy Control), when counting is off, or for admins' own visits.
+var COUNTING = (function () {
+  var gpc = navigator.globalPrivacyControl === true, off = gpc, vid = null;
+  try { off = off || localStorage.getItem("cc_count") === "off"; } catch (e) {}
+  return { gpc: gpc, off: off, vid: vid };
+})();
+var COUNT_READY = null; // start.js sets this to the sign-in check, so admins' visits are known before counting
+function visitorId() {
+  if (COUNTING.vid) return COUNTING.vid;
+  try {
+    var v = localStorage.getItem("cc_vid");
+    if (!v) {
+      v = window.crypto && crypto.randomUUID ? crypto.randomUUID() :
+        Array.prototype.map.call(crypto.getRandomValues(new Uint8Array(16)), function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+      localStorage.setItem("cc_vid", v);
+    }
+    COUNTING.vid = v;
+  } catch (e) { COUNTING.vid = null; } // storage blocked: counted for the day only
+  return COUNTING.vid;
+}
+function track(kind, view) {
+  Promise.resolve().then(function () { return COUNT_READY; }).then(function () {
+    if (COUNTING.off || (AUTH.user && AUTH.user.role === "admin")) return;
+    // text/plain keeps this a "simple" request (no preflight); keepalive lets it finish as a link opens
+    return fetch(API + "/traffic", { method: "POST", credentials: "omit", keepalive: true, headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ kind: kind, view: view || "", vid: visitorId() }) });
+  }).catch(function () {});
+}
+function setCounting(on) {
+  COUNTING.off = !on;
+  try {
+    if (on) localStorage.removeItem("cc_count");
+    else { localStorage.setItem("cc_count", "off"); localStorage.removeItem("cc_vid"); COUNTING.vid = null; }
+  } catch (e) {}
+}

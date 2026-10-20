@@ -220,7 +220,13 @@ function show(name, focusId) {
   });
   window.scrollTo(0, 0);
   var h = $(focusId || VIEWS[name]); if (h) h.focus({ preventScroll: true });
+  track("view", name);
 }
+// A click out to an event's own page (tickets, showtimes) from a card or an outing (CC-68).
+document.addEventListener("click", function (ev) {
+  var a = ev.target.closest('a[target="_blank"]');
+  if (a && a.closest(".card, .outing, .alts")) track("ticket");
+});
 document.addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-go]"); if (!b || !FACETS) return; // the views need the filter options; they load first
   var go = b.getAttribute("data-go");
