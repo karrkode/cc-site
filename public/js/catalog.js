@@ -24,15 +24,12 @@ function renderHome() {
 $("soon-more").addEventListener("click", function () { resetCatalog(); cat.sort = "closing"; cat.when = "week"; loadCatalog(); show("catalog"); });
 
 // ---------- catalog ----------
-var cat = { q: "", types: {}, hoods: {}, mine: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null };
-function resetCatalog() { cat = { q: "", types: {}, hoods: {}, mine: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null }; }
-// CC-66: the dolphin filters, for every signed-in member: your interested and/or committed events.
-// (The dolphins on cards are still only for accounts with the dolphins setting, CC-61.)
+var cat = { q: "", types: {}, hoods: {}, picks: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null };
+function resetCatalog() { cat = { q: "", types: {}, hoods: {}, picks: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null }; }
+// CC-66: the dolphin filters, for every visitor: the owner's picks (interested and/or committed).
 function syncMineChips() {
-  var on = !!AUTH.user;
-  $("mine-chips").hidden = !on;
   Array.prototype.forEach.call($("mine-chips").children, function (b) {
-    b.setAttribute("aria-pressed", String(!!cat.mine[b.getAttribute("data-mine")]));
+    b.setAttribute("aria-pressed", String(!!cat.picks[b.getAttribute("data-mine")]));
   });
 }
 function catWindow() {
@@ -83,7 +80,7 @@ function catalogParams() {
   if (cat.when === "past") p.push(["ended_before", isoDate(T)]);
   else { if (w[0]) p.push(["from", isoDate(w[0])]); if (w[1]) p.push(["to", isoDate(w[1])]); }
   Object.keys(cat.types).forEach(function (t) { p.push(["category", t]); });
-  Object.keys(cat.mine).forEach(function (m) { p.push(["mine", m]); });
+  Object.keys(cat.picks).forEach(function (m) { p.push(["picks", m]); });
   if (COST_MAX[cat.cost]) p.push(["max_price", COST_MAX[cat.cost]]);
   (WHERE_AREAS[cat.where] || []).forEach(function (a) { p.push(["area", a]); });
   if (cat.where.indexOf("h:") === 0) p.push(["hood", cat.where.slice(2)]);
@@ -111,8 +108,8 @@ function paintCatalog(focusFrom) {
   $("tally").innerHTML = "<strong>" + CAT_TOTAL + "</strong> " + (CAT_TOTAL === 1 ? "event" : "events") + (cat.when === "past" ? " already closed" : "") +
     (CAT_ITEMS.length < CAT_TOTAL ? ", showing " + CAT_ITEMS.length : "");
   syncMineChips();
-  $("grid").innerHTML = CAT_ITEMS.length ? CAT_ITEMS.map(cardHTML).join("") : Object.keys(cat.mine).length ?
-    '<div class="empty" style="grid-column:1/-1"><p><strong>None of your plans match.</strong></p><p class="hint">Use \u201cInterested?\u201d on an event to add it, or widen the other filters.</p></div>' :
+  $("grid").innerHTML = CAT_ITEMS.length ? CAT_ITEMS.map(cardHTML).join("") : Object.keys(cat.picks).length ?
+    '<div class="empty" style="grid-column:1/-1"><p><strong>No picks match.</strong></p><p class="hint">Widen the other filters, or turn off the dolphin filters to see everything.</p></div>' :
     '<div class="empty" style="grid-column:1/-1"><p><strong>Nothing matches those filters.</strong></p><p class="hint">Try a wider date range or a higher price limit.</p></div>';
   $("more-row").hidden = CAT_ITEMS.length >= CAT_TOTAL; $("more-btn").disabled = false;
   if (focusFrom) { var first = $("grid").children[focusFrom]; var a = first && first.querySelector("h3 a"); if (a) a.focus(); }
@@ -135,7 +132,7 @@ $("type-chips").addEventListener("click", function (ev) {
 $("mine-chips").addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-mine]"); if (!b) return;
   var m = b.getAttribute("data-mine");
-  if (cat.mine[m]) delete cat.mine[m]; else cat.mine[m] = 1;
+  if (cat.picks[m]) delete cat.picks[m]; else cat.picks[m] = 1;
   renderCatalog();
 });
 $("clear-filters").addEventListener("click", function () { resetCatalog(); renderCatalog(); $("f-q").focus(); });

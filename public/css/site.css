@@ -276,6 +276,16 @@ a { color: inherit; }
 .dolphin { display: block; flex: none; width: 24px; height: 24px; margin-block: -4px; }
 .dolphin.going { width: 30px; height: 30px; margin-block: -7px; }
 .pill.mine { background: var(--info-soft); color: var(--on-info-soft); }
+/* CC-66: the owner's picks. The dolphin is a button: hover shows what it means, a tap opens it in the card. */
+.pick { position: relative; z-index: 1; display: inline-grid; place-items: center; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 999px; }
+.pick:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.pick .tip {
+  display: none; position: absolute; z-index: 4; bottom: calc(100% + 8px); left: -6px; width: max-content; max-width: 230px;
+  padding: 6px 10px; border-radius: var(--r-ctl); background: var(--text); color: var(--page);
+  font-size: 0.8125rem; font-weight: 600; line-height: 1.35; text-align: left; white-space: normal;
+}
+@media (hover: hover) { .pick:hover .tip, .pick:focus-visible .tip { display: block; } }
+.pick-note { position: relative; z-index: 1; margin: 0; padding: 8px 10px; border-radius: var(--r-ctl); background: var(--info-soft); color: var(--on-info-soft); font-size: 0.875rem; font-weight: 600; }
 .card-foot .going-on { color: var(--plan); font-weight: 700; }
 .card-actions { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 8px; }
 .myplan { /* pops over the cards below, so opening it doesn't stretch the row */

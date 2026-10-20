@@ -11,7 +11,6 @@ function rerenderLists() {
   if (visible("account")) renderAccount();
 }
 function onAuthChange() {
-  if (Object.keys(cat.mine).length) { cat.mine = {}; if (visible("catalog")) renderCatalog(); } // someone else's plans? never
   $("nav-account").textContent = AUTH.user ? "Your account" : "Sign in";
   $("nav-review").hidden = !isAdmin();
   WENT = {}; WENT_LIST = []; MYPLANS = {}; MYPLAN_LIST = [];
@@ -78,7 +77,17 @@ function myplanSaid(mine) {
 // Redraw every copy of this event's card (home, catalog and account can all show it), then put focus back
 // on the same card's plan button (or focusOn), on the card in "places you've gone" if "I've been" moved
 // it there, or on the plans heading if the card left that list.
+// An owner's plans are the public picks (CC-66): after one changes, get the event's pick again first.
+function refreshPick(id) {
+  if (!AUTH.user || !AUTH.user.dolphins || !KNOWN[id]) return Promise.resolve();
+  return api("/events/lookup?ids=" + encodeURIComponent(id)).then(readJSON).then(function (res) {
+    if (res.ok && res.body[0]) KNOWN[id].pick = fromApi(res.body[0]).pick; // the same object every list holds
+  }, function () {});
+}
 function redrawCards(id, from, focusOn) {
+  return refreshPick(id).then(function () { return redrawCardsNow(id, from, focusOn); });
+}
+function redrawCardsNow(id, from, focusOn) {
   var list = from && from.parentElement.closest("[id]"), listId = list ? list.id : null; // the grid this card was in
   Array.prototype.forEach.call(document.querySelectorAll('[data-card="' + id + '"]'), function (c) { c.outerHTML = cardHTML(KNOWN[id]); });
   return loadMyPlans().then(function () {
