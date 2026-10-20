@@ -3,7 +3,7 @@
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- planner ----------
-var plan = { step: 0, when: null, ws: null, we: null, budget: null, types: {}, regions: {} };
+var plan = { step: 0, when: null, ws: null, we: null, slot: "day", budget: null, types: {}, regions: {} };
 var pick = null; // { ws, we, stops: [event], alts: [event], total, shared }
 var BUDGETS = [["free", "Free", "No ticket cost"], ["u40", "Under $40", "Tickets start below $40"], ["u100", "Under $100", "Tickets start below $100"], ["any", "Any price", "Includes events with no price posted yet"]];
 
@@ -20,17 +20,84 @@ function withPlanEvents(ws, we, then) {
     .then(function (page) { PLAN_EVENTS = page.items; PLAN_RANGE = [from, to]; then(); },
           function () { $("plan-opts").innerHTML = '<p class="form-error">The events couldn\'t be loaded. Check your connection and try again.</p>'; });
 }
-// regions (CC-73): the sides of town chosen in question 4. None chosen means anywhere nearby: the city
-// and suburbs, as before; out-of-town events only come in when "Out of town" is chosen.
-function pool(ws, we, budget, types, regions) {
-  var anyType = !types || Object.keys(types).length === 0, anyRegion = !regions || Object.keys(regions).length === 0;
-  return PLAN_EVENTS.filter(function (e) {
-    return !isPast(e) && overlaps(e, ws, we) && costOk(e, budget || "any") && (anyType || !!types[e.type]) &&
-      (anyRegion ? e.region !== "out_of_town" && e.area !== "Out of town" : !!regions[e.region]);
+// ---------- what's actually on (CC-79) ----------
+// The planner only suggests what's happening when you can go. A performance needs a schedule: its own
+// dates and times (from the venue's site), else a weekly pattern (its own, else the venue's show times);
+// with neither it's never suggested here (it's still in the catalog). An exhibition is on when its venue
+// is open; a venue whose hours aren't known yet counts as open 10 AM to 5 PM, but never for Tonight,
+// which needs a known late night. Days marked Closed always count. Holidays aren't tracked.
+// slot: "day" (any time that day), "today" (before 5 PM), "tonight" (5 PM or later; exhibitions open past 6 PM).
+// On today, anything already started or already closed is left out.
+var DOW = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"], EVENING = "17:00", LATE = "18:00", USUAL = ["10:00", "17:00"];
+function clockNow() { var d = new Date(); return ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2); }
+function isExhibit(e) { return isArt(e) && !e.sched.dates.length; } // a talk or opening with its own times is a performance
+// Start times on day d ("" = a date without a time), or null when there's no schedule to go by.
+function timesOn(e, d) {
+  var iso = isoDate(d), dates = e.sched.dates, weekly = e.sched.weekly || {};
+  if (dates.length && iso >= dates[0].date && iso <= dates[dates.length - 1].date) {
+    return dates.filter(function (p) { return p.date === iso; }).map(function (p) { return p.time || ""; });
+  }
+  if (Object.keys(weekly).length) return weekly[DOW[d.getDay()]] || [];
+  return dates.length ? [] : null; // past its listed dates: nothing known
+}
+function hoursOn(e, d) { // [opens, closes, known] or null when closed
+  var h = e.sched.hours || {}, k = DOW[d.getDay()];
+  if (!Object.prototype.hasOwnProperty.call(h, k)) return [USUAL[0], USUAL[1], false];
+  return h[k] ? [h[k][0], h[k][1], true] : null;
+}
+function stillOpen(o, c, now) { return c < o ? true : now < c; } // closing before opening = after midnight
+function onDay(e, d, slot) {
+  if (!overlaps(e, d, d)) return false;
+  var today = same(d, T), now = clockNow();
+  if (isExhibit(e)) {
+    var h = hoursOn(e, d); if (!h) return false;
+    if (slot === "tonight") return h[2] && (h[1] > LATE || h[1] < h[0]) && (!today || stillOpen(h[0], h[1], now));
+    return !today || stillOpen(h[0], h[1], now);
+  }
+  var times = timesOn(e, d); if (!times) return false;
+  return times.some(function (t) {
+    if (!t) return slot === "day" && !today; // a date without a time: fine for a day, unknown for today or tonight
+    if (today && t <= now) return false; // already started
+    return slot === "today" ? t < EVENING : slot === "tonight" ? t >= EVENING : true;
   });
 }
+function onDuring(e, ws, we, slot) {
+  for (var d = ws < T ? T : ws; d <= we; d = add(d, 1)) if (onDay(e, d, slot)) return true;
+  return false;
+}
+// The times to show on a stop for a one-day plan: "7:30 PM", or "Open until 9 PM".
+function showTimesText(e, ws, we, slot) {
+  if (!same(ws, we)) return "";
+  if (isExhibit(e)) { var h = hoursOn(e, ws); return h && h[2] ? "Open " + clockText(h[0]) + " to " + clockText(h[1]) + "." : ""; }
+  var now = clockNow(), today = same(ws, T);
+  var times = (timesOn(e, ws) || []).filter(function (t) {
+    return t && (!today || t > now) && (slot === "today" ? t < EVENING : slot === "tonight" ? t >= EVENING : true);
+  });
+  return times.length ? (times.length === 1 ? "Starts at " : "Shows at ") + times.map(clockText).join(" and ") + "." : "";
+}
+
+// regions (CC-73): the sides of town chosen in question 4. None chosen means anywhere nearby: the city
+// and suburbs, as before; out-of-town events only come in when "Out of town" is chosen.
+function pool(ws, we, budget, types, regions, slot) {
+  var anyType = !types || Object.keys(types).length === 0, anyRegion = !regions || Object.keys(regions).length === 0;
+  slot = slot || plan.slot || "day";
+  return PLAN_EVENTS.filter(function (e) {
+    return !isPast(e) && overlaps(e, ws, we) && costOk(e, budget || "any") && (anyType || !!types[e.type]) &&
+      (anyRegion ? e.region !== "out_of_town" && e.area !== "Out of town" : !!regions[e.region]) && onDuring(e, ws, we, slot);
+  });
+}
+// The "when" choices: Today (until 5 PM), Tonight (until 9 PM), This weekend (Friday to Sunday; not on a
+// Sunday, when Next weekend is the coming one), Next weekend, or a date.
+function whenChoices() {
+  var hour = new Date().getHours(), out = [];
+  if (hour < 17) out.push(["today", "Today", "Before 5 PM", [T, T], "today"]);
+  if (hour < 21) out.push(["tonight", "Tonight", "From 5 PM", [T, T], "tonight"]);
+  if (T.getDay() !== 0) { var wk = thisWeekend(); out.push(["weekend", "This weekend", windowText(wk[0], wk[1]), wk, "day"]); }
+  var nwk = nextWeekend(); out.push(["nextweekend", "Next weekend", windowText(nwk[0], nwk[1]), nwk, "day"]);
+  return out;
+}
 function startPlan() {
-  plan = { step: 0, when: null, ws: null, we: null, budget: null, types: {}, regions: {} }; pick = null;
+  plan = { step: 0, when: null, ws: null, we: null, slot: "day", budget: null, types: {}, regions: {} }; pick = null;
   show("plan"); $("plan-questions").hidden = false; $("plan-result").hidden = true;
   withPlanEvents(T, add(T, 34), renderStep);
 }
@@ -49,11 +116,8 @@ function renderStep() {
   var html = "";
   if (plan.step === 0) {
     $("plan-title").textContent = "When are you going?";
-    $("plan-help").textContent = "One outing in the city or suburbs, so pick the day or the stretch you have free.";
-    var wk = thisWeekend(), nwk = nextWeekend(), mo = [T, add(T, 29)];
-    var whens = [["tonight", "Tonight", dayName(T), [T, T]], ["weekend", "This weekend", windowText(wk[0], wk[1]), wk],
-      ["nextweekend", "Next weekend", windowText(nwk[0], nwk[1]), nwk], ["month", "Sometime in the next 30 days", "Through " + short(mo[1]), mo]];
-    html = whens.map(function (w) { return optHTML('data-when="' + w[0] + '"', w[1], w[2], pool(w[3][0], w[3][1]).length); }).join("") +
+    $("plan-help").textContent = "One outing in the city or suburbs. We only suggest shows with known showtimes, and exhibitions on days they're open.";
+    html = whenChoices().map(function (w) { return optHTML('data-when="' + w[0] + '"', w[1], w[2], pool(w[3][0], w[3][1], null, null, null, w[4]).length); }).join("") +
       '<div class="datepick"><div class="field"><label for="plan-date">Or pick a date</label><input type="date" id="plan-date" min="' +
       T.getFullYear() + "-" + ("0" + (T.getMonth() + 1)).slice(-2) + "-" + ("0" + T.getDate()).slice(-2) + '"></div>' +
       '<button type="button" class="btn ghost" id="plan-date-go">Use this date</button></div>';
@@ -93,7 +157,7 @@ $("plan-opts").addEventListener("click", function (ev) {
   if (ev.target.id === "plan-date-go") {
     var v = $("plan-date").value; if (!v) { $("plan-date").focus(); return; }
     var d = parseISO(v); if (d < T) { $("plan-date").focus(); return; }
-    plan.when = "date"; plan.ws = d; plan.we = d; plan.step = 1;
+    plan.when = "date"; plan.ws = d; plan.we = d; plan.slot = "day"; plan.step = 1;
     withPlanEvents(d, d, function () { renderStep(); $("plan-title").focus(); }); return;
   }
   var rc = ev.target.closest("[data-pregion]");
@@ -106,8 +170,9 @@ $("plan-opts").addEventListener("click", function (ev) {
   }
   var b = ev.target.closest(".opt"); if (!b || b.disabled) return;
   if (b.hasAttribute("data-when")) {
-    var k = b.getAttribute("data-when"), w = k === "tonight" ? [T, T] : k === "weekend" ? thisWeekend() : k === "nextweekend" ? nextWeekend() : [T, add(T, 29)];
-    plan.when = k; plan.ws = w[0]; plan.we = w[1]; plan.step = 1; renderStep(); $("plan-title").focus();
+    var k = b.getAttribute("data-when"), w = whenChoices().filter(function (c) { return c[0] === k; })[0];
+    if (!w) { renderStep(); return; } // the hour passed while the page was open
+    plan.when = k; plan.ws = w[3][0]; plan.we = w[3][1]; plan.slot = w[4]; plan.step = 1; renderStep(); $("plan-title").focus();
   } else if (b.hasAttribute("data-budget")) {
     plan.budget = b.getAttribute("data-budget"); plan.types = {}; plan.regions = {}; plan.step = 2; renderStep(); $("plan-title").focus();
   } else if (b.hasAttribute("data-ptype")) {
@@ -159,7 +224,7 @@ function stopHTML(e, slot, ws, we) {
     '<p class="kind">' + esc(e.type) + "</p><h2>" + esc(e.title) + "</h2>" +
     '<p class="where">' + placeHTML(e) + "</p>" +
     '<p class="facts">' + esc(dateText(e)) + " · " + esc(costText(e)) + "</p>" +
-    "<p>" + esc(whyText(e, ws, we)) + "</p>" +
+    "<p>" + esc([showTimesText(e, ws, we, plan.slot), whyText(e, ws, we)].filter(Boolean).join(" ")) + "</p>" +
     '<a class="btn cta" href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + (isArt(e) ? "Exhibition details" : "Tickets and showtimes") + " ↗</a>" +
     "</div></div>";
 }
@@ -204,9 +269,12 @@ function relaxHTML() {
   if (plan.budget !== "any") { var n1 = pool(plan.ws, plan.we, "any", plan.types, plan.regions).length; if (n1) out.push(['data-relax="budget"', "Open up the budget", plural(n1, "event fits", "events fit") + " at any price"]); }
   if (!anyTypes) { var n2 = pool(plan.ws, plan.we, plan.budget, {}, plan.regions).length; if (n2) out.push(['data-relax="types"', "Take any type of event", plural(n2, "event fits", "events fit")]); }
   if (!anyRegions) { var n4 = pool(plan.ws, plan.we, plan.budget, plan.types, {}).length; if (n4) out.push(['data-relax="regions"', "Go anywhere nearby", plural(n4, "event fits", "events fit")]); }
-  var wide = [T, add(T, 29)], covered = PLAN_RANGE && wide[0] >= PLAN_RANGE[0] && wide[1] <= PLAN_RANGE[1];
-  var n3 = covered ? pool(wide[0], wide[1], plan.budget, plan.types, plan.regions).length : 1; // not loaded: offer it anyway
-  if (n3 && !(same(plan.ws, wide[0]) && same(plan.we, wide[1]))) out.push(['data-relax="when"', "Look across the next 30 days", covered ? plural(n3, "event fits", "events fit") : "See what else is coming up"]);
+  // another time: whichever of the "when" choices has something that fits (CC-79 dropped "the next 30 days")
+  whenChoices().filter(function (w) { return w[0] !== plan.when; }).some(function (w) {
+    var n3 = pool(w[3][0], w[3][1], plan.budget, plan.types, plan.regions, w[4]).length;
+    if (n3) out.push(['data-relax="when" data-when-to="' + w[0] + '"', "Try " + w[1].toLowerCase(), plural(n3, "event fits", "events fit")]);
+    return n3 > 0;
+  });
   if (!out.length) return '<p class="hint">Try the catalog, where you can loosen one filter at a time.</p>';
   return '<div class="opts">' + out.map(function (o) { return optHTML(o[0], o[1], o[2], null); }).join("") + "</div>";
 }
@@ -215,7 +283,11 @@ $("res-body").addEventListener("click", function (ev) {
   var relax = t.closest("[data-relax]");
   if (relax) {
     var r = relax.getAttribute("data-relax");
-    if (r === "budget") plan.budget = "any"; else if (r === "types") plan.types = {}; else if (r === "regions") plan.regions = {}; else { plan.ws = T; plan.we = add(T, 29); plan.when = "month"; }
+    if (r === "budget") plan.budget = "any"; else if (r === "types") plan.types = {}; else if (r === "regions") plan.regions = {};
+    else {
+      var w = whenChoices().filter(function (c) { return c[0] === relax.getAttribute("data-when-to"); })[0];
+      if (w) { plan.when = w[0]; plan.ws = w[3][0]; plan.we = w[3][1]; plan.slot = w[4]; }
+    }
     withPlanEvents(plan.ws, plan.we, buildOuting); return;
   }
   var swap = t.closest("[data-swap]");

@@ -26,6 +26,10 @@ var F = {
   long: new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" })
 };
 function short(d) { return d.getFullYear() === T.getFullYear() ? F.md.format(d) : F.mdy.format(d); }
+function clockText(t) { // "19:30" -> "7:30 PM", "14:00" -> "2 PM" (venue hours and the planner, CC-78/79)
+  var p = t.split(":"), h = +p[0], m = p[1];
+  return (h % 12 || 12) + (m === "00" ? "" : ":" + m) + (h < 12 ? " AM" : " PM");
+}
 function dayName(d) { return d.getFullYear() === T.getFullYear() ? F.full.format(d) : F.fully.format(d); }
 function windowText(ws, we) {
   if (same(ws, we)) return dayName(ws);
@@ -66,6 +70,7 @@ function fromApi(e) {
     creditMe: !!e.credit_me, suggestedBy: e.submitted_by_name || null, // the opt-in "Suggested by" credit (CC-30)
     region: e.venue.region || null, // the side of town (CC-73)
     pick: e.pick ? { status: e.pick.status, date: e.pick.date, by: e.pick.by } : null, // the owner's public pick (CC-66)
+    sched: e.schedule || { dates: [], weekly: {}, weekly_from: "", hours: {} }, // when it's on, for the planner (CC-79)
     b: parseISO(e.begin_date), n: parseISO(e.end_date)
   };
 }

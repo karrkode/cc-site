@@ -10,10 +10,6 @@
 var HOUR_DAYS = [["mon", "Monday"], ["tue", "Tuesday"], ["wed", "Wednesday"], ["thu", "Thursday"], ["fri", "Friday"], ["sat", "Saturday"], ["sun", "Sunday"]];
 var HDLG = null; // { v, opener }
 
-function clockText(t) { // "19:30" -> "7:30 PM", "14:00" -> "2 PM"
-  var p = t.split(":"), h = +p[0], m = p[1];
-  return (h % 12 || 12) + (m === "00" ? "" : ":" + m) + (h < 12 ? " AM" : " PM");
-}
 // "2 PM, 7:30 PM" -> ["14:00", "19:30"]. 24-hour times work too ("19:30"). An hour on its own, or 1:00–11:59
 // without AM or PM, is ambiguous, so it's an error rather than a guess.
 function parseTimes(text) {
@@ -157,3 +153,47 @@ $("hours-form").addEventListener("submit", function (ev) {
     HDLG.opener = null; $("hours-dialog").close();
   }, function () { hoursFail(errorText(null)); });
 });
+
+// ---------- an event's own show times (CC-79), in the event edit form ----------
+// Plan an outing only suggests a performance when it knows the start times: the dates and times found on
+// the venue's site, else this weekly pattern, else the venue's usual show times. Blank = the venue's.
+function weeklyRows() {
+  if ($("ed-weekly").children.length) return;
+  $("ed-weekly").innerHTML = HOUR_DAYS.map(function (d) {
+    var k = d[0];
+    return '<div class="hours-row"><label class="day" for="ed-week-' + k + '">' + d[1] + "</label>" +
+      '<input type="text" id="ed-week-' + k + '" maxlength="80" placeholder="No shows" aria-describedby="ed-sched-hint" autocomplete="off"></div>';
+  }).join("");
+}
+function weeklyText(w) {
+  var days = HOUR_DAYS.filter(function (d) { return w && w[d[0]] && w[d[0]].length; });
+  return days.map(function (d) { return d[1].slice(0, 3) + " " + w[d[0]].map(clockText).join(", "); }).join("; ");
+}
+function fillWeekly(e) { // e: an event as fromApi makes it, or null for a found event (hidden then)
+  $("ed-sched").hidden = !e || (e.type === "Visual Art" && !e.sched.dates.length); // exhibitions go by the venue's hours
+  if (!e) return;
+  weeklyRows();
+  var own = e.sched.weekly_from === "event" ? e.sched.weekly : {};
+  HOUR_DAYS.forEach(function (d) { $("ed-week-" + d[0]).value = (own[d[0]] || []).map(clockText).join(", "); });
+  var venue = e.sched.weekly_from === "venue" ? weeklyText(e.sched.weekly) : "";
+  $("ed-sched-hint").textContent = (e.sched.dates.length ? plural(e.sched.dates.length, "upcoming date", "upcoming dates") +
+    " came from the venue's website; those come first. " : "") +
+    (venue ? "Leave blank to use the venue's show times (" + venue + ")." : "Leave blank if you don't know. Without any show times, Plan an outing won't suggest it.") +
+    " Write times like 7:30 PM.";
+}
+// The weekly pattern typed in, {} if blank, or { error, id } for something unreadable.
+function readWeekly() {
+  var out = {}, bad = null;
+  HOUR_DAYS.some(function (d) {
+    var id = "ed-week-" + d[0], got = parseTimes($(id).value);
+    if (got.error) { bad = { error: d[1] + ": \u201c" + got.error + "\u201d isn't a time we can read. Write it like 7:30 PM.", id: id }; return true; }
+    if (got.times.length > 6) { bad = { error: d[1] + ": six show times at most.", id: id }; return true; }
+    if (got.times.length) out[d[0]] = got.times;
+    return false;
+  });
+  return bad || out;
+}
+$("ed-weekly").addEventListener("blur", function (ev) { // tidy "7:30pm" -> "7:30 PM"
+  var input = ev.target; if (!input.matches || !input.matches("input")) return;
+  var got = parseTimes(input.value); if (!got.error) input.value = got.times.map(clockText).join(", ");
+}, true);

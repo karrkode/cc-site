@@ -87,6 +87,10 @@
       <div class="field"><label for="ed-cost">Price</label><input id="ed-cost" type="text" maxlength="120" placeholder="$25–$60, or Free" aria-describedby="ed-cost-hint"><span class="hint small" id="ed-cost-hint">Leave blank if it isn't posted yet.</span></div>
       <div class="field"><label for="ed-url">Link</label><input id="ed-url" type="url" maxlength="2000" placeholder="https://"></div>
     </div>
+    <fieldset class="hours" id="ed-sched"><legend>Show times for this event</legend>
+      <p class="hint small" id="ed-sched-hint"></p>
+      <div class="hours-grid" id="ed-weekly"></div>
+    </fieldset>
     <div class="field"><label for="ed-publish-at">Goes live on</label><input id="ed-publish-at" type="datetime-local" aria-describedby="ed-publish-hint"><span class="hint small" id="ed-publish-hint">Leave blank to go live as soon as it's approved.</span></div>
     <p class="form-error" id="ed-error" role="alert"></p>
     <div class="row"><button class="btn" type="submit" id="ed-save">Save changes</button><button class="btn ghost" type="button" id="ed-cancel">Cancel</button></div>

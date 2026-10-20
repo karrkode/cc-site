@@ -210,6 +210,7 @@ function openEditor(e, opener) {
   $("ed-begin").value = e.begin || ""; $("ed-end").value = e.end || ""; $("ed-open-run").checked = !!e.openRun;
   $("ed-cost").value = e.costRaw || ""; $("ed-url").value = e.url || "";
   $("ed-publish-at").value = e.publishAt ? localInputValue(e.publishAt) : "";
+  fillWeekly(e); // its own show times, for the planner (CC-79; hours.js)
   $("ed-withdraw").textContent = e.status === "withdrawn" ? "Restore" : "Withdraw";
   $("ed-error").textContent = ""; $("ed-confirm").hidden = true; setEditorBusy(false);
   $("edit-dialog").showModal(); $("ed-title").focus();
@@ -269,6 +270,8 @@ $("edit-form").addEventListener("submit", function (ev) {
     (url && !/^https?:\/\//i.test(url)) ? ["ed-url", "The link should start with https://"] :
     (at && isNaN(at)) ? ["ed-publish-at", "Pick a date and time, or leave it blank."] : null;
   if (bad) { editorFail(null, bad[0], bad[1]); return; }
+  var weekly = $("ed-sched").hidden ? null : readWeekly();
+  if (weekly && weekly.error) { editorFail(null, weekly.id, weekly.error); return; }
   var body = {}, openRun = $("ed-open-run").checked;
   if (title !== e.title) body.title = title;
   if ($("ed-category").value !== e.type) body.category = $("ed-category").value;
@@ -278,6 +281,7 @@ $("edit-form").addEventListener("submit", function (ev) {
   if (openRun !== !!e.openRun) body.open_run = openRun;
   if (cost !== (e.costRaw || "")) { body.cost_text = cost; body.min_price = minPrice(cost); }
   if (url !== (e.url || "")) body.url = url;
+  if (weekly && !sameHours(weekly, e.sched.weekly_from === "event" ? e.sched.weekly : {})) body.weekly = weekly;
   var wasAt = e.publishAt ? e.publishAt.getTime() : null, nowAt = at ? at.getTime() : null;
   if (Math.floor((wasAt || 0) / 60000) !== Math.floor((nowAt || 0) / 60000)) body.publish_at = at ? at.toISOString() : null;
   var venueChanged = venue.toLowerCase() !== e.venue.toLowerCase() || hood.toLowerCase() !== (e.hood || "").toLowerCase();
@@ -321,6 +325,7 @@ function eventChanged(id, e) {
     return keep ? list.map(function (x) { return x.id === id ? e : x; }) : list.filter(function (x) { return x.id !== id; });
   }
   if (!e) { delete KNOWN[id]; delete WENT[id]; delete MYPLANS[id]; }
+  PLAN_RANGE = null; // Plan an outing loads its events again, with the new details and show times
   var shown = CAT_ITEMS.length; CAT_ITEMS = swap(CAT_ITEMS, live); CAT_TOTAL -= shown - CAT_ITEMS.length;
   SOON = swap(SOON, live); WENT_LIST = swap(WENT_LIST, !!e); MYPLAN_LIST = swap(MYPLAN_LIST, live);
   rerenderLists();
