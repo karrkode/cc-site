@@ -73,6 +73,7 @@ The API has these groups of routes:
 | `/me` | "I've been" marks, plans, the user's submissions | The signed-in user only |
 | `/admin` | Review queue, scheduled events, withdrawn events | Admins only |
 | `/venues` | Show, rename, merge and delete venues | All users can read. Admins can change. |
+| `/traffic` | Count a page view, a click to an event's page, or a planned outing. No cookies. | All visitors (the site sends it) |
 
 ## 4. The database
 

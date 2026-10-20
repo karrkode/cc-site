@@ -37,11 +37,26 @@ function boot(FACETS_IN) {
   buildCatalogControls();
   renderHome();
   loadHome();
-  if (!openFromHash()) { /* welcome screen is already showing */ }
+  if (!openFromHash()) track("view", "home"); // the welcome screen is already showing
   window.addEventListener("hashchange", openFromHash);
   AUTH.onChange = onAuthChange;
-  if (maybeSignedIn()) refreshSession(); // signed in on an earlier visit? the refresh cookie brings the session back
+  // signed in on an earlier visit? the refresh cookie brings the session back (counting waits for it)
+  COUNT_READY = maybeSignedIn() ? refreshSession() : Promise.resolve();
+  renderPrivacyNote();
 }
+// The footer's note on counting visits (CC-68), with the switch to turn it off or on again.
+function renderPrivacyNote() {
+  var p = $("privacy-note");
+  if (COUNTING.gpc) { p.textContent = "Your browser asks sites not to track it, so your visits aren't counted."; return; }
+  p.innerHTML = COUNTING.off ? "Your visits aren't counted. " +
+      '<button class="textbtn" type="button" id="count-toggle">Count my visits again</button>' :
+    "We count visits without cookies: your browser keeps a random number so we can tell new visitors from returning ones. " +
+      "Nothing else about you is kept or shared. " + '<button class="textbtn" type="button" id="count-toggle">Don\'t count my visits</button>';
+}
+document.addEventListener("click", function (ev) {
+  if (!ev.target.closest("#count-toggle")) return;
+  setCounting(COUNTING.off); renderPrivacyNote(); $("count-toggle").focus();
+});
 (function () {
   // Just the filter options and counts; each view then asks for the events it shows (CC-33).
   var t = new Date(), today = t.getFullYear() + "-" + ("0" + (t.getMonth() + 1)).slice(-2) + "-" + ("0" + t.getDate()).slice(-2);
