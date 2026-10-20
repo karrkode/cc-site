@@ -413,6 +413,12 @@
       </div>
       <p class="hint" id="sources-status" role="status"></p>
       <div class="stat-summary" id="sources-summary"></div>
+      <p class="notice" id="sources-budget-note"></p>
+      <form class="found-filters" id="budget-form" novalidate>
+        <div class="field"><label for="budget-usd">Monthly budget (dollars)</label><input id="budget-usd" type="number" min="1" max="100" step="1" inputmode="decimal" aria-describedby="budget-hint"></div>
+        <button class="btn neutral" type="submit">Save budget</button>
+        <p class="hint small" id="budget-hint">For reading pages with Claude. At 80%, event pages wait until next month; at 100%, only Check now runs.</p>
+      </form>
       <div class="found-filters"><div class="field"><label for="sources-sort">Sort by</label>
         <select id="sources-sort"><option value="name">Name</option><option value="waiting">Most found, waiting for review</option><option value="checked">Last checked, most recent first</option><option value="stale">Last checked, longest ago first</option></select></div></div>
       <div class="queue" id="sources-list"></div>
