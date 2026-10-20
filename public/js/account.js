@@ -11,14 +11,14 @@ function rerenderLists() {
   if (visible("account")) renderAccount();
 }
 function onAuthChange() {
-  $("nav-account").textContent = AUTH.user ? "Your account" : "Sign in";
+  $("nav-account").innerHTML = AUTH.user ? 'Your account<span class="count" id="account-count"></span>' : "Sign in";
   $("nav-review").hidden = !isAdmin();
   WENT = {}; WENT_LIST = []; MYPLANS = {}; MYPLAN_LIST = [];
   if (!AUTH.user) {
     NOTICE_SET = false; $("account-notice").textContent = "";
     if (visible("review") || visible("venues") || visible("stats") || visible("sources") || visible("found")) show("home");
     if (visible("submit")) renderSubmit();
-    CREWS = []; buildCrewFilter();
+    CREWS = []; buildCrewFilter(); PENDING = []; paintPending();
     rerenderLists();
     return;
   }
@@ -29,6 +29,7 @@ function onAuthChange() {
   rerenderLists();
   loadWent(); loadMyPlans().then(rerenderLists);
   loadCrews().then(function () { buildCrewFilter(); rerenderLists(); }); // crews to share plans with (CC-75)
+  loadPending(true); // crew invites waiting for you (CC-59): the notice on sign-in
 }
 function loadWent() {
   return api("/me/attended").then(readJSON).then(function (res) {

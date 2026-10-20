@@ -62,7 +62,20 @@ function crewHTML(c) {
         (i.yours || c.owner ? " " + crewAct("revoke", c, 'data-invite="' + esc(i.id) + '"', "Turn off", "textbtn", "Turn off this invite link") : "") + "</li>";
     }).join("") + "</ul>";
   }
+  if (c.email_invites.length) { // CC-59: invites by email waiting; the address shows only to whoever sent it
+    html += '<ul class="invites" aria-label="Email invites waiting for ' + esc(c.name) + '">' + c.email_invites.map(function (i) {
+      return "<li>" + (i.yours ? "You invited " + esc(i.email) : "An email invite from " + esc(shortName(i.made_by))) + " · waiting until " +
+        esc(short(new Date(i.expires_at))) + (i.yours || c.owner ? " " + crewAct("cancel-email", c, 'data-invite="' + esc(i.id) + '"', "Cancel", "textbtn",
+          "Cancel this email invite") : "") + "</li>";
+    }).join("") + "</ul>";
+  }
   var full = c.members.length >= c.max_members;
+  if (!full) {
+    html += '<form class="crew-email" data-crew-email="' + id + '" novalidate><label for="crew-email-' + id + '">Invite by email</label>' +
+      '<div class="row"><input id="crew-email-' + id + '" type="email" autocomplete="off" placeholder="name@example.com" aria-describedby="crew-email-msg-' + id + '">' +
+      '<button class="btn neutral" type="submit">Send invite</button></div>' +
+      '<p class="hint small" id="crew-email-msg-' + id + '" role="status">They\u2019ll see it when they sign in, or once they register with that address.</p></form>';
+  }
   html += '<div class="row">' + (full ? '<span class="hint">The crew is full.</span>' : crewAct("invite", c, "", "Make an invite link", "btn")) +
     (c.owner ? crewAct("edit", c, "", "Rename") + crewAct("delete", c, "", "Delete crew…", "btn danger") : crewAct("leave", c, "", "Leave crew…")) + "</div>";
   return html + "</article>";
@@ -76,7 +89,10 @@ function capCrewHeights() {
     var gap = parseFloat(getComputedStyle(list).rowGap) || 0, tallest = 0;
     Array.prototype.forEach.call(rows, function (r) { tallest = Math.max(tallest, r.offsetHeight); });
     var cap = Math.ceil(5 * tallest + 4 * gap);
-    Array.prototype.forEach.call(card.querySelectorAll("ul.members, ul.crew-plans"), function (ul) { ul.style.maxHeight = cap + "px"; });
+    Array.prototype.forEach.call(card.querySelectorAll("ul.members, ul.crew-plans"), function (ul) {
+      ul.style.maxHeight = cap + "px";
+      if (ul.scrollHeight > ul.clientHeight) ul.tabIndex = 0; else ul.removeAttribute("tabindex"); // keyboard users can scroll it too
+    });
   });
 }
 window.addEventListener("resize", function () { if (CREWS.length && visible("account")) capCrewHeights(); });
@@ -172,6 +188,14 @@ $("crew-list").addEventListener("click", function (ev) {
     else fallback();
     return;
   }
+  if (act === "cancel-email") {
+    b.disabled = true;
+    api("/crews/" + c.id + "/email-invites/" + b.getAttribute("data-invite"), { method: "DELETE" }).then(function (r) {
+      if (!r.ok && r.status !== 404) return readJSON(r).then(function (res) { crewFail(card, res); });
+      loadCrews('[data-crew-card="' + c.id + '"] [data-crew-email] input').then(function () { $("edit-live").textContent = "Cancelled that invite."; });
+    }, function () { crewFail(card, null); });
+    return;
+  }
   // the ones that need a "yes" first
   var asks = { leave: "Leave " + c.name + "? You'd need a new invite link to come back.", delete: "Delete " + c.name + " for everyone? This can't be undone.",
     remove: who && "Remove " + who.name + " from " + c.name + "?", owner: who && "Make " + who.name + " the owner? You'll stay a member, and they'll manage the crew." };
@@ -208,6 +232,22 @@ $("crew-list").addEventListener("submit", function (ev) {
     if (!res.ok) { err.textContent = errorText(res); return; }
     CREW_EDIT = null; loadCrews('#crew-h-' + id).then(function () { $("edit-live").textContent = "Saved " + name + "."; });
   }, function () { err.textContent = errorText(null); });
+});
+$("crew-list").addEventListener("submit", function (ev) { // CC-59: invite by email
+  var form = ev.target.closest("[data-crew-email]"); if (!form) return;
+  ev.preventDefault();
+  var id = form.getAttribute("data-crew-email"), input = form.querySelector("input"), msg = form.querySelector(".hint"), btn = form.querySelector("button");
+  var email = input.value.trim();
+  if (!looksLikeEmail(email)) { msg.textContent = "Enter their email address, like name@example.com."; msg.classList.add("bad"); input.focus(); return; }
+  btn.disabled = true;
+  api("/crews/" + id + "/email-invites", { method: "POST", body: { email: email } }).then(readJSON).then(function (res) {
+    btn.disabled = false;
+    if (!res.ok) { msg.textContent = errorText(res); msg.classList.add("bad"); return; }
+    loadCrews('[data-crew-email="' + id + '"] input').then(function () {
+      var m = document.querySelector('[data-crew-email="' + id + '"] .hint');
+      if (m) m.textContent = res.body.message; $("edit-live").textContent = res.body.message;
+    });
+  }, function () { btn.disabled = false; msg.textContent = errorText(null); msg.classList.add("bad"); });
 });
 $("crew-new").addEventListener("submit", function (ev) {
   ev.preventDefault();
@@ -314,4 +354,53 @@ document.addEventListener("keydown", function (ev) { // Escape closes the crew p
   var box = ev.target.closest && ev.target.closest(".crewshare"); if (!box) return;
   var toggle = document.querySelector('[aria-controls="' + box.id + '"]');
   if (toggle) { toggle.setAttribute("aria-expanded", "false"); box.hidden = true; toggle.focus(); }
+});
+
+// ---------- invites waiting for you (CC-59) ----------
+// Someone invited your email address to a crew. On sign-in a notice under the header says so, with Accept and
+// Decline; the same requests sit at the top of Your crews, and the Account link shows how many, until answered.
+var PENDING = [], PENDING_LATER = false; // "Later" hides the notice until the next sign-in
+function loadPending(fresh) {
+  if (!AUTH.user) return Promise.resolve();
+  if (fresh) PENDING_LATER = false;
+  return api("/crews/pending").then(readJSON).then(function (res) { if (res.ok) { PENDING = res.body; paintPending(); } }, function () {});
+}
+function pendingItemHTML(p, where) {
+  var id = esc(p.id);
+  return '<div class="pending" data-pending="' + id + '"><p><strong>' + esc(shortName(p.invited_by)) + "</strong> invited you to <strong>" + esc(p.crew_name) +
+    "</strong>" + (p.description ? " \u00b7 " + esc(p.description) : "") + ' <span class="hint small">(' + plural(p.members, "member", "members") + ")</span>" +
+    (p.full ? ' <span class="hint small">It\u2019s full right now.</span>' : "") + "</p>" +
+    '<div class="row">' + (p.full ? "" : '<button class="btn" type="button" data-pending-act="accept" data-pending-id="' + id + '" aria-label="Accept the invite to ' + esc(p.crew_name) + '">Accept</button>') +
+    '<button class="btn ghost" type="button" data-pending-act="decline" data-pending-id="' + id + '" aria-label="Decline the invite to ' + esc(p.crew_name) + '">Decline</button>' +
+    "</div></div>";
+}
+function paintPending() {
+  var n = AUTH.user ? PENDING.length : 0, count = $("account-count");
+  if (count) count.textContent = n ? String(n) : "";
+  $("pending-invites").hidden = !n;
+  $("pending-invites").innerHTML = n ? '<h3 id="pending-title">Waiting for you</h3>' + PENDING.map(function (p) { return pendingItemHTML(p, "list"); }).join("") : "";
+  var banner = $("invite-banner");
+  banner.hidden = !n || PENDING_LATER || visible("account");
+  banner.innerHTML = banner.hidden ? "" : PENDING.slice(0, 2).map(function (p) { return pendingItemHTML(p, "banner"); }).join("") +
+    '<p class="small">' + (n > 2 ? "And " + plural(n - 2, "more invite", "more invites") + " on " : "Also on ") +
+    '<button class="textbtn" type="button" data-go="account">Your account</button>. <button class="textbtn" type="button" data-pending-act="later">Not now</button></p>';
+}
+document.addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-pending-act]"); if (!b) return;
+  var act = b.getAttribute("data-pending-act");
+  if (act === "later") { PENDING_LATER = true; paintPending(); (document.querySelector("main h1:not([hidden])") || $("brand")).focus(); return; }
+  var id = b.getAttribute("data-pending-id"), p = PENDING.filter(function (x) { return String(x.id) === id; })[0], fromBanner = !!b.closest("#invite-banner");
+  b.disabled = true;
+  api("/crews/pending/" + id + "/" + act, { method: "POST" }).then(readJSON).then(function (res) {
+    if (!res.ok && res.status !== 404) { b.disabled = false; $("crews-status").textContent = errorText(res); return; }
+    PENDING = PENDING.filter(function (x) { return String(x.id) !== id; }); paintPending();
+    var said = act === "accept" ? (res.ok ? "You joined " + p.crew_name + "." : "That invite has expired or was cancelled.") : "Declined the invite to " + p.crew_name + ".";
+    $("edit-live").textContent = said;
+    if (fromBanner && act === "accept" && res.ok) { openAccount(said); loadCrews().then(buildCrewFilter); return; } // focus: the page heading
+    var next = $("pending-invites").querySelector("[data-pending-act]");
+    loadCrews(act === "accept" && res.ok ? "#crew-h-" + res.body.id : null).then(function () {
+      buildCrewFilter();
+      if (act !== "accept" || !res.ok) (next || (fromBanner ? document.querySelector("main h1") : $("crews-title"))).focus();
+    });
+  }, function () { b.disabled = false; });
 });

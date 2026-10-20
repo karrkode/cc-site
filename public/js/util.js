@@ -247,6 +247,7 @@ function show(name, focusId) {
     if (v === name || (v === "review" && (name === "venues" || name === "stats" || name === "sources" || name === "found"))) $("nav-" + v).setAttribute("aria-current", "page"); else $("nav-" + v).removeAttribute("aria-current");
   });
   window.scrollTo(0, 0);
+  if (typeof paintPending === "function") paintPending(); // the crew-invite notice hides on the account page (CC-59)
   var h = $(focusId || VIEWS[name]); if (h) h.focus({ preventScroll: true });
   track("view", name);
 }
