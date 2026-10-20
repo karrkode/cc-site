@@ -4,7 +4,7 @@ The page at **https://chiculturecrew.com**: a running list of plays, comedy, con
 exhibitions around Chicago, with a catalog, a four-question outing planner, accounts, an
 "I've been" list, event submissions and an admin review queue.
 
-It's a single static page (`public/index.html`, no build step) served from S3 through
+It's a single static page (`public/index.html` with its `css/` and `js/`, no build step) served from S3 through
 CloudFront. Everything dynamic comes from the Culture Crew API at
 **https://api.chiculturecrew.com** ([karrkode/cc-backend](https://github.com/karrkode/cc-backend)),
 which the page calls from the browser. The infrastructure for both lives in cc-backend's
@@ -13,10 +13,13 @@ which the page calls from the browser. The infrastructure for both lives in cc-b
 ## Files
 
 ```
-public/index.html        the page (HTML, CSS and JavaScript in one file)
+public/index.html        the page's HTML
+public/css/site.css      its styles
+public/js/               its scripts, by area, loaded in order (see js/core.js)
 public/404.html          shown by CloudFront for any missing path
 public/img/              images the page uses (the plan dolphins)
 scripts/check_pages.py   checks run in CI before every deploy
+scripts/stamp_assets.py  stamps each css/js link with its file's hash at deploy
 .github/workflows/       CI/CD
 ARCHITECTURE.md          how the site, API, database and AWS parts fit together
 ```
@@ -33,7 +36,7 @@ docker compose run --rm api python -m scripts.seed
 ```
 
 The page is then on http://localhost:4173 and the API on http://localhost:8000. Edits to
-`public/index.html` show up on reload. The page finds the API by itself (`localhost:8000`
+`public/` show up on reload (a hard reload, Cmd+Shift+R, if the browser kept an old copy). The page finds the API by itself (`localhost:8000`
 locally, `api.<its own domain>` in production); the `cc-api` meta tag overrides it.
 
 Without Docker, any static server works, e.g. `python3 -m http.server 4173 -d public`,

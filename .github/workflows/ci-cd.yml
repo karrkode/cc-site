@@ -21,8 +21,10 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - name: Pages parse, and every element the script uses exists
+      - name: Pages parse, and every element the scripts use exists
         run: python3 scripts/check_pages.py
+      - name: Asset links can be stamped for deploy
+        run: python3 scripts/stamp_assets.py
       - name: JavaScript syntax
         run: |
           for f in build/scripts/*.js; do node --check "$f" && echo "ok: $f"; done
@@ -49,15 +51,23 @@ jobs:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: us-east-2
 
+      - name: Stamp the asset links
+        run: python3 scripts/stamp_assets.py
+
       - name: Upload the pages
         env:
           BUCKET: ${{ vars.SITE_BUCKET }}
         run: |
-          # index.html is revalidated on every visit; the 404 page can be cached briefly
-          aws s3 cp public/index.html "s3://$BUCKET/index.html" --cache-control no-cache --content-type "text/html; charset=utf-8"
-          aws s3 cp public/404.html "s3://$BUCKET/404.html" --cache-control max-age=300 --content-type "text/html; charset=utf-8"
+          cd build/site
+          # css/ and js/ first, so a page never links files that aren't there yet. Their links carry a
+          # content hash (stamp_assets.py), so browsers may keep them for a year (CC-65).
+          aws s3 cp css "s3://$BUCKET/css/" --recursive --cache-control "public, max-age=31536000, immutable" --content-type "text/css; charset=utf-8"
+          aws s3 cp js "s3://$BUCKET/js/" --recursive --cache-control "public, max-age=31536000, immutable" --content-type "text/javascript; charset=utf-8"
           # images (the plan dolphins, CC-55): a day in browsers; the invalidation below refreshes CloudFront
-          aws s3 cp public/img "s3://$BUCKET/img/" --recursive --cache-control max-age=86400
+          aws s3 cp img "s3://$BUCKET/img/" --recursive --cache-control max-age=86400
+          # index.html is revalidated on every visit; the 404 page can be cached briefly
+          aws s3 cp index.html "s3://$BUCKET/index.html" --cache-control no-cache --content-type "text/html; charset=utf-8"
+          aws s3 cp 404.html "s3://$BUCKET/404.html" --cache-control max-age=300 --content-type "text/html; charset=utf-8"
 
       - name: Refresh CloudFront
         run: |

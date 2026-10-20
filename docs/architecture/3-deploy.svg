@@ -5,7 +5,7 @@
 <g class="c-gray"><rect x="240" y="220" width="200" height="56" rx="8" stroke-width="0.5"/><text class="th" x="340" y="238" text-anchor="middle" dominant-baseline="central">Merge to main</text><text class="ts" x="340" y="258" text-anchor="middle" dominant-baseline="central">AWS access via OIDC</text></g>
 <path d="M340 276 L340 296 L180 296 L180 316" class="arr" marker-end="url(#arrow)"/>
 <path d="M340 296 L500 296 L500 316" class="arr" marker-end="url(#arrow)"/>
-<g class="c-purple"><rect x="60" y="320" width="240" height="56" rx="8" stroke-width="0.5"/><text class="th" x="180" y="338" text-anchor="middle" dominant-baseline="central">Upload to S3</text><text class="ts" x="180" y="358" text-anchor="middle" dominant-baseline="central">index.html, 404, img/</text></g>
+<g class="c-purple"><rect x="60" y="320" width="240" height="56" rx="8" stroke-width="0.5"/><text class="th" x="180" y="338" text-anchor="middle" dominant-baseline="central">Upload to S3</text><text class="ts" x="180" y="358" text-anchor="middle" dominant-baseline="central">Pages, css, js, img</text></g>
 <line x1="180" y1="376" x2="180" y2="396" class="arr" marker-end="url(#arrow)"/>
 <g class="c-purple"><rect x="60" y="400" width="240" height="56" rx="8" stroke-width="0.5"/><text class="th" x="180" y="418" text-anchor="middle" dominant-baseline="central">Refresh CloudFront</text><text class="ts" x="180" y="438" text-anchor="middle" dominant-baseline="central">Clear the cached copy</text></g>
 <line x1="180" y1="456" x2="180" y2="476" class="arr" marker-end="url(#arrow)"/>

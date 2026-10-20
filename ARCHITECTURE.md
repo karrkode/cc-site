@@ -31,12 +31,17 @@ Each part has its own repository on GitHub.
 
 ## 2. The site
 
-The site is one HTML file: `public/index.html`.
-This file contains the HTML, the CSS and the JavaScript.
-The site does not have a build step.
+The site has these files:
+- `public/index.html`: the HTML.
+- `public/css/site.css`: the styles.
+- `public/js/`: the scripts, one file for each area of the site.
 
-Amazon S3 keeps the file.
-Amazon CloudFront sends the file to the user's browser.
+The page loads the scripts in a fixed order. All the scripts share one global scope.
+The site does not have a build step. At deploy, a script adds a content hash to each link to a style or script file.
+Thus, browsers can keep these files for one year and still get each new version.
+
+Amazon S3 keeps the files.
+Amazon CloudFront sends the files to the user's browser.
 The browser runs the JavaScript.
 The JavaScript gets the data from the API.
 

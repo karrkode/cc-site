@@ -1,8 +1,9 @@
 """Checks run in CI before the site deploys.
 
-For each page in public/: it parses, has a <title>, and every element the page's script
-looks up with $("id") exists somewhere in the file (in the HTML or in markup the script
-builds), and every img/ file it uses is in public/img/. Inline scripts are written to build/scripts/ so CI can syntax-check them with node.
+For each page in public/: it parses, has a <title>, and every element the page's scripts
+look up with $("id") exists somewhere (in the HTML, or in markup a script builds), and every
+img/, css/ and js/ file it uses is in public/. The page's scripts (inline, and the js/ files it
+loads) are written to build/scripts/ so CI can syntax-check them with node.
 
     python3 scripts/check_pages.py
 """
@@ -60,6 +61,17 @@ def main() -> int:
             problems.append(f"{path.name}: no <title>")
         for i, script in enumerate(page.scripts):
             (OUT / f"{path.stem}-{i}.js").write_text(script, encoding="utf-8")
+        # the files the page loads (CC-65): they must exist, and their scripts count as the page's own
+        for ref in sorted(set(re.findall(r'(?:src|href)="((?:css|js)/[^"?]+)(?:\?v=dev)?"', text))):
+            if not (PUBLIC / ref).is_file():
+                problems.append(f"{path.name}: loads {ref}, which isn't in public/")
+            elif ref.endswith(".js"):
+                code = (PUBLIC / ref).read_text(encoding="utf-8")
+                (OUT / f"{path.stem}-{Path(ref).stem}.js").write_text(code, encoding="utf-8")
+                text += "\n" + code
+        for ref in re.findall(r'(?:src|href)="((?:css|js)/[^"]+)"', text):
+            if not ref.endswith("?v=dev"):
+                problems.append(f'{path.name}: {ref} needs "?v=dev" so the deploy can stamp its version')
         looked_up = set(re.findall(r'\$\("([\w-]+)"\)', text))
         defined = set(re.findall(r'id="([\w-]+)"', text))
         for missing in sorted(looked_up - defined):
