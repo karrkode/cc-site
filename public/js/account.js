@@ -18,6 +18,7 @@ function onAuthChange() {
     NOTICE_SET = false; $("account-notice").textContent = "";
     if (visible("review") || visible("venues") || visible("stats") || visible("sources") || visible("found")) show("home");
     if (visible("submit")) renderSubmit();
+    CREWS = []; buildCrewFilter();
     rerenderLists();
     return;
   }
@@ -27,6 +28,7 @@ function onAuthChange() {
   if (visible("review")) renderReview();
   rerenderLists();
   loadWent(); loadMyPlans().then(rerenderLists);
+  loadCrews().then(function () { buildCrewFilter(); rerenderLists(); }); // crews to share plans with (CC-75)
 }
 function loadWent() {
   return api("/me/attended").then(readJSON).then(function (res) {
@@ -67,7 +69,7 @@ function loadMyPlans() {
   return api("/me/plans").then(readJSON).then(function (res) {
     if (!res.ok) return;
     MYPLANS = {}; MYPLAN_LIST = res.body.map(function (row) {
-      var e = toEvent(row.event); MYPLANS[e.id] = { status: row.status, date: row.date }; return e;
+      var e = toEvent(row.event); MYPLANS[e.id] = { status: row.status, date: row.date, crews: row.crews || [] }; return e;
     });
   }, function () {});
 }
@@ -106,7 +108,7 @@ function saveMyPlan(id, body, panel) {
                  : api("/me/plans/" + encodeURIComponent(id), { method: "DELETE" });
   req.then(readJSON).then(function (res) {
     if (!res.ok) throw res;
-    if (body) MYPLANS[id] = { status: body.status, date: body.date || null }; else delete MYPLANS[id];
+    if (body) MYPLANS[id] = { status: body.status, date: body.date || null, crews: (MYPLANS[id] && MYPLANS[id].crews) || [] }; else delete MYPLANS[id];
     $("myplan-live").textContent = myplanSaid(MYPLANS[id]) + ": " + KNOWN[id].title;
     return redrawCards(id, card);
   }).catch(function (res) {

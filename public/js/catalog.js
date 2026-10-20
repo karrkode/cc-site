@@ -24,8 +24,8 @@ function renderHome() {
 $("soon-more").addEventListener("click", function () { resetCatalog(); cat.sort = "closing"; cat.when = "week"; loadCatalog(); show("catalog"); });
 
 // ---------- catalog ----------
-var cat = { q: "", types: {}, hoods: {}, regions: {}, picks: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null };
-function resetCatalog() { cat = { q: "", types: {}, hoods: {}, regions: {}, picks: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null }; }
+var cat = { q: "", types: {}, hoods: {}, regions: {}, picks: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null, crews: "" };
+function resetCatalog() { cat = { q: "", types: {}, hoods: {}, regions: {}, picks: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null, crews: "" }; }
 // CC-66: the dolphin filters, for every visitor: the owner's picks (interested and/or committed).
 function syncMineChips() {
   Array.prototype.forEach.call($("mine-chips").children, function (b) {
@@ -62,7 +62,7 @@ function buildCatalogControls() {
     TYPES.map(function (t) { return '<button type="button" class="chip" data-type="' + esc(t) + '">' + esc(t) + "</button>"; }).join("");
 }
 function syncCatalogControls() {
-  $("f-q").value = cat.q; $("f-cost").value = cat.cost; var wc = $("f-where-custom"), hn = Object.keys(cat.hoods), rn = Object.keys(cat.regions);
+  $("f-q").value = cat.q; $("f-cost").value = cat.cost; $("f-crews").value = cat.crews; var wc = $("f-where-custom"), hn = Object.keys(cat.hoods), rn = Object.keys(cat.regions);
   if (rn.length) { wc.hidden = false; wc.textContent = "Your areas: " + rn.map(function (r) { return REGION_NAMES[r] || r; }).join(", "); $("f-where").value = "custom"; }
   else if (hn.length) { wc.hidden = false; wc.textContent = "Your neighborhoods: " + hn.sort().join(", "); $("f-where").value = "custom"; } else { wc.hidden = true; $("f-where").value = cat.where; } $("f-sort").value = cat.sort;
   var c = $("f-when-custom");
@@ -91,6 +91,7 @@ function catalogParams() {
   Object.keys(cat.regions).forEach(function (r) { p.push(["region", r]); }); // from Plan an outing (CC-73)
   Object.keys(cat.hoods).forEach(function (h) { p.push(["hood", h]); });
   if (cat.q.trim()) p.push(["q", cat.q.trim()]);
+  if (cat.crews && AUTH.user) p.push(["crews", cat.crews]); // CC-75: events your crews have plans for
   p.push(["sort", cat.sort === "az" || cat.sort === "price" || cat.sort === "opening" ? cat.sort : "closing"]);
   return p;
 }
@@ -124,7 +125,7 @@ $("filters").addEventListener("submit", function (ev) { ev.preventDefault(); });
 var Q_TIMER = null; // wait for a pause in typing before asking the API
 $("f-q").addEventListener("input", function () { cat.q = this.value; clearTimeout(Q_TIMER); Q_TIMER = setTimeout(renderCatalog, 250); });
 $("more-btn").addEventListener("click", function () { loadCatalog(true); });
-["when", "cost", "where", "sort"].forEach(function (k) {
+["when", "cost", "where", "sort", "crews"].forEach(function (k) {
   $("f-" + k).addEventListener("change", function () { cat[k] = this.value; if (k === "when" && this.value !== "custom") cat.custom = null; if (k === "where") { cat.hoods = {}; cat.regions = {}; } renderCatalog(); });
 });
 $("type-chips").addEventListener("click", function (ev) {
@@ -140,4 +141,15 @@ $("mine-chips").addEventListener("click", function (ev) {
   if (cat.picks[m]) delete cat.picks[m]; else cat.picks[m] = 1;
   renderCatalog();
 });
+// CC-75: "Your crews' plans" shows for members of a crew: everything, all your crews, or one crew.
+function buildCrewFilter() {
+  var mine = AUTH.user ? CREWS : [];
+  $("f-crews-field").hidden = !mine.length;
+  $("f-crews").innerHTML = '<option value="">Everything</option>' + (mine.length ? '<option value="all">All my crews</option>' : "") +
+    mine.map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.name) + "</option>"; }).join("");
+  if (cat.crews && !(cat.crews === "all" && mine.length) && !mine.some(function (c) { return String(c.id) === cat.crews; })) {
+    cat.crews = ""; if (visible("catalog")) renderCatalog();
+  }
+  $("f-crews").value = cat.crews;
+}
 $("clear-filters").addEventListener("click", function () { resetCatalog(); renderCatalog(); $("f-q").focus(); });

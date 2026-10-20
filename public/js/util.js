@@ -71,6 +71,7 @@ function fromApi(e) {
     region: e.venue.region || null, // the side of town (CC-73)
     pick: e.pick ? { status: e.pick.status, date: e.pick.date, by: e.pick.by } : null, // the owner's public pick (CC-66)
     sched: e.schedule || { dates: [], weekly: {}, weekly_from: "", hours: {} }, // when it's on, for the planner (CC-79)
+    crewPlans: e.crew_plans || [], // signed in: crew-mates' shared plans (CC-75)
     b: parseISO(e.begin_date), n: parseISO(e.end_date)
   };
 }
@@ -148,14 +149,16 @@ function cardHTML(e) {
     '<div class="card-top"><span class="kind">' + esc(e.type) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
     '<h3><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a></h3>" +
     '<div class="card-body"><p class="where">' + placeHTML(e) + "</p>" +
-    (e.suggestedBy ? '<p class="credit">Suggested by ' + esc(e.suggestedBy) + "</p>" : "") + "</div>" +
+    (e.suggestedBy ? '<p class="credit">Suggested by ' + esc(e.suggestedBy) + "</p>" : "") +
+    (AUTH.user && e.crewPlans.length ? '<p class="crew-note">' + esc(crewNoteText(e)) + "</p>" : "") + "</div>" +
     '<div class="card-foot"><span class="when">' + mark + (going ? '<span class="going-on">Going ' + esc(goingDay(mine.date)) + "</span>" :
       "<span>" + esc(dateText(e)) + "</span>") + "</span>" +
     '<span class="cost' + (e.min === 0 ? " free" : "") + '">' + esc(costText(e)) + "</span></div>" +
     (e.pick ? '<p class="pick-note" id="pick-note-' + PICK_SEQ + '" hidden>' + esc(pickText(e.pick)) + "</p>" : "") +
     (AUTH.user ? '<div class="card-actions">' + (goingLater(e) && !WENT[e.id] ? "" : wentHTML(e)) +
       (WENT[e.id] ? "" : myplanToggleHTML(e)) + // been already: nothing left to plan
-      (isAdmin() ? editButtonHTML(e, "went") : "") + "</div>" + (WENT[e.id] ? "" : myplanHTML(e)) : "") +
+      (WENT[e.id] ? "" : crewShareToggleHTML(e)) + // a plan, and crews to share it with (CC-75; crews.js)
+      (isAdmin() ? editButtonHTML(e, "went") : "") + "</div>" + (WENT[e.id] ? "" : myplanHTML(e) + crewShareHTML(e)) : "") +
     "</article>";
 }
 // The owner's pick as a dolphin button: hovering shows what it means; tapping (phones) opens it in the card.
@@ -180,6 +183,21 @@ document.addEventListener("click", function (ev) {
   b.setAttribute("aria-expanded", String(open)); if (note) note.hidden = !open;
 });
 // Committed to a day after today: "I've been" would be premature, so the card doesn't offer it.
+// "Ben K. and Maya C. from Thursday Theater are going" / "3 from Laughin Times are interested" (CC-75), per crew.
+function crewNoteText(e) {
+  function who(names) {
+    names = names.map(shortName); // "Maya C.", as on the crew boxes (crews.js)
+    return names.length > 2 ? (NUMBER_WORDS[names.length] || String(names.length)).toLowerCase() + " more" :
+      names.length === 2 ? names[0] + " and " + names[1] : names[0];
+  }
+  return e.crewPlans.map(function (c) {
+    var parts = [];
+    if (c.going.length) parts.push(who(c.going) + " from " + c.crew_name + (c.going.length === 1 ? " is going" : " are going"));
+    if (c.interested.length) parts.push((c.going.length ? who(c.interested) : who(c.interested) + " from " + c.crew_name) +
+      (c.interested.length === 1 ? " is interested" : " are interested"));
+    return parts.join(", and ");
+  }).join(". ") + ".";
+}
 function goingLater(e) { var mine = MYPLANS[e.id]; return !!mine && mine.status === "going" && parseISO(mine.date) > T; }
 function goingDay(iso) { var d = parseISO(iso); return d.getFullYear() === T.getFullYear() ? F.wmd.format(d) : F.mdy.format(d); }
 // The days you can say you're going: from today (or opening) to closing, at most two years out (the API's rule).
