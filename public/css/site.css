@@ -459,7 +459,10 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 @media (max-width: 520px) { .crew .crew-email .row { flex-wrap: wrap; } }
 /* CC-84: Report an issue */
 .report-row { margin-top: 6px; font-size: 0.875rem; }
-#issue-dialog textarea { width: 100%; background: var(--page); color: var(--text); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 9px 10px; font: inherit; resize: vertical; }
+#is-fields, #is-done { display: grid; gap: 16px; } /* the form's spacing, for the parts inside these wrappers */
+#is-fields[hidden], #is-done[hidden] { display: none; }
+#issue-dialog #is-about { margin-block: 2px 4px; }
+#issue-dialog textarea { display: block; width: 100%; background: var(--page); color: var(--text); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 9px 10px; font: inherit; resize: vertical; }
 .queue-item.issue { align-items: start; }
 .queue-item.issue .kind .state { font-size: 0.75rem; vertical-align: middle; margin-left: 4px; }
 .issue-note { margin-top: 6px; padding: 8px 10px; border-radius: var(--r-ctl); background: var(--info-soft); color: var(--on-info-soft); font-weight: 600; font-size: 0.9375rem; }
