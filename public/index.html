@@ -202,7 +202,10 @@
               <option value="u100">Tickets from under $100</option>
             </select>
           </div>
-          <div class="field"><label for="f-where">Where</label><select id="f-where"></select></div>
+          <div class="field where-field"><span class="field-label" id="f-where-label">Where</span>
+            <button type="button" class="where-btn" id="f-where-btn" aria-haspopup="true" aria-expanded="false" aria-controls="f-where-panel" aria-labelledby="f-where-label f-where-btn">Anywhere</button>
+            <div class="where-panel" id="f-where-panel" role="group" aria-labelledby="f-where-label" hidden></div>
+          </div>
           <div class="field" id="f-crews-field" hidden><label for="f-crews">Your crews' plans</label><select id="f-crews"><option value="">Everything</option></select></div>
           <div class="field"><label for="f-sort">Sort by</label>
             <select id="f-sort">

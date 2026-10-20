@@ -468,4 +468,20 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .queue-item.issue .kind .state { font-size: 0.75rem; vertical-align: middle; margin-left: 4px; }
 .issue-note { margin-top: 6px; padding: 8px 10px; border-radius: var(--r-ctl); background: var(--info-soft); color: var(--on-info-soft); font-weight: 600; font-size: 0.9375rem; }
 .issue-edit { display: grid; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+/* CC-85: Where: several places at once */
+.where-field { position: relative; }
+.where-field .field-label { font-size: var(--step--1); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.where-btn { width: 100%; min-width: 0; text-align: left; background: var(--page); color: var(--text); border: 1px solid var(--field-line); border-radius: var(--r-ctl);
+  padding: 9px 30px 9px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
+.where-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.where-panel { position: absolute; z-index: 6; top: calc(100% + 6px); left: 0; width: min(560px, calc(100vw - 32px)); max-height: min(60vh, 520px); overflow-y: auto;
+  display: grid; gap: 12px; padding: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: 0 10px 30px rgb(0 0 0 / 0.3); }
+.where-panel[hidden] { display: none; }
+.where-group { display: grid; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+.where-side { font-weight: 700; }
+.where-hoods { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 12px; padding-left: 4px; }
+.where-hoods .radio { font-weight: 400; }
+.where-foot { position: sticky; bottom: -14px; justify-content: flex-end; padding: 10px 0 0; background: var(--surface); }
 

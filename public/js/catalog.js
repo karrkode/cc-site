@@ -47,24 +47,13 @@ function buildCatalogControls() {
   for (var i = 0; i < 12; i++) { var m = new Date(T.getFullYear(), T.getMonth() + i, 1); opts.push(["m-" + m.getFullYear() + "-" + (m.getMonth() + 1), F.monthY.format(m)]); }
   opts.push(["past", "Already closed"]);
   $("f-when").innerHTML = opts.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + "</option>"; }).join("") + '<option value="custom" id="f-when-custom" hidden></option>';
-  // CC-73: the sides of town first, then each one's neighborhoods (or towns) for a closer look
-  var byRegion = {};
-  FACETS.neighborhoods.forEach(function (h) { (byRegion[h.region || "other"] = byRegion[h.region || "other"] || {})[h.name] = 1; });
-  function group(label, set) {
-    var names = Object.keys(set || {}).sort(); if (!names.length) return "";
-    return '<optgroup label="' + esc(label) + '">' + names.map(function (n) { return '<option value="h:' + esc(n) + '">' + esc(n) + "</option>"; }).join("") + "</optgroup>";
-  }
-  $("f-where").innerHTML = '<option value="any">Anywhere</option><option value="local">City and suburbs</option>' +
-    '<optgroup label="Sides of town">' + REGIONS.map(function (r) { return '<option value="r:' + r[0] + '">' + esc(r[1]) + "</option>"; }).join("") + "</optgroup>" +
-    REGIONS.map(function (r) { return group(r[1] + (r[0] === "suburbs" || r[0] === "out_of_town" ? "" : " neighborhoods"), byRegion[r[0]]); }).join("") +
-    group("Other neighborhoods", byRegion.other) + '<option value="custom" id="f-where-custom" hidden></option>';
+  buildWherePanel();
   $("type-chips").innerHTML = '<button type="button" class="chip" data-type="">All types</button>' +
     TYPES.map(function (t) { return '<button type="button" class="chip" data-type="' + esc(t) + '">' + esc(t) + "</button>"; }).join("");
 }
 function syncCatalogControls() {
-  $("f-q").value = cat.q; $("f-cost").value = cat.cost; $("f-crews").value = cat.crews; var wc = $("f-where-custom"), hn = Object.keys(cat.hoods), rn = Object.keys(cat.regions);
-  if (rn.length) { wc.hidden = false; wc.textContent = "Your areas: " + rn.map(function (r) { return REGION_NAMES[r] || r; }).join(", "); $("f-where").value = "custom"; }
-  else if (hn.length) { wc.hidden = false; wc.textContent = "Your neighborhoods: " + hn.sort().join(", "); $("f-where").value = "custom"; } else { wc.hidden = true; $("f-where").value = cat.where; } $("f-sort").value = cat.sort;
+  $("f-q").value = cat.q; $("f-cost").value = cat.cost; $("f-crews").value = cat.crews; $("f-sort").value = cat.sort;
+  paintWhere();
   var c = $("f-when-custom");
   if (cat.when === "custom" && cat.custom) { c.hidden = false; c.textContent = "Outing dates: " + windowText(cat.custom.ws, cat.custom.we); } else { c.hidden = true; }
   $("f-when").value = cat.when;
@@ -86,10 +75,8 @@ function catalogParams() {
   Object.keys(cat.picks).forEach(function (m) { p.push(["picks", m]); });
   if (COST_MAX[cat.cost]) p.push(["max_price", COST_MAX[cat.cost]]);
   (WHERE_AREAS[cat.where] || []).forEach(function (a) { p.push(["area", a]); });
-  if (cat.where.indexOf("h:") === 0) p.push(["hood", cat.where.slice(2)]);
-  if (cat.where.indexOf("r:") === 0) p.push(["region", cat.where.slice(2)]);
-  Object.keys(cat.regions).forEach(function (r) { p.push(["region", r]); }); // from Plan an outing (CC-73)
-  Object.keys(cat.hoods).forEach(function (h) { p.push(["hood", h]); });
+  Object.keys(cat.regions).forEach(function (r) { p.push(["region", r]); }); // sides of town (CC-73, CC-85)
+  Object.keys(cat.hoods).forEach(function (h) { p.push(["hood", h]); }); // and neighborhoods: any of them
   if (cat.q.trim()) p.push(["q", cat.q.trim()]);
   if (cat.crews && AUTH.user) p.push(["crews", cat.crews]); // CC-75: events your crews have plans for
   p.push(["sort", cat.sort === "az" || cat.sort === "price" || cat.sort === "opening" ? cat.sort : "closing"]);
@@ -125,8 +112,94 @@ $("filters").addEventListener("submit", function (ev) { ev.preventDefault(); });
 var Q_TIMER = null; // wait for a pause in typing before asking the API
 $("f-q").addEventListener("input", function () { cat.q = this.value; clearTimeout(Q_TIMER); Q_TIMER = setTimeout(renderCatalog, 250); });
 $("more-btn").addEventListener("click", function () { loadCatalog(true); });
-["when", "cost", "where", "sort", "crews"].forEach(function (k) {
-  $("f-" + k).addEventListener("change", function () { cat[k] = this.value; if (k === "when" && this.value !== "custom") cat.custom = null; if (k === "where") { cat.hoods = {}; cat.regions = {}; } renderCatalog(); });
+["when", "cost", "sort", "crews"].forEach(function (k) {
+  $("f-" + k).addEventListener("change", function () { cat[k] = this.value; if (k === "when" && this.value !== "custom") cat.custom = null; renderCatalog(); });
+});
+
+// ---------- Where: several places at once (CC-85) ----------
+// "Where" is a button showing what's chosen ("Anywhere", "Lincoln Park, Lakeview +1"); it opens a checkbox list by
+// side of town. Ticking a side takes all of it (cat.regions); ticking neighborhoods picks just those (cat.hoods).
+// Events in any of them show. "Anywhere" and "City and suburbs" (cat.where) clear the ticks.
+var WHERE_GROUPS = [], WHERE_TIMER = null;
+function buildWherePanel() {
+  var byRegion = {};
+  FACETS.neighborhoods.forEach(function (h) { (byRegion[h.region || "other"] = byRegion[h.region || "other"] || []).push(h.name); });
+  WHERE_GROUPS = REGIONS.map(function (r) { return { key: r[0], name: r[1], hoods: (byRegion[r[0]] || []).sort() }; })
+    .concat(byRegion.other ? [{ key: "", name: "Other neighborhoods", hoods: byRegion.other.sort() }] : [])
+    .filter(function (g) { return g.hoods.length; });
+  var n = 0;
+  $("f-where-panel").innerHTML = '<div class="row where-quick"><button type="button" class="chip" data-where="any">Anywhere</button>' +
+    '<button type="button" class="chip" data-where="local">City and suburbs</button></div>' +
+    WHERE_GROUPS.map(function (g, gi) {
+      var head = g.key ? '<label class="radio where-side"><input type="checkbox" data-where-region="' + esc(g.key) + '"> ' + esc(g.name) +
+        ' <span class="hint small">(all)</span></label>' : '<p class="where-side" id="where-g-' + gi + '">' + esc(g.name) + "</p>";
+      return '<div class="where-group" role="group" aria-label="' + esc(g.name) + '">' + head + '<div class="where-hoods">' + g.hoods.map(function (h) {
+        n += 1;
+        return '<label class="radio"><input type="checkbox" data-where-hood="' + esc(h) + '" data-where-in="' + esc(g.key) + '"> ' + esc(h) + "</label>";
+      }).join("") + "</div></div>";
+    }).join("") +
+    '<div class="row where-foot"><button type="button" class="btn ghost" id="where-clear">Clear</button><button type="button" class="btn" id="where-done">Done</button></div>';
+}
+function whereLabel() {
+  var names = Object.keys(cat.regions).map(function (r) { return REGION_NAMES[r] || r; }).concat(Object.keys(cat.hoods).sort());
+  if (!names.length) return cat.where === "local" ? "City and suburbs" : "Anywhere";
+  return names.length > 2 ? names.slice(0, 2).join(", ") + " +" + (names.length - 2) : names.join(", ");
+}
+function paintWhere() {
+  $("f-where-btn").textContent = whereLabel();
+  var places = Object.keys(cat.regions).length + Object.keys(cat.hoods).length;
+  Array.prototype.forEach.call($("f-where-panel").querySelectorAll("[data-where]"), function (b) {
+    b.setAttribute("aria-pressed", String(!places && b.getAttribute("data-where") === cat.where));
+  });
+  Array.prototype.forEach.call($("f-where-panel").querySelectorAll("[data-where-region]"), function (b) { b.checked = !!cat.regions[b.getAttribute("data-where-region")]; });
+  Array.prototype.forEach.call($("f-where-panel").querySelectorAll("[data-where-hood]"), function (b) {
+    b.checked = !!cat.hoods[b.getAttribute("data-where-hood")] || !!cat.regions[b.getAttribute("data-where-in")];
+  });
+}
+function openWhere(open) {
+  var panel = $("f-where-panel"), btn = $("f-where-btn");
+  panel.hidden = !open; btn.setAttribute("aria-expanded", String(open));
+  if (open) { // open towards whichever side has room, so it never runs off the screen
+    panel.style.left = "0"; panel.style.right = "auto";
+    var r = panel.getBoundingClientRect(), field = btn.parentElement.getBoundingClientRect();
+    if (r.right > document.documentElement.clientWidth - 16) {
+      panel.style.left = "auto"; panel.style.right = "0";
+      if (panel.getBoundingClientRect().left < 16) { panel.style.right = "auto"; panel.style.left = (16 - field.left) + "px"; }
+    }
+  }
+  if (open) { paintWhere(); (panel.querySelector('[aria-pressed="true"], input:checked') || panel.querySelector("button, input")).focus(); }
+}
+function whereChanged() { paintWhere(); clearTimeout(WHERE_TIMER); WHERE_TIMER = setTimeout(renderCatalog, 250); }
+$("f-where-btn").addEventListener("click", function () { openWhere($("f-where-panel").hidden); });
+$("f-where-panel").addEventListener("click", function (ev) {
+  var quick = ev.target.closest("[data-where]");
+  if (quick) { cat.where = quick.getAttribute("data-where"); cat.regions = {}; cat.hoods = {}; whereChanged(); return; }
+  if (ev.target.id === "where-clear") { cat.where = "any"; cat.regions = {}; cat.hoods = {}; whereChanged(); return; }
+  if (ev.target.id === "where-done") { openWhere(false); $("f-where-btn").focus(); }
+});
+$("f-where-panel").addEventListener("change", function (ev) {
+  var box = ev.target, region = box.getAttribute("data-where-region"), hood = box.getAttribute("data-where-hood");
+  cat.where = "any";
+  if (region) { // a whole side of town; its neighborhoods are part of it, so they're not listed separately
+    if (box.checked) {
+      cat.regions[region] = 1;
+      WHERE_GROUPS.filter(function (g) { return g.key === region; })[0].hoods.forEach(function (h) { delete cat.hoods[h]; });
+    } else delete cat.regions[region];
+  } else if (hood) {
+    var side = box.getAttribute("data-where-in");
+    if (!box.checked && side && cat.regions[side]) { // untick one place from a whole side: the side's other places stay
+      delete cat.regions[side];
+      WHERE_GROUPS.filter(function (g) { return g.key === side; })[0].hoods.forEach(function (h) { if (h !== hood) cat.hoods[h] = 1; });
+    } else if (box.checked) cat.hoods[hood] = 1; else delete cat.hoods[hood];
+  }
+  whereChanged();
+});
+document.addEventListener("click", function (ev) { // a click elsewhere closes the list
+  if ($("f-where-panel").hidden || ev.target.closest(".where-field")) return;
+  openWhere(false);
+});
+$("f-where-panel").addEventListener("keydown", function (ev) {
+  if (ev.key === "Escape") { ev.stopPropagation(); openWhere(false); $("f-where-btn").focus(); }
 });
 $("type-chips").addEventListener("click", function (ev) {
   var b = ev.target.closest(".chip"); if (!b) return;
