@@ -155,6 +155,13 @@ a { color: inherit; }
 .view-head p { color: var(--muted); max-width: 60ch; }
 .filters { display: grid; gap: 14px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+/* CC-66: the dolphin filters sit after the type chips, set off by a hairline */
+.mine-chips { padding-left: 8px; border-left: 1px solid var(--line); }
+.chip.mine { display: inline-grid; place-items: center; padding: 2px 10px; min-height: 36px; }
+.chip.mine img { display: block; width: 24px; height: 24px; }
+.chip.mine[data-mine="going"] img { width: 28px; height: 28px; margin-block: -2px; }
+.chip.mine[aria-pressed="true"] { background: var(--info-soft); border-color: var(--lead); box-shadow: inset 0 0 0 1px var(--lead); } /* a soft fill: the dolphins clash with the solid accent */
 .chip {
   border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 6px 14px; cursor: pointer;
   font-weight: 600; font-size: 0.9375rem;

@@ -11,6 +11,7 @@ function rerenderLists() {
   if (visible("account")) renderAccount();
 }
 function onAuthChange() {
+  if (Object.keys(cat.mine).length) { cat.mine = {}; if (visible("catalog")) renderCatalog(); } // someone else's plans? never
   $("nav-account").textContent = AUTH.user ? "Your account" : "Sign in";
   $("nav-review").hidden = !isAdmin();
   WENT = {}; WENT_LIST = []; MYPLANS = {}; MYPLAN_LIST = [];

@@ -24,8 +24,16 @@ function renderHome() {
 $("soon-more").addEventListener("click", function () { resetCatalog(); cat.sort = "closing"; cat.when = "week"; loadCatalog(); show("catalog"); });
 
 // ---------- catalog ----------
-var cat = { q: "", types: {}, hoods: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null };
-function resetCatalog() { cat = { q: "", types: {}, hoods: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null }; }
+var cat = { q: "", types: {}, hoods: {}, mine: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null };
+function resetCatalog() { cat = { q: "", types: {}, hoods: {}, mine: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null }; }
+// CC-66: the dolphin filters (only for accounts with the dolphins): your interested and/or committed events.
+function syncMineChips() {
+  var on = !!(AUTH.user && AUTH.user.dolphins);
+  $("mine-chips").hidden = !on;
+  Array.prototype.forEach.call($("mine-chips").children, function (b) {
+    b.setAttribute("aria-pressed", String(!!cat.mine[b.getAttribute("data-mine")]));
+  });
+}
 function catWindow() {
   var w = cat.when;
   if (w === "upcoming") return [T, null];
@@ -64,6 +72,7 @@ function syncCatalogControls() {
     var t = b.getAttribute("data-type");
     b.setAttribute("aria-pressed", String(t ? !!cat.types[t] : any));
   });
+  syncMineChips();
 }
 var PAGE = 24, CAT_ITEMS = [], CAT_TOTAL = 0, CAT_REQ = 0;
 var COST_MAX = { free: "0", u40: "39.99", u100: "99.99" }; // "under $40" = a lowest price below 40
@@ -73,6 +82,7 @@ function catalogParams() {
   if (cat.when === "past") p.push(["ended_before", isoDate(T)]);
   else { if (w[0]) p.push(["from", isoDate(w[0])]); if (w[1]) p.push(["to", isoDate(w[1])]); }
   Object.keys(cat.types).forEach(function (t) { p.push(["category", t]); });
+  Object.keys(cat.mine).forEach(function (m) { p.push(["mine", m]); });
   if (COST_MAX[cat.cost]) p.push(["max_price", COST_MAX[cat.cost]]);
   (WHERE_AREAS[cat.where] || []).forEach(function (a) { p.push(["area", a]); });
   if (cat.where.indexOf("h:") === 0) p.push(["hood", cat.where.slice(2)]);
@@ -99,7 +109,9 @@ function loadCatalog(more) { // a fresh first page, or (more) the next one; repl
 function paintCatalog(focusFrom) {
   $("tally").innerHTML = "<strong>" + CAT_TOTAL + "</strong> " + (CAT_TOTAL === 1 ? "event" : "events") + (cat.when === "past" ? " already closed" : "") +
     (CAT_ITEMS.length < CAT_TOTAL ? ", showing " + CAT_ITEMS.length : "");
-  $("grid").innerHTML = CAT_ITEMS.length ? CAT_ITEMS.map(cardHTML).join("") :
+  syncMineChips();
+  $("grid").innerHTML = CAT_ITEMS.length ? CAT_ITEMS.map(cardHTML).join("") : Object.keys(cat.mine).length ?
+    '<div class="empty" style="grid-column:1/-1"><p><strong>None of your plans match.</strong></p><p class="hint">Use \u201cInterested?\u201d on an event to add it, or widen the other filters.</p></div>' :
     '<div class="empty" style="grid-column:1/-1"><p><strong>Nothing matches those filters.</strong></p><p class="hint">Try a wider date range or a higher price limit.</p></div>';
   $("more-row").hidden = CAT_ITEMS.length >= CAT_TOTAL; $("more-btn").disabled = false;
   if (focusFrom) { var first = $("grid").children[focusFrom]; var a = first && first.querySelector("h3 a"); if (a) a.focus(); }
@@ -117,6 +129,12 @@ $("type-chips").addEventListener("click", function (ev) {
   var t = b.getAttribute("data-type");
   if (!t) cat.types = {}; else if (cat.types[t]) delete cat.types[t]; else cat.types[t] = 1;
   if (Object.keys(cat.types).length === TYPES.length) cat.types = {};
+  renderCatalog();
+});
+$("mine-chips").addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-mine]"); if (!b) return;
+  var m = b.getAttribute("data-mine");
+  if (cat.mine[m]) delete cat.mine[m]; else cat.mine[m] = 1;
   renderCatalog();
 });
 $("clear-filters").addEventListener("click", function () { resetCatalog(); renderCatalog(); $("f-q").focus(); });
