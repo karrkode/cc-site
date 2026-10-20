@@ -17,7 +17,7 @@ function queueItemHTML(e, actions) {
       e.suggestedBy ? '<p class="alt-meta">Credited as "Suggested by ' + esc(e.suggestedBy) + '"</p>' : "") + "</div>" +
     '<div class="row">' + actions + "</div></div>";
 }
-function openReview() { if (!isAdmin()) { openAccount(); return; } renderReview(); show("review"); }
+function openReview() { if (!isAdmin()) { openAccount(); return; } renderReview(); updateFoundCount(); show("review"); }
 function updateReviewCount(n) {
   if (n !== undefined) { $("review-count").textContent = n ? String(n) : ""; return; }
   api("/admin/events?limit=1").then(readJSON).then(function (res) { if (res.ok) updateReviewCount(res.body.total); }, function () {});
@@ -200,6 +200,7 @@ function editButtonHTML(e, cls) {
 }
 function openEditor(e, opener) {
   EDITING = { e: e, opener: opener };
+  foundMode(null); // the same form approves found events (CC-71)
   $("ed-heading").textContent = "Edit " + e.title;
   $("ed-sheet").hidden = !e.sourceId;
   $("ed-title").value = e.title; $("ed-category").value = e.type; $("ed-status").value = e.status || "approved";
@@ -256,6 +257,7 @@ function venueIdFor(name, hood) {
 }
 $("edit-form").addEventListener("submit", function (ev) {
   ev.preventDefault();
+  if (EDITING && EDITING.found) { approveFromEditor(); return; } // "Edit then approve" a found event (found.js)
   var e = EDITING && EDITING.e; if (!e) return;
   var title = $("ed-title").value.trim(), venue = $("ed-venue").value.trim(), hood = $("ed-hood").value.trim();
   var begin = $("ed-begin").value || null, end = $("ed-end").value || null, url = $("ed-url").value.trim(), cost = $("ed-cost").value.trim();
@@ -449,6 +451,20 @@ var SOURCE_KINDS = { theater: "Theater", opera: "Opera", museum: "Museum", music
 var SOURCE_STATUS = { ok: ["Found changes", "ok"], unchanged: ["No changes", ""], blocked: ["Can't be read", "bad"], error: ["Check failed", "bad"], "": ["Not checked yet", ""] };
 var EVERY = [[7, "Every week"], [14, "Every 2 weeks"], [30, "Every month"], [60, "Every 2 months"]];
 function openSources() { if (!isAdmin()) { openAccount(); return; } show("sources"); loadSources(); }
+var SOURCES = null, SOURCES_SORT = "name";
+// Sort the sources list: by name, by found items waiting, or by when each was last checked (never-checked last
+// for "most recent", first for "longest ago"). Ties keep name order.
+function sortedSources(list) {
+  function when(s) { return s.last_checked_at ? new Date(s.last_checked_at).getTime() : null; }
+  return list.slice().sort(function (a, b) {
+    var ta = when(a), tb = when(b), d = 0;
+    if (SOURCES_SORT === "waiting") d = b.waiting - a.waiting;
+    else if (SOURCES_SORT === "checked") d = (tb === null ? -Infinity : tb) - (ta === null ? -Infinity : ta);
+    else if (SOURCES_SORT === "stale") d = (ta === null ? -Infinity : ta) - (tb === null ? -Infinity : tb);
+    return d || a.name.localeCompare(b.name);
+  });
+}
+$("sources-sort").addEventListener("change", function () { SOURCES_SORT = this.value; if (SOURCES) paintSources(SOURCES); });
 function loadSources(focusId) {
   $("sources-status").textContent = "Loading…";
   api("/admin/discovery/sources").then(readJSON).then(function (res) {
@@ -459,13 +475,14 @@ function loadSources(focusId) {
 }
 function whenText(iso) { return iso ? short(new Date(iso)) : "never"; }
 function paintSources(o) {
+  SOURCES = o;
   var bad = o.sources.filter(function (s) { return s.last_status === "blocked" || s.last_status === "error"; }).length;
   $("sources-summary").innerHTML =
     "<div><strong>" + o.sources.length + "</strong><span>sources" + (bad ? ", " + bad + " to look at" : "") + "</span></div>" +
     "<div><strong>" + o.sources.reduce(function (n, s) { return n + s.waiting; }, 0) + "</strong><span>found, waiting for review</span></div>" +
     "<div><strong>$" + o.cost_30d_usd.toFixed(2) + "</strong><span>reading cost, last 30 days (" +
       Math.round((o.tokens_in_30d + o.tokens_out_30d) / 1000) + "K tokens)</span></div>";
-  $("sources-list").innerHTML = o.sources.map(function (s) {
+  $("sources-list").innerHTML = sortedSources(o.sources).map(function (s) {
     var st = SOURCE_STATUS[s.last_status] || [s.last_status, ""], id = esc(s.id);
     var every = EVERY.some(function (e) { return e[0] === s.every_days; }) ? EVERY : EVERY.concat([[s.every_days, "Every " + s.every_days + " days"]]);
     return '<div class="queue-item source"><div class="alt-text">' +
