@@ -157,7 +157,7 @@ function cardHTML(e) {
     (e.pick ? '<p class="pick-note" id="pick-note-' + PICK_SEQ + '" hidden>' + esc(pickText(e.pick)) + "</p>" : "") +
     (AUTH.user ? '<div class="card-actions">' + (goingLater(e) && !WENT[e.id] ? "" : wentHTML(e)) +
       (WENT[e.id] ? "" : myplanToggleHTML(e)) + // been already: nothing left to plan
-      (WENT[e.id] ? "" : crewShareToggleHTML(e)) + // a plan, and crews to share it with (CC-75; crews.js)
+      (WENT[e.id] ? "" : crewShareToggleHTML(e)) + // "Invite your Crew?": a plan, and crews to share it with (CC-75; crews.js)
       (isAdmin() ? editButtonHTML(e, "went") : "") + "</div>" + (WENT[e.id] ? "" : myplanHTML(e) + crewShareHTML(e)) : "") +
     "</article>";
 }

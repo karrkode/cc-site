@@ -132,7 +132,7 @@ function crewLineHTML(people) {
   return parts.join(" ");
 }
 function crewPlansHTML(c) {
-  if (!c.plans.length) return '<p class="hint small">No plans shared yet. Use \u201cAdd to your crew?\u201d on an event you\u2019re interested in.</p>';
+  if (!c.plans.length) return '<p class="hint small">No plans shared yet. Use \u201cInvite your Crew?\u201d on an event you\u2019re interested in.</p>';
   return '<ul class="crew-plans" aria-labelledby="crew-p-' + esc(c.id) + '">' + c.plans.map(function (row) {
     var e = toEvent(row.event);
     return '<li><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" +
@@ -296,8 +296,8 @@ $("join-yes").addEventListener("click", function () {
 });
 $("join-no").addEventListener("click", function () { JOIN = null; paintJoin(); $("account-title").focus(); });
 
-// ---------- "Add to your crew?" on an event card (CC-75) ----------
-// Once you have a plan for an event and you're in a crew, the card offers "Add to your crew?": a checkbox per
+// ---------- "Invite your Crew?" on an event card (CC-75) ----------
+// Once you have a plan for an event and you're in a crew, the card offers "Invite your Crew?": a checkbox per
 // crew. Only the crews you tick see it; changing the plan keeps them; clearing it, or "I've been", unshares it.
 var CREWSHARE_SEQ = 0;
 function crewShareToggleHTML(e) {
@@ -306,7 +306,7 @@ function crewShareToggleHTML(e) {
   CREWSHARE_SEQ += 1;
   var n = (mine.crews || []).length;
   return '<button type="button" class="went" data-crewshare-toggle="' + esc(e.id) + '" aria-expanded="false" aria-controls="crewshare-' + CREWSHARE_SEQ + '">' +
-    (n ? "Shared with " + plural(n, "crew", "crews") : "Add to your crew?") + "</button>";
+    (n ? "Shared with " + plural(n, "crew", "crews") : "Invite your Crew?") + "</button>";
 }
 function crewShareHTML(e) {
   var mine = MYPLANS[e.id];
