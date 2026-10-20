@@ -456,7 +456,7 @@ function paintTraffic(t) {
 var SOURCE_KINDS = { theater: "Theater", opera: "Opera", museum: "Museum", music: "Music", comedy: "Comedy" };
 var SOURCE_STATUS = { ok: ["Found changes", "ok"], unchanged: ["No changes", ""], blocked: ["Can't be read", "bad"], error: ["Check failed", "bad"], "": ["Not checked yet", ""] };
 var EVERY = [[7, "Every week"], [14, "Every 2 weeks"], [30, "Every month"], [60, "Every 2 months"]];
-function openSources() { if (!isAdmin()) { openAccount(); return; } show("sources"); loadSources(); }
+function openSources(focusSel) { if (!isAdmin()) { openAccount(); return; } show("sources"); loadSources(focusSel); }
 var SOURCES = null, SOURCES_SORT = "name";
 // Sort the sources list: by name, by found items waiting, or by when each was last checked (never-checked last
 // for "most recent", first for "longest ago"). Ties keep name order.
@@ -497,9 +497,10 @@ function paintSources(o) {
     var st = SOURCE_STATUS[s.last_status] || [s.last_status, ""], id = esc(s.id);
     var every = EVERY.some(function (e) { return e[0] === s.every_days; }) ? EVERY : EVERY.concat([[s.every_days, "Every " + s.every_days + " days"]]);
     return '<div class="queue-item source"><div class="alt-text">' +
-      '<p class="alt-title">' + esc(s.name) + ' <span class="state ' + st[1] + '">' + esc(st[0]) + "</span>" + (s.active ? "" : ' <span class="state">Off</span>') + "</p>" +
+      '<p class="alt-title">' + esc(s.name) + ' <span class="state ' + st[1] + '">' + esc(st[0]) + "</span>" + (s.active ? "" : ' <span class="state">Off</span>') +
+        (s.manual ? ' <span class="state">Checked by hand</span>' : "") + "</p>" +
       '<p class="alt-meta">' + esc(SOURCE_KINDS[s.kind] || s.kind) + " · " + (s.reader === "aic_api" ? "the museum's own API" : plural(s.pages.length, "page", "pages")) +
-        " · last checked " + esc(whenText(s.last_checked_at)) + " · next " + (s.active ? (s.next_check_on ? esc(short(parseISO(s.next_check_on))) : "within the hour") : "off") +
+        " · last checked " + esc(whenText(s.last_checked_at)) + " · next " + (!s.active ? "off" : s.manual ? "by hand only" : s.next_check_on ? esc(short(parseISO(s.next_check_on))) : "within the hour") +
         (s.waiting ? " · " + plural(s.waiting, "item", "items") + " waiting" : "") + "</p>" +
       (s.last_error ? '<p class="alt-meta source-error">' + esc(s.last_error) + "</p>" : "") +
       (s.reader === "aic_api" ? "" : '<p class="alt-meta">' + s.pages.map(function (p) { return '<a href="' + esc(safeUrl(p)) + '" target="_blank" rel="noopener">' + esc(p.replace(/^https?:\/\/(www\.)?/, "")) + "</a>"; }).join(" · ") + "</p>") +
@@ -508,20 +509,26 @@ function paintSources(o) {
       '<select id="src-every-' + id + '" data-src-every="' + id + '">' + every.map(function (e) {
         return '<option value="' + e[0] + '"' + (e[0] === s.every_days ? " selected" : "") + ">" + esc(e[1]) + "</option>"; }).join("") + "</select>" +
       '<button class="btn neutral" type="button" data-src-check="' + id + '"' + (s.active ? "" : " disabled") + ' aria-label="Check ' + esc(s.name) + ' now">Check now</button>' +
+      '<button class="btn ghost" type="button" data-src-manual="' + id + '" data-on="' + s.manual + '" aria-label="' + (s.manual ? "Check " + esc(s.name) + " automatically again" : "Check " + esc(s.name) + " by hand only") + '">' +
+        (s.manual ? "Check automatically" : "Check by hand only") + "</button>" +
       '<button class="btn ghost" type="button" data-src-toggle="' + id + '" data-on="' + s.active + '" aria-label="' + (s.active ? "Turn off " : "Turn on ") + esc(s.name) + '">' + (s.active ? "Turn off" : "Turn on") + "</button>" +
       "</div></div>";
   }).join("");
 }
 $("sources-list").addEventListener("click", function (ev) {
-  var b = ev.target.closest("[data-src-check],[data-src-toggle]"); if (!b) return;
-  var check = b.hasAttribute("data-src-check"), id = b.getAttribute(check ? "data-src-check" : "data-src-toggle");
+  var b = ev.target.closest("[data-src-check],[data-src-toggle],[data-src-manual]"); if (!b) return;
+  var check = b.hasAttribute("data-src-check"), manual = b.hasAttribute("data-src-manual");
+  var id = b.getAttribute(check ? "data-src-check" : manual ? "data-src-manual" : "data-src-toggle");
   b.disabled = true;
+  var on = b.getAttribute("data-on") !== "true";
   var req = check ? api("/admin/discovery/sources/" + id + "/check", { method: "POST" })
-    : api("/admin/discovery/sources/" + id, { method: "PATCH", body: { active: b.getAttribute("data-on") !== "true" } });
+    : api("/admin/discovery/sources/" + id, { method: "PATCH", body: manual ? { manual: on } : { active: on } });
   req.then(readJSON).then(function (res) {
     if (!res.ok) { b.disabled = false; $("sources-status").textContent = errorText(res); return; }
-    $("edit-live").textContent = check ? res.body.name + " will be checked within the hour." : res.body.name + (res.body.active ? " turned on." : " turned off.");
-    loadSources(check ? '[data-src-check="' + id + '"]' : '[data-src-toggle="' + id + '"]');
+    $("edit-live").textContent = check ? res.body.name + " will be checked within the hour." :
+      manual ? res.body.name + (res.body.manual ? " will be checked by hand only. It stays on the weekly recap's list." : " will be checked automatically again.") :
+      res.body.name + (res.body.active ? " turned on." : " turned off.");
+    loadSources(check ? '[data-src-check="' + id + '"]' : manual ? '[data-src-manual="' + id + '"]' : '[data-src-toggle="' + id + '"]');
   }, function () { b.disabled = false; $("sources-status").textContent = errorText(null); });
 });
 $("budget-form").addEventListener("submit", function (ev) {
