@@ -5,7 +5,7 @@
 // GET /admin/discovery/items lists new events and proposed updates ("waiting"), or one status. New events are
 // approved (as found, or through the edit form), rejected, or rejected with a skip rule; updates are accepted
 // or dismissed. Nothing reaches the catalog without one of these.
-var FOUND = { show: "waiting", source: "", items: [], total: 0 }, FOUND_PAGE = 50, FOUND_REQ = 0;
+var FOUND = { show: "waiting", source: "", price: "any", dates: "any", items: [], total: 0 }, FOUND_PAGE = 50, FOUND_REQ = 0;
 var FOUND_SHOWS = [["waiting", "Waiting for you"], ["new", "New events"], ["update", "Proposed updates"], ["approved", "Approved"],
   ["rejected", "Rejected"], ["skipped", "Left out automatically"], ["listed", "Already listed"], ["all", "Everything"]];
 var FOUND_KINDS = { production: "Production", exhibition: "Exhibition", concert: "Concert", comedy_show: "Comedy", talk: "Talk",
@@ -27,7 +27,11 @@ function loadFoundSources() {
     $("found-source").value = FOUND.source;
   }, function () {});
 }
-function foundQuery(extra) { return qs([["show", FOUND.show], ["source", FOUND.source]].concat(extra || [])); }
+function foundQuery(extra) { // "any" is the API's default, so it's left out
+  return qs([["show", FOUND.show], ["source", FOUND.source], ["price", FOUND.price === "any" ? "" : FOUND.price],
+    ["dates", FOUND.dates === "any" ? "" : FOUND.dates]].concat(extra || []));
+}
+function foundFiltered() { return FOUND.source || FOUND.price !== "any" || FOUND.dates !== "any"; }
 function loadFound(more, focusSel) {
   var req = ++FOUND_REQ, offset = more ? FOUND.items.length : 0;
   if (!more) $("found-status").textContent = "Loading…";
@@ -43,7 +47,7 @@ function loadFound(more, focusSel) {
 }
 function paintFound(o, focusFrom) {
   var c = o.counts, waiting = (c["new"] || 0) + (c.update || 0);
-  updateFoundCount(c);
+  if (foundFiltered()) updateFoundCount(); else updateFoundCount(c); // the Review badge counts everything waiting
   $("found-show").innerHTML = FOUND_SHOWS.map(function (s) {
     var n = s[0] === "waiting" ? waiting : s[0] === "all" ? null : (c[s[0]] || 0);
     return '<option value="' + s[0] + '">' + esc(s[1]) + (n === null ? "" : " (" + n + ")") + "</option>"; }).join("");
@@ -53,7 +57,7 @@ function paintFound(o, focusFrom) {
       return esc(s.name) + " (" + esc(s.reason || (s.status === "blocked" ? "refused" : "failed")) + ")"; }).join("; ") + "." : "";
   $("found-status").textContent = FOUND.total ? plural(FOUND.total, "event", "events") + (FOUND.items.length < FOUND.total ? ", showing " + FOUND.items.length : "") : "";
   $("found-list").innerHTML = FOUND.items.length ? FOUND.items.map(foundItemHTML).join("") :
-    '<p class="hint">' + (FOUND.show === "waiting" ? "Nothing waiting. New finds show up here after each check." : "Nothing here.") + "</p>";
+    '<p class="hint">' + (foundFiltered() ? "Nothing matches these filters." : FOUND.show === "waiting" ? "Nothing waiting. New finds show up here after each check." : "Nothing here.") + "</p>";
   $("found-more-row").hidden = FOUND.items.length >= FOUND.total; $("found-more").disabled = false;
   if (focusFrom >= 0) { var first = $("found-list").children[focusFrom]; var b = first && first.querySelector("button, a"); if (b) b.focus(); }
 }
@@ -175,6 +179,8 @@ function toggleSkipForm(row, i, opener) {
 $("found-filters").addEventListener("submit", function (ev) { ev.preventDefault(); });
 $("found-show").addEventListener("change", function () { FOUND.show = this.value; loadFound(); });
 $("found-source").addEventListener("change", function () { FOUND.source = this.value; loadFound(); });
+$("found-price").addEventListener("change", function () { FOUND.price = this.value; loadFound(); }); // CC-82
+$("found-dates").addEventListener("change", function () { FOUND.dates = this.value; loadFound(); });
 $("found-more").addEventListener("click", function () { loadFound(true); });
 $("found-csv").addEventListener("click", function () {
   var b = this; b.disabled = true;
