@@ -486,8 +486,13 @@ function paintSources(o) {
   $("sources-summary").innerHTML =
     "<div><strong>" + o.sources.length + "</strong><span>sources" + (bad ? ", " + bad + " to look at" : "") + "</span></div>" +
     "<div><strong>" + o.sources.reduce(function (n, s) { return n + s.waiting; }, 0) + "</strong><span>found, waiting for review</span></div>" +
-    "<div><strong>$" + o.cost_30d_usd.toFixed(2) + "</strong><span>reading cost, last 30 days (" +
+    "<div><strong>$" + o.spent_month_usd.toFixed(2) + "</strong><span>spent this month, of a $" + o.budget_usd.toFixed(0) + " budget</span></div>" +
+    "<div><strong>$" + o.cost_30d_usd.toFixed(2) + "</strong><span>last 30 days (" +
       Math.round((o.tokens_in_30d + o.tokens_out_30d) / 1000) + "K tokens)</span></div>";
+  // CC-80: the monthly budget
+  $("sources-budget-note").textContent = o.budget_state === "paused" ? "The monthly budget is used up: only Check now runs until next month." :
+    o.budget_state === "saving" ? "Over 80% of the monthly budget: event pages wait until next month. Sources are still checked." : "";
+  if (document.activeElement !== $("budget-usd")) $("budget-usd").value = o.budget_usd;
   $("sources-list").innerHTML = sortedSources(o.sources).map(function (s) {
     var st = SOURCE_STATUS[s.last_status] || [s.last_status, ""], id = esc(s.id);
     var every = EVERY.some(function (e) { return e[0] === s.every_days; }) ? EVERY : EVERY.concat([[s.every_days, "Every " + s.every_days + " days"]]);
@@ -518,6 +523,16 @@ $("sources-list").addEventListener("click", function (ev) {
     $("edit-live").textContent = check ? res.body.name + " will be checked within the hour." : res.body.name + (res.body.active ? " turned on." : " turned off.");
     loadSources(check ? '[data-src-check="' + id + '"]' : '[data-src-toggle="' + id + '"]');
   }, function () { b.disabled = false; $("sources-status").textContent = errorText(null); });
+});
+$("budget-form").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var usd = +$("budget-usd").value;
+  if (!(usd >= 1 && usd <= 100)) { $("sources-status").textContent = "Give a budget from $1 to $100 a month."; $("budget-usd").focus(); return; }
+  api("/admin/discovery/budget", { method: "PUT", body: { usd: usd } }).then(readJSON).then(function (res) {
+    if (!res.ok) { $("sources-status").textContent = errorText(res); return; }
+    $("sources-status").textContent = ""; paintSources(res.body);
+    $("edit-live").textContent = "The monthly budget is now $" + res.body.budget_usd.toFixed(0) + ".";
+  }, function () { $("sources-status").textContent = errorText(null); });
 });
 $("sources-list").addEventListener("change", function (ev) {
   var sel = ev.target.closest("[data-src-every]"); if (!sel) return;
