@@ -24,8 +24,8 @@ function renderHome() {
 $("soon-more").addEventListener("click", function () { resetCatalog(); cat.sort = "closing"; cat.when = "week"; loadCatalog(); show("catalog"); });
 
 // ---------- catalog ----------
-var cat = { q: "", types: {}, hoods: {}, picks: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null };
-function resetCatalog() { cat = { q: "", types: {}, hoods: {}, picks: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null }; }
+var cat = { q: "", types: {}, hoods: {}, regions: {}, picks: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null };
+function resetCatalog() { cat = { q: "", types: {}, hoods: {}, regions: {}, picks: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null }; }
 // CC-66: the dolphin filters, for every visitor: the owner's picks (interested and/or committed).
 function syncMineChips() {
   Array.prototype.forEach.call($("mine-chips").children, function (b) {
@@ -47,21 +47,24 @@ function buildCatalogControls() {
   for (var i = 0; i < 12; i++) { var m = new Date(T.getFullYear(), T.getMonth() + i, 1); opts.push(["m-" + m.getFullYear() + "-" + (m.getMonth() + 1), F.monthY.format(m)]); }
   opts.push(["past", "Already closed"]);
   $("f-when").innerHTML = opts.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + "</option>"; }).join("") + '<option value="custom" id="f-when-custom" hidden></option>';
-  var city = {}, burbs = {}, far = {};
-  FACETS.neighborhoods.forEach(function (h) { (h.area === "suburbs" ? burbs : h.area === "out_of_town" ? far : city)[h.name] = 1; });
+  // CC-73: the sides of town first, then each one's neighborhoods (or towns) for a closer look
+  var byRegion = {};
+  FACETS.neighborhoods.forEach(function (h) { (byRegion[h.region || "other"] = byRegion[h.region || "other"] || {})[h.name] = 1; });
   function group(label, set) {
-    var names = Object.keys(set).sort(); if (!names.length) return "";
-    return '<optgroup label="' + label + '">' + names.map(function (n) { return '<option value="h:' + esc(n) + '">' + esc(n) + "</option>"; }).join("") + "</optgroup>";
+    var names = Object.keys(set || {}).sort(); if (!names.length) return "";
+    return '<optgroup label="' + esc(label) + '">' + names.map(function (n) { return '<option value="h:' + esc(n) + '">' + esc(n) + "</option>"; }).join("") + "</optgroup>";
   }
-  $("f-where").innerHTML = '<option value="any">Anywhere</option><option value="local">City and suburbs</option><option value="city">In the city</option><option value="suburbs">In the suburbs</option>' +
-    (Object.keys(far).length ? '<option value="far">Out of town</option>' : "") +
-    group("City neighborhoods", city) + group("Suburbs", burbs) + group("Out of town", far) + '<option value="custom" id="f-where-custom" hidden></option>';
+  $("f-where").innerHTML = '<option value="any">Anywhere</option><option value="local">City and suburbs</option>' +
+    '<optgroup label="Sides of town">' + REGIONS.map(function (r) { return '<option value="r:' + r[0] + '">' + esc(r[1]) + "</option>"; }).join("") + "</optgroup>" +
+    REGIONS.map(function (r) { return group(r[1] + (r[0] === "suburbs" || r[0] === "out_of_town" ? "" : " neighborhoods"), byRegion[r[0]]); }).join("") +
+    group("Other neighborhoods", byRegion.other) + '<option value="custom" id="f-where-custom" hidden></option>';
   $("type-chips").innerHTML = '<button type="button" class="chip" data-type="">All types</button>' +
     TYPES.map(function (t) { return '<button type="button" class="chip" data-type="' + esc(t) + '">' + esc(t) + "</button>"; }).join("");
 }
 function syncCatalogControls() {
-  $("f-q").value = cat.q; $("f-cost").value = cat.cost; var wc = $("f-where-custom"), hn = Object.keys(cat.hoods);
-  if (hn.length) { wc.hidden = false; wc.textContent = "Your neighborhoods: " + hn.sort().join(", "); $("f-where").value = "custom"; } else { wc.hidden = true; $("f-where").value = cat.where; } $("f-sort").value = cat.sort;
+  $("f-q").value = cat.q; $("f-cost").value = cat.cost; var wc = $("f-where-custom"), hn = Object.keys(cat.hoods), rn = Object.keys(cat.regions);
+  if (rn.length) { wc.hidden = false; wc.textContent = "Your areas: " + rn.map(function (r) { return REGION_NAMES[r] || r; }).join(", "); $("f-where").value = "custom"; }
+  else if (hn.length) { wc.hidden = false; wc.textContent = "Your neighborhoods: " + hn.sort().join(", "); $("f-where").value = "custom"; } else { wc.hidden = true; $("f-where").value = cat.where; } $("f-sort").value = cat.sort;
   var c = $("f-when-custom");
   if (cat.when === "custom" && cat.custom) { c.hidden = false; c.textContent = "Outing dates: " + windowText(cat.custom.ws, cat.custom.we); } else { c.hidden = true; }
   $("f-when").value = cat.when;
@@ -84,6 +87,8 @@ function catalogParams() {
   if (COST_MAX[cat.cost]) p.push(["max_price", COST_MAX[cat.cost]]);
   (WHERE_AREAS[cat.where] || []).forEach(function (a) { p.push(["area", a]); });
   if (cat.where.indexOf("h:") === 0) p.push(["hood", cat.where.slice(2)]);
+  if (cat.where.indexOf("r:") === 0) p.push(["region", cat.where.slice(2)]);
+  Object.keys(cat.regions).forEach(function (r) { p.push(["region", r]); }); // from Plan an outing (CC-73)
   Object.keys(cat.hoods).forEach(function (h) { p.push(["hood", h]); });
   if (cat.q.trim()) p.push(["q", cat.q.trim()]);
   p.push(["sort", cat.sort === "az" || cat.sort === "price" || cat.sort === "opening" ? cat.sort : "closing"]);
@@ -120,7 +125,7 @@ var Q_TIMER = null; // wait for a pause in typing before asking the API
 $("f-q").addEventListener("input", function () { cat.q = this.value; clearTimeout(Q_TIMER); Q_TIMER = setTimeout(renderCatalog, 250); });
 $("more-btn").addEventListener("click", function () { loadCatalog(true); });
 ["when", "cost", "where", "sort"].forEach(function (k) {
-  $("f-" + k).addEventListener("change", function () { cat[k] = this.value; if (k === "when" && this.value !== "custom") cat.custom = null; if (k === "where") cat.hoods = {}; renderCatalog(); });
+  $("f-" + k).addEventListener("change", function () { cat[k] = this.value; if (k === "when" && this.value !== "custom") cat.custom = null; if (k === "where") { cat.hoods = {}; cat.regions = {}; } renderCatalog(); });
 });
 $("type-chips").addEventListener("click", function (ev) {
   var b = ev.target.closest(".chip"); if (!b) return;

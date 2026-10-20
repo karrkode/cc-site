@@ -3,7 +3,7 @@
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- planner ----------
-var plan = { step: 0, when: null, ws: null, we: null, budget: null, types: {}, hoods: {} };
+var plan = { step: 0, when: null, ws: null, we: null, budget: null, types: {}, regions: {} };
 var pick = null; // { ws, we, stops: [event], alts: [event], total, shared }
 var BUDGETS = [["free", "Free", "No ticket cost"], ["u40", "Under $40", "Tickets start below $40"], ["u100", "Under $100", "Tickets start below $100"], ["any", "Any price", "Includes events with no price posted yet"]];
 
@@ -15,18 +15,22 @@ function withPlanEvents(ws, we, then) {
   var from = ws < T ? T : ws, to = we;
   if (!PLAN_RANGE && same(from, T)) to = add(T, 34);
   $("plan-opts").innerHTML = '<p class="hint">Finding events…</p>';
-  fetchEvents([["from", isoDate(from)], ["to", isoDate(to)], ["area", "city"], ["area", "suburbs"], ["sort", "closing"], ["limit", 1000]])
+  // every side of town, out of town included (CC-73): pool() leaves those out unless "Out of town" is chosen
+  fetchEvents([["from", isoDate(from)], ["to", isoDate(to)], ["sort", "closing"], ["limit", 1000]])
     .then(function (page) { PLAN_EVENTS = page.items; PLAN_RANGE = [from, to]; then(); },
           function () { $("plan-opts").innerHTML = '<p class="form-error">The events couldn\'t be loaded. Check your connection and try again.</p>'; });
 }
-function pool(ws, we, budget, types, hoods) {
-  var anyType = !types || Object.keys(types).length === 0, anyHood = !hoods || Object.keys(hoods).length === 0;
+// regions (CC-73): the sides of town chosen in question 4. None chosen means anywhere nearby: the city
+// and suburbs, as before; out-of-town events only come in when "Out of town" is chosen.
+function pool(ws, we, budget, types, regions) {
+  var anyType = !types || Object.keys(types).length === 0, anyRegion = !regions || Object.keys(regions).length === 0;
   return PLAN_EVENTS.filter(function (e) {
-    return !isPast(e) && e.area !== "Out of town" && overlaps(e, ws, we) && costOk(e, budget || "any") && (anyType || !!types[e.type]) && (anyHood || !!hoods[e.hood]);
+    return !isPast(e) && overlaps(e, ws, we) && costOk(e, budget || "any") && (anyType || !!types[e.type]) &&
+      (anyRegion ? e.region !== "out_of_town" && e.area !== "Out of town" : !!regions[e.region]);
   });
 }
 function startPlan() {
-  plan = { step: 0, when: null, ws: null, we: null, budget: null, types: {}, hoods: {} }; pick = null;
+  plan = { step: 0, when: null, ws: null, we: null, budget: null, types: {}, regions: {} }; pick = null;
   show("plan"); $("plan-questions").hidden = false; $("plan-result").hidden = true;
   withPlanEvents(T, add(T, 34), renderStep);
 }
@@ -71,23 +75,17 @@ function renderStep() {
       }).join("");
   } else {
     $("plan-title").textContent = "Where would you like to go?";
-    $("plan-help").textContent = "Choose as many neighborhoods as you like, or leave it open.";
-    var city = {}, burbs = {};
-    PLAN_EVENTS.forEach(function (e) { if (e.hood && e.area !== "Out of town") (e.area === "Suburbs" ? burbs : city)[e.hood] = 1; });
+    $("plan-help").textContent = "Choose one or more sides of town, or leave it open. \u201cAnywhere nearby\u201d means the city and suburbs.";
     var chip = function (attr, label, n, disabled, pressed) {
       return '<button type="button" class="chip" ' + attr + (disabled ? " disabled" : "") + ' aria-pressed="' + pressed + '">' + esc(label) +
         '<span class="n">' + n + "</span></button>";
     };
-    var group = function (label, set) {
-      var names = Object.keys(set).sort(); if (!names.length) return "";
-      return "<h2>" + label + '</h2><div class="chips">' + names.map(function (h) {
-        var one = {}; one[h] = 1; var n = pool(plan.ws, plan.we, plan.budget, plan.types, one).length;
-        return chip('data-phood="' + esc(h) + '"', h, n, n === 0, String(!!plan.hoods[h]));
-      }).join("") + "</div>";
-    };
     var allN = pool(plan.ws, plan.we, plan.budget, plan.types).length;
-    html = '<div class="hoods"><div class="chips">' + chip('data-phood=""', "Anywhere", allN, false, String(Object.keys(plan.hoods).length === 0)) + "</div>" +
-      group("City neighborhoods", city) + group("Suburbs", burbs) + "</div>";
+    html = '<div class="hoods"><div class="chips">' + chip('data-pregion=""', "Anywhere nearby", allN, false, String(Object.keys(plan.regions).length === 0)) +
+      REGIONS.map(function (r) {
+        var one = {}; one[r[0]] = 1; var n = pool(plan.ws, plan.we, plan.budget, plan.types, one).length;
+        return chip('data-pregion="' + r[0] + '"', r[1], n, n === 0, String(!!plan.regions[r[0]]));
+      }).join("") + "</div></div>";
   }
   $("plan-opts").innerHTML = html;
 }
@@ -98,12 +96,12 @@ $("plan-opts").addEventListener("click", function (ev) {
     plan.when = "date"; plan.ws = d; plan.we = d; plan.step = 1;
     withPlanEvents(d, d, function () { renderStep(); $("plan-title").focus(); }); return;
   }
-  var hc = ev.target.closest("[data-phood]");
-  if (hc && !hc.disabled) {
-    var hname = hc.getAttribute("data-phood");
-    if (!hname) plan.hoods = {}; else if (plan.hoods[hname]) delete plan.hoods[hname]; else plan.hoods[hname] = 1;
+  var rc = ev.target.closest("[data-pregion]");
+  if (rc && !rc.disabled) {
+    var rname = rc.getAttribute("data-pregion");
+    if (!rname) plan.regions = {}; else if (plan.regions[rname]) delete plan.regions[rname]; else plan.regions[rname] = 1;
     renderStep();
-    var hagain = $("plan-opts").querySelector('[data-phood="' + (window.CSS && CSS.escape ? CSS.escape(hname) : hname) + '"]'); if (hagain) hagain.focus();
+    var ragain = $("plan-opts").querySelector('[data-pregion="' + rname + '"]'); if (ragain) ragain.focus();
     return;
   }
   var b = ev.target.closest(".opt"); if (!b || b.disabled) return;
@@ -111,11 +109,11 @@ $("plan-opts").addEventListener("click", function (ev) {
     var k = b.getAttribute("data-when"), w = k === "tonight" ? [T, T] : k === "weekend" ? thisWeekend() : k === "nextweekend" ? nextWeekend() : [T, add(T, 29)];
     plan.when = k; plan.ws = w[0]; plan.we = w[1]; plan.step = 1; renderStep(); $("plan-title").focus();
   } else if (b.hasAttribute("data-budget")) {
-    plan.budget = b.getAttribute("data-budget"); plan.types = {}; plan.hoods = {}; plan.step = 2; renderStep(); $("plan-title").focus();
+    plan.budget = b.getAttribute("data-budget"); plan.types = {}; plan.regions = {}; plan.step = 2; renderStep(); $("plan-title").focus();
   } else if (b.hasAttribute("data-ptype")) {
     var t = b.getAttribute("data-ptype");
     if (!t) plan.types = {}; else if (plan.types[t]) delete plan.types[t]; else plan.types[t] = 1;
-    plan.hoods = {};
+    plan.regions = {};
     renderStep();
     var again = $("plan-opts").querySelector('[data-ptype="' + (window.CSS && CSS.escape ? CSS.escape(t) : t) + '"]'); if (again) again.focus();
   }
@@ -132,7 +130,7 @@ $("plan-next").addEventListener("click", function () {
 
 function isArt(e) { return e.type === "Visual Art"; }
 function buildOuting() {
-  var all = pool(plan.ws, plan.we, plan.budget, plan.types, plan.hoods).sort(byClosing);
+  var all = pool(plan.ws, plan.we, plan.budget, plan.types, plan.regions).sort(byClosing);
   var shows = all.filter(function (e) { return !isArt(e); }), art = all.filter(isArt);
   var stops = [], main = shows[0] || art[0];
   if (main) {
@@ -202,12 +200,12 @@ function renderOuting() {
   show("plan", "res-title");
 }
 function relaxHTML() {
-  var out = [], anyTypes = Object.keys(plan.types).length === 0, anyHoods = Object.keys(plan.hoods).length === 0;
-  if (plan.budget !== "any") { var n1 = pool(plan.ws, plan.we, "any", plan.types, plan.hoods).length; if (n1) out.push(['data-relax="budget"', "Open up the budget", plural(n1, "event fits", "events fit") + " at any price"]); }
-  if (!anyTypes) { var n2 = pool(plan.ws, plan.we, plan.budget, {}, plan.hoods).length; if (n2) out.push(['data-relax="types"', "Take any type of event", plural(n2, "event fits", "events fit")]); }
-  if (!anyHoods) { var n4 = pool(plan.ws, plan.we, plan.budget, plan.types, {}).length; if (n4) out.push(['data-relax="hoods"', "Go anywhere in the city or suburbs", plural(n4, "event fits", "events fit")]); }
+  var out = [], anyTypes = Object.keys(plan.types).length === 0, anyRegions = Object.keys(plan.regions).length === 0;
+  if (plan.budget !== "any") { var n1 = pool(plan.ws, plan.we, "any", plan.types, plan.regions).length; if (n1) out.push(['data-relax="budget"', "Open up the budget", plural(n1, "event fits", "events fit") + " at any price"]); }
+  if (!anyTypes) { var n2 = pool(plan.ws, plan.we, plan.budget, {}, plan.regions).length; if (n2) out.push(['data-relax="types"', "Take any type of event", plural(n2, "event fits", "events fit")]); }
+  if (!anyRegions) { var n4 = pool(plan.ws, plan.we, plan.budget, plan.types, {}).length; if (n4) out.push(['data-relax="regions"', "Go anywhere nearby", plural(n4, "event fits", "events fit")]); }
   var wide = [T, add(T, 29)], covered = PLAN_RANGE && wide[0] >= PLAN_RANGE[0] && wide[1] <= PLAN_RANGE[1];
-  var n3 = covered ? pool(wide[0], wide[1], plan.budget, plan.types, plan.hoods).length : 1; // not loaded: offer it anyway
+  var n3 = covered ? pool(wide[0], wide[1], plan.budget, plan.types, plan.regions).length : 1; // not loaded: offer it anyway
   if (n3 && !(same(plan.ws, wide[0]) && same(plan.we, wide[1]))) out.push(['data-relax="when"', "Look across the next 30 days", covered ? plural(n3, "event fits", "events fit") : "See what else is coming up"]);
   if (!out.length) return '<p class="hint">Try the catalog, where you can loosen one filter at a time.</p>';
   return '<div class="opts">' + out.map(function (o) { return optHTML(o[0], o[1], o[2], null); }).join("") + "</div>";
@@ -217,7 +215,7 @@ $("res-body").addEventListener("click", function (ev) {
   var relax = t.closest("[data-relax]");
   if (relax) {
     var r = relax.getAttribute("data-relax");
-    if (r === "budget") plan.budget = "any"; else if (r === "types") plan.types = {}; else if (r === "hoods") plan.hoods = {}; else { plan.ws = T; plan.we = add(T, 29); plan.when = "month"; }
+    if (r === "budget") plan.budget = "any"; else if (r === "types") plan.types = {}; else if (r === "regions") plan.regions = {}; else { plan.ws = T; plan.we = add(T, 29); plan.when = "month"; }
     withPlanEvents(plan.ws, plan.we, buildOuting); return;
   }
   var swap = t.closest("[data-swap]");
@@ -231,8 +229,9 @@ $("res-body").addEventListener("click", function (ev) {
   }
   if (t.id === "see-all" && pick) {
     resetCatalog(); cat.cost = plan.budget || "any"; cat.types = {}; Object.keys(plan.types).forEach(function (k) { cat.types[k] = 1; });
-    cat.when = "custom"; cat.custom = { ws: pick.ws, we: pick.we }; cat.where = "local";
-    cat.hoods = {}; Object.keys(plan.hoods).forEach(function (k) { cat.hoods[k] = 1; });
+    cat.when = "custom"; cat.custom = { ws: pick.ws, we: pick.we };
+    cat.regions = {}; Object.keys(plan.regions).forEach(function (k) { cat.regions[k] = 1; });
+    cat.where = Object.keys(cat.regions).length ? "any" : "local"; // the chosen sides of town, or anywhere nearby
     loadCatalog(); show("catalog"); return;
   }
   if (t.id === "share-btn" && pick) {
