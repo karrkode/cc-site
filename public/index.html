@@ -126,6 +126,7 @@
     </nav>
   </header>
 
+  <section class="invite-banner" id="invite-banner" hidden aria-label="Crew invites waiting for you"></section>
   <main>
     <!-- Welcome -->
     <section class="view" id="view-home">
@@ -279,6 +280,7 @@
         <div class="section" id="crews-section"><h2 id="crews-title" tabindex="-1">Your crews</h2>
           <p class="hint">The people you go out with. Only a crew's members see who's in it, by name, never by email.</p>
           <p class="hint" id="crews-status" role="status"></p>
+          <div class="pending-invites" id="pending-invites" hidden></div>
           <div class="crews" id="crew-list"></div>
           <form class="panel" id="crew-new" novalidate>
             <h3>Start a crew</h3>
