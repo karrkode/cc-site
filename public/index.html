@@ -240,6 +240,12 @@
         <p id="account-sub">Keep a list of what you've seen, and send us events we're missing.</p>
       </div>
       <p class="notice" id="account-notice" role="status"></p>
+      <section class="panel join" id="join-panel" hidden aria-labelledby="join-title">
+        <h2 id="join-title" tabindex="-1">Join a crew</h2>
+        <p id="join-text"></p>
+        <p class="form-error" id="join-error" role="alert"></p>
+        <div class="row" id="join-actions"><button class="btn" type="button" id="join-yes">Join the crew</button><button class="btn ghost" type="button" id="join-no">Not now</button></div>
+      </section>
       <div class="forms" id="signed-out">
         <form class="panel" id="login-form" novalidate>
           <h2>Sign in</h2>
@@ -269,6 +275,20 @@
         <div class="section"><h2 id="myplans-title" tabindex="-1">Oh the places you'll go…</h2><div class="grid" id="myplans-grid"></div></div>
         <div class="section"><h2>Oh the places you've gone…</h2><div class="grid" id="went-grid"></div></div>
         <div class="section"><h2>Events you've sent us</h2><div class="queue" id="my-submissions"></div></div>
+        <div class="section" id="crews-section"><h2 id="crews-title" tabindex="-1">Your crews</h2>
+          <p class="hint">The people you go out with. Only a crew's members see who's in it, by name, never by email.</p>
+          <p class="hint" id="crews-status" role="status"></p>
+          <div class="crews" id="crew-list"></div>
+          <form class="panel" id="crew-new" novalidate>
+            <h3>Start a crew</h3>
+            <div class="fields">
+              <div class="field"><label for="crew-name">Name</label><input id="crew-name" type="text" maxlength="60" required placeholder="Thursday Crew"></div>
+              <div class="field"><label for="crew-desc">About it <span class="opt-label">(optional)</span></label><input id="crew-desc" type="text" maxlength="200" placeholder="Plays, then a drink after"></div>
+            </div>
+            <p class="form-error" id="crew-new-error" role="alert"></p>
+            <button class="btn" type="submit">Start the crew</button>
+          </form>
+        </div>
         <div class="section"><h2>Your profile</h2>
           <form class="panel" id="profile-form" novalidate>
             <div class="fields">
@@ -489,6 +509,7 @@
 <script src="js/catalog.js?v=dev"></script>
 <script src="js/planner.js?v=dev"></script>
 <script src="js/account.js?v=dev"></script>
+<script src="js/crews.js?v=dev"></script>
 <script src="js/submit.js?v=dev"></script>
 <script src="js/admin.js?v=dev"></script>
 <script src="js/hours.js?v=dev"></script>

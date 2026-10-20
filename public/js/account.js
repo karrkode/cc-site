@@ -1,5 +1,5 @@
 // Culture Crew site: Signing in, your plans, "I've been", the account page, profile, email links and passwords.
-// Loaded by index.html in order (core, util, catalog, planner, account, submit, admin, hours, found, start); they share one
+// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- signed-in state ----------
@@ -162,7 +162,12 @@ function renderAccount(withSubmissions) {
   $("account-title").textContent = u ? (u.display_name ? "Hi, " + u.display_name : "Your account") : "Sign in";
   $("account-sub").textContent = u ? "Your plans, what you've been to, and how the events you've sent us are doing." :
     "Keep a list of what you've seen, and send us events we're missing.";
-  if (!u) { $("myplans-grid").innerHTML = ""; $("went-grid").innerHTML = ""; $("my-submissions").innerHTML = ""; return; }
+  paintJoin(); // an invite link's "Join <crew>" panel (crews.js), signed in or not
+  if (!u) {
+    $("myplans-grid").innerHTML = ""; $("went-grid").innerHTML = ""; $("my-submissions").innerHTML = "";
+    CREWS = []; CREW_LINKS = {}; CREW_ASK = null; CREW_EDIT = null; $("crew-list").innerHTML = "";
+    return;
+  }
   $("account-who").textContent = "Signed in as " + u.email + (u.role === "admin" ? " · admin" : "");
   if (!u.email_verified && !NOTICE_SET) {
     $("account-notice").innerHTML = "Please confirm your email address: open the link we sent to " + esc(u.email) +
@@ -176,6 +181,7 @@ function renderAccount(withSubmissions) {
     '<p class="hint" style="grid-column:1/-1">Mark events with "I\'ve been" and they\'ll show up here.</p>';
   if (!withSubmissions) return;
   fillProfile();
+  loadCrews();
   api("/me/submissions").then(readJSON).then(function (res) {
     if (!res.ok) return;
     var rows = res.body.map(fromApi);
