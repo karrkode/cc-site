@@ -30,11 +30,12 @@ function openFromHash() {
   if (h === "plan") { startPlan(); return true; }
   if (h === "account") { openAccount(); return true; }
   if (h === "submit") { openSubmit(); return true; }
-  // admin pages (the recap email links here, CC-77/81/84): #issues, #found, #found/<show> (e.g. #found/skipped), #sources,
+  // admin pages (the recap email links here, CC-77/81/84): #issues, #issues/ISS-0007, #found, #found/<show> (e.g. #found/skipped), #sources,
   // and #source-<id> (Event sources, at that source's "Check by hand only" button)
   var fm = /^found\/(waiting|new|update|approved|rejected|skipped|listed|all)$/.exec(h), sm = /^source-(\d+)$/.exec(h);
-  if (h === "review" || h === "found" || h === "sources" || h === "issues" || fm || sm) {
-    var open = h === "review" ? openReview : h === "issues" ? openIssues : (h === "found" || fm) ? function () { if (fm) { FOUND.show = fm[1]; FOUND.source = ""; } openFound(); } :
+  var im = /^issues\/(ISS-\d+)$/i.exec(h); // a ticket, from the recap (CC-84)
+  if (h === "review" || h === "found" || h === "sources" || h === "issues" || fm || sm || im) {
+    var open = h === "review" ? openReview : h === "issues" ? function () { openIssues(); } : im ? function () { openIssues(im[1].toUpperCase()); } : (h === "found" || fm) ? function () { if (fm) { FOUND.show = fm[1]; FOUND.source = ""; } openFound(); } :
       sm ? function () { openSources('[data-src-manual="' + sm[1] + '"]'); } : openSources;
     // On a fresh visit the sign-in comes back from the refresh cookie first; then open the page (or Sign in).
     (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(open);

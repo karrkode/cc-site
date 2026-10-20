@@ -75,7 +75,7 @@
       <div class="row"><button class="btn" type="submit" id="is-send">Send report</button><button class="btn ghost" type="button" id="is-cancel">Cancel</button></div>
     </div>
     <div id="is-done" hidden>
-      <p>Thanks! We'll look into it. You can follow it under <strong>Your reports</strong> on your account page.</p>
+      <p id="is-thanks">Thanks! We'll look into it. You can follow it under <strong>Your reports</strong> on your account page.</p>
       <div class="row"><button class="btn" type="button" id="is-close">Close</button><button class="btn ghost" type="button" id="is-see" data-go="account">See your reports</button></div>
     </div>
   </form>
@@ -476,7 +476,10 @@
         <p>Problems members reported with the site. Set where each one stands; a note you add shows beside it on the member's account page.</p>
         <div class="row"><button class="textbtn" type="button" data-go="review">Back to review</button></div>
       </div>
-      <form class="found-filters" id="issues-filters"><div class="field"><label for="issues-show">Show</label><select id="issues-show"></select></div></form>
+      <form class="found-filters" id="issues-filters" role="search">
+        <div class="field"><label for="issues-q">Find a ticket</label><input id="issues-q" type="search" maxlength="100" placeholder="ISS-0007, or words in a report" autocomplete="off"></div>
+        <div class="field"><label for="issues-show">Show</label><select id="issues-show"></select></div>
+      </form>
       <p class="hint" id="issues-status" role="status"></p>
       <div class="queue" id="issues-list"></div>
     </section>

@@ -44,8 +44,11 @@ $("issue-form").addEventListener("submit", function (ev) {
     browser: navigator.userAgent.slice(0, 300), screen: screen.width + "x" + screen.height, site_version: siteVersion() };
   api("/issues", { method: "POST", body: body }).then(readJSON).then(function (res) {
     if (!res.ok) { $("is-send").disabled = false; $("is-error").textContent = errorText(res); return; }
-    $("is-fields").hidden = true; $("is-done").hidden = false; $("is-heading").textContent = "Report sent"; $("is-close").focus();
-    $("edit-live").textContent = "Report sent. Thanks!";
+    $("is-fields").hidden = true; $("is-done").hidden = false; $("is-heading").textContent = "Report " + res.body.key + " sent";
+    $("is-thanks").innerHTML = "Thanks! Your ticket number is <strong>" + esc(res.body.key) + "</strong>. We'll look into it, and you can follow it under " +
+      "<strong>Your reports</strong> on your account page.";
+    $("is-close").focus();
+    $("edit-live").textContent = "Report " + res.body.key + " sent. Thanks!";
     if (visible("account")) loadMyIssues();
     if (isAdmin()) updateIssuesCount();
   }, function () { $("is-send").disabled = false; $("is-error").textContent = errorText(null); });
@@ -60,7 +63,7 @@ function loadMyIssues() {
     if (!res.ok) return;
     $("my-issues-section").hidden = !res.body.length;
     $("my-issues").innerHTML = res.body.map(function (i) {
-      return '<div class="queue-item issue"><div class="alt-text"><p class="kind">' + esc(i.page || "The site") + " · " + esc(short(new Date(i.created_at))) +
+      return '<div class="queue-item issue"><div class="alt-text"><p class="kind"><span class="ticket">' + esc(i.key) + "</span> · " + esc(i.page || "The site") + " · " + esc(short(new Date(i.created_at))) +
         " " + issueStateHTML(i) + '</p><p class="alt-title">' + esc(i.what_happened) + "</p>" +
         (i.admin_note ? '<p class="issue-note"><span class="sr-only">Our note: </span>' + esc(i.admin_note) + "</p>" : "") + "</div></div>";
     }).join("");
@@ -68,26 +71,33 @@ function loadMyIssues() {
 }
 
 // ---------- Issues (admins) ----------
-var ISSUES_SHOW = "";
-function openIssues() { if (!isAdmin()) { openAccount(); return; } show("issues"); loadIssues(); }
+var ISSUES_SHOW = "", ISSUES_Q = "", ISSUES_REQ = 0, ISSUES_TIMER = null;
+function openIssues(q) { // q: a ticket number to look up (the recap links to #issues/ISS-0007)
+  if (!isAdmin()) { openAccount(); return; }
+  if (q !== undefined) { ISSUES_Q = q; ISSUES_SHOW = ""; }
+  $("issues-q").value = ISSUES_Q; show("issues"); loadIssues();
+}
 function updateIssuesCount(counts) {
   if (counts) { $("issues-count").textContent = counts["new"] ? String(counts["new"]) : ""; return; }
   api("/admin/issues?show=new").then(readJSON).then(function (res) { if (res.ok) updateIssuesCount(res.body.counts); }, function () {});
 }
 function loadIssues(focusSel) {
+  var req = ++ISSUES_REQ; // replies to older searches are dropped
   $("issues-status").textContent = "Loading…";
-  api("/admin/issues" + (ISSUES_SHOW ? "?show=" + ISSUES_SHOW : "")).then(readJSON).then(function (res) {
+  api("/admin/issues?" + qs([["show", ISSUES_SHOW], ["q", ISSUES_Q.trim()]])).then(readJSON).then(function (res) {
+    if (req !== ISSUES_REQ) return;
     if (!res.ok) { $("issues-status").textContent = errorText(res); return; }
     var c = res.body.counts, all = Object.keys(c).reduce(function (n, k) { return n + c[k]; }, 0);
     updateIssuesCount(c);
     $("issues-show").innerHTML = '<option value="">Everything (' + all + ")</option>" + Object.keys(ISSUE_STATUS).map(function (k) {
       return '<option value="' + k + '">' + esc(ISSUE_STATUS[k]) + " (" + (c[k] || 0) + ")</option>"; }).join("");
     $("issues-show").value = ISSUES_SHOW;
-    $("issues-status").textContent = res.body.items.length ? "" : ISSUES_SHOW ? "Nothing here." : "No reports yet.";
+    $("issues-status").textContent = res.body.items.length ? (ISSUES_Q.trim() ? plural(res.body.items.length, "ticket", "tickets") + " found." : "") :
+      ISSUES_Q.trim() ? "No ticket matches \u201c" + ISSUES_Q.trim() + "\u201d." : ISSUES_SHOW ? "Nothing here." : "No reports yet.";
     $("issues-list").innerHTML = res.body.items.map(function (i) {
       var id = esc(i.id), who = i.sent_by ? esc(i.sent_by.name) + ' (<a href="mailto:' + esc(i.sent_by.email) + '">' + esc(i.sent_by.email) + "</a>)" : "A deleted account";
       return '<div class="queue-item issue" data-issue="' + id + '"><div class="alt-text">' +
-        '<p class="kind">' + esc(i.page || "The site") + " · " + esc(short(new Date(i.created_at))) + " " + issueStateHTML(i) + "</p>" +
+        '<p class="kind"><span class="ticket">' + esc(i.key) + "</span> · " + esc(i.page || "The site") + " · " + esc(short(new Date(i.created_at))) + " " + issueStateHTML(i) + "</p>" +
         '<p class="alt-title">' + esc(i.what_happened) + "</p>" +
         (i.expected ? '<p class="alt-meta">Expected: ' + esc(i.expected) + "</p>" : "") +
         '<p class="alt-meta">From ' + who + " · " + esc(i.browser || "browser not given") + (i.screen ? " · " + esc(i.screen) : "") +
@@ -104,6 +114,7 @@ function loadIssues(focusSel) {
 }
 $("issues-filters").addEventListener("submit", function (ev) { ev.preventDefault(); });
 $("issues-show").addEventListener("change", function () { ISSUES_SHOW = this.value; loadIssues(); });
+$("issues-q").addEventListener("input", function () { ISSUES_Q = this.value; clearTimeout(ISSUES_TIMER); ISSUES_TIMER = setTimeout(loadIssues, 250); });
 $("issues-list").addEventListener("submit", function (ev) {
   var form = ev.target.closest("[data-issue-form]"); if (!form) return;
   ev.preventDefault();
