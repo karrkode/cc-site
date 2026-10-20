@@ -332,3 +332,23 @@ footer p { max-width: 70ch; }
 .bars rect.past { fill: var(--field-line); }
 .bars rect.now { fill: var(--lead); }
 .bars-axis { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); }
+
+/* events drawing interest (admins, CC-69) */
+.interest-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 10px 24px; }
+.interest-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 10px 18px; }
+.interest-filters .field { min-width: 160px; }
+.interest-legend { display: flex; align-items: center; gap: 6px; margin: 10px 0 4px; font-size: 0.8125rem; color: var(--muted); }
+.interest-legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+.interest-legend .sw.interested { margin-left: 12px; }
+.sw.going, .seg.going { background: var(--lead); }
+.sw.interested, .seg.interested { background: var(--second); }
+.interest-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 12px; }
+.interest-list li { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) auto; gap: 4px 16px; align-items: center;
+  padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
+.interest-name { display: grid; min-width: 0; }
+.interest-name a { font-weight: 600; text-decoration-thickness: 1px; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.interest-bar { display: flex; height: 14px; border-radius: 4px; overflow: hidden; background: var(--neutral-soft); }
+.seg { display: block; height: 100%; }
+.interest-counts { margin: 0; font-size: 0.875rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.interest-counts strong { color: var(--text); font-size: 1rem; }
+@media (max-width: 640px) { .interest-list li { grid-template-columns: 1fr; } .interest-counts { white-space: normal; } }
