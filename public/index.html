@@ -63,6 +63,23 @@
     <div class="row"><button class="btn" type="submit" id="hd-save">Save hours</button><button class="btn ghost" type="button" id="hd-cancel">Cancel</button></div>
   </form>
 </dialog>
+<dialog class="editor" id="issue-dialog" aria-labelledby="is-heading">
+  <form id="issue-form" novalidate>
+    <h2 id="is-heading" tabindex="-1">Report an issue</h2>
+    <div id="is-fields">
+      <p class="hint">Tell us what went wrong. We read every report.</p>
+      <div class="field"><label for="is-what">What happened?</label><textarea id="is-what" rows="4" maxlength="2000" required></textarea></div>
+      <div class="field"><label for="is-expected">What did you expect? <span class="opt-label">(optional)</span></label><textarea id="is-expected" rows="2" maxlength="1000"></textarea></div>
+      <p class="hint small" id="is-about"></p>
+      <p class="form-error" id="is-error" role="alert"></p>
+      <div class="row"><button class="btn" type="submit" id="is-send">Send report</button><button class="btn ghost" type="button" id="is-cancel">Cancel</button></div>
+    </div>
+    <div id="is-done" hidden>
+      <p id="is-thanks">Thanks! We'll look into it. You can follow it under <strong>Your reports</strong> on your account page.</p>
+      <div class="row"><button class="btn" type="button" id="is-close">Close</button><button class="btn ghost" type="button" id="is-see" data-go="account">See your reports</button></div>
+    </div>
+  </form>
+</dialog>
 <dialog class="editor" id="edit-dialog" aria-labelledby="ed-heading">
   <form id="edit-form" novalidate>
     <h2 id="ed-heading">Edit event</h2>
@@ -292,6 +309,9 @@
             <button class="btn" type="submit">Start the crew</button>
           </form>
         </div>
+        <div class="section" id="my-issues-section" hidden><h2 id="my-issues-title" tabindex="-1">Your reports</h2>
+          <p class="hint">Problems you've told us about, and where each one stands.</p>
+          <div class="queue" id="my-issues"></div></div>
         <div class="section"><h2>Your profile</h2>
           <form class="panel" id="profile-form" novalidate>
             <div class="fields">
@@ -397,7 +417,7 @@
         <p class="eyebrow">Review</p>
         <h1 id="review-title" tabindex="-1">Waiting for review</h1>
         <p>Approve to put an event on the list. Rejected events stay out of sight.</p>
-        <div class="row"><button class="btn neutral" type="button" data-go="found">Found events<span class="count" id="found-count"></span></button><button class="btn neutral" type="button" data-go="venues">Manage venues</button><button class="btn neutral" type="button" data-go="stats">Site stats</button><button class="btn neutral" type="button" data-go="sources">Event sources</button></div>
+        <div class="row"><button class="btn neutral" type="button" data-go="found">Found events<span class="count" id="found-count"></span></button><button class="btn neutral" type="button" data-go="venues">Manage venues</button><button class="btn neutral" type="button" data-go="stats">Site stats</button><button class="btn neutral" type="button" data-go="sources">Event sources</button><button class="btn neutral" type="button" data-go="issues">Issues<span class="count" id="issues-count"></span></button></div>
       </div>
       <div class="queue" id="review-list"></div>
       <div class="section"><h2>Scheduled</h2><p class="hint">Approved, and waiting for their publish time.</p><div class="queue" id="scheduled-list"></div></div>
@@ -448,6 +468,22 @@
     </section>
 
     <!-- Site stats (admins, CC-67) -->
+    <!-- Issues members reported (admins, CC-84) -->
+    <section class="view" id="view-issues" hidden>
+      <div class="view-head">
+        <p class="eyebrow">Review</p>
+        <h1 id="issues-title" tabindex="-1">Issues</h1>
+        <p>Problems members reported with the site. Set where each one stands; a note you add shows beside it on the member's account page.</p>
+        <div class="row"><button class="textbtn" type="button" data-go="review">Back to review</button></div>
+      </div>
+      <form class="found-filters" id="issues-filters" role="search">
+        <div class="field"><label for="issues-q">Find a ticket</label><input id="issues-q" type="search" maxlength="100" placeholder="ISS-0007, or words in a report" autocomplete="off"></div>
+        <div class="field"><label for="issues-show">Show</label><select id="issues-show"></select></div>
+      </form>
+      <p class="hint" id="issues-status" role="status"></p>
+      <div class="queue" id="issues-list"></div>
+    </section>
+
     <section class="view" id="view-stats" hidden>
       <div class="view-head">
         <p class="eyebrow">Review</p>
@@ -503,6 +539,7 @@
   <footer>
     <p id="foot"></p>
     <p class="privacy" id="privacy-note"></p>
+    <p class="report-row" id="report-row" hidden><button class="textbtn" type="button" id="report-open" aria-haspopup="dialog">Report an issue</button></p>
   </footer>
 </div>
 
@@ -517,6 +554,7 @@
 <script src="js/admin.js?v=dev"></script>
 <script src="js/hours.js?v=dev"></script>
 <script src="js/found.js?v=dev"></script>
+<script src="js/issues.js?v=dev"></script>
 <script src="js/start.js?v=dev"></script>
 </body>
 </html>

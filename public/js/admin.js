@@ -1,5 +1,5 @@
 // Culture Crew site: Admin tools: the review queue, venues, and editing events.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, start); they share one
+// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- review queue (admins) ----------
@@ -415,7 +415,8 @@ $("i-closed").addEventListener("change", loadInterest);
 // CC-68: visits over the last 30 days: totals, a daily chart of visitors (returning ones stacked under
 // new ones), and views of each part of the site. Counts only.
 var VIEW_NAMES = { home: "Home", catalog: "Catalog", plan: "Plan an outing", submit: "Submit", account: "Account",
-  review: "Review", venues: "Venues", stats: "Stats", reset: "Password reset", verify: "Email confirmation" };
+  review: "Review", venues: "Venues", stats: "Stats", sources: "Event sources", found: "Found events", issues: "Issues",
+  reset: "Password reset", verify: "Email confirmation" };
 function loadTraffic() {
   $("traffic-status").textContent = "Loading…";
   api("/admin/stats/traffic?days=30&today=" + isoDate(T)).then(readJSON).then(function (res) {

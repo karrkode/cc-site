@@ -1,5 +1,5 @@
 // Culture Crew site: Venue hours (admins, CC-78): opening hours and usual show times, on the Venues page.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, start); they share one
+// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // Times are typed ("10 AM", "9:30 PM") rather than picked: browsers' time pickers look filled in before
