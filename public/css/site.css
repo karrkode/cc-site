@@ -492,4 +492,7 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
   font-size: 0.8125rem; font-weight: 600; line-height: 1.35; text-align: center; white-space: normal; pointer-events: none;
 }
 @media (hover: hover) { .chip.mine:hover .tip, .chip.mine:focus-visible .tip { display: block; } }
+/* CC-87: a list capped at a few items (capList in util.js) scrolls inside itself */
+.capped { overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
+.capped:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: var(--r-card); }
 

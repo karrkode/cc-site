@@ -137,6 +137,16 @@ function byClosing(a, b) { return (a.n ? a.n.getTime() : Infinity) - (b.n ? b.n.
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 function safeUrl(u) { return /^https?:\/\//i.test(u) ? u : "#"; }
+// A list that stops at the height of its first n items and scrolls for the rest (CC-87), measured from the real
+// items so it fits them exactly. A list that scrolls can be focused, so it can be scrolled from the keyboard.
+function capList(list, n, label) {
+  var items = Array.prototype.filter.call(list.children, function (c) { return c.offsetParent !== null; });
+  list.classList.toggle("capped", items.length > n);
+  if (items.length <= n) { list.style.maxHeight = ""; list.removeAttribute("tabindex"); list.removeAttribute("role"); list.removeAttribute("aria-label"); return; }
+  var top = items[0].offsetTop, bottom = items[n - 1].offsetTop + items[n - 1].offsetHeight;
+  list.style.maxHeight = Math.ceil(bottom - top + 2) + "px";
+  list.tabIndex = 0; list.setAttribute("role", "region"); list.setAttribute("aria-label", label);
+}
 function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
 function cardHTML(e) {
   var st = eventStatus(e), mine = AUTH.user ? MYPLANS[e.id] : null, going = mine && mine.status === "going";

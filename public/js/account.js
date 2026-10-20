@@ -194,6 +194,7 @@ function renderAccount(withSubmissions) {
     var rows = res.body.map(fromApi);
     $("my-submissions").innerHTML = rows.length ? rows.map(function (e) { return queueItemHTML(e, stateHTML(e)); }).join("") :
       '<p class="hint">Nothing yet. <button class="textbtn" type="button" data-go="submit">Submit an event</button></p>';
+    capList($("my-submissions"), 5, plural(rows.length, "event you've sent us", "events you've sent us") + ", newest first. Scroll for more."); // CC-87
   }, function () {});
 }
 // ---------- profile (CC-40) ----------
