@@ -60,6 +60,7 @@ function fromApi(e) {
     status: e.status, publishAt: e.publish_at ? new Date(e.publish_at) : null,
     submitter: e.submitted_by, // only the admin routes send this (undefined elsewhere; null = none on record)
     creditMe: !!e.credit_me, suggestedBy: e.submitted_by_name || null, // the opt-in "Suggested by" credit (CC-30)
+    pick: e.pick ? { status: e.pick.status, date: e.pick.date, by: e.pick.by } : null, // the owner's public pick (CC-66)
     b: parseISO(e.begin_date), n: parseISO(e.end_date)
   };
 }
@@ -128,12 +129,11 @@ function safeUrl(u) { return /^https?:\/\//i.test(u) ? u : "#"; }
 function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
 function cardHTML(e) {
   var st = eventStatus(e), mine = AUTH.user ? MYPLANS[e.id] : null, going = mine && mine.status === "going";
-  // The plan mark sits next to the date at the bottom of the card (CC-64; the top row had no room for it).
-  // The dolphins are only for accounts that have them (CC-61, the owner's); everyone else gets a plain
-  // "Interested" label until their own look is designed. Going shows "Going <date>" either way.
-  var mark = !mine ? "" : !AUTH.user.dolphins ? (going ? "" : '<span class="pill mine">Interested</span>') :
-    going ? '<img class="dolphin going" src="img/dolphin-going.webp" width="30" height="30" alt="">' :
-    '<img class="dolphin" src="img/dolphin-interested.webp" width="24" height="24" alt="Interested">';
+  // Marks sit next to the date at the bottom of the card (CC-64; the top row had no room for them).
+  // The dolphins are the owner's public picks (CC-66): every visitor sees them. Your own plans stay private:
+  // a plain "Interested" label, or "Going <date>". An owner's own plan is already their dolphin.
+  var own = mine && !going && !AUTH.user.dolphins ? '<span class="pill mine">Interested</span>' : "";
+  var mark = pickHTML(e) + own;
   return '<article class="card" data-card="' + esc(e.id) + '">' +
     '<div class="card-top"><span class="kind">' + esc(e.type) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
     '<h3><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a></h3>" +
@@ -142,11 +142,33 @@ function cardHTML(e) {
     '<div class="card-foot"><span class="when">' + mark + (going ? '<span class="going-on">Going ' + esc(goingDay(mine.date)) + "</span>" :
       "<span>" + esc(dateText(e)) + "</span>") + "</span>" +
     '<span class="cost' + (e.min === 0 ? " free" : "") + '">' + esc(costText(e)) + "</span></div>" +
+    (e.pick ? '<p class="pick-note" id="pick-note-' + PICK_SEQ + '" hidden>' + esc(pickText(e.pick)) + "</p>" : "") +
     (AUTH.user ? '<div class="card-actions">' + (goingLater(e) && !WENT[e.id] ? "" : wentHTML(e)) +
       (WENT[e.id] ? "" : myplanToggleHTML(e)) + // been already: nothing left to plan
       (isAdmin() ? editButtonHTML(e, "went") : "") + "</div>" + (WENT[e.id] ? "" : myplanHTML(e)) : "") +
     "</article>";
 }
+// The owner's pick as a dolphin button: hovering shows what it means; tapping (phones) opens it in the card.
+var PICK_SEQ = 0;
+function pickText(p) {
+  var who = p.by || "The Culture Crew";
+  return p.status === "going" && p.date ? who + " is committed to seeing this on " + dayName(parseISO(p.date)) + "." :
+    p.status === "going" ? who + " is committed to seeing this." : who + " is interested in this one.";
+}
+function pickHTML(e) {
+  if (!e.pick) return "";
+  PICK_SEQ += 1;
+  var going = e.pick.status === "going", text = pickText(e.pick);
+  return '<button type="button" class="pick" data-pick aria-expanded="false" aria-controls="pick-note-' + PICK_SEQ + '" aria-label="' + esc(text) + '">' +
+    (going ? '<img class="dolphin going" src="img/dolphin-going.webp" width="30" height="30" alt="">' :
+      '<img class="dolphin" src="img/dolphin-interested.webp" width="24" height="24" alt="">') +
+    '<span class="tip" aria-hidden="true">' + esc(text) + "</span></button>";
+}
+document.addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-pick]"); if (!b) return;
+  var note = document.getElementById(b.getAttribute("aria-controls")), open = b.getAttribute("aria-expanded") !== "true";
+  b.setAttribute("aria-expanded", String(open)); if (note) note.hidden = !open;
+});
 // Committed to a day after today: "I've been" would be premature, so the card doesn't offer it.
 function goingLater(e) { var mine = MYPLANS[e.id]; return !!mine && mine.status === "going" && parseISO(mine.date) > T; }
 function goingDay(iso) { var d = parseISO(iso); return d.getFullYear() === T.getFullYear() ? F.wmd.format(d) : F.mdy.format(d); }
