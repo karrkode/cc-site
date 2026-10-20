@@ -320,3 +320,50 @@ function eventChanged(id, e) {
   if (visible("review")) renderReview();
   if (isAdmin()) updateReviewCount();
 }
+
+// ---------- site stats (admins, CC-67) ----------
+// Weekly totals from GET /admin/stats: a number for this week, last week's beside it, and a small
+// bar chart of the last 12 weeks (this week's bar in the accent). Totals only; never who.
+var STAT_METRICS = [
+  ["registrations", "New members", function (w) { return w.confirmed + " confirmed their email"; }],
+  ["active", "Active members", function () { return "used the site while signed in"; }],
+  ["plans_interested", "Marked interested", function () { return "new “Interested” plans"; }],
+  ["plans_going", "Committed to a date", function () { return "new plans with a date"; }],
+  ["attended", "“I've been” marks", function () { return "events members say they went to"; }],
+  ["submitted", "Events sent in", function () { return "suggestions from members"; }]
+];
+function openStats() { if (!isAdmin()) { openAccount(); return; } show("stats"); loadStats(); }
+function loadStats() {
+  $("stats-status").textContent = "Loading…";
+  api("/admin/stats?weeks=12&today=" + isoDate(T)).then(readJSON).then(function (res) {
+    if (!res.ok) { $("stats-status").textContent = errorText(res); return; }
+    $("stats-status").textContent = ""; paintStats(res.body);
+  }, function () { $("stats-status").textContent = errorText(null); });
+}
+function pct(n, d) { return d ? Math.round(100 * n / d) + "%" : "–"; }
+function statBars(weeks, key) {
+  var vals = weeks.map(function (w) { return w[key]; }), max = Math.max.apply(null, vals.concat([1]));
+  var W = 240, H = 56, gap = 4, bw = (W - gap * (vals.length - 1)) / vals.length;
+  var bars = vals.map(function (v, i) {
+    var h = v ? Math.max(3, Math.round((v / max) * (H - 4))) : 1, x = i * (bw + gap);
+    return '<rect x="' + x.toFixed(1) + '" y="' + (H - h) + '" width="' + bw.toFixed(1) + '" height="' + h + '" rx="2" class="' +
+      (i === vals.length - 1 ? "now" : "past") + '"><title>Week of ' + esc(short(parseISO(weeks[i].start))) + ": " + v + "</title></rect>";
+  }).join("");
+  var label = "Last " + vals.length + " weeks: from " + Math.min.apply(null, vals) + " to " + max + "; this week " + vals[vals.length - 1];
+  return '<svg class="bars" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="' + esc(label) + '">' + bars + "</svg>" +
+    '<div class="bars-axis"><span>' + esc(short(parseISO(weeks[0].start))) + "</span><span>This week</span></div>";
+}
+function paintStats(s) {
+  var weeks = s.weeks, now = weeks[weeks.length - 1], last = weeks[weeks.length - 2] || null, r = s.retention;
+  $("stats-summary").innerHTML =
+    '<div><strong>' + s.members + "</strong><span>members, " + pct(s.confirmed_members, s.members) + " confirmed their email</span></div>" +
+    '<div><strong>' + (r.eligible ? pct(r.retained, r.eligible) : "–") + "</strong><span>" +
+      (r.eligible ? "came back 4+ weeks after joining (" + r.retained + " of " + r.eligible + ")" : "came back after 4 weeks (not enough history yet)") + "</span></div>" +
+    '<div><strong>' + (s.active_since ? esc(short(parseISO(s.active_since))) : "Today") + "</strong><span>activity counted since</span></div>";
+  $("stats-grid").innerHTML = STAT_METRICS.map(function (m) {
+    var key = m[0];
+    return '<section class="stat-card"><h2 class="eyebrow">' + esc(m[1]) + "</h2>" +
+      '<p class="stat-now"><strong>' + now[key] + "</strong> this week" + (last ? '<span class="stat-last">last week ' + last[key] + "</span>" : "") + "</p>" +
+      '<p class="hint small">' + esc(m[2](now)) + "</p>" + statBars(weeks, key) + "</section>";
+  }).join("");
+}

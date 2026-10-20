@@ -16,7 +16,7 @@ function onAuthChange() {
   WENT = {}; WENT_LIST = []; MYPLANS = {}; MYPLAN_LIST = [];
   if (!AUTH.user) {
     NOTICE_SET = false; $("account-notice").textContent = "";
-    if (visible("review") || visible("venues")) show("home");
+    if (visible("review") || visible("venues") || visible("stats")) show("home");
     if (visible("submit")) renderSubmit();
     rerenderLists();
     return;
