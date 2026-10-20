@@ -250,7 +250,7 @@ a { color: inherit; }
 .section h2 { font-family: var(--display); font-weight: 600; font-size: var(--step-2); letter-spacing: -0.015em; }
 
 /* accounts, submissions, review */
-.navlink .count:not(:empty) { margin-left: 6px; background: var(--star); color: var(--on-star); border-radius: 999px; padding: 0 7px; font-size: 0.8125rem; }
+.navlink .count:not(:empty), .btn .count:not(:empty) { margin-left: 6px; background: var(--star); color: var(--on-star); border-radius: 999px; padding: 0 7px; font-size: 0.8125rem; }
 .forms { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; align-items: start; }
 .panel { display: grid; gap: 14px; padding: clamp(16px, 3vw, 24px); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
 .panel h2 { font-family: var(--display); font-weight: 600; font-size: var(--step-2); letter-spacing: -0.015em; }
@@ -367,3 +367,13 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .state.bad { background: var(--danger-soft); color: var(--on-danger-soft); }
 .source-error { color: var(--on-danger-soft) !important; }
 .queue-item.source select { background: var(--page); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 8px 10px; color: var(--text); }
+/* CC-71: found events */
+.found-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 10px 18px; margin-bottom: 12px; }
+.found-filters .field { min-width: 180px; }
+.queue-item.found { align-items: start; }
+.queue-item.found .kind .state { font-size: 0.75rem; vertical-align: middle; margin-left: 4px; }
+.alt-meta.dup { color: var(--on-info-soft); background: var(--info-soft); display: inline-block; padding: 2px 8px; border-radius: var(--r-ctl); margin-top: 4px; }
+.changes { margin: 6px 0 0; padding-left: 18px; font-size: 0.9375rem; }
+.changes li { margin: 2px 0; }
+.skip-form { flex-basis: 100%; display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; }
+.skip-form fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; }

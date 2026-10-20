@@ -17,7 +17,7 @@ function queueItemHTML(e, actions) {
       e.suggestedBy ? '<p class="alt-meta">Credited as "Suggested by ' + esc(e.suggestedBy) + '"</p>' : "") + "</div>" +
     '<div class="row">' + actions + "</div></div>";
 }
-function openReview() { if (!isAdmin()) { openAccount(); return; } renderReview(); show("review"); }
+function openReview() { if (!isAdmin()) { openAccount(); return; } renderReview(); updateFoundCount(); show("review"); }
 function updateReviewCount(n) {
   if (n !== undefined) { $("review-count").textContent = n ? String(n) : ""; return; }
   api("/admin/events?limit=1").then(readJSON).then(function (res) { if (res.ok) updateReviewCount(res.body.total); }, function () {});
@@ -200,6 +200,7 @@ function editButtonHTML(e, cls) {
 }
 function openEditor(e, opener) {
   EDITING = { e: e, opener: opener };
+  foundMode(null); // the same form approves found events (CC-71)
   $("ed-heading").textContent = "Edit " + e.title;
   $("ed-sheet").hidden = !e.sourceId;
   $("ed-title").value = e.title; $("ed-category").value = e.type; $("ed-status").value = e.status || "approved";
@@ -256,6 +257,7 @@ function venueIdFor(name, hood) {
 }
 $("edit-form").addEventListener("submit", function (ev) {
   ev.preventDefault();
+  if (EDITING && EDITING.found) { approveFromEditor(); return; } // "Edit then approve" a found event (found.js)
   var e = EDITING && EDITING.e; if (!e) return;
   var title = $("ed-title").value.trim(), venue = $("ed-venue").value.trim(), hood = $("ed-hood").value.trim();
   var begin = $("ed-begin").value || null, end = $("ed-end").value || null, url = $("ed-url").value.trim(), cost = $("ed-cost").value.trim();
