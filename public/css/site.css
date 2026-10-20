@@ -417,3 +417,19 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .crew .confirm .btn.ghost { color: inherit; box-shadow: inset 0 0 0 1.5px currentColor; }
 .join h2 { font-family: var(--display); font-weight: 600; font-size: var(--step-2); }
 
+/* CC-75: a crew box is two halves, members and shared plans. Each half stops at five members' height
+   (crews.js measures a row) and scrolls on its own past that; the name and buttons stay put. */
+.crew-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 24px; }
+.crew-col { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.crew-col-h { font-size: var(--step--1); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.crew ul.members, .crew ul.crew-plans { overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; } /* max-height: crews.js */
+.crew ul.crew-plans { list-style: none; margin: 0; padding-left: 0; display: grid; gap: 0; align-content: start; }
+.crew ul.crew-plans li { display: grid; gap: 2px; padding: 8px 0; border-top: 1px solid var(--line); }
+.crew ul.crew-plans li:first-child { border-top: 0; padding-top: 0; }
+.crew ul.crew-plans a { font-weight: 600; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+@media (max-width: 700px) { .crew-cols { grid-template-columns: minmax(0, 1fr); } }
+.card .crew-note { margin-top: 6px; font-size: 0.875rem; color: var(--muted); }
+.crewshare { border: 0; margin: 0; }
+.crewshare legend { float: left; width: 100%; font-weight: 600; padding: 0; margin-bottom: 6px; } /* inside the box, not on its border */
+.crewshare legend + * { clear: both; }
+.crewshare .radio { margin: 4px 0; }

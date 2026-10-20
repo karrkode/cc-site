@@ -38,12 +38,15 @@ function crewHTML(c) {
       (c.description ? '<p class="crew-about">' + esc(c.description) + "</p>" : "") + "</div>";
   }
   html += '<p class="hint small">' + plural(c.members.length, "member", "members") + " of " + c.max_members + "</p>";
-  html += '<ul class="members" aria-label="Members of ' + esc(c.name) + '">' + c.members.map(function (m) {
+  // CC-75: two halves, members and the crew's shared plans; each scrolls on its own past about 5 members' height
+  html += '<div class="crew-cols"><div class="crew-col"><h4 class="crew-col-h" id="crew-m-' + id + '">Members</h4>' +
+    '<ul class="members" aria-label="Members of ' + esc(c.name) + '">' + c.members.map(function (m) {
     var tags = (m.owner ? ' <span class="state">Owner</span>' : "") + (m.you ? ' <span class="state">You</span>' : "");
     var acts = c.owner && !m.you ? crewAct("owner", c, 'data-user="' + esc(m.user_id) + '"', "Make owner", "btn ghost", "Make " + m.name + " the owner of " + c.name) +
       crewAct("remove", c, 'data-user="' + esc(m.user_id) + '"', "Remove", "btn ghost", "Remove " + m.name + " from " + c.name) : "";
     return '<li><span class="who">' + esc(m.name) + tags + "</span>" + (acts ? '<span class="row">' + acts + "</span>" : "") + "</li>";
-  }).join("") + "</ul>";
+  }).join("") + "</ul>" + "</div>" +
+    '<div class="crew-col"><h4 class="crew-col-h" id="crew-p-' + id + '">Plans</h4>' + crewPlansHTML(c) + "</div></div>";
   if (asking) html += askHTML(asking.text, asking.act, c, asking.user ? 'data-user="' + esc(asking.user) + '"' : "");
   var link = CREW_LINKS[c.id];
   if (link) {
@@ -64,8 +67,34 @@ function crewHTML(c) {
     (c.owner ? crewAct("edit", c, "", "Rename") + crewAct("delete", c, "", "Delete crew…", "btn danger") : crewAct("leave", c, "", "Leave crew…")) + "</div>";
   return html + "</article>";
 }
+// Each half of a crew box stops at the height five member rows take, measured from a real row (rows with an
+// owner's buttons are taller), and scrolls on its own past that (CC-75).
+function capCrewHeights() {
+  Array.prototype.forEach.call(document.querySelectorAll(".crew"), function (card) {
+    var list = card.querySelector("ul.members"), rows = list ? list.children : [];
+    if (!rows.length) return;
+    var gap = parseFloat(getComputedStyle(list).rowGap) || 0, tallest = 0;
+    Array.prototype.forEach.call(rows, function (r) { tallest = Math.max(tallest, r.offsetHeight); });
+    var cap = Math.ceil(5 * tallest + 4 * gap);
+    Array.prototype.forEach.call(card.querySelectorAll("ul.members, ul.crew-plans"), function (ul) { ul.style.maxHeight = cap + "px"; });
+  });
+}
+window.addEventListener("resize", function () { if (CREWS.length && visible("account")) capCrewHeights(); });
+// The crew's shared plans (CC-75): each event once, soonest first, with who's going or interested.
+function crewPlansHTML(c) {
+  if (!c.plans.length) return '<p class="hint small">No plans shared yet. Use \u201cAdd to your crew?\u201d on an event you\u2019re interested in.</p>';
+  return '<ul class="crew-plans" aria-labelledby="crew-p-' + esc(c.id) + '">' + c.plans.map(function (row) {
+    var e = toEvent(row.event);
+    var who = row.people.map(function (p) {
+      return esc(p.you ? "You" : p.name) + " " + (p.status === "going" ? "going" + (p.date ? " " + esc(goingDay(p.date)) : "") : "interested");
+    }).join(" · ");
+    return '<li><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" +
+      '<span class="hint small">' + esc(placeText(e)) + " · " + esc(dateText(e)) + "</span><span>" + who + "</span></li>";
+  }).join("") + "</ul>";
+}
 function paintCrews() {
   $("crew-list").innerHTML = CREWS.map(crewHTML).join("");
+  capCrewHeights();
   $("crew-new").querySelector("h3").textContent = CREWS.length ? "Start another crew" : "Start a crew";
 }
 function crewFail(card, res) {
@@ -171,3 +200,61 @@ $("join-yes").addEventListener("click", function () {
   }, function () { b.disabled = false; $("join-error").textContent = errorText(null); });
 });
 $("join-no").addEventListener("click", function () { JOIN = null; paintJoin(); $("account-title").focus(); });
+
+// ---------- "Add to your crew?" on an event card (CC-75) ----------
+// Once you have a plan for an event and you're in a crew, the card offers "Add to your crew?": a checkbox per
+// crew. Only the crews you tick see it; changing the plan keeps them; clearing it, or "I've been", unshares it.
+var CREWSHARE_SEQ = 0;
+function crewShareToggleHTML(e) {
+  var mine = MYPLANS[e.id];
+  if (!mine || !CREWS.length) return "";
+  CREWSHARE_SEQ += 1;
+  var n = (mine.crews || []).length;
+  return '<button type="button" class="went" data-crewshare-toggle="' + esc(e.id) + '" aria-expanded="false" aria-controls="crewshare-' + CREWSHARE_SEQ + '">' +
+    (n ? "Shared with " + plural(n, "crew", "crews") : "Add to your crew?") + "</button>";
+}
+function crewShareHTML(e) {
+  var mine = MYPLANS[e.id];
+  if (!mine || !CREWS.length) return "";
+  var n = CREWSHARE_SEQ, on = mine.crews || [];
+  return '<fieldset class="myplan crewshare" id="crewshare-' + n + '" hidden><legend>Which crews can see your plan?</legend>' +
+    CREWS.map(function (c) {
+      return '<label class="radio"><input type="checkbox" value="' + esc(c.id) + '"' + (on.indexOf(c.id) >= 0 ? " checked" : "") + "> " + esc(c.name) + "</label>";
+    }).join("") +
+    '<p class="hint small">Only members of the crews you tick see it.</p>' +
+    '<div class="row"><button type="button" class="went" data-crewshare-save="' + esc(e.id) + '">Save</button></div>' +
+    '<p class="form-error" role="alert"></p></fieldset>';
+}
+document.addEventListener("click", function (ev) {
+  Array.prototype.forEach.call(document.querySelectorAll('[data-crewshare-toggle][aria-expanded="true"]'), function (open) {
+    var panel = $(open.getAttribute("aria-controls"));
+    if (!open.contains(ev.target) && !(panel && panel.contains(ev.target))) { open.setAttribute("aria-expanded", "false"); if (panel) panel.hidden = true; }
+  });
+  if (!AUTH.user) return;
+  var t = ev.target.closest("[data-crewshare-toggle],[data-crewshare-save]"); if (!t) return;
+  if (t.hasAttribute("data-crewshare-toggle")) {
+    var open = t.getAttribute("aria-expanded") !== "true", panel = $(t.getAttribute("aria-controls"));
+    t.setAttribute("aria-expanded", String(open)); panel.hidden = !open;
+    if (open) panel.querySelector("input").focus();
+    return;
+  }
+  var box = t.closest(".crewshare"), id = t.getAttribute("data-crewshare-save"), err = box.querySelector(".form-error");
+  var picked = Array.prototype.map.call(box.querySelectorAll("input:checked"), function (i) { return +i.value; });
+  t.disabled = true; err.textContent = "";
+  api("/me/plans/" + encodeURIComponent(id) + "/crews", { method: "PUT", body: { crews: picked } }).then(readJSON).then(function (res) {
+    if (!res.ok) throw res;
+    if (MYPLANS[id]) MYPLANS[id].crews = res.body.crews;
+    var names = CREWS.filter(function (c) { return res.body.crews.indexOf(c.id) >= 0; }).map(function (c) { return c.name; });
+    $("myplan-live").textContent = (names.length ? "Shared with " + names.join(" and ") : "Not shared with any crew") + ": " + KNOWN[id].title;
+    if (visible("account")) loadCrews();
+    return redrawCards(id, box.closest("[data-card]"), "[data-crewshare-toggle]");
+  }).catch(function (res) {
+    t.disabled = false; err.textContent = res && res.status ? errorText(res) : "Couldn't save. Check your connection and try again.";
+  });
+});
+document.addEventListener("keydown", function (ev) { // Escape closes the crew picker and returns to its button
+  if (ev.key !== "Escape") return;
+  var box = ev.target.closest && ev.target.closest(".crewshare"); if (!box) return;
+  var toggle = document.querySelector('[aria-controls="' + box.id + '"]');
+  if (toggle) { toggle.setAttribute("aria-expanded", "false"); box.hidden = true; toggle.focus(); }
+});

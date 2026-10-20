@@ -73,7 +73,7 @@ The API has these groups of routes:
 |---|---|---|
 | `/auth` | Sign in, sign out, register, confirm email, reset password | All users |
 | `/events` | Show, search, submit, edit and delete events | All users can read. Admins can edit and delete. |
-| `/me` | "I've been" marks, plans, the user's submissions | The signed-in user only |
+| `/me` | "I've been" marks, plans, the user's submissions, which crews can see each plan | The signed-in user only |
 | `/admin` | Review queue, scheduled events, withdrawn events, site stats | Admins only |
 | `/admin/discovery` | Event sources, found events, skip rules, the CSV download, the monthly budget | Admins only |
 | `/venues` | Show, rename, merge and delete venues. Set opening hours and show times. | All users can read. Admins can change. |
@@ -95,6 +95,7 @@ The database has these main tables:
 - `attended`: the "I've been" marks.
 - `plans`: the "interested" and "going" plans.
 - `crews`, `crew_members` and `crew_invites`: the culture crews. An invite keeps only a hash of its link.
+- `plan_shares`: which crews can see a plan. A plan is private until its owner shares it. Only the members of those crews see it.
 - `discovery_sources`, `discovered_items`, `discovery_checks` and `discovery_skip_rules`: event discovery (section 5).
 - `traffic_counts`, `traffic_visitors`, `traffic_visitor_days` and `user_active_days`: the counts for Site stats. These tables do not keep names or IP addresses.
 - `app_settings`: settings that an admin can change, for example the discovery budget.
