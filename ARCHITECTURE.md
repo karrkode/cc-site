@@ -6,11 +6,11 @@ This document uses the rules of ASD-STE100 Simplified Technical English. No STE 
 
 The overview shows the parts and how they connect.
 
-![Overview: the browser, the site, the API server and the AWS services](docs/architecture/1-overview.svg)
+![Overview: the browser, the site, the API server, the AWS services, the venue websites and Claude Haiku](docs/architecture/1-overview.svg)
 
 This diagram shows what runs on the API server and the tables in the database.
 
-![Inside the API server: Caddy, the api container, the jobs and the database](docs/architecture/2-api-server.svg)
+![Inside the API server: Caddy, the api container and its routes, the three jobs, and the database tables](docs/architecture/2-api-server.svg)
 
 This diagram shows how a change goes from a pull request to production.
 
@@ -26,7 +26,7 @@ Each part has its own repository on GitHub.
 | Part | Repository | Function |
 |---|---|---|
 | Site | `cc-site` | Shows events to the user. Sends the user's actions to the API. |
-| API | `cc-backend` | Keeps the events, users, plans and venues. Sends emails. |
+| API | `cc-backend` | Keeps the events, users, plans and venues. Finds new events. Sends emails. |
 | Infrastructure | `cc-backend/infra/aws` | Defines the AWS resources. |
 
 ## 2. The site
@@ -52,7 +52,10 @@ The site has these views:
 - Submit an event
 - Your account
 - Review (admins only)
-- Venues (admins only)
+- Venues, with each venue's hours (admins only)
+- Site stats (admins only)
+- Event sources (admins only)
+- Found events (admins only)
 
 The site has two themes: dark and light.
 The user can change the theme with the theme button.
@@ -71,8 +74,9 @@ The API has these groups of routes:
 | `/auth` | Sign in, sign out, register, confirm email, reset password | All users |
 | `/events` | Show, search, submit, edit and delete events | All users can read. Admins can edit and delete. |
 | `/me` | "I've been" marks, plans, the user's submissions | The signed-in user only |
-| `/admin` | Review queue, scheduled events, withdrawn events | Admins only |
-| `/venues` | Show, rename, merge and delete venues | All users can read. Admins can change. |
+| `/admin` | Review queue, scheduled events, withdrawn events, site stats | Admins only |
+| `/admin/discovery` | Event sources, found events, skip rules, the CSV download, the monthly budget | Admins only |
+| `/venues` | Show, rename, merge and delete venues. Set opening hours and show times. | All users can read. Admins can change. |
 | `/traffic` | Count a page view, a click to an event's page, or a planned outing. No cookies. | All visitors (the site sends it) |
 
 ## 4. The database
@@ -84,43 +88,71 @@ Each change is a numbered migration in `cc-backend/alembic/versions`.
 The deploy applies new migrations automatically.
 
 The database has these main tables:
-- `users`: the accounts.
-- `events`: the events.
-- `venues`: the places where the events occur.
+- `users`: the accounts. `refresh_tokens` and `email_tokens` keep the sign-ins and the email links.
+- `events`: the events. Each event also keeps its schedule: the dates and times that discovery found, and its usual show times.
+- `venues`: the places where the events occur. Each venue keeps its opening hours and its usual show times.
 - `attended`: the "I've been" marks.
 - `plans`: the "interested" and "going" plans.
+- `discovery_sources`, `discovered_items`, `discovery_checks` and `discovery_skip_rules`: event discovery (section 5).
+- `traffic_counts`, `traffic_visitors`, `traffic_visitor_days` and `user_active_days`: the counts for Site stats. These tables do not keep names or IP addresses.
+- `app_settings`: settings that an admin can change, for example the discovery budget.
+- `sheet_syncs`: the history of the old Google Sheet sync. Nothing writes to this table now.
 
 ## 5. Event discovery
 
 Event discovery finds new events on the venues' own websites.
-A scheduled task starts discovery one time each hour, from 7 AM to 10 PM Chicago time.
-Each venue has a date for its next check. Discovery reads only the venues that are due.
+EventBridge Scheduler starts discovery one time each hour, from 7 AM to 10 PM Chicago time. Discovery runs in the api container.
+Each source has a date for its next check. Discovery reads only the sources that are due. Most hours, no source is due.
 Discovery reads a page again only when the page changed.
-Claude Haiku reads each changed page and lists the events. The Art Institute has an API, so discovery uses that API.
+
+Discovery reads each changed page in this sequence:
+1. If the page has complete schema.org event data (dates and a price), discovery uses that data. This costs nothing.
+2. If not, Claude Haiku (on the Anthropic API) reads the page and lists the events. The Art Institute has its own API, so discovery uses that API.
+
 Discovery puts each event that it finds in a holding list. Discovery does not put events on the site.
 An admin approves or rejects each event on the "Found events" page.
+About 60 and 45 days before an event opens, discovery reads the event's own page for the prices and the showtimes.
+Discovery also fills in the venues' opening hours and usual show times. Discovery does not change hours that an admin set.
+
+> **NOTE:** The Anthropic API key is in AWS SSM Parameter Store. The scheduled job gives the key to discovery on standard input. The key is not in the code, on a command line or in a file.
+
+**Monthly budget:** discovery costs about $5 each month. The default budget is $10. At 80% of the budget, the event pages wait until the next month. At 100%, discovery reads only the sources that an admin asks for with "Check now".
+
+**Check by hand only:** some sites do not let discovery read them. An admin can set such a site to "Check by hand only". Discovery then does not try the site. The weekly recap shows the site in its "Check these by hand" list.
 
 > **NOTE:** Until October 2026, a Google Sheet was the second source of events. The site does not read the sheet now. The sheet is a read-only archive. The old sheet events are ordinary events, and you can edit them on the site.
 
-## 6. Email
+## 6. Plan an outing
+
+Plan an outing suggests only events that occur at the time that the user selects: Today, Tonight, This weekend, Next weekend or a date.
+- A performance must have a schedule: its own dates and times, its usual show times, or its venue's show times. If a performance does not have a schedule, Plan an outing does not suggest it. The catalog shows it.
+- An exhibition must be open: the venue's opening hours tell when. If the hours are not known, Plan an outing uses 10 AM to 5 PM. For "Tonight", the venue must be open after 6 PM.
+
+The site gets each event's schedule and its venue's hours from the API. Plan an outing does the calculation in the browser.
+
+## 7. Email
 
 The API sends email with Amazon SES in the us-east-1 region.
-The API sends three types of email: email confirmation, password reset, and a weekly discovery recap to info@chiculturecrew.com (Tuesdays at 10 AM).
+The API sends three types of email:
+- Email confirmation.
+- Password reset.
+- The weekly discovery recap to info@chiculturecrew.com. EventBridge Scheduler starts it on Tuesdays at 10 AM. The recap is an HTML email with a plain-text copy. If the API cannot send it, an alert goes to the product owner.
 The API uses short-lived credentials. These credentials can only send email.
 
 > **NOTE:** SES is in its sandbox at this time. SES sends email only to verified addresses.
 
-## 7. Deployment
+## 8. Deployment
 
 GitHub Actions tests each pull request.
 When you merge a pull request into `main`, GitHub Actions deploys the change.
 GitHub Actions uses OIDC to get access to AWS. It does not keep AWS keys.
 
-Terraform defines the AWS resources: S3, CloudFront, EC2, RDS, SES, Route 53 and IAM.
+Terraform defines the AWS resources: S3, CloudFront, EC2, ECR, RDS, SES, Route 53, IAM, EventBridge Scheduler, SSM Parameter Store and CloudWatch.
+CloudWatch keeps the logs. If a scheduled job or a deploy fails, CloudWatch sends an alert by email.
 
 > **WARNING:** Only the product owner applies Terraform changes. Do not apply Terraform changes from an automated session.
 
-## 8. Data flow (example: a user marks an event "Interested")
+## 9. Data flow (example: a user marks an event "Interested")
 
 1. The user clicks "Interested?" on an event card.
 2. The browser sends `PUT /me/plans/{event_id}` to the API.
