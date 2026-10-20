@@ -60,5 +60,5 @@ environment.
 ## History
 
 Until October 2026 the site was built on Netlify from a Google Sheet (`app.py`, `build.py`).
-The move to AWS is described in cc-backend's `infra/README.md`; the sheet still feeds the
-API through a nightly sync.
+The move to AWS is described in cc-backend's `infra/README.md`. The sheet fed the API through a
+nightly sync until that was retired in October 2026 (CC-72); it's kept as a read-only archive.

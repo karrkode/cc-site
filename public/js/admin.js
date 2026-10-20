@@ -3,7 +3,7 @@
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- review queue (admins) ----------
-function submitterText(who) { // null: came from the sheet, or the account was deleted
+function submitterText(who) { // null: came from the old Google Sheet, or the account was deleted
   if (!who) return "No submitter on record";
   var mail = '<a href="mailto:' + esc(who.email) + '">' + esc(who.email) + "</a>";
   return "Submitted by " + (who.display_name.trim() ? esc(who.display_name) + " (" + mail + ")" : mail);
@@ -104,7 +104,7 @@ function paintVenues() {
     var id = esc(v.id);
     return '<div class="queue-item"><div class="alt-text"><p class="alt-title">' + esc(v.name) + '</p><p class="alt-meta">' +
       esc(v.neighborhood || "No neighborhood") + " · " + esc(v.region ? REGION_NAMES[v.region] : "No side of town") + " · " + plural(v.events, "event", "events") +
-      (v.sheet_events ? " (" + v.sheet_events + " from the sheet)" : "") + "</p></div>" +
+      "</p></div>" +
       '<div class="row"><button class="btn ghost" type="button" data-venue-edit="' + id + '" aria-label="Edit ' + esc(venueLabel(v)) + '">Edit</button>' +
       '<button class="btn ghost" type="button" data-venue-merge="' + id + '" aria-label="Merge ' + esc(venueLabel(v)) + ' into another venue">Merge…</button>' +
       (v.events ? "" : '<button class="btn danger" type="button" data-venue-delete="' + id + '" aria-label="Delete ' + esc(venueLabel(v)) + '">Delete</button>') +
@@ -125,9 +125,6 @@ function openVenueDialog(mode, v, opener) {
   $("vd-edit").hidden = mode !== "edit"; $("vd-merge").hidden = mode !== "merge"; $("vd-delete").hidden = mode !== "delete";
   $("vd-go").textContent = mode === "edit" ? "Save changes" : mode === "merge" ? "Merge" : "Delete venue";
   $("vd-go").className = mode === "delete" ? "btn danger solid" : "btn";
-  $("vd-sheet").hidden = !v.sheet_events || mode === "delete";
-  $("vd-sheet").textContent = plural(v.sheet_events, "of its events comes", "of its events come") + " from the Google Sheet. " +
-    "The nightly sync uses the sheet's venue names, so after a rename or merge those events go back to a venue with the sheet's name. Fix the name in the sheet as well.";
   $("vd-error").textContent = ""; setVenueBusy(false);
   if (mode === "edit") { $("vd-name").value = v.name; $("vd-hood").value = v.neighborhood; $("vd-area").value = v.area; $("vd-region").value = v.region || ""; }
   if (mode === "merge") { $("vd-find").value = ""; fillMergeTargets(); }
@@ -192,7 +189,7 @@ $("venue-form").addEventListener("submit", function (ev) {
 
 // ---------- edit, withdraw or delete an event (admins, CC-56) ----------
 // One dialog for every place an event shows (cards, the review lists). It sends only the fields that
-// changed, so an untouched price keeps the sheet's exact lowest price. Afterwards every list on the
+// changed, so an untouched price keeps its exact lowest price. Afterwards every list on the
 // page is updated in place, and focus goes back to the Edit button (or the view's heading if it's gone).
 var EDITING = null, REFOCUS = null; // the open edit; the event whose Edit button should get focus back
 function editButtonHTML(e, cls) {
@@ -202,7 +199,6 @@ function openEditor(e, opener) {
   EDITING = { e: e, opener: opener };
   foundMode(null); // the same form approves found events (CC-71)
   $("ed-heading").textContent = "Edit " + e.title;
-  $("ed-sheet").hidden = !e.sourceId;
   $("ed-title").value = e.title; $("ed-category").value = e.type; $("ed-status").value = e.status || "approved";
   $("ed-venue").value = e.venue; $("ed-hood").value = e.hood || "";
   $("ed-begin").value = e.begin || ""; $("ed-end").value = e.end || ""; $("ed-open-run").checked = !!e.openRun;
@@ -300,8 +296,7 @@ $("ed-withdraw").addEventListener("click", function () {
 });
 $("ed-delete").addEventListener("click", function () {
   var e = EDITING && EDITING.e; if (!e) return;
-  $("ed-confirm-text").textContent = "Delete \u201c" + e.title + "\u201d for good? Everyone's \u201cI've been\u201d marks and plans for it go too, and it can't be undone." +
-    (e.sourceId ? " It's from the Google Sheet, so the nightly sync adds it back unless it's removed there." : "");
+  $("ed-confirm-text").textContent = "Delete \u201c" + e.title + "\u201d for good? Everyone's \u201cI've been\u201d marks and plans for it go too, and it can't be undone.";
   $("ed-confirm").hidden = false; $("ed-delete-no").focus();
 });
 $("ed-delete-no").addEventListener("click", function () { $("ed-confirm").hidden = true; $("ed-delete").focus(); });

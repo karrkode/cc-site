@@ -90,18 +90,22 @@ The database has these main tables:
 - `attended`: the "I've been" marks.
 - `plans`: the "interested" and "going" plans.
 
-## 5. The Google Sheet sync
+## 5. Event discovery
 
-A Google Sheet is the second source of events.
-A scheduled task runs the sync one time each night.
-The sync reads the sheet and updates the events in the database.
+Event discovery finds new events on the venues' own websites.
+A scheduled task starts discovery one time each hour, from 7 AM to 10 PM Chicago time.
+Each venue has a date for its next check. Discovery reads only the venues that are due.
+Discovery reads a page again only when the page changed.
+Claude Haiku reads each changed page and lists the events. The Art Institute has an API, so discovery uses that API.
+Discovery puts each event that it finds in a holding list. Discovery does not put events on the site.
+An admin approves or rejects each event on the "Found events" page.
 
-> **CAUTION:** The sync replaces the data of sheet events. If you edit a sheet event on the site, the sync removes your change. Make the change in the sheet.
+> **NOTE:** Until October 2026, a Google Sheet was the second source of events. The site does not read the sheet now. The sheet is a read-only archive. The old sheet events are ordinary events, and you can edit them on the site.
 
 ## 6. Email
 
 The API sends email with Amazon SES in the us-east-1 region.
-The API sends two types of email: email confirmation and password reset.
+The API sends three types of email: email confirmation, password reset, and a weekly discovery recap to info@chiculturecrew.com (Tuesdays at 10 AM).
 The API uses short-lived credentials. These credentials can only send email.
 
 > **NOTE:** SES is in its sandbox at this time. SES sends email only to verified addresses.
