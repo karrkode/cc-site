@@ -2,6 +2,8 @@
 // Loaded by index.html in order (core, util, catalog, planner, account, submit, admin, hours, found, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
+// Times are typed ("10 AM", "9:30 PM") rather than picked: browsers' time pickers look filled in before
+// every part is set (Safari shows a placeholder AM/PM) and then report no time at all.
 // Each venue keeps open_hours ({day: [opens, closes] | null for closed}; a day left out isn't known) and
 // show_times ({day: [start times]}), both 24-hour "HH:MM". Event discovery fills them in from the venue's
 // site; once an admin saves them here, discovery leaves them alone. They're stored for the planner (CC-79).
@@ -40,8 +42,9 @@ function hoursRows() {
     return '<div class="hours-row" data-day="' + k + '"><span class="day" id="hd-day-' + k + '">' + d[1] + "</span>" +
       '<select id="hd-state-' + k + '" aria-labelledby="hd-day-' + k + '" data-hours-state><option value="">Not known</option><option value="closed">Closed</option><option value="open">Open</option></select>' +
       '<span class="times"><label class="sr-only" for="hd-opens-' + k + '">' + d[1] + " opens</label>" +
-      '<input type="time" id="hd-opens-' + k + '"><span aria-hidden="true">to</span><label class="sr-only" for="hd-closes-' + k + '">' + d[1] + " closes</label>" +
-      '<input type="time" id="hd-closes-' + k + '"></span></div>';
+      '<input type="text" id="hd-opens-' + k + '" maxlength="12" placeholder="10 AM" autocomplete="off"><span aria-hidden="true">to</span>' +
+      '<label class="sr-only" for="hd-closes-' + k + '">' + d[1] + " closes</label>" +
+      '<input type="text" id="hd-closes-' + k + '" maxlength="12" placeholder="5 PM" autocomplete="off"></span></div>';
   }).join("");
   $("hd-shows").innerHTML = HOUR_DAYS.map(function (d) {
     var k = d[0];
@@ -62,7 +65,7 @@ function openHoursDialog(v, opener) {
   HOUR_DAYS.forEach(function (d) {
     var k = d[0], h = v.open_hours || {}, known = Object.prototype.hasOwnProperty.call(h, k);
     $("hd-state-" + k).value = !known ? "" : h[k] === null ? "closed" : "open";
-    $("hd-opens-" + k).value = known && h[k] ? h[k][0] : ""; $("hd-closes-" + k).value = known && h[k] ? h[k][1] : "";
+    $("hd-opens-" + k).value = known && h[k] ? clockText(h[k][0]) : ""; $("hd-closes-" + k).value = known && h[k] ? clockText(h[k][1]) : "";
     syncHoursRow(k);
     $("hd-show-" + k).value = ((v.show_times || {})[k] || []).map(clockText).join(", ");
   });
@@ -80,6 +83,14 @@ $("hd-open").addEventListener("change", function (ev) {
   var k = sel.closest("[data-day]").getAttribute("data-day"); syncHoursRow(k);
   if (sel.value === "open" && !$("hd-opens-" + k).value) $("hd-opens-" + k).focus();
 });
+$("hd-open").addEventListener("blur", function (ev) { // tidy a typed time: "9pm" -> "9 PM"
+  var input = ev.target; if (!input.matches || !input.matches(".times input")) return;
+  var got = parseTimes(input.value); if (!got.error && got.times.length === 1) input.value = clockText(got.times[0]);
+}, true);
+$("hd-shows").addEventListener("blur", function (ev) {
+  var input = ev.target; if (!input.matches || !input.matches("input")) return;
+  var got = parseTimes(input.value); if (!got.error) input.value = got.times.map(clockText).join(", ");
+}, true);
 $("hours-form").addEventListener("input", function () { $("hd-error").textContent = ""; });
 $("hd-cancel").addEventListener("click", function () { $("hours-dialog").close(); });
 $("hours-dialog").addEventListener("close", function () {
@@ -97,12 +108,19 @@ $("hours-form").addEventListener("submit", function (ev) {
   var v = HDLG && HDLG.v; if (!v) return;
   var open = {}, shows = {}, problem = null;
   HOUR_DAYS.some(function (d) {
-    var k = d[0], state = $("hd-state-" + k).value, o = $("hd-opens-" + k).value, c = $("hd-closes-" + k).value;
+    var k = d[0], state = $("hd-state-" + k).value;
     if (state === "closed") open[k] = null;
     if (state === "open") {
-      if (!o || !c) { problem = [d[1] + ": give both the opening and the closing time.", o ? "hd-closes-" + k : "hd-opens-" + k]; return true; }
-      if (o === c) { problem = [d[1] + ": the closing time is the same as the opening time.", "hd-closes-" + k]; return true; }
-      open[k] = [o, c];
+      var ends = [["opens", "opening"], ["closes", "closing"]].map(function (e) {
+        var id = "hd-" + e[0] + "-" + k, text = $(id).value.trim(), got = parseTimes(text);
+        if (!text) return { id: id, error: d[1] + ": give the " + e[1] + " time, like " + (e[0] === "opens" ? "10 AM." : "5 PM.") };
+        if (got.error || got.times.length !== 1) return { id: id, error: d[1] + ": \u201c" + text + "\u201d isn't a time we can read. Write it like 5 PM or 9:30 PM." };
+        return { id: id, time: got.times[0] };
+      });
+      var bad = ends.filter(function (e) { return e.error; })[0];
+      if (bad) { problem = [bad.error, bad.id]; return true; }
+      if (ends[0].time === ends[1].time) { problem = [d[1] + ": the closing time is the same as the opening time.", ends[1].id]; return true; }
+      open[k] = [ends[0].time, ends[1].time];
     }
     var parsed = parseTimes($("hd-show-" + k).value);
     if (parsed.error) { problem = [d[1] + ": “" + parsed.error + "” isn't a time we can read. Write it like 7:30 PM.", "hd-show-" + k]; return true; }
