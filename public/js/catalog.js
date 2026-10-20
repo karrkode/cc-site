@@ -26,9 +26,10 @@ $("soon-more").addEventListener("click", function () { resetCatalog(); cat.sort 
 // ---------- catalog ----------
 var cat = { q: "", types: {}, hoods: {}, mine: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null };
 function resetCatalog() { cat = { q: "", types: {}, hoods: {}, mine: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null }; }
-// CC-66: the dolphin filters (only for accounts with the dolphins): your interested and/or committed events.
+// CC-66: the dolphin filters, for every signed-in member: your interested and/or committed events.
+// (The dolphins on cards are still only for accounts with the dolphins setting, CC-61.)
 function syncMineChips() {
-  var on = !!(AUTH.user && AUTH.user.dolphins);
+  var on = !!AUTH.user;
   $("mine-chips").hidden = !on;
   Array.prototype.forEach.call($("mine-chips").children, function (b) {
     b.setAttribute("aria-pressed", String(!!cat.mine[b.getAttribute("data-mine")]));
