@@ -332,7 +332,7 @@ var STAT_METRICS = [
   ["attended", "“I've been” marks", function () { return "events members say they went to"; }],
   ["submitted", "Events sent in", function () { return "suggestions from members"; }]
 ];
-function openStats() { if (!isAdmin()) { openAccount(); return; } show("stats"); loadStats(); }
+function openStats() { if (!isAdmin()) { openAccount(); return; } show("stats"); loadStats(); loadInterest(); }
 function loadStats() {
   $("stats-status").textContent = "Loading…";
   api("/admin/stats?weeks=12&today=" + isoDate(T)).then(readJSON).then(function (res) {
@@ -367,3 +367,35 @@ function paintStats(s) {
       '<p class="hint small">' + esc(m[2](now)) + "</p>" + statBars(weeks, key) + "</section>";
   }).join("");
 }
+
+// CC-69: the events members are most interested in or committed to, as stacked bars (committed, then
+// interested) scaled to the busiest event, with "I've been" counts. Totals only; never who.
+function loadInterest() {
+  $("interest-status").textContent = "Loading…";
+  var type = $("i-type");
+  if (type.options.length === 1) TYPES.forEach(function (t) { type.add(new Option(t, t)); }); // the types in use, as the catalog lists them
+  api("/admin/stats/events?" + qs([["range", $("i-range").value], ["include_closed", $("i-closed").checked ? "true" : ""], ["category", type.value],
+    ["limit", 15], ["today", isoDate(T)]])).then(readJSON).then(function (res) {
+    if (!res.ok) { $("interest-status").textContent = errorText(res); return; }
+    paintInterest(res.body);
+  }, function () { $("interest-status").textContent = errorText(null); });
+}
+function paintInterest(rows) {
+  var span = { week: "this week", "30d": "in the last 30 days", all: "yet" }[$("i-range").value], type = $("i-type").value;
+  $("interest-status").textContent = rows.length ? "" : "No member has marked " + (type ? "a " + type.toLowerCase() + " event " : "an event ") + span + ".";
+  var max = Math.max.apply(null, rows.map(function (r) { return r.interested + r.going; }).concat([1]));
+  $("interest-list").innerHTML = rows.map(function (r) {
+    var e = toEvent(r.event);
+    var counts = [[r.going, " committed"], [r.interested, " interested"], [r.attended, " \u201cI've been\u201d"]]
+      .filter(function (c) { return c[0]; }).map(function (c) { return c[0] + c[1]; }).join(" · ");
+    return '<li><div class="interest-name"><span class="kind">' + esc(e.type) + '</span><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" +
+      '<span class="hint small">' + esc(placeText(e)) + "</span></div>" +
+      '<div class="interest-bar" role="img" aria-label="' + esc(counts) + '">' +
+      '<span class="seg going" style="width:' + (100 * r.going / max).toFixed(1) + '%"></span>' +
+      '<span class="seg interested" style="width:' + (100 * r.interested / max).toFixed(1) + '%"></span></div>' +
+      '<p class="interest-counts">' + esc(counts) + "</p></li>";
+  }).join("");
+}
+$("i-type").addEventListener("change", loadInterest);
+$("i-range").addEventListener("change", loadInterest);
+$("i-closed").addEventListener("change", loadInterest);

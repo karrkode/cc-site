@@ -371,6 +371,21 @@
       <p class="hint" id="stats-status" role="status"></p>
       <div class="stat-summary" id="stats-summary"></div>
       <div class="stat-grid" id="stats-grid"></div>
+      <section class="section" aria-labelledby="interest-title">
+        <div class="interest-head">
+          <h2 id="interest-title">Events drawing interest</h2>
+          <div class="interest-filters">
+            <div class="field"><label for="i-type">Type</label>
+              <select id="i-type"><option value="">All types</option></select></div>
+            <div class="field"><label for="i-range">Time range</label>
+              <select id="i-range"><option value="week">This week</option><option value="30d" selected>Last 30 days</option><option value="all">All time</option></select></div>
+            <label class="radio"><input type="checkbox" id="i-closed"> Include closed events</label>
+          </div>
+        </div>
+        <p class="interest-legend" aria-hidden="true"><span class="sw going"></span>Committed <span class="sw interested"></span>Interested</p>
+        <p class="hint" id="interest-status" role="status"></p>
+        <ol class="interest-list" id="interest-list"></ol>
+      </section>
     </section>
 
     <!-- Venues (admins, CC-57) -->
