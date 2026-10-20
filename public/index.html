@@ -34,6 +34,7 @@
       <div class="fields" style="margin-top:14px">
         <div class="field"><label for="vd-hood">Neighborhood or town</label><input id="vd-hood" type="text" maxlength="120" aria-describedby="vd-hood-hint"><span class="hint small" id="vd-hood-hint">For a suburb, add ", IL".</span></div>
         <div class="field"><label for="vd-area">Area</label><select id="vd-area"><option value="city">City</option><option value="suburbs">Suburbs</option><option value="out_of_town">Out of town</option></select></div>
+        <div class="field"><label for="vd-region">Side of town</label><select id="vd-region"><option value="">Not set</option><option value="downtown">Downtown/Loop</option><option value="north">Northside</option><option value="west">Westside</option><option value="south">Southside</option><option value="suburbs">Suburbs</option><option value="out_of_town">Out of town</option></select></div>
       </div>
     </div>
     <div id="vd-merge" hidden>
@@ -405,7 +406,8 @@
         <p>Rename a venue or fix its neighborhood, merge a duplicate into the right one, or delete one nothing uses.</p>
         <div class="row"><button class="textbtn" type="button" data-go="review">Back to review</button></div>
       </div>
-      <div class="filters"><div class="field"><label for="v-q">Find a venue</label><input id="v-q" type="search" maxlength="100" placeholder="Name or neighborhood" autocomplete="off"></div></div>
+      <div class="filters"><div class="field"><label for="v-q">Find a venue</label><input id="v-q" type="search" maxlength="100" placeholder="Name or neighborhood" autocomplete="off"></div>
+        <label class="radio"><input type="checkbox" id="v-noregion"> Only venues without a side of town</label></div>
       <p class="hint" id="v-count" role="status" style="margin-top:14px"></p>
       <div class="queue" id="venue-list" style="margin-top:10px"></div>
     </section>

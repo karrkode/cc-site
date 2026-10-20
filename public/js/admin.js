@@ -81,7 +81,6 @@ $("withdrawn-list").addEventListener("click", reviewClick);
 // The list comes from GET /venues/manage (every venue, with how many events use it) and is filtered here.
 // One dialog does rename, merge (with a preview of what moves) and delete (only for unused venues).
 var VLIST = [], VDLG = null; // VDLG: { mode: "edit" | "merge" | "delete", v, opener }
-var AREA_LABEL = { city: "City", suburbs: "Suburbs", out_of_town: "Out of town" };
 function openVenues() { if (!isAdmin()) { openAccount(); return; } show("venues"); loadVenues(); }
 function loadVenues(focusId) {
   $("v-count").textContent = "Loading…";
@@ -95,13 +94,16 @@ function loadVenues(focusId) {
 function venueLabel(v) { return v.neighborhood ? v.name + " · " + v.neighborhood : v.name; }
 function venueMatches(v, q) { q = q.trim().toLowerCase(); return !q || (v.name + " " + v.neighborhood).toLowerCase().indexOf(q) >= 0; }
 function paintVenues() {
-  var q = $("v-q").value, rows = VLIST.filter(function (v) { return venueMatches(v, q); });
-  $("v-count").textContent = plural(rows.length, "venue", "venues") + (q.trim() ? " match" : "") +
-    (rows.length > 200 ? ", showing the first 200. Search to narrow it down." : ".");
+  var q = $("v-q").value, onlyUnplaced = $("v-noregion").checked;
+  var rows = VLIST.filter(function (v) { return venueMatches(v, q) && (!onlyUnplaced || !v.region); });
+  var unplaced = VLIST.filter(function (v) { return !v.region; }).length;
+  $("v-count").textContent = plural(rows.length, "venue", "venues") + (q.trim() || onlyUnplaced ? " match" : "") +
+    (rows.length > 200 ? ", showing the first 200. Search to narrow it down." : ".") +
+    (unplaced && !onlyUnplaced ? " " + plural(unplaced, "venue has", "venues have") + " no side of town yet." : "");
   $("venue-list").innerHTML = rows.slice(0, 200).map(function (v) {
     var id = esc(v.id);
     return '<div class="queue-item"><div class="alt-text"><p class="alt-title">' + esc(v.name) + '</p><p class="alt-meta">' +
-      esc(v.neighborhood || "No neighborhood") + " · " + esc(AREA_LABEL[v.area] || v.area) + " · " + plural(v.events, "event", "events") +
+      esc(v.neighborhood || "No neighborhood") + " · " + esc(v.region ? REGION_NAMES[v.region] : "No side of town") + " · " + plural(v.events, "event", "events") +
       (v.sheet_events ? " (" + v.sheet_events + " from the sheet)" : "") + "</p></div>" +
       '<div class="row"><button class="btn ghost" type="button" data-venue-edit="' + id + '" aria-label="Edit ' + esc(venueLabel(v)) + '">Edit</button>' +
       '<button class="btn ghost" type="button" data-venue-merge="' + id + '" aria-label="Merge ' + esc(venueLabel(v)) + ' into another venue">Merge…</button>' +
@@ -110,6 +112,7 @@ function paintVenues() {
   }).join("");
 }
 $("v-q").addEventListener("input", paintVenues);
+$("v-noregion").addEventListener("change", paintVenues);
 $("venue-list").addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-venue-edit],[data-venue-merge],[data-venue-delete]"); if (!b) return;
   var mode = b.hasAttribute("data-venue-edit") ? "edit" : b.hasAttribute("data-venue-merge") ? "merge" : "delete";
@@ -126,7 +129,7 @@ function openVenueDialog(mode, v, opener) {
   $("vd-sheet").textContent = plural(v.sheet_events, "of its events comes", "of its events come") + " from the Google Sheet. " +
     "The nightly sync uses the sheet's venue names, so after a rename or merge those events go back to a venue with the sheet's name. Fix the name in the sheet as well.";
   $("vd-error").textContent = ""; setVenueBusy(false);
-  if (mode === "edit") { $("vd-name").value = v.name; $("vd-hood").value = v.neighborhood; $("vd-area").value = v.area; }
+  if (mode === "edit") { $("vd-name").value = v.name; $("vd-hood").value = v.neighborhood; $("vd-area").value = v.area; $("vd-region").value = v.region || ""; }
   if (mode === "merge") { $("vd-find").value = ""; fillMergeTargets(); }
   if (mode === "delete") $("vd-delete").textContent = "No events use " + venueLabel(v) + ", so it can go. This can't be undone.";
   $("venue-dialog").showModal();
@@ -165,6 +168,7 @@ $("venue-form").addEventListener("submit", function (ev) {
     if (name !== v.name) body.name = name;
     if (hood !== v.neighborhood) body.neighborhood = hood;
     if ($("vd-area").value !== v.area) body.area = $("vd-area").value;
+    if ($("vd-region").value !== (v.region || "")) body.region = $("vd-region").value || null; // left alone: worked out again if the venue moves
     if (!Object.keys(body).length) { $("venue-dialog").close(); return; }
     req = api("/venues/" + v.id, { method: "PATCH", body: body }); said = "Saved " + name + "."; after = v.id;
   } else if (d.mode === "merge") {
