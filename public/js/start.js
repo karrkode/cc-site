@@ -1,5 +1,5 @@
 // Culture Crew site: opening the right view for the link, and starting the page.
-// Loaded by index.html in order (core, util, catalog, planner, account, submit, admin, start); they share one
+// Loaded by index.html in order (core, util, catalog, planner, account, submit, admin, found, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- start ----------
@@ -26,7 +26,12 @@ function openFromHash() {
   if (h === "plan") { startPlan(); return true; }
   if (h === "account") { openAccount(); return true; }
   if (h === "submit") { openSubmit(); return true; }
-  if (h === "review") { openReview(); return true; }
+  if (h === "review" || h === "found" || h === "sources") { // admin pages (the recap email links here, CC-77)
+    var open = h === "review" ? openReview : h === "found" ? openFound : openSources;
+    // On a fresh visit the sign-in comes back from the refresh cookie first; then open the page (or Sign in).
+    (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(open);
+    return true;
+  }
   return false;
 }
 
