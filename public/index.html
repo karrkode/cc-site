@@ -354,11 +354,24 @@
         <p class="eyebrow">Review</p>
         <h1 id="review-title" tabindex="-1">Waiting for review</h1>
         <p>Approve to put an event on the list. Rejected events stay out of sight.</p>
-        <div class="row"><button class="btn neutral" type="button" data-go="venues">Manage venues</button><button class="btn neutral" type="button" data-go="stats">Site stats</button></div>
+        <div class="row"><button class="btn neutral" type="button" data-go="venues">Manage venues</button><button class="btn neutral" type="button" data-go="stats">Site stats</button><button class="btn neutral" type="button" data-go="sources">Event sources</button></div>
       </div>
       <div class="queue" id="review-list"></div>
       <div class="section"><h2>Scheduled</h2><p class="hint">Approved, and waiting for their publish time.</p><div class="queue" id="scheduled-list"></div></div>
       <div class="section"><h2>Withdrawn</h2><p class="hint">Hidden from the site, with everyone's marks and plans kept. Sheet events land here when they leave the sheet.</p><div class="queue" id="withdrawn-list"></div></div>
+    </section>
+
+    <!-- Event sources (admins, CC-70) -->
+    <section class="view" id="view-sources" hidden>
+      <div class="view-head">
+        <p class="eyebrow">Review</p>
+        <h1 id="sources-title" tabindex="-1">Event sources</h1>
+        <p>Venues and companies whose own pages are checked now and then for new events. What's found waits for your review; nothing goes live by itself. A page is only read again when it has changed.</p>
+        <div class="row"><button class="textbtn" type="button" data-go="review">Back to review</button></div>
+      </div>
+      <p class="hint" id="sources-status" role="status"></p>
+      <div class="stat-summary" id="sources-summary"></div>
+      <div class="queue" id="sources-list"></div>
     </section>
 
     <!-- Site stats (admins, CC-67) -->
