@@ -270,7 +270,7 @@ $("edit-form").addEventListener("submit", function (ev) {
     (url && !/^https?:\/\//i.test(url)) ? ["ed-url", "The link should start with https://"] :
     (at && isNaN(at)) ? ["ed-publish-at", "Pick a date and time, or leave it blank."] : null;
   if (bad) { editorFail(null, bad[0], bad[1]); return; }
-  var weekly = $("ed-sched").hidden ? null : readWeekly();
+  var weekly = $("ed-sched").hidden ? null : weeklyChange("ed"); // CC-88: null when the show days are as they were
   if (weekly && weekly.error) { editorFail(null, weekly.id, weekly.error); return; }
   var body = {}, openRun = $("ed-open-run").checked;
   if (title !== e.title) body.title = title;
@@ -281,7 +281,7 @@ $("edit-form").addEventListener("submit", function (ev) {
   if (openRun !== !!e.openRun) body.open_run = openRun;
   if (cost !== (e.costRaw || "")) { body.cost_text = cost; body.min_price = minPrice(cost); }
   if (url !== (e.url || "")) body.url = url;
-  if (weekly && !sameHours(weekly, e.sched.weekly_from === "event" ? e.sched.weekly : {})) body.weekly = weekly;
+  if (weekly) { body.weekly = weekly.weekly; body.weeks = weekly.weeks; }
   var wasAt = e.publishAt ? e.publishAt.getTime() : null, nowAt = at ? at.getTime() : null;
   if (Math.floor((wasAt || 0) / 60000) !== Math.floor((nowAt || 0) / 60000)) body.publish_at = at ? at.toISOString() : null;
   var venueChanged = venue.toLowerCase() !== e.venue.toLowerCase() || hood.toLowerCase() !== (e.hood || "").toLowerCase();

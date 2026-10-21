@@ -6,13 +6,14 @@
 // approved (as found, or through the edit form), rejected, or rejected with a skip rule; updates are accepted
 // or dismissed. Nothing reaches the catalog without one of these.
 var FOUND = { show: "waiting", source: "", price: "any", dates: "any", items: [], total: 0 }, FOUND_PAGE = 50, FOUND_REQ = 0;
-var FOUND_SHOWS = [["waiting", "Waiting for you"], ["new", "New events"], ["update", "Proposed updates"], ["approved", "Approved"],
+var FOUND_SHOWS = [["waiting", "Waiting for you"], ["needs", "Needs a date"], ["new", "New events"], ["update", "Proposed updates"], ["approved", "Approved"],
   ["rejected", "Rejected"], ["skipped", "Left out automatically"], ["listed", "Already listed"], ["all", "Everything"]];
 var FOUND_KINDS = { production: "Production", exhibition: "Exhibition", concert: "Concert", comedy_show: "Comedy", talk: "Talk",
   tour: "Tour", program: "Program", class: "Class", rental: "Rental", members_only: "Members only", recurring: "Recurring",
   permanent: "Permanent gallery", other: "Other" };
 var FOUND_STATES = { update: "Update", approved: "Approved", rejected: "Rejected", skipped: "Left out", listed: "Already listed" };
-var CHANGE_NAMES = { cost_text: "Price", min_price: "Lowest price", begin_date: "Opens", end_date: "Closes" };
+var CHANGE_NAMES = { cost_text: "Price", min_price: "Lowest price", begin_date: "Opens", end_date: "Closes", weekly: "Show days", weeks: "Weeks of the month" };
+var FOUND_NEEDS = { date: "Needs a date", show_days: "Needs show days" }; // CC-88: approving asks for these
 
 function openFound() { if (!isAdmin()) { openAccount(); return; } show("found"); loadFoundSources(); loadFound(); loadRules(); }
 function updateFoundCount(counts) {
@@ -57,7 +58,7 @@ function paintFound(o, focusFrom) {
       return esc(s.name) + " (" + esc(s.reason || (s.status === "blocked" ? "refused" : "failed")) + ")"; }).join("; ") + "." : "";
   $("found-status").textContent = FOUND.total ? plural(FOUND.total, "event", "events") + (FOUND.items.length < FOUND.total ? ", showing " + FOUND.items.length : "") : "";
   $("found-list").innerHTML = FOUND.items.length ? FOUND.items.map(foundItemHTML).join("") :
-    '<p class="hint">' + (foundFiltered() ? "Nothing matches these filters." : FOUND.show === "waiting" ? "Nothing waiting. New finds show up here after each check." : "Nothing here.") + "</p>";
+    '<p class="hint">' + (foundFiltered() ? "Nothing matches these filters." : FOUND.show === "needs" ? "Nothing is missing a date or show days." : FOUND.show === "waiting" ? "Nothing waiting. New finds show up here after each check." : "Nothing here.") + "</p>";
   $("found-more-row").hidden = FOUND.items.length >= FOUND.total; $("found-more").disabled = false;
   if (focusFrom >= 0) { var first = $("found-list").children[focusFrom]; var b = first && first.querySelector("button, a"); if (b) b.focus(); }
 }
@@ -70,18 +71,22 @@ function changeValue(field, v) {
   if (v === null || v === "") return "none";
   if (field === "begin_date" || field === "end_date") return short(parseISO(v));
   if (field === "min_price") return v === 0 ? "free" : "$" + v;
+  if (field === "weekly") return showDaysText(v) || "none";
+  if (field === "weeks") return HOUR_DAYS.filter(function (d) { return v && v[d[0]]; }).map(function (d) { return weeksText(v[d[0]]) + d[1].slice(0, 3); }).join(", ") || "every week";
   return v;
 }
 function foundItemHTML(i) {
   var id = esc(i.id), title = esc(i.title), state = FOUND_STATES[i.status];
   var where = i.venue_name + (i.neighborhood ? " · " + i.neighborhood : i.venue_id ? "" : " · new venue");
   var html = '<div class="queue-item found" data-found="' + id + '"><div class="alt-text">' +
-    '<p class="kind">' + esc(i.category || FOUND_KINDS[i.kind] || "Event") + (state ? ' <span class="state' + (i.status === "rejected" ? " rejected" : i.status === "approved" ? " approved" : "") + '">' + esc(state) + "</span>" : "") + "</p>" +
+    '<p class="kind">' + esc(i.category || FOUND_KINDS[i.kind] || "Event") + (i.needs ? ' <span class="state needs">' + esc(FOUND_NEEDS[i.needs]) + "</span>" : "") + (state ? ' <span class="state' + (i.status === "rejected" ? " rejected" : i.status === "approved" ? " approved" : "") + '">' + esc(state) + "</span>" : "") + "</p>" +
     '<p class="alt-title">' + (i.url ? '<a href="' + esc(safeUrl(i.url)) + '" target="_blank" rel="noopener">' + title + "</a>" : title) + "</p>" +
     '<p class="alt-meta">' + esc(where) + " · " + esc(foundDates(i)) + " · " + esc(i.cost_text || "Price not posted") + "</p>" +
     '<p class="alt-meta">Found on ' + esc(i.source_name) + " " + esc(short(new Date(i.first_seen_at))) +
       (i.dates_listed > 1 ? " · " + plural(i.dates_listed, "date", "dates") + " listed" : "") +
       (i.event && i.status !== "update" ? ' · in the catalog as “' + esc(i.event.title) + "”" : "") + "</p>" +
+    (Object.keys(i.weekly || {}).length ? '<p class="alt-meta">Shows: ' + esc(showDaysText(i.weekly, i.weeks)) + "</p>" : "") +
+    (i.needs ? '<p class="alt-meta">' + esc(lookedText(i)) + "</p>" : "") +
     (i.possible_duplicate ? '<p class="alt-meta dup">Possibly already listed as “' + esc(i.possible_duplicate.title) + "”</p>" : "") +
     (i.skip_reason && i.status !== "approved" ? '<p class="alt-meta">Why: ' + esc(i.skip_reason) + "</p>" : "");
   if (i.status === "update") {
@@ -93,6 +98,12 @@ function foundItemHTML(i) {
   html += "</div>" + '<div class="row">' + foundActions(i, id, title) + "</div></div>";
   return html;
 }
+function lookedText(i) { // CC-88: how its page is being read again for what's missing
+  var looked = (i.looked_on || []).map(function (d) { return short(parseISO(d)); });
+  var left = diff(new Date(parseISO(i.first_seen_at.slice(0, 10)).getTime() + 28 * 864e5), T) >= 0;
+  return (looked.length ? "Its page was read again " + (looked.length > 1 ? looked.slice(0, -1).join(", ") + " and " + looked[looked.length - 1] : looked[0]) : "Its page is read again on the next run") +
+    (looked.length && !left ? ". We've stopped looking: add it yourself, or reject it." : looked.length ? ", and is read weekly for 4 weeks." : ", then weekly for 4 weeks.");
+}
 function foundActions(i, id, title) {
   var a = "";
   if (i.status === "update") {
@@ -100,7 +111,10 @@ function foundActions(i, id, title) {
       '<button class="btn ghost" type="button" data-found-act="dismiss" aria-label="Dismiss the changes to ' + title + '">Dismiss</button>';
   }
   if (i.status === "new" || i.status === "skipped" || i.status === "rejected") {
-    a += '<button class="btn" type="button" data-found-act="approve" aria-label="Approve ' + title + '">Approve</button>' +
+    a += i.needs && i.status === "new" ? // CC-88: the approve form, asking for what's missing
+      '<button class="btn" type="button" data-found-act="edit" aria-label="' + (i.needs === "date" ? "Add the date" : "Add show days") + " to " + title + ', then approve">' +
+        (i.needs === "date" ? "Add the date…" : "Add show days…") + "</button>" :
+      '<button class="btn" type="button" data-found-act="approve" aria-label="Approve ' + title + '">Approve</button>' +
       '<button class="btn ghost" type="button" data-found-act="edit" aria-label="Edit then approve ' + title + '">Edit then approve</button>';
   }
   if (i.status === "new" || i.status === "skipped") {
@@ -112,8 +126,12 @@ function foundActions(i, id, title) {
 function foundById(id) { return FOUND.items.filter(function (i) { return String(i.id) === String(id); })[0]; }
 // Take a decided item out of the list and move focus to the next one (or the heading).
 function foundDone(row, said) {
-  var next = row.nextElementSibling || row.previousElementSibling, id = row.getAttribute("data-found");
+  var next = row.nextElementSibling || row.previousElementSibling, id = row.getAttribute("data-found"), was = foundById(id);
   FOUND.items = FOUND.items.filter(function (i) { return String(i.id) !== id; }); FOUND.total -= 1;
+  if (was) [was.status === "new" || was.status === "update" ? "waiting" : "", was.status, was.needs ? "needs" : ""].forEach(function (k) { // the Show menu's counts
+    var o = k && $("found-show").querySelector('option[value="' + k + '"]'), m = o && /^(.*) \((\d+)\)$/.exec(o.textContent);
+    if (m) o.textContent = m[1] + " (" + Math.max(+m[2] - 1, 0) + ")";
+  });
   row.remove();
   if (!FOUND.items.length) $("found-list").innerHTML = '<p class="hint">Nothing waiting. New finds show up here after each check.</p>';
   $("found-status").textContent = FOUND.total ? plural(FOUND.total, "event", "events") : "";
@@ -128,13 +146,14 @@ function foundPost(row, path, body) {
 }
 function approveBody(i) {
   return { title: i.title, category: i.category, venue_id: i.venue_id, begin_date: i.begin_date, end_date: i.end_date,
-    open_run: i.open_run && !i.end_date, cost_text: i.cost_text, min_price: i.cost_text ? i.min_price : null, url: i.url, publish: "now" };
+    open_run: i.open_run && !i.end_date, cost_text: i.cost_text, min_price: i.cost_text ? i.min_price : null, url: i.url, publish: "now",
+    weekly: i.weekly || {}, weeks: i.weeks || {} };
 }
 $("found-list").addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-found-act]"); if (!b) return;
   var row = b.closest("[data-found]"), i = foundById(row.getAttribute("data-found")), act = b.getAttribute("data-found-act");
   if (!i) return;
-  if (act === "edit" || (act === "approve" && (!i.venue_id || !i.category))) { openFoundEditor(i, b); return; } // needs a type or venue first
+  if (act === "edit" || (act === "approve" && (!i.venue_id || !i.category || i.needs))) { openFoundEditor(i, b); return; } // needs a type, venue, date or show days first
   if (act === "skip") { toggleSkipForm(row, i, b); return; }
   var path = act === "reject" ? "reject" : act;
   foundPost(row, path, act === "approve" ? approveBody(i) : {}).then(function (res) {
@@ -222,7 +241,6 @@ $("rules-list").addEventListener("click", function (ev) {
 function foundMode(i) { // i: the found item, or null for the ordinary edit form
   var on = !!i, sel = $("ed-category"), blank = sel.querySelector('option[value=""]');
   $("ed-found").hidden = !on; $("ed-remove").hidden = on;
-  if (on) fillWeekly(null); // a found event brings its own dates and times
   $("ed-save").textContent = on ? "Approve" : "Save changes";
   Array.prototype.forEach.call($("ed-status").options, function (o) { o.hidden = on && o.value !== "approved" && o.value !== "pending"; });
   if (on && !i.category && !blank) sel.insertAdjacentHTML("afterbegin", '<option value="">Choose a type</option>');
@@ -234,13 +252,30 @@ function openFoundEditor(i, opener) {
   $("ed-heading").textContent = "Approve " + i.title;
   $("ed-found").textContent = "Found on " + i.source_name + ". Check the details, then approve to add it to the catalog." +
     (!i.venue_id ? " The venue is new to us, so check its name and neighborhood; it's added when you approve." : "") +
-    (!i.category ? " Choose a type first." : "");
+    (!i.category ? " Choose a type first." : "") +
+    (i.needs === "date" ? " Its page doesn't give a date yet: add when it opens." :
+      i.needs === "show_days" ? " Its page doesn't say when the shows are: choose the days, and give a start time for each." : "");
   $("ed-title").value = i.title; $("ed-category").value = i.category || ""; $("ed-status").value = "approved";
   $("ed-venue").value = i.venue_name; $("ed-hood").value = i.neighborhood || "";
   $("ed-begin").value = i.begin_date || ""; $("ed-end").value = i.end_date || ""; $("ed-open-run").checked = i.open_run && !i.end_date;
   $("ed-cost").value = i.cost_text || ""; $("ed-url").value = i.url || ""; $("ed-publish-at").value = "";
+  // CC-88: the show days the page gave, else the venue's usual show times to start from
+  var own = Object.keys(i.weekly || {}).length ? i.weekly : null, venueTimes = i.venue_show_times || {};
+  showDaysFor("ed", i.category); setShowDays("ed", own || venueTimes, own ? i.weeks : {});
+  SHOW_DAYS.ed.from = { weekly: {}, weeks: {} }; SHOW_DAYS.ed.venue = venueTimes;
+  $("ed-sched-hint").textContent = own ? "From the venue's page; check them." : Object.keys(venueTimes).length ?
+    "These are the venue's usual show times; change them if this show is different." : "Choose the days, and give a start time for each.";
   $("ed-error").textContent = ""; $("ed-confirm").hidden = true; setEditorBusy(false);
-  $("edit-dialog").showModal(); $("ed-title").focus();
+  $("edit-dialog").showModal();
+  (i.needs === "date" ? $("ed-begin") : i.needs === "show_days" ? $("ed-days").firstElementChild : $("ed-title")).focus(); // what's missing first
+}
+// CC-88: what the event as approved would still be missing (the API checks this too)
+function stillNeeds(i, type, begin, end, openRun, weekly) {
+  if (i.kind === "permanent") return "";
+  var dated = !!(begin || end || i.dates_listed), timed = Object.keys(weekly).length || i.dates_timed || Object.keys(i.venue_show_times || {}).length;
+  if (!SHOW_TYPES[type]) return dated || openRun ? "" : "date";
+  if (!dated && !(openRun && timed)) return "date";
+  return timed ? "" : "show_days";
 }
 function approveFromEditor() {
   var i = EDITING.found;
@@ -252,7 +287,17 @@ function approveFromEditor() {
     (url && !/^https?:\/\//i.test(url)) ? ["ed-url", "The link should start with https://"] :
     (at && isNaN(at)) ? ["ed-publish-at", "Pick a date and time, or leave it blank."] : null;
   if (bad) { editorFail(null, bad[0], bad[1]); return; }
-  var body = { title: title, category: type, begin_date: begin, end_date: end, open_run: $("ed-open-run").checked && !end,
+  var days = $("ed-sched").hidden ? { weekly: {}, weeks: {} } : readShowDays("ed");
+  if (days.error) { editorFail(null, days.id, days.error); return; }
+  var venueOwn = sameHours(days.weekly, i.venue_show_times || {}) && !Object.keys(days.weeks).length; // the venue's times stay the venue's
+  var weekly = venueOwn ? {} : days.weekly;
+  var missing = stillNeeds(i, type, begin, end, $("ed-open-run").checked && !end, days.weekly);
+  if (missing) {
+    editorFail(null, missing === "date" ? "ed-begin" : null, missing === "date" ? "Add the date it opens." : "Choose the days it's on, with a start time for each.");
+    if (missing !== "date") $("ed-days").firstElementChild.focus();
+    return;
+  }
+  var body = { title: title, category: type, begin_date: begin, end_date: end, open_run: $("ed-open-run").checked && !end, weekly: weekly, weeks: venueOwn ? {} : days.weeks,
     cost_text: cost, min_price: cost === (i.cost_text || "") && cost ? i.min_price : minPrice(cost), url: url,
     publish: review ? "review" : at && at > new Date() ? "later" : "now" };
   if (body.publish === "later") body.publish_at = at.toISOString();

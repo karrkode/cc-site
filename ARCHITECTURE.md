@@ -119,6 +119,10 @@ Discovery reads each changed page in this sequence:
 Discovery puts each event that it finds in a holding list. Discovery does not put events on the site.
 An admin approves or rejects each event on the "Found events" page.
 About 60 and 45 days before an event opens, discovery reads the event's own page for the prices and the showtimes.
+
+**Missing dates and show days:** an event must have a date before an admin can approve it. A performance (Theater, Comedy or Concert) must also have start times: its show days with times, dated performances with times, or the venue's usual show times. An open run with show days, such as a weekly open mic, does not need a date. If a found event does not have these, Found events marks it "Needs a date" or "Needs show days". Discovery then reads the event's own page on the next day, and then each week for 4 weeks. The event stays marked until an admin adds what is missing in the approve form, or rejects it. The weekly recap shows how many events are marked.
+
+**Show days:** a performance has the days of the week that it is on, and one or more start times for each day. A day can be on some weeks of the month only: the 1st, 2nd, 3rd, 4th or last (for example, the 1st and 3rd Thursday). Plan an outing suggests only those weeks. The opening and closing dates do not change. Admins set the show days in the event forms. Members can give them in "Submit an event" (optional). Claude reads them from pages such as "Thursdays to Saturdays at 8 PM". The catalog cards show them under the venue.
 Discovery also fills in the venues' opening hours and usual show times. Discovery does not change hours that an admin set.
 
 > **NOTE:** The Anthropic API key is in AWS SSM Parameter Store. The scheduled job gives the key to discovery on standard input. The key is not in the code, on a command line or in a file.

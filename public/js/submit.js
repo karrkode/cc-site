@@ -67,10 +67,12 @@ $("submit-form").addEventListener("submit", function (ev) {
     (begin && end && end < begin) ? ["s-end", "The closing date is before the opening date."] :
     (url && !/^https?:\/\//i.test(url)) ? ["s-url", "The link should start with https://"] : null;
   if (bad) { err.textContent = bad[1]; $(bad[0]).focus(); return; }
+  var days = $("s-sched").hidden ? { weekly: {}, weeks: {} } : readShowDays("s"); // CC-88: optional, but each day chosen needs a time
+  if (days.error) { err.textContent = days.error; $(days.id).focus(); return; }
   var body = {
     title: title, category: $("s-category").value, venue: { name: venue, neighborhood: $("s-hood").value.trim() },
     begin_date: begin, end_date: end, cost_text: cost, min_price: minPrice(cost), url: url,
-    credit_me: $("s-credit").checked
+    credit_me: $("s-credit").checked, weekly: days.weekly, weeks: days.weeks
   };
   if (isAdmin()) {
     body.publish = publishChoice();
@@ -86,7 +88,7 @@ $("submit-form").addEventListener("submit", function (ev) {
   api("/events", { method: "POST", body: body }).then(readJSON, function () { return null; }).then(function (res) {
     btn.disabled = false;
     if (!res || !res.ok) { msg.textContent = ""; err.textContent = errorText(res); return; }
-    $("submit-form").reset(); $("s-publish-at-field").hidden = true;
+    $("submit-form").reset(); $("s-publish-at-field").hidden = true; setShowDays("s", {}); showDaysFor("s", $("s-category").value);
     var made = fromApi(res.body);
     if (made.status === "approved" && made.publishAt) {
       msg.textContent = "Scheduled. It goes live " + WHEN.format(made.publishAt) + ".";
