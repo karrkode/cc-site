@@ -76,6 +76,8 @@ The API has these groups of routes:
 | `/events` | Show, search, submit, edit and delete events | All users can read. Admins can edit and delete. |
 | `/me` | "I've been" marks and their photos, plans, the user's submissions, which crews can see each plan | The signed-in user only |
 | `/photos` | Show one "I've been" photo | Anyone with a signed link (15 minutes) |
+| `/approvals` | The photos waiting for approval; approve or reject one | Approvers and admins |
+| `/admin/members` | Offer or remove the approver permission | Admins only |
 | `/admin` | Review queue, scheduled events, withdrawn events, site stats | Admins only |
 | `/admin/discovery` | Event sources, found events, skip rules, the CSV download, the monthly budget | Admins only |
 | `/venues` | Show, rename, merge and delete venues. Set opening hours and show times. | All users can read. Admins can change. |
@@ -145,7 +147,9 @@ The photo goes through these steps:
 3. The API stores the photo in a private S3 bucket (encrypted, no public access). If Rekognition found other content, the photo is blurred for approvers.
 4. The photo waits for an approver.
 
-Only the member and the approvers can see a photo. The API shows a photo only through a link that it signs for 15 minutes. A member can send 10 photos each day. When a member removes the mark, or an admin deletes the event, the photo is deleted. Each hour, the discovery job also deletes stored photos that the database does not know (for example, from a deleted account). Site stats shows the number of checks this month and their cost.
+**Approvers:** a member can hold the approver permission. Only an admin can offer it (on the Members page), and the member accepts or declines it under "Waiting for you". Admins can always approve. An approver sees Photo approvals: the waiting photos, oldest first, with the event, the member's first name and last initial, and what Rekognition found. Blurred photos stay blurred until the approver chooses to look. The approver approves the photo, or rejects it with an optional reason that the member sees. A rejected photo is deleted from storage. Nobody approves their own photo. The weekly recap shows how many photos are waiting.
+
+Only the member and the approvers can see a photo for now. The API shows a photo only through a link that it signs for 15 minutes. A member can send 10 photos each day. When a member removes the mark, or an admin deletes the event, the photo is deleted. Each hour, the discovery job also deletes stored photos that the database does not know (for example, from a deleted account). Site stats shows the number of checks this month and their cost.
 
 ## 7. Plan an outing
 

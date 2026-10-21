@@ -520,3 +520,10 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 /* CC-76: a photo with "I've been" */
 .photo-box { display: grid; gap: 6px; justify-items: start; }
 .photo-box img { max-width: 100%; max-height: 320px; border-radius: var(--r-card); background: var(--neutral-soft); }
+/* CC-91: photo approvals */
+.approval { align-items: flex-start; }
+.approval-photo { position: relative; display: grid; place-items: center; overflow: hidden; border-radius: var(--r-card); max-width: 280px; flex: 0 0 auto; }
+.approval-photo img { display: block; max-width: 100%; max-height: 240px; }
+.approval-photo.blurred img { filter: blur(24px); transform: scale(1.1); }
+.approval-photo button { position: absolute; }
+.approval-decide { display: grid; gap: 8px; margin-top: 8px; }

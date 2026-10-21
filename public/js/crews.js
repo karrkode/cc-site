@@ -1,5 +1,5 @@
 // Culture Crew site: Culture crews (CC-74): "Your crews" on the account page, invite links, and joining.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, start); they share one
+// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // A member can be in several crews; any member can make an invite link (7 days, revocable by its maker or
@@ -391,13 +391,15 @@ function pendingItemHTML(p, where) {
     "</div></div>";
 }
 function paintPending() {
-  var n = AUTH.user ? PENDING.length : 0, count = $("account-count");
+  // CC-91: the admin's offer to approve photos waits here too, before the crew invites (approvals.js)
+  var offer = AUTH.user && AUTH.user.approver_offered ? [approverOfferHTML()] : [];
+  var n = AUTH.user ? PENDING.length + offer.length : 0, count = $("account-count");
   if (count) count.textContent = n ? String(n) : "";
   $("pending-invites").hidden = !n;
-  $("pending-invites").innerHTML = n ? '<h3 id="pending-title">Waiting for you</h3>' + PENDING.map(function (p) { return pendingItemHTML(p, "list"); }).join("") : "";
+  $("pending-invites").innerHTML = n ? '<h3 id="pending-title">Waiting for you</h3>' + offer.join("") + PENDING.map(function (p) { return pendingItemHTML(p, "list"); }).join("") : "";
   var banner = $("invite-banner");
   banner.hidden = !n || PENDING_LATER || visible("account");
-  banner.innerHTML = banner.hidden ? "" : PENDING.slice(0, 2).map(function (p) { return pendingItemHTML(p, "banner"); }).join("") +
+  banner.innerHTML = banner.hidden ? "" : offer.concat(PENDING.map(function (p) { return pendingItemHTML(p, "banner"); })).slice(0, 2).join("") +
     '<p class="small">' + (n > 2 ? "And " + plural(n - 2, "more invite", "more invites") + " on " : "Also on ") +
     '<button class="textbtn" type="button" data-go="account">Your account</button>. <button class="textbtn" type="button" data-pending-act="later">Not now</button></p>';
 }

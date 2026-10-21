@@ -306,6 +306,7 @@
       </div>
       <div id="signed-in" hidden>
         <div class="row"><p id="account-who"></p><button class="btn ghost" type="button" id="sign-out">Sign out</button></div>
+        <div class="row" id="approver-row" hidden><button class="btn neutral" type="button" data-go="approvals">Photo approvals<span class="count" id="approver-count"></span></button></div>
         <div class="section"><h2 id="myplans-title" tabindex="-1">Oh the places you'll go…</h2><div class="grid" id="myplans-grid"></div></div>
         <div class="section"><h2>Oh the places you've gone…</h2><div class="grid" id="went-grid"></div></div>
         <div class="section"><h2>Events you've sent us</h2><div class="queue" id="my-submissions"></div></div>
@@ -437,7 +438,7 @@
         <p class="eyebrow">Review</p>
         <h1 id="review-title" tabindex="-1">Waiting for review</h1>
         <p>Approve to put an event on the list. Rejected events stay out of sight.</p>
-        <div class="row"><button class="btn neutral" type="button" data-go="found">Found events<span class="count" id="found-count"></span></button><button class="btn neutral" type="button" data-go="venues">Manage venues</button><button class="btn neutral" type="button" data-go="stats">Site stats</button><button class="btn neutral" type="button" data-go="sources">Event sources</button><button class="btn neutral" type="button" data-go="issues">Issues<span class="count" id="issues-count"></span></button></div>
+        <div class="row"><button class="btn neutral" type="button" data-go="found">Found events<span class="count" id="found-count"></span></button><button class="btn neutral" type="button" data-go="venues">Manage venues</button><button class="btn neutral" type="button" data-go="stats">Site stats</button><button class="btn neutral" type="button" data-go="sources">Event sources</button><button class="btn neutral" type="button" data-go="issues">Issues<span class="count" id="issues-count"></span></button><button class="btn neutral" type="button" data-go="approvals">Photo approvals<span class="count" id="approvals-count"></span></button><button class="btn neutral" type="button" data-go="members">Members</button></div>
       </div>
       <div class="queue" id="review-list"></div>
       <div class="section"><h2>Scheduled</h2><p class="hint">Approved, and waiting for their publish time.</p><div class="queue" id="scheduled-list"></div></div>
@@ -489,6 +490,33 @@
 
     <!-- Site stats (admins, CC-67) -->
     <!-- Issues members reported (admins, CC-84) -->
+    <section class="view" id="view-approvals" hidden>
+      <div class="view-head">
+        <p class="eyebrow">Approvals</p>
+        <h1 id="approvals-title" tabindex="-1">Photo approvals</h1>
+        <p>Photos members added to "I've been". Approve the ones that show they were there; reject the rest, with a reason they'll see if you like. Amazon Rekognition has already turned away anything explicit; what it wasn't sure about is blurred until you choose to look.</p>
+        <div class="row"><button class="textbtn" type="button" id="approvals-back">Back</button></div>
+      </div>
+      <form class="found-filters" id="approvals-filters"><div class="field"><label for="approvals-show">Show</label><select id="approvals-show"></select></div></form>
+      <p class="hint" id="approvals-status" role="status"></p>
+      <div class="queue" id="approvals-list"></div>
+    </section>
+
+    <section class="view" id="view-members" hidden>
+      <div class="view-head">
+        <p class="eyebrow">Review</p>
+        <h1 id="members-title" tabindex="-1">Members</h1>
+        <p>Offer a member the approver permission: they can then approve "I've been" photos. They see the offer when they sign in, and it applies once they accept. Admins can always approve.</p>
+        <div class="row"><button class="textbtn" type="button" data-go="review">Back to review</button></div>
+      </div>
+      <form class="found-filters" id="members-filters" role="search">
+        <div class="field"><label for="members-q">Find a member</label><input id="members-q" type="search" maxlength="100" placeholder="Name or email" autocomplete="off"></div>
+        <div class="field"><label for="members-show">Show</label><select id="members-show"><option value="all">Everyone</option><option value="approvers">Approvers and offers</option></select></div>
+      </form>
+      <p class="hint" id="members-status" role="status"></p>
+      <div class="queue" id="members-list"></div>
+    </section>
+
     <section class="view" id="view-issues" hidden>
       <div class="view-head">
         <p class="eyebrow">Review</p>
@@ -578,6 +606,7 @@
 <script src="js/found.js?v=dev"></script>
 <script src="js/issues.js?v=dev"></script>
 <script src="js/photos.js?v=dev"></script>
+<script src="js/approvals.js?v=dev"></script>
 <script src="js/start.js?v=dev"></script>
 </body>
 </html>

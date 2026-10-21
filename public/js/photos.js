@@ -1,5 +1,5 @@
 // Culture Crew site: a photo with "I've been" (CC-76).
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, start); they
+// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they
 // share one global scope, so anything declared here is visible to the files after it.
 "use strict";
 // Optional, one per event. The browser shrinks the photo (longest side 1600px) and draws it afresh as a JPEG, which
