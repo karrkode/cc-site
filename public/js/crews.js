@@ -52,8 +52,14 @@ function crewHTML(c) {
   if (link) {
     html += '<div class="link-box"><label for="crew-link-' + id + '">Invite link: send it to whoever you\'d like to join</label>' +
       '<input id="crew-link-' + id + '" type="text" readonly value="' + esc(link.url) + '">' +
-      '<div class="row">' + crewAct("copy", c, "", "Copy link", "btn") + '<span class="small" role="status" id="crew-copied-' + id + '">Works until ' +
-      esc(short(new Date(link.expires_at))) + ". Anyone with it can join.</span></div></div>";
+      '<div class="row">' + crewAct("copy", c, "", "Copy link", "btn") +
+      crewAct("qr", c, 'aria-expanded="' + !!link.qr + '" aria-controls="crew-qr-' + id + '"', link.qr ? "Hide QR code" : "Show QR code", "btn neutral") +
+      '<span class="small" role="status" id="crew-copied-' + id + '">Works until ' +
+      esc(short(new Date(link.expires_at))) + ". Anyone with it can join.</span></div>" +
+      '<figure class="crew-qr" id="crew-qr-' + id + '"' + (link.qr ? "" : " hidden") + ">" + (link.qr ?
+        '<img src="' + link.qr + '" width="240" height="240" alt="QR code for the invite link to ' + esc(c.name) + '">' +
+        '<figcaption class="small">Scan it with a phone camera to join ' + esc(c.name) + '. <a href="' + link.qr + '" download="' +
+        esc(qrFileName(c.name)) + '">Download it</a> to text or print.</figcaption>' : "") + "</figure></div>";
   }
   if (c.invites.length) {
     html += '<ul class="invites" aria-label="Invite links for ' + esc(c.name) + '">' + c.invites.map(function (i) {
@@ -181,6 +187,16 @@ $("crew-list").addEventListener("click", function (ev) {
   if (act === "edit") { CREW_EDIT = c.id; paintCrews(); $("crew-ename-" + c.id).focus(); return; }
   if (act === "edit-no") { CREW_EDIT = null; paintCrews(); document.querySelector('[data-crew-card="' + c.id + '"] [data-crew-act="edit"]').focus(); return; }
   if (act === "ask-no") { CREW_ASK = null; paintCrews(); var again = document.querySelector(refocus); if (again) again.focus(); return; }
+  if (act === "qr") { // CC-86: the link as a QR code with the dolphin in the middle, made here in the browser
+    var made = CREW_LINKS[c.id];
+    if (made.qr) { made.qr = null; paintCrews(); document.querySelector('[data-crew-card="' + c.id + '"] [data-crew-act="qr"]').focus(); return; }
+    qrWithDolphin(made.url).then(function (png) {
+      made.qr = png; paintCrews();
+      document.querySelector('[data-crew-card="' + c.id + '"] [data-crew-act="qr"]').focus();
+      $("edit-live").textContent = "QR code for the invite link to " + c.name + " is showing.";
+    }, function () { $("crews-status").textContent = "Couldn't make the QR code. Copy the link instead."; });
+    return;
+  }
   if (act === "copy") {
     var input = $("crew-link-" + c.id), said = $("crew-copied-" + c.id);
     var fallback = function () { input.focus(); input.select(); said.textContent = "Copy the link above."; };
@@ -404,3 +420,33 @@ document.addEventListener("click", function (ev) {
     });
   }, function () { b.disabled = false; });
 });
+
+// ---------- the invite link as a QR code (CC-86) ----------
+// Made in the browser with qrcode-generator (js/vendor/qrcode.js), so the link (a secret token) never goes to an
+// outside service. High error correction (H, ~30%) lets the dolphin cover the middle and the code still scan.
+var QR_DOLPHIN = null;
+function qrFileName(name) { return "culture-crew-invite-" + (String(name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "crew") + ".png"; }
+function qrWithDolphin(text) {
+  return new Promise(function (resolve, reject) {
+    var dolphin = QR_DOLPHIN || new Image();
+    function draw() {
+      try {
+        var qr = qrcode(0, "H"); qr.addData(text); qr.make();
+        var n = qr.getModuleCount(), quiet = 4, cell = Math.max(4, Math.floor(480 / (n + quiet * 2))), size = (n + quiet * 2) * cell;
+        var canvas = document.createElement("canvas"); canvas.width = canvas.height = size;
+        var g = canvas.getContext("2d");
+        g.fillStyle = "#ffffff"; g.fillRect(0, 0, size, size);
+        g.fillStyle = "#111111";
+        for (var r = 0; r < n; r++) for (var col = 0; col < n; col++) if (qr.isDark(r, col)) g.fillRect((col + quiet) * cell, (r + quiet) * cell, cell, cell);
+        var badge = Math.round(size * 0.22), x = (size - badge) / 2; // a white rounded square in the middle, with the dolphin
+        g.fillStyle = "#ffffff"; g.beginPath();
+        if (g.roundRect) g.roundRect(x, x, badge, badge, badge * 0.18); else g.rect(x, x, badge, badge);
+        g.fill();
+        var pic = badge * 0.8; g.drawImage(dolphin, (size - pic) / 2, (size - pic) / 2, pic, pic);
+        resolve(canvas.toDataURL("image/png"));
+      } catch (e) { reject(e); }
+    }
+    if (QR_DOLPHIN && QR_DOLPHIN.complete) { draw(); return; }
+    dolphin.onload = function () { QR_DOLPHIN = dolphin; draw(); }; dolphin.onerror = reject; dolphin.src = "img/dolphin-interested.webp";
+  });
+}
