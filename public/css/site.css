@@ -590,3 +590,31 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .run-date label { font-size: 0.8125rem; font-weight: 700; color: var(--muted); }
 .run-date input[type="time"] { background: var(--page); color: var(--text); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 5px 8px; }
 .run-date .textbtn { margin-left: auto; }
+
+/* CC-104: the crews page: "Start a crew" in the Chicago flag's colors (the product owner's pick): star red on the card color,
+   with the flag's two light-blue bars above and below; the star makes a quarter turn on hover. Each crew's card opens
+   with its faces and what's next. */
+.crew-start { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 16px; margin-bottom: 18px; padding-block: 8px; }
+.crew-start-btn { --flag-red: var(--star); --flag-blue: #41B6E6; position: relative; display: inline-flex; align-items: center; gap: 10px;
+  font-size: 1.05rem; padding: 12px 22px; border-radius: 999px; background: var(--surface); color: var(--flag-red);
+  box-shadow: inset 0 0 0 2px var(--flag-red); transition: transform 0.15s ease; }
+.crew-start-btn::before, .crew-start-btn::after { content: ""; position: absolute; left: 22px; right: 22px; height: 3px; border-radius: 2px; background: var(--flag-blue); }
+.crew-start-btn::before { top: -8px; } .crew-start-btn::after { bottom: -8px; }
+.crew-start-btn .star { fill: var(--flag-red); width: 1.15em; height: 1.15em; transition: transform 0.3s ease; }
+.crew-start-btn:hover:not(:disabled), .crew-start-btn:focus-visible { filter: none; background: var(--surface); transform: translateY(-1px); }
+.crew-start-btn:hover .star, .crew-start-btn:focus-visible .star { transform: rotate(30deg); } /* a six-point star: 30° is a quarter of the way round */
+.crew-start-btn.first { font-size: 1.2rem; padding: 16px 28px; }
+.crew-start-btn.first::before, .crew-start-btn.first::after { left: 28px; right: 28px; }
+.crews-empty { text-align: center; display: grid; gap: 6px; justify-items: center; padding-block: 28px; }
+.crews-empty h2 { font-family: var(--display); font-size: var(--step-1); }
+.crews-empty p { color: var(--muted); max-width: 46ch; }
+.crew-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 12px; margin: -4px 0 4px;
+  border-radius: var(--r-ctl); background: linear-gradient(120deg, color-mix(in srgb, var(--lead) 14%, transparent), color-mix(in srgb, var(--second) 14%, transparent)); }
+.faces { list-style: none; margin: 0; padding: 0 0 0 8px; display: flex; }
+.face { width: 38px; height: 38px; margin-left: -8px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 0.85rem;
+  border: 2px solid var(--surface); color: #fff; }
+.face.tone-0 { background: #D62839; } .face.tone-1 { background: #1D4ED8; } .face.tone-2 { background: #0F766E; } .face.tone-3 { background: #7C3AED; }
+.face.more { background: var(--neutral-soft); color: var(--text); }
+.crew-next { margin: 0; min-width: 0; flex: 1 1 14rem; }
+.crew-next-label { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--lead); margin-right: 4px; }
+@media (prefers-reduced-motion: reduce) { .crew-start-btn, .crew-start-btn .star { transition: none; } .crew-start-btn:hover, .crew-start-btn:focus-visible, .crew-start-btn:hover .star, .crew-start-btn:focus-visible .star { transform: none; } }

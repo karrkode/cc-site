@@ -1,10 +1,11 @@
-// Culture Crew site: Culture crews (CC-74): "Your crews" on the account page, invite links, and joining.
+// Culture Crew site: Culture crews (CC-74): the crews page (#crews, CC-104), invite links, and joining.
 // Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // A member can be in several crews; any member can make an invite link (7 days, revocable by its maker or
 // the owner); a crew has up to 25 members. Members see each other's names, never emails. An invite link is
-// #join=<token>: it opens the account page with a "Join <crew>" panel (after signing in, if needed).
+// #join=<token>: it opens the account page with a "Join <crew>" panel (after signing in, if needed); once joined, the
+// crews page.
 var CREWS = [], CREW_LINKS = {}, CREW_ASK = null, CREW_EDIT = null; // links just made, by crew; a pending confirm; a crew being renamed
 var JOIN = null; // { token, preview } from an invite link
 
@@ -15,6 +16,42 @@ function loadCrews(focusSel) {
     $("crews-status").textContent = ""; CREWS = res.body; paintCrews();
     var f = focusSel && document.querySelector(focusSel); if (f) f.focus();
   }, function () { $("crews-status").textContent = errorText(null); });
+}
+// ---------- the crews page (CC-104) ----------
+// Its own page: a big "Start a crew" button that opens the form, then one card per crew. Signed out, a short word
+// on what crews are and a way to sign in, which comes back here.
+var CREWS_AFTER_SIGN_IN = false;
+function openCrews(said) { renderCrewsPage(); show("crews"); if (said) $("edit-live").textContent = said; }
+function renderCrewsPage() {
+  var u = AUTH.user;
+  $("crews-signin").hidden = !!u; $("crews-main").hidden = !u;
+  if (!u) { $("crew-list").innerHTML = ""; return; }
+  paintCrews(); paintPending(); loadCrews(); loadPending();
+}
+$("crews-signin-btn").addEventListener("click", function () { CREWS_AFTER_SIGN_IN = true; openAccount(); });
+function showCrewForm(open) {
+  $("crew-new").hidden = !open; $("crew-start-btn").setAttribute("aria-expanded", String(open));
+  if (open) $("crew-name").focus(); else { $("crew-new-error").textContent = ""; $("crew-start-btn").focus(); }
+}
+$("crew-start-btn").addEventListener("click", function () { showCrewForm($("crew-new").hidden); });
+$("crew-new-cancel").addEventListener("click", function () { showCrewForm(false); });
+// The top of a crew's card: its members' initials, a few at a time, and what's next for the crew.
+var FACES = 6;
+function initials(name) {
+  var w = String(name || "?").trim().split(/\s+/);
+  return ((w[0] || "?").charAt(0) + (w.length > 1 ? w[w.length - 1].charAt(0) : "")).toUpperCase();
+}
+function crewFacesHTML(c) {
+  var shown = c.members.slice(0, FACES), more = c.members.length - shown.length;
+  return '<ul class="faces" aria-label="' + esc(plural(c.members.length, "member", "members")) + '">' + shown.map(function (m, i) {
+    return '<li class="face tone-' + (i % 4) + '" title="' + esc(m.name) + '"><span aria-hidden="true">' + esc(initials(m.name)) + '</span><span class="sr-only">' + esc(m.name) + "</span></li>";
+  }).join("") + (more > 0 ? '<li class="face more">+' + more + "</li>" : "") + "</ul>";
+}
+function crewNextHTML(c) {
+  var next = c.plans[0]; if (!next) return '<p class="crew-next hint">Nothing planned yet. Share a plan to get things going.</p>';
+  var e = toEvent(next.event), going = next.people.filter(function (p) { return p.status === "going"; }).length;
+  return '<p class="crew-next"><span class="crew-next-label">Next up</span> ' + esc(e.title) + ' <span class="hint small">' + esc(dateText(e)) +
+    (going ? " · " + plural(going, "going", "going") : "") + "</span></p>";
 }
 function crewById(id) { return CREWS.filter(function (c) { return String(c.id) === String(id); })[0]; }
 function crewAct(act, crew, extra, label, cls, aria) {
@@ -37,6 +74,7 @@ function crewHTML(c) {
     html += '<div><h3 id="crew-h-' + id + '" tabindex="-1">' + esc(c.name) + (c.owner ? ' <span class="state">You started it</span>' : "") + "</h3>" +
       (c.description ? '<p class="crew-about">' + esc(c.description) + "</p>" : "") + "</div>";
   }
+  html += '<div class="crew-banner">' + crewFacesHTML(c) + crewNextHTML(c) + "</div>"; // CC-104
   html += '<p class="hint small">' + plural(c.members.length, "member", "members") + " of " + c.max_members + "</p>";
   // CC-75: two halves, members and the crew's shared plans; each scrolls on its own past about 5 members' height
   html += '<div class="crew-cols"><div class="crew-col"><h4 class="crew-col-h" id="crew-m-' + id + '">Members</h4>' +
@@ -101,7 +139,7 @@ function capCrewHeights() {
     });
   });
 }
-window.addEventListener("resize", function () { if (CREWS.length && visible("account")) capCrewHeights(); });
+window.addEventListener("resize", function () { if (CREWS.length && visible("crews")) capCrewHeights(); });
 // The crew's shared plans (CC-75): each event once, soonest first, with who's going or interested, in the
 // product owner's words: "Only you are interested in this…for now.", "Jordan R. is interested!",
 // "Three others are interested!" (the number is a button: hover shows the names; a tap opens them below).
@@ -189,9 +227,13 @@ document.addEventListener("focusin", function (ev) { var b = ev.target.closest &
 window.addEventListener("scroll", function () { crewTip(null); }, true);
 
 function paintCrews() {
-  $("crew-list").innerHTML = CREWS.map(crewHTML).join("");
+  $("crew-list").innerHTML = CREWS.length ? CREWS.map(crewHTML).join("") :
+    '<div class="panel crews-empty"><h2>No crews yet</h2><p>Start one for the friends you see shows with, then send them an invite link. ' +
+    "Or ask a friend for theirs.</p></div>";
   capCrewHeights();
   $("crew-new").querySelector("h3").textContent = CREWS.length ? "Start another crew" : "Start a crew";
+  $("crew-start-btn").lastChild.textContent = CREWS.length ? " Start another crew" : " Start a crew";
+  $("crew-start-btn").classList.toggle("first", !CREWS.length);
 }
 function crewFail(card, res) {
   $("crews-status").textContent = errorText(res);
@@ -291,7 +333,7 @@ $("crew-new").addEventListener("submit", function (ev) {
   err.textContent = "";
   api("/crews", { method: "POST", body: { name: name, description: $("crew-desc").value.trim() } }).then(readJSON).then(function (res) {
     if (!res.ok) { err.textContent = errorText(res); return; }
-    $("crew-name").value = ""; $("crew-desc").value = "";
+    $("crew-name").value = ""; $("crew-desc").value = ""; $("crew-new").hidden = true; $("crew-start-btn").setAttribute("aria-expanded", "false");
     loadCrews('[data-crew-card="' + res.body.id + '"] [data-crew-act="invite"]').then(function () {
       $("edit-live").textContent = "Started " + res.body.name + ". Make an invite link to bring people in.";
     });
@@ -326,7 +368,7 @@ $("join-yes").addEventListener("click", function () {
   api("/crews/join", { method: "POST", body: { token: JOIN.token } }).then(readJSON).then(function (res) {
     if (!res.ok) { b.disabled = false; $("join-error").textContent = errorText(res); return; }
     var name = res.body.name; JOIN = null; paintJoin();
-    loadCrews('#crew-h-' + res.body.id).then(function () { $("edit-live").textContent = "You joined " + name + "."; });
+    openCrews(); loadCrews('#crew-h-' + res.body.id).then(function () { $("edit-live").textContent = "You joined " + name + "."; }); // CC-104
   }, function () { b.disabled = false; $("join-error").textContent = errorText(null); });
 });
 $("join-no").addEventListener("click", function () { JOIN = null; paintJoin(); $("account-title").focus(); });
@@ -378,7 +420,7 @@ document.addEventListener("click", function (ev) {
     if (MYPLANS[id]) MYPLANS[id].crews = res.body.crews;
     var names = CREWS.filter(function (c) { return res.body.crews.indexOf(c.id) >= 0; }).map(function (c) { return c.name; });
     $("myplan-live").textContent = (names.length ? "Shared with " + names.join(" and ") : "Not shared with any crew") + ": " + KNOWN[id].title;
-    if (visible("account")) loadCrews();
+    if (visible("crews")) loadCrews();
     return redrawCards(id, box.closest("[data-card]"), "[data-crewshare-toggle]");
   }).catch(function (res) {
     t.disabled = false; err.textContent = res && res.status ? errorText(res) : "Couldn't save. Check your connection and try again.";
@@ -412,15 +454,15 @@ function pendingItemHTML(p, where) {
 function paintPending() {
   // CC-91: the admin's offer to approve photos waits here too, before the crew invites (approvals.js)
   var offer = AUTH.user && AUTH.user.approver_offered ? [approverOfferHTML()] : [];
-  var n = AUTH.user ? PENDING.length + offer.length : 0, count = $("account-count");
+  var n = AUTH.user ? PENDING.length + offer.length : 0, count = $("crews-count");
   if (count) count.textContent = n ? String(n) : "";
   $("pending-invites").hidden = !n;
   $("pending-invites").innerHTML = n ? '<h3 id="pending-title">Waiting for you</h3>' + offer.join("") + PENDING.map(function (p) { return pendingItemHTML(p, "list"); }).join("") : "";
   var banner = $("invite-banner");
-  banner.hidden = !n || PENDING_LATER || visible("account");
+  banner.hidden = !n || PENDING_LATER || visible("crews");
   banner.innerHTML = banner.hidden ? "" : offer.concat(PENDING.map(function (p) { return pendingItemHTML(p, "banner"); })).slice(0, 2).join("") +
     '<p class="small">' + (n > 2 ? "And " + plural(n - 2, "more invite", "more invites") + " on " : "Also on ") +
-    '<button class="textbtn" type="button" data-go="account">Your account</button>. <button class="textbtn" type="button" data-pending-act="later">Not now</button></p>';
+    '<button class="textbtn" type="button" data-go="crews">Your crews</button>. <button class="textbtn" type="button" data-pending-act="later">Not now</button></p>';
 }
 document.addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-pending-act]"); if (!b) return;
@@ -433,7 +475,7 @@ document.addEventListener("click", function (ev) {
     PENDING = PENDING.filter(function (x) { return String(x.id) !== id; }); paintPending();
     var said = act === "accept" ? (res.ok ? "You joined " + p.crew_name + "." : "That invite has expired or was cancelled.") : "Declined the invite to " + p.crew_name + ".";
     $("edit-live").textContent = said;
-    if (fromBanner && act === "accept" && res.ok) { openAccount(said); loadCrews().then(buildCrewFilter); return; } // focus: the page heading
+    if (fromBanner && act === "accept" && res.ok) { openCrews(said); loadCrews().then(buildCrewFilter); return; } // focus: the page heading
     var next = $("pending-invites").querySelector("[data-pending-act]");
     loadCrews(act === "accept" && res.ok ? "#crew-h-" + res.body.id : null).then(function () {
       buildCrewFilter();
