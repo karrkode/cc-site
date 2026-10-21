@@ -76,11 +76,15 @@
 </dialog>
 <dialog class="editor" id="issue-dialog" aria-labelledby="is-heading">
   <form id="issue-form" novalidate>
-    <h2 id="is-heading" tabindex="-1">Report an issue</h2>
+    <h2 id="is-heading" tabindex="-1">Report an issue or request a feature</h2>
     <div id="is-fields">
-      <p class="hint">Tell us what went wrong. We read every report.</p>
-      <div class="field"><label for="is-what">What happened?</label><textarea id="is-what" rows="4" maxlength="2000" required></textarea></div>
-      <div class="field"><label for="is-expected">What did you expect? <span class="opt-label">(optional)</span></label><textarea id="is-expected" rows="2" maxlength="1000"></textarea></div>
+      <fieldset class="publish is-kind"><legend>Is this…</legend>
+        <label class="radio"><input type="radio" name="is-kind" value="issue" checked> An issue: something went wrong</label>
+        <label class="radio"><input type="radio" name="is-kind" value="feature"> A feature request: an idea for the site</label>
+      </fieldset>
+      <p class="hint" id="is-intro">Tell us what went wrong. We read every report.</p>
+      <div class="field"><label for="is-what" id="is-what-label">What happened?</label><textarea id="is-what" rows="4" maxlength="2000" required></textarea></div>
+      <div class="field"><label for="is-expected"><span id="is-expected-label">What did you expect?</span> <span class="opt-label">(optional)</span></label><textarea id="is-expected" rows="2" maxlength="1000"></textarea></div>
       <p class="hint small" id="is-about"></p>
       <p class="form-error" id="is-error" role="alert"></p>
       <div class="row"><button class="btn" type="submit" id="is-send">Send report</button><button class="btn ghost" type="button" id="is-cancel">Cancel</button></div>
@@ -535,12 +539,13 @@
     <section class="view" id="view-issues" hidden>
       <div class="view-head">
         <p class="eyebrow">Review</p>
-        <h1 id="issues-title" tabindex="-1">Issues</h1>
-        <p>Problems members reported with the site. Set where each one stands; a note you add shows beside it on the member's account page.</p>
+        <h1 id="issues-title" tabindex="-1">Issues and feature requests</h1>
+        <p>Problems members reported with the site (ISS-), and features they asked for (FR-). Set where each one stands; a note you add shows beside it on the member's account page.</p>
         <div class="row"><button class="textbtn" type="button" data-go="review">Back to review</button></div>
       </div>
       <form class="found-filters" id="issues-filters" role="search">
-        <div class="field"><label for="issues-q">Find a ticket</label><input id="issues-q" type="search" maxlength="100" placeholder="ISS-0007, or words in a report" autocomplete="off"></div>
+        <div class="field"><label for="issues-q">Find a ticket</label><input id="issues-q" type="search" maxlength="100" placeholder="ISS-0007, FR-0002, or words in a report" autocomplete="off"></div>
+        <div class="field"><label for="issues-kind">Type</label><select id="issues-kind"><option value="">All</option><option value="issue">Issues</option><option value="feature">Feature requests</option></select></div>
         <div class="field"><label for="issues-show">Show</label><select id="issues-show"></select></div>
       </form>
       <p class="hint" id="issues-status" role="status"></p>
@@ -602,7 +607,7 @@
   <footer>
     <p id="foot"></p>
     <p class="privacy" id="privacy-note"></p>
-    <p class="report-row" id="report-row"><button class="textbtn" type="button" id="report-open" aria-haspopup="dialog" hidden>Report an issue</button>
+    <p class="report-row" id="report-row"><button class="textbtn" type="button" id="report-open" aria-haspopup="dialog" hidden>Report an issue or request a feature</button>
       <a class="textbtn" id="how-made" href="https://claude.ai/artifact/8KkaXnDa2ULvyVmXSQnRx2" target="_blank" rel="noopener">Curious about how this was made?<span class="sr-only"> (opens in a new tab)</span></a></p>
   </footer>
 </div>

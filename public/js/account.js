@@ -11,7 +11,7 @@ function rerenderLists() {
   if (visible("account")) renderAccount();
 }
 function onAuthChange() {
-  showReportLink(); // "Report an issue" in the footer, signed in only (CC-84; issues.js)
+  showReportLink(); // "Report an issue or request a feature" in the footer, signed in only (CC-84; issues.js)
   paintApproverRow(); // Photo approvals, for approvers and admins (CC-91; approvals.js)
   $("nav-account").innerHTML = AUTH.user ? 'Your account<span class="count" id="account-count"></span>' : "Sign in";
   $("nav-review").hidden = !isAdmin();
