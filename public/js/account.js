@@ -15,7 +15,7 @@ function onAuthChange() {
   paintApproverRow(); // Photo approvals, for approvers and admins (CC-91; approvals.js)
   $("nav-account").innerHTML = AUTH.user ? 'Your account<span class="count" id="account-count"></span>' : "Sign in";
   $("nav-review").hidden = !isAdmin();
-  WENT = {}; WENT_LIST = []; WENT_PHOTO = {}; MYPLANS = {}; MYPLAN_LIST = [];
+  WENT = {}; WENT_LIST = []; WENT_PHOTO = {}; WENT_JOURNAL = {}; JOURNAL_DRAFT = {}; MYPLANS = {}; MYPLAN_LIST = [];
   if (!AUTH.user) {
     NOTICE_SET = false; $("account-notice").textContent = "";
     if (visible("review") || visible("venues") || visible("stats") || visible("sources") || visible("found") || visible("issues")) show("home");
@@ -38,8 +38,10 @@ function onAuthChange() {
 function loadWent() {
   return api("/me/attended").then(readJSON).then(function (res) {
     if (!res.ok) return;
-    WENT = {}; WENT_PHOTO = {}; WENT_LIST = res.body.map(function (row) {
-      var e = toEvent(row.event); if (row.photo) WENT_PHOTO[e.id] = row.photo; return e; // your photos (CC-76)
+    WENT = {}; WENT_PHOTO = {}; WENT_JOURNAL = {}; WENT_LIST = res.body.map(function (row) {
+      var e = toEvent(row.event); if (row.photo) WENT_PHOTO[e.id] = row.photo; // your photos (CC-76)
+      WENT_JOURNAL[e.id] = { words: row.words || "", review: row.review || "", recommend: !!row.recommend }; // CC-98
+      return e;
     });
     WENT_LIST.forEach(function (e) { WENT[e.id] = true; });
     rerenderLists();
@@ -56,18 +58,20 @@ function reloadEvents() { // something was published: fresh counts, home list an
 document.addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-went]"); if (!b || !AUTH.user) return;
   var id = b.getAttribute("data-went"), on = !WENT[id];
+  // CC-98: un-marking always asks (the product owner's words); it deletes the journal entry too, so say so when there's one.
+  if (!on && !window.confirm("Pressing this removes your attendance! Are you sure?" + (journalHasText(id) ? " Your journal entry for it will be deleted too." : ""))) return;
   b.disabled = true;
   api("/me/attended/" + encodeURIComponent(id), { method: on ? "PUT" : "DELETE" }).then(function (r) {
     if (!r.ok) throw new Error(r.status);
-    if (on) { WENT[id] = true; if (KNOWN[id]) WENT_LIST.unshift(KNOWN[id]); }
-    else { delete WENT[id]; delete WENT_PHOTO[id]; WENT_LIST = WENT_LIST.filter(function (e) { return e.id !== id; }); } // its photo goes too (CC-76)
+    if (on) { WENT[id] = true; WENT_JOURNAL[id] = { words: "", review: "", recommend: false }; if (KNOWN[id]) WENT_LIST.unshift(KNOWN[id]); }
+    else { delete WENT[id]; delete WENT_PHOTO[id]; delete WENT_JOURNAL[id]; delete JOURNAL_DRAFT[id]; WENT_LIST = WENT_LIST.filter(function (e) { return e.id !== id; }); } // its photo goes too (CC-76)
     if (on && MYPLANS[id]) { // been: the server cleared the plan, so the card moves from plans to gone (CC-63)
       delete MYPLANS[id];
-      $("myplan-live").textContent = "Moved to places you've gone: " + KNOWN[id].title;
+      $("myplan-live").textContent = "Moved to your Cultural Journal: " + KNOWN[id].title;
     }
     // Redraw every copy of the card (home, catalog and account can all show it): marking it also takes
     // away the plan button, and un-marking brings it back.
-    return redrawCards(id, b.closest("[data-card]"), "[data-went]");
+    return redrawCards(id, b.closest("[data-card],[data-journal]"), "[data-went]");
   }).catch(function () { b.disabled = false; });
 });
 
@@ -101,10 +105,10 @@ function redrawCardsNow(id, from, focusOn) {
   Array.prototype.forEach.call(document.querySelectorAll('[data-card="' + id + '"]'), function (c) { c.outerHTML = cardHTML(KNOWN[id]); });
   return loadMyPlans().then(function () {
     if (visible("account")) renderAccount();
-    var item = '[data-card="' + id + '"],[data-day-item="' + id + '"]', planner = PLANNER_LISTS.indexOf(listId) >= 0;
+    var item = '[data-card="' + id + '"],[data-day-item="' + id + '"],[data-journal="' + id + '"]', planner = PLANNER_LISTS.indexOf(listId) >= 0;
     var card = listId && $(listId) ? $(listId).querySelector(item) : null;
     if (!card && planner) card = $("myplans-title").parentElement.querySelector(item) || (WENT[id] ? $("went-grid").querySelector(item) : null); // moved within the planner, or to "I've been"
-    var target = card ? card.querySelector(focusOn || "[data-myplan-toggle]") : planner ? $("myplans-title") : null;
+    var target = card ? card.querySelector(focusOn || "[data-myplan-toggle]") : planner ? $("myplans-title") : listId === "went-grid" ? $("journal-title") : null;
     if (target) target.focus();
   });
 }
@@ -225,6 +229,78 @@ document.addEventListener("click", function (ev) {
   loadCatalog(); show("catalog");
 });
 
+// ---------- Cultural Journal (CC-98) ----------
+// The five events you've been to most recently (older entries are kept, just not listed), each with three words
+// (required to save, one a box), a review and "Would you recommend?" (both optional), all private to you, and your photo from it while it's
+// waiting or approved. What you type is kept as a draft until you save, so the page redrawing doesn't lose it.
+var JOURNAL_SHOWN = 5, REVIEW_MAX = 1000, REVIEW_COUNT_FROM = 800, WORD_MAX = 20; // three words: a box each, one word a box
+function journalOf(id) { return JOURNAL_DRAFT[id] || WENT_JOURNAL[id] || { words: "", review: "", recommend: false }; }
+function journalHasText(id) { var j = journalOf(id), s = WENT_JOURNAL[id] || {}; return !!(j.words || j.review || j.recommend || s.words || s.review || s.recommend); }
+function reviewCountText(n) { return n >= REVIEW_COUNT_FROM ? (REVIEW_MAX - n) + " characters left" : ""; }
+function journalEntryHTML(e) {
+  var id = esc(e.id), j = journalOf(e.id), p = WENT_PHOTO[e.id], k = "j-" + id, words = j.words ? j.words.split(" ") : [];
+  var photo = p && p.status !== "rejected" && p.url ? '<figure class="journal-photo"><img src="' + esc(API + p.url) + '" alt="Your photo from ' + esc(e.title) + '">' +
+    (p.status === "approved" ? "" : '<figcaption class="pill">' + esc(PHOTO_STATES[p.status] || p.status) + "</figcaption>") + "</figure>" : "";
+  return '<article class="journal-entry" data-journal="' + id + '" aria-labelledby="' + k + '-h">' + photo +
+    '<div class="journal-body"><h3 id="' + k + '-h"><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a></h3>" +
+    '<p class="where">' + placeHTML(e) + "</p>" +
+    '<form class="journal-form" data-journal-form="' + id + '" novalidate>' +
+    '<fieldset class="field three-words"><legend>Three words</legend><div class="row">' + [0, 1, 2].map(function (i) {
+      return '<input name="word" type="text" maxlength="' + WORD_MAX + '" autocomplete="off" spellcheck="true" required aria-label="Word ' + (i + 1) + '" value="' + esc(words[i] || "") + '">';
+    }).join("") + "</div></fieldset>" +
+    '<div class="field"><label for="' + k + '-review">Your review</label><textarea id="' + k + '-review" name="review" rows="3" maxlength="' + REVIEW_MAX + '" aria-describedby="' + k + '-count">' + esc(j.review) + "</textarea>" +
+    '<span class="hint small" id="' + k + '-count" aria-live="polite">' + esc(reviewCountText(j.review.length)) + "</span></div>" +
+    '<label class="radio"><input type="checkbox" name="recommend"' + (j.recommend ? " checked" : "") + "> Would you recommend?</label>" +
+    '<div class="row"><button class="btn" type="submit">Save</button><span class="hint small" data-journal-said role="status"></span></div>' +
+    '<p class="form-error" role="alert"></p></form>' +
+    '<div class="card-actions">' + wentHTML(e) + photoButtonHTML(e) + "</div></div></article>";
+}
+function renderJournal() {
+  var shown = WENT_LIST.slice(0, JOURNAL_SHOWN);
+  $("went-grid").innerHTML = shown.length ? shown.map(journalEntryHTML).join("") :
+    '<p class="hint">Mark events with "I\'ve been" and they\'ll show up here, ready for your notes.</p>';
+}
+// A photo that won't load (its 15-minute link ran out, or the file's gone) leaves no broken image: the entry just
+// shows without it until the next reload.
+document.addEventListener("error", function (ev) {
+  var fig = ev.target.closest && ev.target.tagName === "IMG" && ev.target.closest(".journal-photo"); if (!fig) return;
+  var entry = fig.closest(".journal-entry"); fig.remove(); if (entry) entry.classList.add("no-photo");
+}, true);
+function readJournal(form) {
+  var words = Array.prototype.map.call(form.querySelectorAll('input[name="word"]'), function (w) { return w.value.trim(); }).filter(Boolean);
+  return { words: words.join(" "), review: form.elements.review.value, recommend: form.elements.recommend.checked };
+}
+document.addEventListener("input", function (ev) {
+  var form = ev.target.closest && ev.target.closest("[data-journal-form]"); if (!form) return;
+  var id = form.getAttribute("data-journal-form"), j = readJournal(form);
+  if (ev.target.name === "word" && /\s/.test(ev.target.value)) { // one word a box: no spaces (hyphens are fine)
+    var at = ev.target.selectionStart - (ev.target.value.slice(0, ev.target.selectionStart).match(/\s/g) || []).length;
+    ev.target.value = ev.target.value.replace(/\s+/g, ""); ev.target.setSelectionRange(at, at); j = readJournal(form);
+  }
+  JOURNAL_DRAFT[id] = j; form.querySelector("[data-journal-said]").textContent = "";
+  if (ev.target.name === "review") $("j-" + id + "-count").textContent = reviewCountText(j.review.length);
+});
+document.addEventListener("change", function (ev) { // the checkbox: a draft too
+  var form = ev.target.closest && ev.target.closest("[data-journal-form]"); if (form && ev.target.name === "recommend") JOURNAL_DRAFT[form.getAttribute("data-journal-form")] = readJournal(form);
+});
+document.addEventListener("submit", function (ev) {
+  var form = ev.target.closest && ev.target.closest("[data-journal-form]"); if (!form) return;
+  ev.preventDefault();
+  var id = form.getAttribute("data-journal-form"), body = readJournal(form), err = form.querySelector(".form-error"), said = form.querySelector("[data-journal-said]");
+  var btn = form.querySelector('button[type="submit"]');
+  err.textContent = ""; said.textContent = "";
+  var empty = Array.prototype.filter.call(form.querySelectorAll('input[name="word"]'), function (w) { return !w.value.trim(); })[0];
+  if (empty) { err.textContent = "Three words: give all three to save your entry."; empty.focus(); return; } // CC-98: the words are required
+  btn.disabled = true;
+  api("/me/attended/" + encodeURIComponent(id) + "/journal", { method: "PUT", body: body }).then(readJSON).then(function (res) {
+    btn.disabled = false;
+    if (!res.ok) { err.textContent = errorText(res); return; }
+    WENT_JOURNAL[id] = res.body; delete JOURNAL_DRAFT[id];
+    form.elements.review.value = res.body.review; // as saved (trimmed)
+    said.textContent = "Saved.";
+  }, function () { btn.disabled = false; err.textContent = errorText(null); });
+});
+
 // ---------- account ----------
 var NOTICE_SET = false; // a one-off message (e.g. "email confirmed") showing instead of the usual notice
 function openAccount(notice) {
@@ -251,8 +327,7 @@ function renderAccount(withSubmissions) {
     $("account-notice").textContent = "";
   }
   renderPlanner();
-  $("went-grid").innerHTML = WENT_LIST.length ? WENT_LIST.map(cardHTML).join("") :
-    '<p class="hint" style="grid-column:1/-1">Mark events with "I\'ve been" and they\'ll show up here.</p>';
+  renderJournal();
   if (!withSubmissions) return;
   fillProfile();
   loadCrews();

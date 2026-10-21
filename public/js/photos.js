@@ -43,7 +43,7 @@ $("photo-dialog").addEventListener("close", function () {
   var was = PHOTO; PHOTO = null;
   if (was && was.preview) URL.revokeObjectURL(was.preview);
   if (!was) return;
-  var back = document.querySelector('[data-card="' + was.e.id + '"] [data-photo]'); // the card was redrawn
+  var back = document.querySelector('[data-card="' + was.e.id + '"] [data-photo], [data-journal="' + was.e.id + '"] [data-photo]'); // the card was redrawn
   (back || (document.contains(was.opener) ? was.opener : null) || $(VIEWS[Object.keys(VIEWS).filter(visible)[0]] || "home-title")).focus();
 });
 // The chosen photo, shrunk: drawn afresh on a canvas (no location or camera details), as a JPEG.
@@ -84,7 +84,7 @@ $("photo-form").addEventListener("submit", function (ev) {
     if (!res.ok) { $("ph-send").disabled = res.status === 422; $("ph-state").textContent = ""; $("ph-error").textContent = errorText(res); return; }
     WENT_PHOTO[was.e.id] = res.body;
     $("edit-live").textContent = "Photo sent. It's waiting for approval.";
-    redrawCards(was.e.id, was.opener.closest("[data-card]"), "[data-photo]");
+    redrawCards(was.e.id, was.opener.closest("[data-card],[data-journal]"), "[data-photo]");
     $("photo-dialog").close();
   }, function () { $("ph-send").disabled = false; $("ph-state").textContent = ""; $("ph-error").textContent = errorText(null); });
 });
@@ -96,7 +96,7 @@ $("ph-remove").addEventListener("click", function () {
     if (!r.ok) { $("ph-error").textContent = errorText(null); return; }
     delete WENT_PHOTO[was.e.id];
     $("edit-live").textContent = "Photo removed.";
-    redrawCards(was.e.id, was.opener.closest("[data-card]"), "[data-photo]");
+    redrawCards(was.e.id, was.opener.closest("[data-card],[data-journal]"), "[data-photo]");
     $("photo-dialog").close();
   }, function () { $("ph-remove").disabled = false; $("ph-error").textContent = errorText(null); });
 });
