@@ -473,7 +473,8 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .invite-banner .textbtn, .pending-invites .textbtn { color: inherit; }
 @media (max-width: 520px) { .crew .crew-email .row { flex-wrap: wrap; } }
 /* CC-84: Report an issue */
-.report-row { margin-top: 6px; font-size: 0.875rem; }
+.report-row { margin-top: 6px; font-size: 0.875rem; display: flex; flex-wrap: wrap; gap: 4px 20px; }
+.report-row [hidden] { display: none; }
 #is-fields, #is-done { display: grid; gap: 16px; } /* the form's spacing, for the parts inside these wrappers */
 #is-fields[hidden], #is-done[hidden] { display: none; }
 #issue-dialog #is-about { margin-block: 2px 4px; }

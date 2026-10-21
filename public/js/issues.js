@@ -17,7 +17,7 @@ function siteVersion() { // the content hash the deploy stamps on each script li
   var s = document.querySelector('script[src*="js/core.js"]'), m = s && /[?&]v=([\w-]+)/.exec(s.getAttribute("src"));
   return m ? m[1] : "";
 }
-function showReportLink() { $("report-row").hidden = !AUTH.user; }
+function showReportLink() { $("report-open").hidden = !AUTH.user; } // "Curious about how this was made?" (CC-90) is for everyone
 function openIssueDialog(from) {
   if (!AUTH.user) return;
   ISSUE_FROM = from;
