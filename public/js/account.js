@@ -1,5 +1,5 @@
 // Culture Crew site: Signing in, your plans, "I've been", the account page, profile, email links and passwords.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, start); they share one
+// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- signed-in state ----------
@@ -12,6 +12,7 @@ function rerenderLists() {
 }
 function onAuthChange() {
   showReportLink(); // "Report an issue" in the footer, signed in only (CC-84; issues.js)
+  paintApproverRow(); // Photo approvals, for approvers and admins (CC-91; approvals.js)
   $("nav-account").innerHTML = AUTH.user ? 'Your account<span class="count" id="account-count"></span>' : "Sign in";
   $("nav-review").hidden = !isAdmin();
   WENT = {}; WENT_LIST = []; WENT_PHOTO = {}; MYPLANS = {}; MYPLAN_LIST = [];

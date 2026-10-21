@@ -1,5 +1,5 @@
 // Culture Crew site: opening the right view for the link, and starting the page.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, start); they share one
+// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- start ----------
@@ -30,12 +30,12 @@ function openFromHash() {
   if (h === "plan") { startPlan(); return true; }
   if (h === "account") { openAccount(); return true; }
   if (h === "submit") { openSubmit(); return true; }
-  // admin pages (the recap email links here, CC-77/81/84): #issues, #issues/ISS-0007, #found, #found/<show> (e.g. #found/skipped), #sources,
+  // admin pages (the recap email links here, CC-77/81/84): #approvals (approvers too, CC-91), #members, #issues, #issues/ISS-0007, #found, #found/<show> (e.g. #found/skipped), #sources,
   // and #source-<id> (Event sources, at that source's "Check by hand only" button)
   var fm = /^found\/(waiting|needs|new|update|approved|rejected|skipped|listed|all)$/.exec(h), sm = /^source-(\d+)$/.exec(h);
   var im = /^issues\/(ISS-\d+)$/i.exec(h); // a ticket, from the recap (CC-84)
-  if (h === "review" || h === "found" || h === "sources" || h === "issues" || fm || sm || im) {
-    var open = h === "review" ? openReview : h === "issues" ? function () { openIssues(); } : im ? function () { openIssues(im[1].toUpperCase()); } : (h === "found" || fm) ? function () { if (fm) { FOUND.show = fm[1]; FOUND.source = ""; } openFound(); } :
+  if (h === "review" || h === "found" || h === "sources" || h === "issues" || h === "approvals" || h === "members" || fm || sm || im) {
+    var open = h === "review" ? openReview : h === "approvals" ? openApprovals : h === "members" ? openMembers : h === "issues" ? function () { openIssues(); } : im ? function () { openIssues(im[1].toUpperCase()); } : (h === "found" || fm) ? function () { if (fm) { FOUND.show = fm[1]; FOUND.source = ""; } openFound(); } :
       sm ? function () { openSources('[data-src-manual="' + sm[1] + '"]'); } : openSources;
     // On a fresh visit the sign-in comes back from the refresh cookie first; then open the page (or Sign in).
     (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(open);
