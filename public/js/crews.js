@@ -80,7 +80,7 @@ function crewHTML(c) {
     html += '<form class="crew-email" data-crew-email="' + id + '" novalidate><label for="crew-email-' + id + '">Invite by email</label>' +
       '<div class="row"><input id="crew-email-' + id + '" type="email" autocomplete="off" placeholder="name@example.com" aria-describedby="crew-email-msg-' + id + '">' +
       '<button class="btn neutral" type="submit">Send invite</button></div>' +
-      '<p class="hint small" id="crew-email-msg-' + id + '" role="status">They\u2019ll see it when they sign in, or once they register with that address.</p></form>';
+      '<p class="hint small" id="crew-email-msg-' + id + '" role="status">We\u2019ll email them. They\u2019ll see it when they sign in, or once they register with that address.</p></form>';
   }
   html += '<div class="row">' + (full ? '<span class="hint">The crew is full.</span>' : crewAct("invite", c, "", "Make an invite link", "btn")) +
     (c.owner ? crewAct("edit", c, "", "Rename") + crewAct("delete", c, "", "Delete crew…", "btn danger") : crewAct("leave", c, "", "Leave crew…")) + "</div>";

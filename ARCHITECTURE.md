@@ -163,9 +163,10 @@ The site gets each event's schedule and its venue's hours from the API. Plan an 
 ## 8. Email
 
 The API sends email with Amazon SES in the us-east-1 region.
-The API sends three types of email:
+The API sends four types of email:
 - Email confirmation.
 - Password reset.
+- Crew invites sent to an email address. Each address gets one email per crew while the invite waits, and at most three a day.
 - The weekly discovery recap to info@chiculturecrew.com. EventBridge Scheduler starts it on Tuesdays at 10 AM. The recap is an HTML email with a plain-text copy. If the API cannot send it, an alert goes to the product owner.
 The API uses short-lived credentials. These credentials can only send email.
 
