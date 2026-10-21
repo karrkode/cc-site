@@ -183,21 +183,22 @@
     <!-- Welcome -->
     <section class="view" id="view-home">
       <div class="cover">
-        <div class="stars" aria-hidden="true">
-          <svg class="star"><use href="#chi-star"></use></svg><svg class="star"><use href="#chi-star"></use></svg><svg class="star"><use href="#chi-star"></use></svg><svg class="star"><use href="#chi-star"></use></svg>
-        </div>
-        <p class="eyebrow">Chicago · 2026–27 season</p>
-        <h1 id="home-title" tabindex="-1">What are we <em>seeing</em> next?</h1>
+        <h1 id="home-title" tabindex="-1">What's the crew <em>seeing</em> next?</h1>
         <p class="lede" id="home-lede">A running list of what's on around Chicago. Look through all of it, or answer four questions and get one outing.</p>
-        <div class="doors">
+        <div class="doors rise" id="doors">
           <button class="door door-a" type="button" data-go="plan" id="door-plan">
             <span class="eyebrow">Four questions</span>
-            <span class="door-title">Plan one outing</span>
+            <span class="door-title">Plan your outing!</span>
             <span class="door-go"><span class="door-desc">Tell us when, how much, what kind and where. Get one pick and a few backups.</span><span aria-hidden="true">→</span></span>
+          </button>
+          <button class="door door-c" type="button" data-go="crews" id="door-crews">
+            <span class="eyebrow">Your people</span>
+            <span class="door-title">Check in on your Crew</span>
+            <span class="door-go"><span class="door-desc" id="door-crews-desc">Crews are the friends you go out with. Sign in to start one or join one.</span><span aria-hidden="true">→</span></span>
           </button>
           <button class="door door-b" type="button" data-go="catalog" id="door-catalog">
             <span class="eyebrow" id="door-catalog-count">The whole list</span>
-            <span class="door-title">Browse the catalog</span>
+            <span class="door-title">Browse the Catalog</span>
             <span class="door-go"><span class="door-desc">Every event, with filters for dates, cost and neighborhood.</span><span aria-hidden="true">→</span></span>
           </button>
         </div>
