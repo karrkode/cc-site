@@ -169,7 +169,8 @@ The API sends three types of email:
 - The weekly discovery recap to info@chiculturecrew.com. EventBridge Scheduler starts it on Tuesdays at 10 AM. The recap is an HTML email with a plain-text copy. If the API cannot send it, an alert goes to the product owner.
 The API uses short-lived credentials. These credentials can only send email.
 
-> **NOTE:** SES is in its sandbox at this time. SES sends email only to verified addresses.
+SES has production access, so it can send to any address.
+Members must confirm their email address before they can send in events or see crew invites sent by email.
 
 ## 9. Deployment
 
