@@ -60,10 +60,12 @@ var REGION_NAMES = {}; REGIONS.forEach(function (r) { REGION_NAMES[r[0]] = r[1];
 var FACETS = null, KNOWN = {}, TYPES = [];
 // The API's event -> the shape the rest of this page was written for.
 function fromApi(e) {
+  var usual = e.min_price === null && e.venue.standard_cost ? e.venue : null; // CC-89: the venue's standard cost stands in
   return {
     id: String(e.id), sourceId: e.source_id, title: e.title, venue: e.venue.name, hood: e.venue.neighborhood,
     area: AREA_NAMES[e.venue.area] || "City", begin: e.begin_date, end: e.end_date, openRun: e.open_run,
-    beginTbd: !e.begin_date, cost: e.cost_text || "TBD", min: e.min_price, type: e.category, url: e.url,
+    beginTbd: !e.begin_date, cost: usual ? usual.standard_cost : e.cost_text || "TBD", min: usual ? usual.standard_min_price : e.min_price,
+    costUsual: !!usual, type: e.category, url: e.url,
     venueId: e.venue.id, costRaw: e.cost_text, // for the admin edit form (CC-56)
     status: e.status, publishAt: e.publish_at ? new Date(e.publish_at) : null,
     submitter: e.submitted_by, // only the admin routes send this (undefined elsewhere; null = none on record)
@@ -127,7 +129,10 @@ function eventStatus(e) {
   if (left <= 6) return { label: "Closes " + F.wd.format(e.n), tone: "soon-t" };
   return { label: "Now playing", tone: "" };
 }
-function costText(e) { return e.min === null ? "Price not posted" : e.cost; }
+function costText(e) { // the venue's standard cost reads "Usually free", "Usually $25 general admission" (CC-89)
+  if (e.costUsual) return "Usually " + (/^[A-Z][a-z]/.test(e.cost) ? e.cost.charAt(0).toLowerCase() + e.cost.slice(1) : e.cost);
+  return e.min === null ? "Price not posted" : e.cost;
+}
 function placeText(e) { return e.hood ? e.venue + " · " + e.hood : e.venue; }
 function placeHTML(e) { return esc(e.venue) + (e.hood ? ' <span class="hood">· ' + esc(e.hood) + "</span>" : ""); }
 function sortKey(t) { return t.replace(/^(the|a|an)\s+/i, "").toLowerCase(); }
