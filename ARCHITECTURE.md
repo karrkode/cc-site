@@ -103,6 +103,7 @@ The database has these main tables:
 - `crews`, `crew_members` and `crew_invites`: the culture crews. An invite keeps only a hash of its link.
 - `crew_email_invites`: invites to a crew by email address. The person with that address sees the invite when they sign in. The inviter does not learn if the address has an account.
 - `plan_shares`: which crews can see a plan. A plan is private until its owner shares it. Only the members of those crews see it.
+- `attended_shares`: which crews see an "I've been" mark: the crews that the plan was shared with when its owner marked it. The crew box shows who has been, with 📸 for an approved photo and 📷 for none or one waiting. A closed event stays on the crew box for 2 weeks while someone has been.
 - `discovery_sources`, `discovered_items`, `discovery_checks` and `discovery_skip_rules`: event discovery (section 5).
 - `traffic_counts`, `traffic_visitors`, `traffic_visitor_days` and `user_active_days`: the counts for Site stats. These tables do not keep names or IP addresses.
 - `issue_reports`: problems that members reported, with a status and an optional note for the member.
