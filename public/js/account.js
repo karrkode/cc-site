@@ -230,8 +230,8 @@ document.addEventListener("click", function (ev) {
 });
 
 // ---------- Cultural Journal (CC-98) ----------
-// The five events you've been to most recently (older entries are kept, just not listed), each with up to three
-// words, a review and "Would you recommend?", all optional and private to you, and your photo from it while it's
+// The five events you've been to most recently (older entries are kept, just not listed), each with three words
+// (required to save, one a box), a review and "Would you recommend?" (both optional), all private to you, and your photo from it while it's
 // waiting or approved. What you type is kept as a draft until you save, so the page redrawing doesn't lose it.
 var JOURNAL_SHOWN = 5, REVIEW_MAX = 1000, REVIEW_COUNT_FROM = 800, WORD_MAX = 20; // three words: a box each, one word a box
 function journalOf(id) { return JOURNAL_DRAFT[id] || WENT_JOURNAL[id] || { words: "", review: "", recommend: false }; }
@@ -246,8 +246,7 @@ function journalEntryHTML(e) {
     '<p class="where">' + placeHTML(e) + "</p>" +
     '<form class="journal-form" data-journal-form="' + id + '" novalidate>' +
     '<fieldset class="field three-words"><legend>Three words</legend><div class="row">' + [0, 1, 2].map(function (i) {
-      return '<input name="word" type="text" maxlength="' + WORD_MAX + '" autocomplete="off" spellcheck="true" aria-label="Word ' + (i + 1) + '" placeholder="' +
-        ["Bold", "Funny", "Heart-felt"][i] + '" value="' + esc(words[i] || "") + '">';
+      return '<input name="word" type="text" maxlength="' + WORD_MAX + '" autocomplete="off" spellcheck="true" required aria-label="Word ' + (i + 1) + '" value="' + esc(words[i] || "") + '">';
     }).join("") + "</div></fieldset>" +
     '<div class="field"><label for="' + k + '-review">Your review</label><textarea id="' + k + '-review" name="review" rows="3" maxlength="' + REVIEW_MAX + '" aria-describedby="' + k + '-count">' + esc(j.review) + "</textarea>" +
     '<span class="hint small" id="' + k + '-count" aria-live="polite">' + esc(reviewCountText(j.review.length)) + "</span></div>" +
@@ -290,6 +289,8 @@ document.addEventListener("submit", function (ev) {
   var id = form.getAttribute("data-journal-form"), body = readJournal(form), err = form.querySelector(".form-error"), said = form.querySelector("[data-journal-said]");
   var btn = form.querySelector('button[type="submit"]');
   err.textContent = ""; said.textContent = "";
+  var empty = Array.prototype.filter.call(form.querySelectorAll('input[name="word"]'), function (w) { return !w.value.trim(); })[0];
+  if (empty) { err.textContent = "Three words: give all three to save your entry."; empty.focus(); return; } // CC-98: the words are required
   btn.disabled = true;
   api("/me/attended/" + encodeURIComponent(id) + "/journal", { method: "PUT", body: body }).then(readJSON).then(function (res) {
     btn.disabled = false;
