@@ -97,6 +97,8 @@ function setFacets(f) {
   TYPES.sort(function (a, b) { var i = TYPE_ORDER.indexOf(a), j = TYPE_ORDER.indexOf(b); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j) || a.localeCompare(b); });
 }
 var WENT = {}, WENT_LIST = [], WENT_PHOTO = {}; // WENT_PHOTO: your photos from events you've been to, by event (CC-76)
+// CC-98: your Cultural Journal entries, by event: { words, review, recommend } as saved, and what's typed but not saved yet.
+var WENT_JOURNAL = {}, JOURNAL_DRAFT = {};
 // Your plans (CC-55; "Oh the places you'll go" on the account page): MYPLANS[id] = { status: "interested" | "going", date: "YYYY-MM-DD" | null }.
 var MYPLANS = {}, MYPLAN_LIST = [], MYPLAN_SEQ = 0;
 var TYPE_PLURAL = { "Theater": "theater", "Comedy": "comedy", "Concert": "concerts", "Visual Art": "visual art" };

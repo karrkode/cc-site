@@ -76,7 +76,8 @@ function readJSON(r) {
   return r.json().catch(function () { return null; }).then(function (body) { return { ok: r.ok, status: r.status, body: body }; });
 }
 var FIELD_NAMES = { email: "Email", password: "Password", display_name: "Name", title: "Event name", url: "Link",
-  begin_date: "Opens", end_date: "Closes", cost_text: "Price", min_price: "Price", name: "Venue", neighborhood: "Neighborhood" };
+  begin_date: "Opens", end_date: "Closes", cost_text: "Price", min_price: "Price", name: "Venue", neighborhood: "Neighborhood",
+  words: "Three words", review: "Review" };
 function errorText(res) {
   if (!res) return "Couldn't reach Culture Crew. Check your connection and try again.";
   var d = res.body && res.body.detail;

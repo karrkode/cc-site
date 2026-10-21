@@ -558,3 +558,18 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
   .day:nth-child(n+5) .day-item .myplan { left: 0; right: auto; }
   .day-item .myplan { width: min(100%, 360px); }
 }
+
+/* CC-98: the Cultural Journal: the last five events you've been to, each with your notes and your photo. */
+.journal { display: grid; gap: 12px; }
+.journal-entry { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 16px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
+.journal-entry:not(:has(.journal-photo)) { grid-template-columns: minmax(0, 1fr); }
+.journal-photo { position: relative; margin: 0; align-self: start; }
+.journal-photo img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--r-ctl); }
+.journal-photo figcaption { position: absolute; left: 8px; bottom: 8px; }
+.journal-body { display: grid; gap: 10px; min-width: 0; }
+.journal-body h3 { font-size: var(--step-1); line-height: 1.2; }
+.journal-body .where { color: var(--muted); }
+.journal-form { display: grid; gap: 10px; }
+.journal-form textarea { display: block; width: 100%; background: var(--page); color: var(--text); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 9px 10px; font: inherit; resize: vertical; }
+.journal-form .row { gap: 12px; align-items: center; }
+@media (max-width: 640px) { .journal-entry { grid-template-columns: minmax(0, 1fr); } }
