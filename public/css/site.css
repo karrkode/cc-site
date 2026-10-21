@@ -497,4 +497,7 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .crew-qr[hidden] { display: none; }
 .crew-qr img { width: 240px; height: 240px; max-width: 100%; border-radius: 10px; background: #fff; }
 .crew-qr a { color: inherit; }
+/* CC-87: a list capped at a few items (capList in util.js) scrolls inside itself */
+.capped { overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
+.capped:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: var(--r-card); }
 
