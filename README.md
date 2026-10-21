@@ -1,8 +1,10 @@
 # Culture Crew — the site
 
 The page at **https://chiculturecrew.com**: a running list of plays, comedy, concerts and
-exhibitions around Chicago, with a catalog, a four-question outing planner, accounts, an
-"I've been" list, event submissions and an admin review queue.
+exhibitions around Chicago, with a catalog, an outing planner that suggests only what's on, accounts,
+plans and an "I've been" list with optional photos, culture crews that share plans and see who's been,
+event submissions, issue reports, and admin pages (review, found events from event discovery, venues,
+members, photo approvals, stats). Approvers, offered the permission by the admin, review "I've been" photos.
 
 It's a single static page (`public/index.html` with its `css/` and `js/`, no build step) served from S3 through
 CloudFront. Everything dynamic comes from the Culture Crew API at
@@ -18,10 +20,11 @@ public/css/site.css      its styles
 public/js/               its scripts, by area, loaded in order (see js/core.js)
 public/404.html          shown by CloudFront for any missing path
 public/img/              images the page uses (the plan dolphins)
+public/js/vendor/        qrcode.js, for crew invite QR codes (CC-86), kept with the site so invite links stay private
 scripts/check_pages.py   checks run in CI before every deploy
 scripts/stamp_assets.py  stamps each css/js link with its file's hash at deploy
 .github/workflows/       CI/CD
-ARCHITECTURE.md          how the site, API, database and AWS parts fit together
+ARCHITECTURE.md          how the site, API, database and AWS parts fit together (with diagrams in docs/architecture/)
 ```
 
 ## Run it locally
