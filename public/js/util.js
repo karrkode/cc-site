@@ -74,6 +74,7 @@ function fromApi(e) {
     pick: e.pick ? { status: e.pick.status, date: e.pick.date, by: e.pick.by } : null, // the owner's public pick (CC-66)
     sched: e.schedule || { dates: [], weekly: {}, weekly_from: "", hours: {} }, // when it's on, for the planner (CC-79)
     crewPlans: e.crew_plans || [], // signed in: crew-mates' shared plans (CC-75)
+    runDates: (e.run_dates || []).map(function (r) { return { date: r.date, time: r.time, end_time: r.end_time || "" }; }), // a fixed run (CC-96)
     b: parseISO(e.begin_date), n: parseISO(e.end_date)
   };
 }
@@ -161,6 +162,15 @@ function showDaysLine(e) {
   var text = SHOW_TYPES[e.type] && !oneNight(e) && !isPast(e) ? showDaysText(e.sched.weekly, e.sched.weeks) : "";
   return text ? '<p class="show-days-line">' + esc(text) + "</p>" : "";
 }
+// CC-96: a fixed run's upcoming dates and times under where it is ("Fri, Oct 24, 8 PM · Sun, Nov 2, 7:30 PM · 2 more").
+var RUN_SHOWN = 3;
+function runDatesText(e) {
+  var left = e.runDates.filter(function (r) { return parseISO(r.date) >= T; });
+  return left.slice(0, RUN_SHOWN).map(function (r) {
+    return goingDay(r.date) + ", " + clockText(r.time) + (r.end_time ? "–" + clockText(r.end_time) : "");
+  }).join(" · ") + (left.length > RUN_SHOWN ? " · " + (left.length - RUN_SHOWN) + " more" : "");
+}
+function runDatesLine(e) { var text = e.runDates.length ? runDatesText(e) : ""; return text ? '<p class="show-days-line run-line">' + esc(text) + "</p>" : ""; }
 function cardHTML(e) {
   var st = eventStatus(e), mine = AUTH.user ? MYPLANS[e.id] : null, going = mine && mine.status === "going";
   // Marks sit next to the date at the bottom of the card (CC-64; the top row had no room for them).
@@ -171,7 +181,7 @@ function cardHTML(e) {
   return '<article class="card" data-card="' + esc(e.id) + '">' +
     '<div class="card-top"><span class="kind">' + esc(e.type) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
     '<h3><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a></h3>" +
-    '<div class="card-body"><p class="where">' + placeHTML(e) + "</p>" + showDaysLine(e) +
+    '<div class="card-body"><p class="where">' + placeHTML(e) + "</p>" + (e.runDates.length ? runDatesLine(e) : showDaysLine(e)) +
     (e.suggestedBy ? '<p class="credit">Suggested by ' + esc(e.suggestedBy) + "</p>" : "") +
     (AUTH.user && e.crewPlans.length ? '<p class="crew-note">' + esc(crewNoteText(e)) + "</p>" : "") + "</div>" +
     '<div class="card-foot"><span class="when">' + mark + (going ? '<span class="going-on">Going ' + esc(goingDay(mine.date)) + "</span>" :

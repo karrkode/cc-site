@@ -249,6 +249,7 @@ function foundMode(i) { // i: the found item, or null for the ordinary edit form
 function openFoundEditor(i, opener) {
   EDITING = { e: { id: "found-" + i.id }, found: i, opener: opener };
   foundMode(i);
+  setRun("ed", []); $("ed-runkind").hidden = true; // found events come with their own dates; a fixed run is set after (CC-96)
   $("ed-heading").textContent = "Approve " + i.title;
   $("ed-found").textContent = "Found on " + i.source_name + ". Check the details, then approve to add it to the catalog." +
     (!i.venue_id ? " The venue is new to us, so check its name and neighborhood; it's added when you approve." : "") +

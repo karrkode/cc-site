@@ -248,7 +248,7 @@ function setShowDays(f, weekly, weeks) {
   });
   sd.from = { weekly: weekly || {}, weeks: weeks || {} }; paintShowDays(f);
 }
-function showDaysFor(f, type) { $(f + "-sched").hidden = !SHOW_TYPES[type]; }
+function showDaysFor(f, type) { $(f + "-sched").hidden = !SHOW_TYPES[type] || isFixedRun(f); } // a fixed run has its own times (CC-96)
 // The show days as entered: {weekly, weeks} ({} for none), or {error, id} for a day without a time, a time we can't read,
 // or "Some weeks" without any weeks chosen.
 function readShowDays(f) {
@@ -311,3 +311,77 @@ function weeklyChange(f) {
 showDaysInit("ed"); showDaysInit("s");
 $("ed-category").addEventListener("change", function () { showDaysFor("ed", this.value); });
 $("s-category").addEventListener("change", function () { showDaysFor("s", this.value); });
+
+// ---------- fixed runs (CC-96) ----------
+// "When is it on?": between an opening and a closing date (with show days, as before), or only on chosen dates, a
+// fixed run. A run is up to 30 dates, each with a start time and, if known, an end time; the opening and closing
+// dates are then its first and last. RUN[f] holds the dates while the form is open ("s" submit, "ed" the editor).
+var RUN_MAX = 30, RUN = { s: [], ed: [] };
+function isFixedRun(f) { var r = document.querySelector('input[name="' + f + '-runkind"]:checked'); return !!r && r.value === "fixed"; }
+function paintRunKind(f) {
+  var fixed = isFixedRun(f);
+  $(f + "-range").hidden = fixed; $(f + "-run").hidden = !fixed;
+  showDaysFor(f, $(f + "-category").value);
+  $(f + "-run-day").min = isoDate(T);
+}
+function setRun(f, dates) { // dates: [{date, time, end_time}] from the API; [] starts the form as a date range
+  RUN[f] = (dates || []).map(function (r) { return { date: r.date, time: r.time || "", end_time: r.end_time || "" }; });
+  document.querySelector('input[name="' + f + '-runkind"][value="' + (RUN[f].length ? "fixed" : "range") + '"]').checked = true;
+  $(f + "-run-day").value = ""; paintRun(f); paintRunKind(f);
+}
+function paintRun(f) {
+  $(f + "-run-list").innerHTML = RUN[f].map(function (r, i) {
+    var day = goingDay(r.date), id = f + "-run-" + i;
+    return '<li class="run-date" data-run-row="' + i + '"><span class="run-day">' + esc(day) + "</span>" +
+      '<span class="run-time"><label for="' + id + '-t">Starts</label><input id="' + id + '-t" type="time" data-run-time="' + i + '" value="' + esc(r.time) + '" aria-label="Start time on ' + esc(day) + '"></span>' +
+      '<span class="run-time"><label for="' + id + '-e">Ends <span class="opt-label">(optional)</span></label><input id="' + id + '-e" type="time" data-run-end="' + i + '" value="' + esc(r.end_time) + '" aria-label="End time on ' + esc(day) + ' (optional)"></span>' +
+      '<button class="textbtn" type="button" data-run-remove="' + f + '" data-i="' + i + '" aria-label="Remove ' + esc(day) + '">Remove</button></li>';
+  }).join("");
+  $(f + "-run-list").hidden = !RUN[f].length;
+}
+// The run as entered: {run_dates} or {error, id}.
+function readRun(f) {
+  if (!RUN[f].length) return { error: "Add at least one date for the fixed run.", id: f + "-run-day" };
+  for (var i = 0; i < RUN[f].length; i++) {
+    var r = RUN[f][i];
+    if (!r.time) return { error: "Give a start time for " + goingDay(r.date) + ".", id: f + "-run-" + i + "-t" };
+    if (r.end_time && r.end_time <= r.time) return { error: "On " + goingDay(r.date) + ", the end time is before the start.", id: f + "-run-" + i + "-e" };
+  }
+  return { run_dates: RUN[f].map(function (r) { return { date: r.date, time: r.time, end_time: r.end_time }; }) };
+}
+document.addEventListener("change", function (ev) {
+  var m = /^(s|ed)-runkind$/.exec(ev.target.name || ""); if (!m) return;
+  var f = m[1];
+  if (isFixedRun(f) && !RUN[f].length && $(f + "-begin").value >= isoDate(T)) $(f + "-run-day").value = $(f + "-begin").value; // a head start
+  if (!isFixedRun(f) && RUN[f].length) { $(f + "-begin").value = RUN[f][0].date; $(f + "-end").value = RUN[f][RUN[f].length - 1].date; }
+  paintRunKind(f);
+});
+document.addEventListener("input", function (ev) {
+  var t = ev.target, row = t.closest && t.closest(".run-dates"); if (!row) return;
+  var f = row.id.replace(/-run-list$/, ""), i = t.getAttribute("data-run-time") || t.getAttribute("data-run-end");
+  if (i === null || !RUN[f][+i]) return;
+  RUN[f][+i][t.hasAttribute("data-run-time") ? "time" : "end_time"] = t.value;
+});
+document.addEventListener("click", function (ev) {
+  var add = ev.target.closest("[data-run-add]"), rm = ev.target.closest("[data-run-remove]");
+  if (add) {
+    var f = add.getAttribute("data-run-add"), input = $(f + "-run-day"), day = input.value;
+    var say = function (text) { $(f === "s" ? "submit-error" : "ed-error").textContent = text; input.focus(); };
+    if (!day) return say("Pick a date to add.");
+    if (day < isoDate(T) && !(f === "ed" && EDITING && EDITING.e.runDates && EDITING.e.runDates.some(function (r) { return r.date === day; }))) return say("That date has passed.");
+    if (RUN[f].some(function (r) { return r.date === day; })) return say(goingDay(day) + " is already in the run.");
+    if (RUN[f].length >= RUN_MAX) return say("A fixed run can have up to " + RUN_MAX + " dates.");
+    var last = RUN[f][RUN[f].length - 1]; // a new date starts at the time the last one had, which is usually right
+    RUN[f].push({ date: day, time: last ? last.time : "", end_time: last ? last.end_time : "" });
+    RUN[f].sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    input.value = ""; paintRun(f);
+    var at = RUN[f].map(function (r) { return r.date; }).indexOf(day); $(f + "-run-" + at + "-t").focus();
+    $("edit-live").textContent = "Added " + goingDay(day) + ".";
+  } else if (rm) {
+    var g = rm.getAttribute("data-run-remove"), n = +rm.getAttribute("data-i"), gone = RUN[g][n];
+    RUN[g].splice(n, 1); paintRun(g);
+    var next = $(g + "-run-" + Math.min(n, RUN[g].length - 1) + "-t"); (next || $(g + "-run-day")).focus();
+    $("edit-live").textContent = "Removed " + goingDay(gone.date) + ".";
+  }
+});
+paintRunKind("s"); paintRunKind("ed");
