@@ -322,8 +322,8 @@ function renderPlannerPage() {
 $("planner-signin-btn").addEventListener("click", function () { AFTER_SIGN_IN = "planner"; openAccount(); });
 
 // ---------- your name in the header, and its menu (CC-105) ----------
-// Signed in, the header shows your name (or "Your account"); it opens a menu: Account Settings, Crews, Culture
-// Planner, Sign out. Arrow keys, Home and End move through it; Escape or Tab closes it and returns to your name.
+// Signed in, the header shows your name (or "Your account"); it opens a menu: Crews, Culture Planner, Account
+// Settings, Sign out. Arrow keys, Home and End move through it; Escape or Tab closes it and returns to your name.
 function meName() { var n = AUTH.user && (AUTH.user.display_name || "").trim(); return n || "Your account"; }
 function paintMeMenu() {
   var u = AUTH.user, b = $("nav-account");

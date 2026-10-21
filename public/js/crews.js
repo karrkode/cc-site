@@ -433,8 +433,9 @@ document.addEventListener("keydown", function (ev) { // Escape closes the crew p
 });
 
 // ---------- invites waiting for you (CC-59) ----------
-// Someone invited your email address to a crew. On sign-in a notice under the header says so, with Accept and
-// Decline; the same requests sit at the top of Your crews, and the Account link shows how many, until answered.
+// Someone invited your email address to a crew. Once you're signed in, a notice on Home says so, with Accept and
+// Decline (CC-106: only on Home); the same requests sit under "Waiting for you" on Crews, and your name in the
+// header shows how many, until answered.
 var PENDING = [], PENDING_LATER = false; // "Later" hides the notice until the next sign-in
 function loadPending(fresh) {
   if (!AUTH.user) return Promise.resolve();
@@ -458,7 +459,7 @@ function paintPending() {
   $("pending-invites").hidden = !n;
   $("pending-invites").innerHTML = n ? '<h3 id="pending-title">Waiting for you</h3>' + offer.join("") + PENDING.map(function (p) { return pendingItemHTML(p, "list"); }).join("") : "";
   var banner = $("invite-banner");
-  banner.hidden = !n || PENDING_LATER || visible("crews");
+  banner.hidden = !n || PENDING_LATER || !visible("home"); // CC-106: the notice is on Home only; Crews lists them under "Waiting for you"
   banner.innerHTML = banner.hidden ? "" : offer.concat(PENDING.map(function (p) { return pendingItemHTML(p, "banner"); })).slice(0, 2).join("") +
     '<p class="small">' + (n > 2 ? "And " + plural(n - 2, "more invite", "more invites") + " on " : "Also on ") +
     '<button class="textbtn" type="button" data-go="crews">Your crews</button>. <button class="textbtn" type="button" data-pending-act="later">Not now</button></p>';
