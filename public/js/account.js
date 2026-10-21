@@ -13,7 +13,8 @@ function rerenderLists() {
 function onAuthChange() {
   showReportLink(); // "Report an issue or request a feature" in the footer, signed in only (CC-84; issues.js)
   paintApproverRow(); // Photo approvals, for approvers and admins (CC-91; approvals.js)
-  $("nav-account").innerHTML = AUTH.user ? 'Your account<span class="count" id="account-count"></span>' : "Sign in";
+  $("nav-account").textContent = AUTH.user ? "Your account" : "Sign in";
+  $("nav-crews").hidden = !AUTH.user; // CC-104: the crews page, signed in (the name menu takes it over in CC-105)
   $("nav-review").hidden = !isAdmin();
   WENT = {}; WENT_LIST = []; WENT_PHOTO = {}; WENT_JOURNAL = {}; JOURNAL_DRAFT = {}; MYPLANS = {}; MYPLAN_LIST = [];
   if (!AUTH.user) {
@@ -23,10 +24,13 @@ function onAuthChange() {
     CREWS = []; buildCrewFilter(); PENDING = []; paintPending(); $("my-issues-section").hidden = true;
     if ($("issue-dialog").open) $("issue-dialog").close();
     rerenderLists();
+    if (visible("crews")) renderCrewsPage();
     return;
   }
   if (isAdmin()) updateReviewCount();
-  if (visible("account")) renderAccount(true);
+  if (CREWS_AFTER_SIGN_IN) { CREWS_AFTER_SIGN_IN = false; openCrews(); } // signed in from the crews page: back to it (CC-104)
+  else if (visible("account")) renderAccount(true);
+  if (visible("crews")) renderCrewsPage();
   if (visible("submit")) renderSubmit();
   if (visible("review")) renderReview();
   rerenderLists();
@@ -330,7 +334,6 @@ function renderAccount(withSubmissions) {
   renderJournal();
   if (!withSubmissions) return;
   fillProfile();
-  loadCrews();
   loadMyIssues(); // CC-84
   api("/me/submissions").then(readJSON).then(function (res) {
     if (!res.ok) return;

@@ -162,6 +162,7 @@
       <button class="navlink" type="button" data-go="plan" id="nav-plan">Plan an outing</button>
       <button class="navlink" type="button" data-go="submit" id="nav-submit">Submit an event</button>
       <button class="navlink" type="button" data-go="review" id="nav-review" hidden>Review<span class="count" id="review-count"></span></button>
+      <button class="navlink" type="button" data-go="crews" id="nav-crews" hidden>Crews<span class="count" id="crews-count"></span></button>
       <button class="navlink" type="button" data-go="account" id="nav-account">Sign in</button>
       <button class="navlink theme-toggle" type="button" id="theme-toggle" aria-label="Switch to light theme" title="Switch to light theme">
         <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
@@ -340,21 +341,6 @@
           <p class="hint">The last five events you've been to. Sum each up in three words; a review is up to you. Only you can see it.</p>
           <div class="journal" id="went-grid"></div></div>
         <div class="section"><h2>Events you've sent us</h2><div class="queue" id="my-submissions"></div></div>
-        <div class="section" id="crews-section"><h2 id="crews-title" tabindex="-1">Your crews</h2>
-          <p class="hint">The people you go out with. Only a crew's members see who's in it, by name, never by email.</p>
-          <p class="hint" id="crews-status" role="status"></p>
-          <div class="pending-invites" id="pending-invites" hidden></div>
-          <div class="crews" id="crew-list"></div>
-          <form class="panel" id="crew-new" novalidate>
-            <h3>Start a crew</h3>
-            <div class="fields">
-              <div class="field"><label for="crew-name">Name</label><input id="crew-name" type="text" maxlength="60" required placeholder="Thursday Crew"></div>
-              <div class="field"><label for="crew-desc">About it <span class="opt-label">(optional)</span></label><input id="crew-desc" type="text" maxlength="200" placeholder="Plays, then a drink after"></div>
-            </div>
-            <p class="form-error" id="crew-new-error" role="alert"></p>
-            <button class="btn" type="submit">Start the crew</button>
-          </form>
-        </div>
         <div class="section" id="my-issues-section" hidden><h2 id="my-issues-title" tabindex="-1">Your reports</h2>
           <p class="hint">Problems you've told us about, and where each one stands.</p>
           <div class="queue" id="my-issues"></div></div>
@@ -381,6 +367,37 @@
             <div class="row"><button class="btn" type="submit" id="password-btn">Change password</button><span class="hint" id="password-msg" role="status"></span></div>
           </form>
         </div>
+      </div>
+    </section>
+
+    <!-- Your crews (CC-104): their own page, at #crews -->
+    <section class="view" id="view-crews" hidden>
+      <div class="view-head crews-head">
+        <p class="eyebrow">Your crews</p>
+        <h1 id="crews-title" tabindex="-1">The people you go out with</h1>
+        <p>Plan together, see who's going, and who's been. Only a crew's members see who's in it, by name, never by email.</p>
+      </div>
+      <div class="panel" id="crews-signin" hidden>
+        <p>A crew is a few friends you go out with. Share your plans with them, see what they're up to, and pick something together.</p>
+        <div class="row"><button class="btn" type="button" id="crews-signin-btn">Sign in or create an account</button></div>
+      </div>
+      <div id="crews-main" hidden>
+        <div class="crew-start">
+          <button class="btn crew-start-btn" type="button" id="crew-start-btn" aria-expanded="false" aria-controls="crew-new"><span aria-hidden="true">＋</span> Start a crew</button>
+          <p class="hint" id="crew-start-hint">Name it, invite people with a link, a QR code or by email.</p>
+        </div>
+        <form class="panel" id="crew-new" novalidate hidden>
+          <h3>Start a crew</h3>
+          <div class="fields">
+            <div class="field"><label for="crew-name">Name</label><input id="crew-name" type="text" maxlength="60" required placeholder="Thursday Crew"></div>
+            <div class="field"><label for="crew-desc">About it <span class="opt-label">(optional)</span></label><input id="crew-desc" type="text" maxlength="200" placeholder="Plays, then a drink after"></div>
+          </div>
+          <p class="form-error" id="crew-new-error" role="alert"></p>
+          <div class="row"><button class="btn" type="submit">Start the crew</button><button class="btn ghost" type="button" id="crew-new-cancel">Cancel</button></div>
+        </form>
+        <p class="hint" id="crews-status" role="status"></p>
+        <div class="pending-invites" id="pending-invites" hidden></div>
+        <div class="crews" id="crew-list"></div>
       </div>
     </section>
 

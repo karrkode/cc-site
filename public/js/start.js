@@ -29,6 +29,7 @@ function openFromHash() {
   if (h === "catalog") { renderCatalog(); show("catalog"); return true; }
   if (h === "plan") { startPlan(); return true; }
   if (h === "account") { openAccount(); return true; }
+  if (h === "crews") { (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(function () { openCrews(); }); return true; } // CC-104
   if (h === "submit") { openSubmit(); return true; }
   // admin pages (the recap email links here, CC-77/81/84): #approvals (approvers too, CC-91), #members, #issues, #issues/ISS-0007, #found, #found/<show> (e.g. #found/skipped), #sources,
   // and #source-<id> (Event sources, at that source's "Check by hand only" button)
