@@ -1,5 +1,5 @@
 // Culture Crew site: Signing in, your plans, "I've been", the account page, profile, email links and passwords.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, start); they share one
+// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- signed-in state ----------
@@ -14,7 +14,7 @@ function onAuthChange() {
   showReportLink(); // "Report an issue" in the footer, signed in only (CC-84; issues.js)
   $("nav-account").innerHTML = AUTH.user ? 'Your account<span class="count" id="account-count"></span>' : "Sign in";
   $("nav-review").hidden = !isAdmin();
-  WENT = {}; WENT_LIST = []; MYPLANS = {}; MYPLAN_LIST = [];
+  WENT = {}; WENT_LIST = []; WENT_PHOTO = {}; MYPLANS = {}; MYPLAN_LIST = [];
   if (!AUTH.user) {
     NOTICE_SET = false; $("account-notice").textContent = "";
     if (visible("review") || visible("venues") || visible("stats") || visible("sources") || visible("found") || visible("issues")) show("home");
@@ -37,7 +37,9 @@ function onAuthChange() {
 function loadWent() {
   return api("/me/attended").then(readJSON).then(function (res) {
     if (!res.ok) return;
-    WENT = {}; WENT_LIST = res.body.map(function (row) { return toEvent(row.event); });
+    WENT = {}; WENT_PHOTO = {}; WENT_LIST = res.body.map(function (row) {
+      var e = toEvent(row.event); if (row.photo) WENT_PHOTO[e.id] = row.photo; return e; // your photos (CC-76)
+    });
     WENT_LIST.forEach(function (e) { WENT[e.id] = true; });
     rerenderLists();
   }, function () {});
@@ -57,7 +59,7 @@ document.addEventListener("click", function (ev) {
   api("/me/attended/" + encodeURIComponent(id), { method: on ? "PUT" : "DELETE" }).then(function (r) {
     if (!r.ok) throw new Error(r.status);
     if (on) { WENT[id] = true; if (KNOWN[id]) WENT_LIST.unshift(KNOWN[id]); }
-    else { delete WENT[id]; WENT_LIST = WENT_LIST.filter(function (e) { return e.id !== id; }); }
+    else { delete WENT[id]; delete WENT_PHOTO[id]; WENT_LIST = WENT_LIST.filter(function (e) { return e.id !== id; }); } // its photo goes too (CC-76)
     if (on && MYPLANS[id]) { // been: the server cleared the plan, so the card moves from plans to gone (CC-63)
       delete MYPLANS[id];
       $("myplan-live").textContent = "Moved to places you've gone: " + KNOWN[id].title;

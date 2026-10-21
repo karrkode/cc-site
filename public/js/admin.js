@@ -1,5 +1,5 @@
 // Culture Crew site: Admin tools: the review queue, venues, and editing events.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, start); they share one
+// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- review queue (admins) ----------
@@ -373,7 +373,9 @@ function paintStats(s) {
     '<div><strong>' + s.members + "</strong><span>members, " + pct(s.confirmed_members, s.members) + " confirmed their email</span></div>" +
     '<div><strong>' + (r.eligible ? pct(r.retained, r.eligible) : "–") + "</strong><span>" +
       (r.eligible ? "came back 4+ weeks after joining (" + r.retained + " of " + r.eligible + ")" : "came back after 4 weeks (not enough history yet)") + "</span></div>" +
-    '<div><strong>' + (s.active_since ? esc(short(parseISO(s.active_since))) : "Today") + "</strong><span>activity counted since</span></div>";
+    '<div><strong>' + (s.active_since ? esc(short(parseISO(s.active_since))) : "Today") + "</strong><span>activity counted since</span></div>" +
+    '<div><strong>' + (s.photo_checks_month || 0) + "</strong><span>photos checked by Amazon Rekognition this month, about $" + // CC-76
+      (s.photo_checks_usd || 0).toFixed(2) + "</span></div>";
   $("stats-grid").innerHTML = STAT_METRICS.map(function (m) {
     var key = m[0];
     return '<section class="stat-card"><h2 class="eyebrow">' + esc(m[1]) + "</h2>" +
