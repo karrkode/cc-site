@@ -492,4 +492,9 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
   font-size: 0.8125rem; font-weight: 600; line-height: 1.35; text-align: center; white-space: normal; pointer-events: none;
 }
 @media (hover: hover) { .chip.mine:hover .tip, .chip.mine:focus-visible .tip { display: block; } }
+/* CC-86: the invite link as a QR code */
+.crew-qr { display: grid; justify-items: start; gap: 6px; margin: 4px 0 0; }
+.crew-qr[hidden] { display: none; }
+.crew-qr img { width: 240px; height: 240px; max-width: 100%; border-radius: 10px; background: #fff; }
+.crew-qr a { color: inherit; }
 
