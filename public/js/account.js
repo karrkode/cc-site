@@ -58,8 +58,8 @@ function reloadEvents() { // something was published: fresh counts, home list an
 document.addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-went]"); if (!b || !AUTH.user) return;
   var id = b.getAttribute("data-went"), on = !WENT[id];
-  // CC-98: un-marking deletes the journal entry too, so ask first when there's something in it.
-  if (!on && journalHasText(id) && !window.confirm("Remove \u201cI've been\u201d? This also deletes your journal entry for " + (KNOWN[id] ? KNOWN[id].title : "it") + ".")) return;
+  // CC-98: un-marking always asks (the product owner's words); it deletes the journal entry too, so say so when there's one.
+  if (!on && !window.confirm("Pressing this removes your attendance! Are you sure?" + (journalHasText(id) ? " Your journal entry for it will be deleted too." : ""))) return;
   b.disabled = true;
   api("/me/attended/" + encodeURIComponent(id), { method: on ? "PUT" : "DELETE" }).then(function (r) {
     if (!r.ok) throw new Error(r.status);
@@ -233,19 +233,22 @@ document.addEventListener("click", function (ev) {
 // The five events you've been to most recently (older entries are kept, just not listed), each with up to three
 // words, a review and "Would you recommend?", all optional and private to you, and your photo from it while it's
 // waiting or approved. What you type is kept as a draft until you save, so the page redrawing doesn't lose it.
-var JOURNAL_SHOWN = 5, REVIEW_MAX = 1000, REVIEW_COUNT_FROM = 800;
+var JOURNAL_SHOWN = 5, REVIEW_MAX = 1000, REVIEW_COUNT_FROM = 800, WORD_MAX = 20; // three words: a box each, one word a box
 function journalOf(id) { return JOURNAL_DRAFT[id] || WENT_JOURNAL[id] || { words: "", review: "", recommend: false }; }
 function journalHasText(id) { var j = journalOf(id), s = WENT_JOURNAL[id] || {}; return !!(j.words || j.review || j.recommend || s.words || s.review || s.recommend); }
 function reviewCountText(n) { return n >= REVIEW_COUNT_FROM ? (REVIEW_MAX - n) + " characters left" : ""; }
 function journalEntryHTML(e) {
-  var id = esc(e.id), j = journalOf(e.id), p = WENT_PHOTO[e.id], k = "j-" + id;
+  var id = esc(e.id), j = journalOf(e.id), p = WENT_PHOTO[e.id], k = "j-" + id, words = j.words ? j.words.split(" ") : [];
   var photo = p && p.status !== "rejected" && p.url ? '<figure class="journal-photo"><img src="' + esc(API + p.url) + '" alt="Your photo from ' + esc(e.title) + '">' +
     (p.status === "approved" ? "" : '<figcaption class="pill">' + esc(PHOTO_STATES[p.status] || p.status) + "</figcaption>") + "</figure>" : "";
   return '<article class="journal-entry" data-journal="' + id + '" aria-labelledby="' + k + '-h">' + photo +
     '<div class="journal-body"><h3 id="' + k + '-h"><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a></h3>" +
     '<p class="where">' + placeHTML(e) + "</p>" +
     '<form class="journal-form" data-journal-form="' + id + '" novalidate>' +
-    '<div class="field"><label for="' + k + '-words">Three words</label><input id="' + k + '-words" name="words" type="text" maxlength="60" autocomplete="off" placeholder="Bold, funny, haunting" value="' + esc(j.words) + '"></div>' +
+    '<fieldset class="field three-words"><legend>Three words</legend><div class="row">' + [0, 1, 2].map(function (i) {
+      return '<input name="word" type="text" maxlength="' + WORD_MAX + '" autocomplete="off" spellcheck="true" aria-label="Word ' + (i + 1) + '" placeholder="' +
+        ["Bold", "Funny", "Heart-felt"][i] + '" value="' + esc(words[i] || "") + '">';
+    }).join("") + "</div></fieldset>" +
     '<div class="field"><label for="' + k + '-review">Your review</label><textarea id="' + k + '-review" name="review" rows="3" maxlength="' + REVIEW_MAX + '" aria-describedby="' + k + '-count">' + esc(j.review) + "</textarea>" +
     '<span class="hint small" id="' + k + '-count" aria-live="polite">' + esc(reviewCountText(j.review.length)) + "</span></div>" +
     '<label class="radio"><input type="checkbox" name="recommend"' + (j.recommend ? " checked" : "") + "> Would you recommend?</label>" +
@@ -258,12 +261,23 @@ function renderJournal() {
   $("went-grid").innerHTML = shown.length ? shown.map(journalEntryHTML).join("") :
     '<p class="hint">Mark events with "I\'ve been" and they\'ll show up here, ready for your notes.</p>';
 }
+// A photo that won't load (its 15-minute link ran out, or the file's gone) leaves no broken image: the entry just
+// shows without it until the next reload.
+document.addEventListener("error", function (ev) {
+  var fig = ev.target.closest && ev.target.tagName === "IMG" && ev.target.closest(".journal-photo"); if (!fig) return;
+  var entry = fig.closest(".journal-entry"); fig.remove(); if (entry) entry.classList.add("no-photo");
+}, true);
 function readJournal(form) {
-  return { words: form.elements.words.value, review: form.elements.review.value, recommend: form.elements.recommend.checked };
+  var words = Array.prototype.map.call(form.querySelectorAll('input[name="word"]'), function (w) { return w.value.trim(); }).filter(Boolean);
+  return { words: words.join(" "), review: form.elements.review.value, recommend: form.elements.recommend.checked };
 }
 document.addEventListener("input", function (ev) {
   var form = ev.target.closest && ev.target.closest("[data-journal-form]"); if (!form) return;
   var id = form.getAttribute("data-journal-form"), j = readJournal(form);
+  if (ev.target.name === "word" && /\s/.test(ev.target.value)) { // one word a box: no spaces (hyphens are fine)
+    var at = ev.target.selectionStart - (ev.target.value.slice(0, ev.target.selectionStart).match(/\s/g) || []).length;
+    ev.target.value = ev.target.value.replace(/\s+/g, ""); ev.target.setSelectionRange(at, at); j = readJournal(form);
+  }
   JOURNAL_DRAFT[id] = j; form.querySelector("[data-journal-said]").textContent = "";
   if (ev.target.name === "review") $("j-" + id + "-count").textContent = reviewCountText(j.review.length);
 });
@@ -276,13 +290,12 @@ document.addEventListener("submit", function (ev) {
   var id = form.getAttribute("data-journal-form"), body = readJournal(form), err = form.querySelector(".form-error"), said = form.querySelector("[data-journal-said]");
   var btn = form.querySelector('button[type="submit"]');
   err.textContent = ""; said.textContent = "";
-  if (body.words.trim().split(/\s+/).filter(Boolean).length > 3) { err.textContent = "Three words: use up to three words."; form.elements.words.focus(); return; }
   btn.disabled = true;
   api("/me/attended/" + encodeURIComponent(id) + "/journal", { method: "PUT", body: body }).then(readJSON).then(function (res) {
     btn.disabled = false;
     if (!res.ok) { err.textContent = errorText(res); return; }
     WENT_JOURNAL[id] = res.body; delete JOURNAL_DRAFT[id];
-    form.elements.words.value = res.body.words; form.elements.review.value = res.body.review; // as saved (trimmed)
+    form.elements.review.value = res.body.review; // as saved (trimmed)
     said.textContent = "Saved.";
   }, function () { btn.disabled = false; err.textContent = errorText(null); });
 });
