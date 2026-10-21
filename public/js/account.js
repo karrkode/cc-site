@@ -161,11 +161,12 @@ document.addEventListener("keydown", function (ev) { // Escape closes the picker
 });
 
 // ---------- Cultural Planner (CC-97) ----------
-// The account page's next seven days, from today: each day lists the events you're going to that day, compactly;
-// an empty day offers the catalog for just that day. Going further out sits under Later (soonest first), and
-// interested plans, with no day yet, under Still deciding; both keep the full cards. A going plan for a day
-// that's passed also waits under Still deciding, where "I've been" is.
-var PLANNER_LISTS = ["planner-week", "later-grid", "myplans-grid"];
+// The account page's week ahead, from today: each day lists the events you're going to that day, compactly;
+// an empty day offers the catalog for just that day. Previous and Next step a week at a time (never before this
+// week; at most two years out, as far as a plan can go), and "Skip to" jumps to the week of your next plan after
+// the one showing. Interested plans, with no day yet, sit under Still deciding as full cards; so does a going plan
+// for a day that's passed, where "I've been" is.
+var PLANNER_LISTS = ["planner-week", "myplans-grid"], PLANNER_WEEK = 0, PLANNER_MAX = 104;
 function dayTimesText(e, d) { // "7:30 PM", "Open 10 AM to 5 PM", or "" (planner.js knows the schedules)
   if (isExhibit(e)) { var h = hoursOn(e, d); return h && h[2] ? "Open " + clockText(h[0]) + " to " + clockText(h[1]) : ""; }
   return (timesOn(e, d) || []).filter(Boolean).map(clockText).join(" and ");
@@ -177,25 +178,45 @@ function dayItemHTML(e, d) {
     '<span class="day-where">' + esc(placeText(e)) + "</span>" + (times ? '<span class="day-time">' + esc(times) + "</span>" : "") +
     '<div class="card-actions">' + myplanToggleHTML(e) + "</div>" + myplanHTML(e) + "</li>";
 }
+function goingAhead() { // your going plans from today on, soonest first: [{ e, n }] with n days from today
+  return MYPLAN_LIST.map(function (e) {
+    var mine = MYPLANS[e.id], d = mine && mine.status === "going" ? parseISO(mine.date) : null;
+    return { e: e, n: d ? diff(d, T) : -1 };
+  }).filter(function (x) { return x.n >= 0; }).sort(function (a, b) { return a.n - b.n; });
+}
 function renderPlanner() {
-  var days = [], later = [], deciding = [];
-  for (var i = 0; i < 7; i++) days.push({ d: add(T, i), items: [] });
-  MYPLAN_LIST.forEach(function (e) {
-    var mine = MYPLANS[e.id], d = mine && mine.status === "going" ? parseISO(mine.date) : null, n = d ? diff(d, T) : -1;
-    if (n >= 0 && n < 7) days[n].items.push(e); else if (n >= 7) later.push(e); else deciding.push(e);
-  });
-  later.sort(function (a, b) { return MYPLANS[a.id].date < MYPLANS[b.id].date ? -1 : MYPLANS[a.id].date > MYPLANS[b.id].date ? 1 : 0; });
+  var start = PLANNER_WEEK * 7, days = [], ahead = goingAhead();
+  for (var i = 0; i < 7; i++) days.push({ d: add(T, start + i), items: [] });
+  ahead.forEach(function (x) { if (x.n >= start && x.n < start + 7) days[x.n - start].items.push(x.e); });
+  var deciding = MYPLAN_LIST.filter(function (e) { var mine = MYPLANS[e.id]; return !(mine && mine.status === "going" && parseISO(mine.date) >= T); });
+  var next = ahead.filter(function (x) { return x.n >= start + 7; })[0];
+  $("week-range").textContent = (PLANNER_WEEK === 0 ? "This week: " : "") + windowText(days[0].d, days[6].d);
+  $("week-prev").disabled = PLANNER_WEEK === 0; $("week-next").disabled = PLANNER_WEEK >= PLANNER_MAX;
+  $("week-now").hidden = PLANNER_WEEK === 0;
+  $("week-skip").hidden = !next;
+  if (next) $("week-skip").textContent = "Skip to your next plan: " + goingDay(MYPLANS[next.e.id].date);
   $("planner-week").innerHTML = days.map(function (day, i) {
-    var label = (i === 0 ? "Today, " : "") + F.wmd.format(day.d), whole = dayName(day.d);
-    return '<section class="day' + (i === 0 ? " today" : "") + '" aria-label="' + esc((i === 0 ? "Today, " : "") + whole) + '">' +
+    var now = same(day.d, T), label = (now ? "Today, " : "") + F.wmd.format(day.d), whole = dayName(day.d);
+    return '<section class="day' + (now ? " today" : "") + '" aria-label="' + esc((now ? "Today, " : "") + whole) + '">' +
       '<h3 class="day-head">' + esc(label) + "</h3>" +
       (day.items.length ? '<ul class="day-items">' + day.items.map(function (e) { return dayItemHTML(e, day.d); }).join("") + "</ul>" :
         '<button type="button" class="btn ghost day-find" data-find-day="' + isoDate(day.d) + '" aria-label="Find something for ' + esc(whole) + '">Find something for that day!</button>') +
       "</section>";
   }).join("");
-  $("later-wrap").hidden = !later.length; $("later-grid").innerHTML = later.map(cardHTML).join("");
   $("deciding-wrap").hidden = !deciding.length; $("myplans-grid").innerHTML = deciding.map(cardHTML).join("");
 }
+function showWeek(n, focusId) {
+  PLANNER_WEEK = Math.max(0, Math.min(PLANNER_MAX, n)); renderPlanner();
+  var b = $(focusId); // stay on the button pressed, or the nearest one still usable (Skip goes once it's used up)
+  (b && !b.hidden && !b.disabled ? b : !$("week-next").disabled ? $("week-next") : $("week-prev")).focus();
+}
+$("week-prev").addEventListener("click", function () { showWeek(PLANNER_WEEK - 1, "week-prev"); });
+$("week-next").addEventListener("click", function () { showWeek(PLANNER_WEEK + 1, "week-next"); });
+$("week-now").addEventListener("click", function () { showWeek(0, "week-next"); });
+$("week-skip").addEventListener("click", function () {
+  var next = goingAhead().filter(function (x) { return x.n >= PLANNER_WEEK * 7 + 7; })[0];
+  if (next) showWeek(Math.floor(next.n / 7), "week-skip");
+});
 // The catalog for just that day: When is a one-day range, and the other filters start fresh.
 document.addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-find-day]"); if (!b) return;
@@ -218,7 +239,7 @@ function renderAccount(withSubmissions) {
     "Keep a list of what you've seen, and send us events we're missing.";
   paintJoin(); // an invite link's "Join <crew>" panel (crews.js), signed in or not
   if (!u) {
-    $("planner-week").innerHTML = ""; $("later-grid").innerHTML = ""; $("myplans-grid").innerHTML = ""; $("went-grid").innerHTML = ""; $("my-submissions").innerHTML = "";
+    PLANNER_WEEK = 0; $("planner-week").innerHTML = ""; $("myplans-grid").innerHTML = ""; $("went-grid").innerHTML = ""; $("my-submissions").innerHTML = "";
     CREWS = []; CREW_LINKS = {}; CREW_ASK = null; CREW_EDIT = null; $("crew-list").innerHTML = "";
     return;
   }
