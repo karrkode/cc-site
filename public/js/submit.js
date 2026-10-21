@@ -62,17 +62,19 @@ $("submit-form").addEventListener("submit", function (ev) {
   ev.preventDefault();
   var err = $("submit-error"), msg = $("submit-msg");
   var title = $("s-title").value.trim(), venue = $("s-venue").value.trim(), url = $("s-url").value.trim();
-  var begin = $("s-begin").value || null, end = $("s-end").value || null, cost = $("s-cost").value.trim();
+  var fixed = isFixedRun("s"), begin = fixed ? null : $("s-begin").value || null, end = fixed ? null : $("s-end").value || null, cost = $("s-cost").value.trim();
   var bad = !title ? ["s-title", "Give the event's name."] : !venue ? ["s-venue", "Say where it's happening."] :
     (begin && end && end < begin) ? ["s-end", "The closing date is before the opening date."] :
     (url && !/^https?:\/\//i.test(url)) ? ["s-url", "The link should start with https://"] : null;
   if (bad) { err.textContent = bad[1]; $(bad[0]).focus(); return; }
   var days = $("s-sched").hidden ? { weekly: {}, weeks: {} } : readShowDays("s"); // CC-88: optional, but each day chosen needs a time
   if (days.error) { err.textContent = days.error; $(days.id).focus(); return; }
+  var run = fixed ? readRun("s") : { run_dates: [] }; // CC-96: a fixed run: its dates set when it opens and closes
+  if (run.error) { err.textContent = run.error; $(run.id).focus(); return; }
   var body = {
     title: title, category: $("s-category").value, venue: { name: venue, neighborhood: $("s-hood").value.trim() },
     begin_date: begin, end_date: end, cost_text: cost, min_price: minPrice(cost), url: url,
-    credit_me: $("s-credit").checked, weekly: days.weekly, weeks: days.weeks
+    credit_me: $("s-credit").checked, weekly: days.weekly, weeks: days.weeks, run_dates: run.run_dates
   };
   if (isAdmin()) {
     body.publish = publishChoice();
@@ -88,7 +90,7 @@ $("submit-form").addEventListener("submit", function (ev) {
   api("/events", { method: "POST", body: body }).then(readJSON, function () { return null; }).then(function (res) {
     btn.disabled = false;
     if (!res || !res.ok) { msg.textContent = ""; err.textContent = errorText(res); return; }
-    $("submit-form").reset(); $("s-publish-at-field").hidden = true; setShowDays("s", {}); showDaysFor("s", $("s-category").value);
+    $("submit-form").reset(); $("s-publish-at-field").hidden = true; setShowDays("s", {}); setRun("s", []);
     var made = fromApi(res.body);
     if (made.status === "approved" && made.publishAt) {
       msg.textContent = "Scheduled. It goes live " + WHEN.format(made.publishAt) + ".";

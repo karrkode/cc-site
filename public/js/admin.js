@@ -13,6 +13,7 @@ function queueItemHTML(e, actions) {
   return '<div class="queue-item"><div class="alt-text"><p class="kind">' + esc(e.type) + '</p><p class="alt-title">' +
     (e.url ? '<a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" : esc(e.title)) + "</p>" +
     '<p class="alt-meta">' + esc(placeText(e)) + " · " + esc(e.b || e.n ? dateText(e) : "Dates not given") + " · " + esc(costText(e)) + "</p>" +
+    (e.runDates && e.runDates.length ? '<p class="alt-meta">Fixed run: ' + esc(e.runDates.map(function (r) { return goingDay(r.date) + " " + clockText(r.time); }).join(", ")) + "</p>" : "") +
     (e.submitter !== undefined ? '<p class="alt-meta">' + submitterText(e.submitter) + creditText(e) + "</p>" :
       e.suggestedBy ? '<p class="alt-meta">Credited as "Suggested by ' + esc(e.suggestedBy) + '"</p>' : "") + "</div>" +
     '<div class="row">' + actions + "</div></div>";
@@ -213,6 +214,7 @@ function openEditor(e, opener) {
   $("ed-cost").value = e.costRaw || ""; $("ed-url").value = e.url || "";
   $("ed-publish-at").value = e.publishAt ? localInputValue(e.publishAt) : "";
   fillWeekly(e); // its own show times, for the planner (CC-79; hours.js)
+  setRun("ed", e.runDates); $("ed-runkind").hidden = false; // its fixed run, if it has one (CC-96; hours.js)
   $("ed-withdraw").textContent = e.status === "withdrawn" ? "Restore" : "Withdraw";
   $("ed-error").textContent = ""; $("ed-confirm").hidden = true; setEditorBusy(false);
   $("edit-dialog").showModal(); $("ed-title").focus();
@@ -265,22 +267,25 @@ $("edit-form").addEventListener("submit", function (ev) {
   if (EDITING && EDITING.found) { approveFromEditor(); return; } // "Edit then approve" a found event (found.js)
   var e = EDITING && EDITING.e; if (!e) return;
   var title = $("ed-title").value.trim(), venue = $("ed-venue").value.trim(), hood = $("ed-hood").value.trim();
-  var begin = $("ed-begin").value || null, end = $("ed-end").value || null, url = $("ed-url").value.trim(), cost = $("ed-cost").value.trim();
+  var fixed = isFixedRun("ed"), begin = $("ed-begin").value || null, end = $("ed-end").value || null, url = $("ed-url").value.trim(), cost = $("ed-cost").value.trim();
   var at = $("ed-publish-at").value ? new Date($("ed-publish-at").value) : null; // read as local time
   var bad = !title ? ["ed-title", "Give the event's name."] : !venue ? ["ed-venue", "Say where it's happening."] :
-    (begin && end && end < begin) ? ["ed-end", "The closing date is before the opening date."] :
+    (!fixed && begin && end && end < begin) ? ["ed-end", "The closing date is before the opening date."] :
     (url && !/^https?:\/\//i.test(url)) ? ["ed-url", "The link should start with https://"] :
     (at && isNaN(at)) ? ["ed-publish-at", "Pick a date and time, or leave it blank."] : null;
   if (bad) { editorFail(null, bad[0], bad[1]); return; }
+  var run = fixed ? readRun("ed") : { run_dates: [] }; // CC-96
+  if (run.error) { editorFail(null, run.id, run.error); return; }
   var weekly = $("ed-sched").hidden ? null : weeklyChange("ed"); // CC-88: null when the show days are as they were
   if (weekly && weekly.error) { editorFail(null, weekly.id, weekly.error); return; }
   var body = {}, openRun = $("ed-open-run").checked;
   if (title !== e.title) body.title = title;
   if ($("ed-category").value !== e.type) body.category = $("ed-category").value;
   if ($("ed-status").value !== e.status) body.status = $("ed-status").value;
-  if (begin !== (e.begin || null)) body.begin_date = begin;
-  if (end !== (e.end || null)) body.end_date = end;
-  if (openRun !== !!e.openRun) body.open_run = openRun;
+  if (JSON.stringify(run.run_dates) !== JSON.stringify(e.runDates)) body.run_dates = run.run_dates; // the run sets its own dates
+  if (!fixed && begin !== (e.begin || null)) body.begin_date = begin;
+  if (!fixed && end !== (e.end || null)) body.end_date = end;
+  if (!fixed && openRun !== !!e.openRun) body.open_run = openRun;
   if (cost !== (e.costRaw || "")) { body.cost_text = cost; body.min_price = minPrice(cost); }
   if (url !== (e.url || "")) body.url = url;
   if (weekly) { body.weekly = weekly.weekly; body.weeks = weekly.weeks; }

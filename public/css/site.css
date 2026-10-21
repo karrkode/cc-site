@@ -577,3 +577,16 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .three-words .row { flex-wrap: nowrap; gap: 8px; }
 .three-words input { flex: 1 1 0; min-width: 0; }
 @media (max-width: 640px) { .journal-entry { grid-template-columns: minmax(0, 1fr); } }
+
+/* CC-96: a fixed run's dates, each with its start and (optional) end time */
+.fixed-run { display: grid; gap: 10px; }
+.run-add { align-items: end; gap: 8px; }
+.run-add .field { flex: 0 1 12rem; }
+.run-dates { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.run-date { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-ctl); }
+.run-day { font-weight: 700; min-width: 9.5rem; }
+.run-time { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 520px) { .run-day { flex-basis: 100%; } }
+.run-date label { font-size: 0.8125rem; font-weight: 700; color: var(--muted); }
+.run-date input[type="time"] { background: var(--page); color: var(--text); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 5px 8px; }
+.run-date .textbtn { margin-left: auto; }
