@@ -80,6 +80,7 @@ document.addEventListener("click", function (ev) {
   api("/events/facets?today=" + today).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(function (facets) { boot(facets); })
     .catch(function () {
-      document.getElementById("home-lede").textContent = "The event list couldn't be loaded right now. Try reloading the page in a minute.";
+      var lede = document.getElementById("home-lede"); lede.hidden = false; // the only time this line shows (CC-107)
+      lede.textContent = "The event list couldn't be loaded right now. Try reloading the page in a minute.";
     });
 })();
