@@ -309,7 +309,12 @@
       <div id="signed-in" hidden>
         <div class="row"><p id="account-who"></p><button class="btn ghost" type="button" id="sign-out">Sign out</button></div>
         <div class="row" id="approver-row" hidden><button class="btn neutral" type="button" data-go="approvals">Photo approvals<span class="count" id="approver-count"></span></button></div>
-        <div class="section"><h2 id="myplans-title" tabindex="-1">Oh the places you'll go…</h2><div class="grid" id="myplans-grid"></div></div>
+        <div class="section planner-section"><h2 id="myplans-title" tabindex="-1">Cultural Planner</h2>
+          <p class="hint">Your next seven days. Commit to a day on any event and it shows up here.</p>
+          <div class="week" id="planner-week"></div>
+          <div class="planner-more" id="later-wrap" hidden><h3>Later</h3><div class="grid" id="later-grid"></div></div>
+          <div class="planner-more" id="deciding-wrap" hidden><h3>Still deciding</h3><div class="grid" id="myplans-grid"></div></div>
+        </div>
         <div class="section"><h2>Oh the places you've gone…</h2><div class="grid" id="went-grid"></div></div>
         <div class="section"><h2>Events you've sent us</h2><div class="queue" id="my-submissions"></div></div>
         <div class="section" id="crews-section"><h2 id="crews-title" tabindex="-1">Your crews</h2>
