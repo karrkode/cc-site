@@ -154,46 +154,119 @@ $("hours-form").addEventListener("submit", function (ev) {
   }, function () { hoursFail(errorText(null)); });
 });
 
-// ---------- an event's own show times (CC-79), in the event edit form ----------
-// Plan an outing only suggests a performance when it knows the start times: the dates and times found on
-// the venue's site, else this weekly pattern, else the venue's usual show times. Blank = the venue's.
-function weeklyRows() {
-  if ($("ed-weekly").children.length) return;
-  $("ed-weekly").innerHTML = HOUR_DAYS.map(function (d) {
-    var k = d[0];
-    return '<div class="hours-row"><label class="day" for="ed-week-' + k + '">' + d[1] + "</label>" +
-      '<input type="text" id="ed-week-' + k + '" maxlength="80" placeholder="No shows" aria-describedby="ed-sched-hint" autocomplete="off"></div>';
+// ---------- show days (CC-79, CC-88): the days a performance is on, each with its start times ----------
+// In the event edit form ("ed": also approving a found event) and Submit an event ("s"). Plan an outing only
+// suggests a performance when it knows the start times: dated performances found on the venue's site, else
+// these show days, else the venue's usual show times. Only Theater, Comedy and Concert have them (musicals are
+// theater); Visual Art goes by the venue's opening hours.
+var SHOW_TYPES = { Theater: 1, Comedy: 1, Concert: 1 };
+var SHOW_DAYS = {}; // per form: { days: {mon: ["8 PM", ...]} as typed, from: the pattern the form started with }
+function showDaysInit(f) {
+  SHOW_DAYS[f] = { days: {}, from: {} };
+  $(f + "-days").innerHTML = HOUR_DAYS.map(function (d) {
+    return '<button type="button" class="chip" aria-pressed="false" data-show-day="' + d[0] + '" aria-label="' + d[1] + '">' + d[1].slice(0, 3) + "</button>";
   }).join("");
+  $(f + "-days").addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-show-day]"); if (!b) return;
+    var k = b.getAttribute("data-show-day"), sd = SHOW_DAYS[f];
+    if (sd.days[k]) delete sd.days[k];
+    else { var before = HOUR_DAYS.map(function (d) { return sd.days[d[0]]; }).filter(Boolean).pop(); sd.days[k] = before ? before.slice() : [""]; }
+    paintShowDays(f);
+    if (sd.days[k] && !sd.days[k][0]) $(f + "-week-" + k + "-0").focus(); // a new day: its start time next
+  });
+  $(f + "-weekly").addEventListener("input", function (ev) {
+    var at = ev.target.getAttribute("data-time"); if (!at) return;
+    at = at.split(":"); SHOW_DAYS[f].days[at[0]][+at[1]] = ev.target.value;
+  });
+  $(f + "-weekly").addEventListener("blur", function (ev) { // tidy "7:30pm" -> "7:30 PM"
+    var at = ev.target.getAttribute && ev.target.getAttribute("data-time"); if (!at) return;
+    var got = parseTimes(ev.target.value); if (got.error || !got.times.length) return;
+    ev.target.value = got.times.map(clockText).join(", "); at = at.split(":"); SHOW_DAYS[f].days[at[0]][+at[1]] = ev.target.value;
+  }, true);
+  $(f + "-weekly").addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-show-act]"); if (!b) return;
+    var sd = SHOW_DAYS[f], k = b.getAttribute("data-day"), act = b.getAttribute("data-show-act");
+    if (act === "add") { sd.days[k].push(""); paintShowDays(f); $(f + "-week-" + k + "-" + (sd.days[k].length - 1)).focus(); }
+    if (act === "remove") { var i = +b.getAttribute("data-i"); sd.days[k].splice(i, 1); paintShowDays(f); $(f + "-week-" + k + "-" + (i - 1)).focus(); }
+    if (act === "same") {
+      HOUR_DAYS.forEach(function (d) { if (sd.days[d[0]]) sd.days[d[0]] = sd.days[k].slice(); });
+      paintShowDays(f); $(f + "-same").focus();
+      $("edit-live").textContent = "Every show day now has " + dayLabel(k) + "'s times.";
+    }
+  });
 }
-function weeklyText(w) {
-  var days = HOUR_DAYS.filter(function (d) { return w && w[d[0]] && w[d[0]].length; });
-  return days.map(function (d) { return d[1].slice(0, 3) + " " + w[d[0]].map(clockText).join(", "); }).join("; ");
+function dayLabel(k) { return HOUR_DAYS.filter(function (d) { return d[0] === k; })[0][1]; }
+function paintShowDays(f) {
+  var sd = SHOW_DAYS[f], on = HOUR_DAYS.filter(function (d) { return sd.days[d[0]]; });
+  Array.prototype.forEach.call($(f + "-days").children, function (b) { b.setAttribute("aria-pressed", String(!!sd.days[b.getAttribute("data-show-day")])); });
+  $(f + "-weekly").innerHTML = on.map(function (d) {
+    var k = d[0];
+    return '<div class="hours-row"><span class="day" id="' + f + "-day-" + k + '">' + d[1] + '</span><span class="times show-times">' +
+      sd.days[k].map(function (t, i) {
+        return '<input type="text" id="' + f + "-week-" + k + "-" + i + '" data-time="' + k + ":" + i + '" maxlength="40" placeholder="8 PM" autocomplete="off" value="' +
+          esc(t) + '" aria-label="' + d[1] + (sd.days[k].length > 1 ? " start time " + (i + 1) : " start time") + '">' +
+          (i ? '<button type="button" class="textbtn" data-show-act="remove" data-day="' + k + '" data-i="' + i + '" aria-label="Remove ' + d[1] + " start time " + (i + 1) + '">Remove</button>' : "");
+      }).join("") +
+      (sd.days[k].length < 6 ? '<button type="button" class="textbtn" data-show-act="add" data-day="' + k + '" aria-label="Add another ' + d[1] + ' start time">Add another time</button>' : "") +
+      "</span></div>";
+  }).join("") + (on.length > 1 ? '<button type="button" class="textbtn" id="' + f + '-same" data-show-act="same" data-day="' + on[0][0] + '">Use ' +
+    on[0][1] + "'s times for every day</button>" : "");
 }
-function fillWeekly(e) { // e: an event as fromApi makes it, or null for a found event (hidden then)
-  $("ed-sched").hidden = !e || (e.type === "Visual Art" && !e.sched.dates.length); // exhibitions go by the venue's hours
-  if (!e) return;
-  weeklyRows();
-  var own = e.sched.weekly_from === "event" ? e.sched.weekly : {};
-  HOUR_DAYS.forEach(function (d) { $("ed-week-" + d[0]).value = (own[d[0]] || []).map(clockText).join(", "); });
-  var venue = e.sched.weekly_from === "venue" ? weeklyText(e.sched.weekly) : "";
-  $("ed-sched-hint").textContent = (e.sched.dates.length ? plural(e.sched.dates.length, "upcoming date", "upcoming dates") +
-    " came from the venue's website; those come first. " : "") +
-    (venue ? "Leave blank to use the venue's show times (" + venue + ")." : "Leave blank if you don't know. Without any show times, Plan an outing won't suggest it.") +
-    " Write times like 7:30 PM.";
+// Start the form with a pattern ({day: ["HH:MM"]}); it's also what counts as "unchanged" when saving.
+function setShowDays(f, weekly) {
+  var days = {};
+  HOUR_DAYS.forEach(function (d) { if (weekly && weekly[d[0]] && weekly[d[0]].length) days[d[0]] = weekly[d[0]].map(clockText); });
+  SHOW_DAYS[f].days = days; SHOW_DAYS[f].from = weekly || {}; paintShowDays(f);
 }
-// The weekly pattern typed in, {} if blank, or { error, id } for something unreadable.
-function readWeekly() {
-  var out = {}, bad = null;
+function showDaysFor(f, type) { $(f + "-sched").hidden = !SHOW_TYPES[type]; }
+// The show days as entered: {weekly} ({} for none), or {error, id} for a day without a time or a time we can't read.
+function readShowDays(f) {
+  var out = {}, bad = null, sd = SHOW_DAYS[f];
   HOUR_DAYS.some(function (d) {
-    var id = "ed-week-" + d[0], got = parseTimes($(id).value);
-    if (got.error) { bad = { error: d[1] + ": \u201c" + got.error + "\u201d isn't a time we can read. Write it like 7:30 PM.", id: id }; return true; }
-    if (got.times.length > 6) { bad = { error: d[1] + ": six show times at most.", id: id }; return true; }
-    if (got.times.length) out[d[0]] = got.times;
+    var k = d[0]; if (!sd.days[k]) return false;
+    var times = [];
+    sd.days[k].some(function (t, i) {
+      var got = parseTimes(t || "");
+      if (got.error) { bad = { error: d[1] + ": \u201c" + got.error + "\u201d isn't a time we can read. Write it like 8 PM.", id: f + "-week-" + k + "-" + i }; return true; }
+      got.times.forEach(function (x) { if (times.indexOf(x) < 0) times.push(x); });
+      return false;
+    });
+    if (bad) return true;
+    if (!times.length) { bad = { error: "Give a start time for " + d[1] + ", or unselect it.", id: f + "-week-" + k + "-0" }; return true; }
+    if (times.length > 6) { bad = { error: d[1] + ": six start times at most.", id: f + "-week-" + k + "-0" }; return true; }
+    out[k] = times.sort();
     return false;
   });
-  return bad || out;
+  return bad || { weekly: out };
 }
-$("ed-weekly").addEventListener("blur", function (ev) { // tidy "7:30pm" -> "7:30 PM"
-  var input = ev.target; if (!input.matches || !input.matches("input")) return;
-  var got = parseTimes(input.value); if (!got.error) input.value = got.times.map(clockText).join(", ");
-}, true);
+// "Thu 8 PM · Fri, Sat 8 PM and 10:30 PM": days in a row with the same times share them (cards, CC-88).
+function showDaysText(w) {
+  var groups = [];
+  HOUR_DAYS.forEach(function (d) {
+    var times = w && w[d[0]]; if (!times || !times.length) return;
+    var t = times.map(clockText).join(" and "), last = groups[groups.length - 1];
+    if (last && last.t === t) last.days.push(d[1].slice(0, 3)); else groups.push({ days: [d[1].slice(0, 3)], t: t });
+  });
+  return groups.map(function (g) { return g.days.join(", ") + " " + g.t; }).join(" · ");
+}
+// The edit form: its own show days if it has some, else the venue's usual show times to start from.
+function fillWeekly(e) { // e: an event as fromApi makes it
+  showDaysFor("ed", e.type);
+  var own = e.sched.weekly_from === "event", venue = e.sched.weekly_from === "venue" ? e.sched.weekly : {};
+  setShowDays("ed", own ? e.sched.weekly : venue);
+  SHOW_DAYS.ed.from = own ? e.sched.weekly : {}; SHOW_DAYS.ed.venue = venue;
+  $("ed-sched-hint").textContent = (e.sched.dates.length ? plural(e.sched.dates.length, "upcoming date", "upcoming dates") +
+    " came from the venue's website; those come first. " : "") +
+    (own ? "" : Object.keys(venue).length ? "These are the venue's usual show times; change them if this show is different. " :
+      "Choose the days, and give a start time for each. ") + "Without any, Plan an outing won't suggest it.";
+}
+// What to save from the edit form: null if the show days are as they were (the venue's, untouched, stay the venue's).
+function weeklyChange(f) {
+  var got = readShowDays(f); if (got.error) return got;
+  var sd = SHOW_DAYS[f];
+  if (sd.venue && Object.keys(sd.venue).length && sameHours(got.weekly, sd.venue)) got.weekly = {}; // still the venue's
+  return sameHours(got.weekly, sd.from) ? null : got;
+}
+showDaysInit("ed"); showDaysInit("s");
+$("ed-category").addEventListener("change", function () { showDaysFor("ed", this.value); });
+$("s-category").addEventListener("change", function () { showDaysFor("s", this.value); });

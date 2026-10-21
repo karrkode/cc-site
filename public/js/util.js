@@ -148,6 +148,12 @@ function capList(list, n, label) {
   list.tabIndex = 0; list.setAttribute("role", "region"); list.setAttribute("aria-label", label);
 }
 function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
+// CC-88: a performance's show days under where it is ("Thu 8 PM · Fri, Sat 8 PM and 10:30 PM"): its own, else the
+// venue's usual show times. Not for one night, where the venue's usual times may not be this show's.
+function showDaysLine(e) {
+  var text = SHOW_TYPES[e.type] && !oneNight(e) && !isPast(e) ? showDaysText(e.sched.weekly) : "";
+  return text ? '<p class="show-days-line">' + esc(text) + "</p>" : "";
+}
 function cardHTML(e) {
   var st = eventStatus(e), mine = AUTH.user ? MYPLANS[e.id] : null, going = mine && mine.status === "going";
   // Marks sit next to the date at the bottom of the card (CC-64; the top row had no room for them).
@@ -158,7 +164,7 @@ function cardHTML(e) {
   return '<article class="card" data-card="' + esc(e.id) + '">' +
     '<div class="card-top"><span class="kind">' + esc(e.type) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
     '<h3><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a></h3>" +
-    '<div class="card-body"><p class="where">' + placeHTML(e) + "</p>" +
+    '<div class="card-body"><p class="where">' + placeHTML(e) + "</p>" + showDaysLine(e) +
     (e.suggestedBy ? '<p class="credit">Suggested by ' + esc(e.suggestedBy) + "</p>" : "") +
     (AUTH.user && e.crewPlans.length ? '<p class="crew-note">' + esc(crewNoteText(e)) + "</p>" : "") + "</div>" +
     '<div class="card-foot"><span class="when">' + mark + (going ? '<span class="going-on">Going ' + esc(goingDay(mine.date)) + "</span>" :

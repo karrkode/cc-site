@@ -32,7 +32,7 @@ function openFromHash() {
   if (h === "submit") { openSubmit(); return true; }
   // admin pages (the recap email links here, CC-77/81/84): #issues, #issues/ISS-0007, #found, #found/<show> (e.g. #found/skipped), #sources,
   // and #source-<id> (Event sources, at that source's "Check by hand only" button)
-  var fm = /^found\/(waiting|new|update|approved|rejected|skipped|listed|all)$/.exec(h), sm = /^source-(\d+)$/.exec(h);
+  var fm = /^found\/(waiting|needs|new|update|approved|rejected|skipped|listed|all)$/.exec(h), sm = /^source-(\d+)$/.exec(h);
   var im = /^issues\/(ISS-\d+)$/i.exec(h); // a ticket, from the recap (CC-84)
   if (h === "review" || h === "found" || h === "sources" || h === "issues" || fm || sm || im) {
     var open = h === "review" ? openReview : h === "issues" ? function () { openIssues(); } : im ? function () { openIssues(im[1].toUpperCase()); } : (h === "found" || fm) ? function () { if (fm) { FOUND.show = fm[1]; FOUND.source = ""; } openFound(); } :
