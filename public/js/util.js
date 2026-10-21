@@ -1,5 +1,5 @@
 // Culture Crew site: Shared helpers: dates, the event shape, DOM helpers and switching views.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, start); they share one
+// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 var PAGE_URL = "";
@@ -96,7 +96,7 @@ function setFacets(f) {
   TYPES = f.categories.slice();
   TYPES.sort(function (a, b) { var i = TYPE_ORDER.indexOf(a), j = TYPE_ORDER.indexOf(b); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j) || a.localeCompare(b); });
 }
-var WENT = {}, WENT_LIST = [];
+var WENT = {}, WENT_LIST = [], WENT_PHOTO = {}; // WENT_PHOTO: your photos from events you've been to, by event (CC-76)
 // Your plans (CC-55; "Oh the places you'll go" on the account page): MYPLANS[id] = { status: "interested" | "going", date: "YYYY-MM-DD" | null }.
 var MYPLANS = {}, MYPLAN_LIST = [], MYPLAN_SEQ = 0;
 var TYPE_PLURAL = { "Theater": "theater", "Comedy": "comedy", "Concert": "concerts", "Visual Art": "visual art" };
@@ -177,7 +177,7 @@ function cardHTML(e) {
     '<span class="cost' + (e.min === 0 ? " free" : "") + '">' + esc(costText(e)) + "</span></div>" +
     (e.pick ? '<p class="pick-note" id="pick-note-' + PICK_SEQ + '" hidden>' + esc(pickText(e.pick)) + "</p>" : "") +
     (AUTH.user ? '<div class="card-actions">' + (goingLater(e) && !WENT[e.id] ? "" : wentHTML(e)) +
-      (WENT[e.id] ? "" : myplanToggleHTML(e)) + // been already: nothing left to plan
+      (WENT[e.id] ? photoButtonHTML(e) : myplanToggleHTML(e)) + // been already: a photo, rather than a plan (CC-76; photos.js)
       (WENT[e.id] ? "" : crewShareToggleHTML(e)) + // "Invite your Crew?": a plan, and crews to share it with (CC-75; crews.js)
       (isAdmin() ? editButtonHTML(e, "went") : "") + "</div>" + (WENT[e.id] ? "" : myplanHTML(e) + crewShareHTML(e)) : "") +
     "</article>";

@@ -1,5 +1,5 @@
 // Culture Crew site: the theme button and talking to the API (sign-in, tokens, errors).
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, start); they share one
+// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- light/dark switch (CC-49) ----------
@@ -59,9 +59,10 @@ function api(path, opts) {
   function send() {
     var headers = {};
     if (opts.body !== undefined) headers["Content-Type"] = "application/json";
+    if (opts.raw) headers["Content-Type"] = opts.raw.type; // a file as it is, such as a photo (CC-76)
     if (AUTH.token) headers.Authorization = "Bearer " + AUTH.token;
     return fetch(API + path, { method: opts.method || "GET", headers: headers, credentials: opts.cookies ? "include" : "omit",
-      body: opts.body === undefined ? undefined : JSON.stringify(opts.body) });
+      body: opts.raw ? opts.raw : opts.body === undefined ? undefined : JSON.stringify(opts.body) });
   }
   return send().then(function (r) {
     // Sign-in and sign-up send cookies and answer 401 for a wrong password, so they never retry;

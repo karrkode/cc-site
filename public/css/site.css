@@ -517,3 +517,6 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .capped { overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
 .capped:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: var(--r-card); }
 
+/* CC-76: a photo with "I've been" */
+.photo-box { display: grid; gap: 6px; justify-items: start; }
+.photo-box img { max-width: 100%; max-height: 320px; border-radius: var(--r-card); background: var(--neutral-soft); }

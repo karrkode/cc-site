@@ -1,5 +1,5 @@
 // Culture Crew site: Report an issue (CC-84): the footer link and dialog, Your reports, and the admins' Issues page.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, start); they
+// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, start); they
 // share one global scope, so anything declared here is visible to the files after it.
 "use strict";
 // Signed-in members only (the API refuses everyone else). The form sends what happened, what they expected, and,
