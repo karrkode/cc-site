@@ -93,7 +93,7 @@ The deploy applies new migrations automatically.
 The database has these main tables:
 - `users`: the accounts. `refresh_tokens` and `email_tokens` keep the sign-ins and the email links.
 - `events`: the events. Each event also keeps its schedule: the dates and times that discovery found, and its usual show times.
-- `venues`: the places where the events occur. Each venue keeps its opening hours and its usual show times.
+- `venues`: the places where the events occur. Each venue keeps its opening hours, its usual show times and its standard cost. If an event does not post a price, the catalog shows the venue's standard cost ("Usually free"), and the price filters and the price sort use it. An event's own price always comes first. The standard cost is not copied into the events.
 - `attended`: the "I've been" marks.
 - `plans`: the "interested" and "going" plans.
 - `crews`, `crew_members` and `crew_invites`: the culture crews. An invite keeps only a hash of its link.

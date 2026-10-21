@@ -108,7 +108,7 @@ function paintVenues() {
     var id = esc(v.id);
     return '<div class="queue-item"><div class="alt-text"><p class="alt-title">' + esc(v.name) + '</p><p class="alt-meta">' +
       esc(v.neighborhood || "No neighborhood") + " · " + esc(v.region ? REGION_NAMES[v.region] : "No side of town") + " · " + plural(v.events, "event", "events") +
-      "</p>" + hoursNote(v) + "</div>" +
+      "</p>" + (v.standard_cost ? '<p class="alt-meta">Standard cost: ' + esc(v.standard_cost) + "</p>" : "") + hoursNote(v) + "</div>" +
       '<div class="row"><button class="btn ghost" type="button" data-venue-edit="' + id + '" aria-label="Edit ' + esc(venueLabel(v)) + '">Edit</button>' +
       '<button class="btn ghost" type="button" data-venue-hours="' + id + '" aria-label="Hours at ' + esc(venueLabel(v)) + '">Hours…</button>' +
       '<button class="btn ghost" type="button" data-venue-merge="' + id + '" aria-label="Merge ' + esc(venueLabel(v)) + ' into another venue">Merge…</button>' +
@@ -132,7 +132,7 @@ function openVenueDialog(mode, v, opener) {
   $("vd-go").textContent = mode === "edit" ? "Save changes" : mode === "merge" ? "Merge" : "Delete venue";
   $("vd-go").className = mode === "delete" ? "btn danger solid" : "btn";
   $("vd-error").textContent = ""; setVenueBusy(false);
-  if (mode === "edit") { $("vd-name").value = v.name; $("vd-hood").value = v.neighborhood; $("vd-area").value = v.area; $("vd-region").value = v.region || ""; }
+  if (mode === "edit") { $("vd-name").value = v.name; $("vd-hood").value = v.neighborhood; $("vd-area").value = v.area; $("vd-region").value = v.region || ""; $("vd-cost").value = v.standard_cost || ""; }
   if (mode === "merge") { $("vd-find").value = ""; fillMergeTargets(); }
   if (mode === "delete") $("vd-delete").textContent = "No events use " + venueLabel(v) + ", so it can go. This can't be undone.";
   $("venue-dialog").showModal();
@@ -172,6 +172,8 @@ $("venue-form").addEventListener("submit", function (ev) {
     if (hood !== v.neighborhood) body.neighborhood = hood;
     if ($("vd-area").value !== v.area) body.area = $("vd-area").value;
     if ($("vd-region").value !== (v.region || "")) body.region = $("vd-region").value || null; // left alone: worked out again if the venue moves
+    var cost = $("vd-cost").value.trim(); // CC-89: what it usually costs, with its lowest price (0 = free)
+    if (cost !== (v.standard_cost || "")) { body.standard_cost = cost; body.standard_min_price = cost ? minPrice(cost) : null; }
     if (!Object.keys(body).length) { $("venue-dialog").close(); return; }
     req = api("/venues/" + v.id, { method: "PATCH", body: body }); said = "Saved " + name + "."; after = v.id;
   } else if (d.mode === "merge") {
