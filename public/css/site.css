@@ -90,18 +90,28 @@ a { color: inherit; }
   padding-block: clamp(32px, 6vw, 72px) 8px;
   display: grid; gap: clamp(18px, 3vw, 28px);
 }
-.stars { display: flex; gap: 10px; font-size: 1.25rem; }
 .cover h1 { font-family: var(--display); font-weight: 600; font-size: var(--step-4); line-height: 1; letter-spacing: -0.025em; }
 .cover h1 em { font-style: normal; color: var(--lead); }
 .lede { max-width: 54ch; font-size: 1.125rem; color: var(--muted); }
-.doors { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.doors { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; }
 .door {
   display: grid; grid-template-rows: auto 1fr auto; gap: 10px; text-align: left; cursor: pointer;
   background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-card);
   padding: clamp(20px, 3vw, 28px); min-height: 12rem;
   transition: transform 0.18s ease, border-color 0.15s ease;
 }
-.door:hover { transform: translateY(-3px); border-color: var(--lead); }
+/* CC-103 (the product owner's pick, "curtain rise"): the three doors rise in one after another when the page first
+   opens, once; on hover or focus the arrow slides forward and a red line draws along the bottom. */
+.door { position: relative; overflow: hidden; }
+.door::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--star); transition: width 0.35s ease; }
+.door:hover, .door:focus-visible { border-color: var(--lead); }
+.door:hover::after, .door:focus-visible::after { width: 100%; }
+.door-go span:last-child { transition: transform 0.3s ease; }
+.door:hover .door-go span:last-child, .door:focus-visible .door-go span:last-child { transform: translateX(6px); }
+.doors.rise .door { animation: door-rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.doors.rise .door:nth-child(2) { animation-delay: 0.12s; }
+.doors.rise .door:nth-child(3) { animation-delay: 0.24s; }
+@keyframes door-rise { from { opacity: 0; transform: translateY(24px); } }
 .door .eyebrow { color: var(--muted); }
 .door-title { font-family: var(--display); font-weight: 600; font-size: var(--step-3); line-height: 1.08; letter-spacing: -0.02em; }
 .door-desc { max-width: 34ch; align-self: start; color: var(--muted); }
@@ -317,7 +327,7 @@ footer p { max-width: 70ch; }
 footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits are counted */
 .view { animation: rise 0.28s ease both; }
 @keyframes rise { from { transform: translateY(8px); } to { transform: none; } }
-@media (prefers-reduced-motion: reduce) { .view { animation: none; } .door, .card { transition: none; } .door:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .view, .doors.rise .door { animation: none; } .door, .card, .door::after, .door-go span:last-child { transition: none; } .door:hover .door-go span:last-child, .door:focus-visible .door-go span:last-child { transform: none; } }
 
 /* site stats (admins, CC-67) */
 .stat-summary { display: flex; flex-wrap: wrap; gap: 12px 32px; margin-bottom: 18px; font-variant-numeric: tabular-nums; }
