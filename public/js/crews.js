@@ -137,12 +137,31 @@ function crewLineHTML(people) {
   }
   return parts.join(" ");
 }
+// CC-93: who from the crew has been, under the plans line. 📸: their photo from it is approved; 📷: no photo, or one
+// waiting. One person is named in the line; for more, the count shows each person's line on hover (or a tap).
+function beenGroupHTML(people, emoji, one, many, each) {
+  if (!people.length) return "";
+  if (people.length === 1) return '<span aria-hidden="true">' + emoji + "</span> " + esc(shortName(people[0].name)) + " " + one;
+  CREWCOUNT_SEQ += 1;
+  var lines = people.map(function (p) { return shortName(p.name) + " " + each; }).join("\n");
+  var n = NUMBER_WORDS[people.length] || String(people.length);
+  return '<span aria-hidden="true">' + emoji + '</span> <button type="button" class="crew-count" data-crew-count aria-expanded="false" aria-controls="crew-count-' + CREWCOUNT_SEQ +
+    '" aria-label="' + esc(n + " others: " + lines.replace(/\n/g, " ")) + '" data-names="' + esc(lines) + '"><b><i>' + esc(n) + "</i></b></button> others " + many +
+    '<span class="crew-count-names" id="crew-count-' + CREWCOUNT_SEQ + '" hidden>' + esc(lines) + "</span>";
+}
+function beenLineHTML(been) {
+  var sure = (been || []).filter(function (b) { return b.approved; }), maybe = (been || []).filter(function (b) { return !b.approved; });
+  return [beenGroupHTML(sure, "\ud83d\udcf8", "very much has been!", "very much have been!", "very much has been!"),
+    beenGroupHTML(maybe, "\ud83d\udcf7", "has been...maybe.", "have been...maybe.", "has been...maybe.")].filter(Boolean).join(' <span class="sep" aria-hidden="true">\u00b7</span> ');
+}
 function crewPlansHTML(c) {
   if (!c.plans.length) return '<p class="hint small">No plans shared yet. Use \u201cInvite your Crew?\u201d on an event you\u2019re interested in.</p>';
   return '<ul class="crew-plans" aria-labelledby="crew-p-' + esc(c.id) + '">' + c.plans.map(function (row) {
     var e = toEvent(row.event);
     return '<li><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" +
-      '<span class="hint small">' + esc(placeText(e)) + " · " + esc(dateText(e)) + '</span><span class="crew-line">' + crewLineHTML(row.people) + "</span></li>";
+      '<span class="hint small">' + esc(placeText(e)) + " · " + esc(dateText(e)) + "</span>" +
+      (row.people.length ? '<span class="crew-line">' + crewLineHTML(row.people) + "</span>" : "") +
+      ((row.been || []).length ? '<span class="crew-line crew-been">' + beenLineHTML(row.been) + "</span>" : "") + "</li>"; // CC-93
   }).join("") + "</ul>";
 }
 // The names under a count: a tap (phones) opens them below the line; hovering or focusing shows them in one shared

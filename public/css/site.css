@@ -455,6 +455,8 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
   font-size: 0.8125rem; font-weight: 600; line-height: 1.35; pointer-events: none;
 }
 .crew-tip[hidden] { display: none; }
+.crew-tip, .crew-count-names { white-space: pre-line; } /* CC-93: one line per person who's been */
+.crew-been .sep { color: var(--muted); margin: 0 4px; }
 .crew-count-names { display: block; margin-top: 4px; padding: 6px 10px; border-radius: var(--r-ctl); background: var(--info-soft); color: var(--on-info-soft); font-size: 0.875rem; font-weight: 600; }
 .crew-count-names[hidden] { display: none; }
 /* CC-59: crew invites by email */
