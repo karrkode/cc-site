@@ -20,7 +20,6 @@ function loadCrews(focusSel) {
 // ---------- the crews page (CC-104) ----------
 // Its own page: a big "Start a crew" button that opens the form, then one card per crew. Signed out, a short word
 // on what crews are and a way to sign in, which comes back here.
-var CREWS_AFTER_SIGN_IN = false;
 function openCrews(said) { renderCrewsPage(); show("crews"); if (said) $("edit-live").textContent = said; }
 function renderCrewsPage() {
   var u = AUTH.user;
@@ -28,7 +27,7 @@ function renderCrewsPage() {
   if (!u) { $("crew-list").innerHTML = ""; return; }
   paintCrews(); paintPending(); loadCrews(); loadPending();
 }
-$("crews-signin-btn").addEventListener("click", function () { CREWS_AFTER_SIGN_IN = true; openAccount(); });
+$("crews-signin-btn").addEventListener("click", function () { AFTER_SIGN_IN = "crews"; openAccount(); });
 function showCrewForm(open) {
   $("crew-new").hidden = !open; $("crew-start-btn").setAttribute("aria-expanded", String(open));
   if (open) $("crew-name").focus(); else { $("crew-new-error").textContent = ""; $("crew-start-btn").focus(); }
@@ -454,8 +453,8 @@ function pendingItemHTML(p, where) {
 function paintPending() {
   // CC-91: the admin's offer to approve photos waits here too, before the crew invites (approvals.js)
   var offer = AUTH.user && AUTH.user.approver_offered ? [approverOfferHTML()] : [];
-  var n = AUTH.user ? PENDING.length + offer.length : 0, count = $("crews-count");
-  if (count) count.textContent = n ? String(n) : "";
+  var n = AUTH.user ? PENDING.length + offer.length : 0;
+  $("crews-count").textContent = $("account-count").textContent = n ? String(n) : ""; // on your name, and on Crews in its menu (CC-105)
   $("pending-invites").hidden = !n;
   $("pending-invites").innerHTML = n ? '<h3 id="pending-title">Waiting for you</h3>' + offer.join("") + PENDING.map(function (p) { return pendingItemHTML(p, "list"); }).join("") : "";
   var banner = $("invite-banner");

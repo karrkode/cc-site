@@ -9,12 +9,12 @@ function rerenderLists() {
   renderHome();
   if (visible("catalog")) paintCatalog();
   if (visible("account")) renderAccount();
+  if (visible("planner")) renderPlannerPage(); // CC-105
 }
 function onAuthChange() {
   showReportLink(); // "Report an issue or request a feature" in the footer, signed in only (CC-84; issues.js)
   paintApproverRow(); // Photo approvals, for approvers and admins (CC-91; approvals.js)
-  $("nav-account").textContent = AUTH.user ? "Your account" : "Sign in";
-  $("nav-crews").hidden = !AUTH.user; // CC-104: the crews page, signed in (the name menu takes it over in CC-105)
+  paintMeMenu(); // your name and its menu, or Sign in (CC-105)
   $("nav-review").hidden = !isAdmin();
   WENT = {}; WENT_LIST = []; WENT_PHOTO = {}; WENT_JOURNAL = {}; JOURNAL_DRAFT = {}; MYPLANS = {}; MYPLAN_LIST = [];
   if (!AUTH.user) {
@@ -25,12 +25,15 @@ function onAuthChange() {
     if ($("issue-dialog").open) $("issue-dialog").close();
     rerenderLists();
     if (visible("crews")) renderCrewsPage();
+    if (visible("planner")) renderPlannerPage();
     return;
   }
   if (isAdmin()) updateReviewCount();
-  if (CREWS_AFTER_SIGN_IN) { CREWS_AFTER_SIGN_IN = false; openCrews(); } // signed in from the crews page: back to it (CC-104)
+  var back = AFTER_SIGN_IN; AFTER_SIGN_IN = null; // signed in from the crews or planner page: back to it (CC-104, CC-105)
+  if (back === "crews") openCrews(); else if (back === "planner") openPlanner();
   else if (visible("account")) renderAccount(true);
   if (visible("crews")) renderCrewsPage();
+  if (visible("planner")) renderPlannerPage();
   if (visible("submit")) renderSubmit();
   if (visible("review")) renderReview();
   rerenderLists();
@@ -109,6 +112,7 @@ function redrawCardsNow(id, from, focusOn) {
   Array.prototype.forEach.call(document.querySelectorAll('[data-card="' + id + '"]'), function (c) { c.outerHTML = cardHTML(KNOWN[id]); });
   return loadMyPlans().then(function () {
     if (visible("account")) renderAccount();
+    if (visible("planner")) renderPlannerPage();
     var item = '[data-card="' + id + '"],[data-day-item="' + id + '"],[data-journal="' + id + '"]', planner = PLANNER_LISTS.indexOf(listId) >= 0;
     var card = listId && $(listId) ? $(listId).querySelector(item) : null;
     if (!card && planner) card = $("myplans-title").parentElement.querySelector(item) || (WENT[id] ? $("went-grid").querySelector(item) : null); // moved within the planner, or to "I've been"
@@ -305,6 +309,65 @@ document.addEventListener("submit", function (ev) {
   }, function () { btn.disabled = false; err.textContent = errorText(null); });
 });
 
+// ---------- Culture Planner page (CC-105) ----------
+// The week ahead and the Cultural Journal, on their own page (#planner). Signed out, a word on what it's for and a
+// way to sign in that comes back here.
+var AFTER_SIGN_IN = null; // "crews" or "planner": where to go once signed in from there
+function openPlanner() { renderPlannerPage(); show("planner"); }
+function renderPlannerPage() {
+  var u = AUTH.user;
+  $("planner-signin").hidden = !!u; $("planner-main").hidden = !u;
+  if (u) { renderPlanner(); renderJournal(); }
+}
+$("planner-signin-btn").addEventListener("click", function () { AFTER_SIGN_IN = "planner"; openAccount(); });
+
+// ---------- your name in the header, and its menu (CC-105) ----------
+// Signed in, the header shows your name (or "Your account"); it opens a menu: Account Settings, Crews, Culture
+// Planner, Sign out. Arrow keys, Home and End move through it; Escape or Tab closes it and returns to your name.
+function meName() { var n = AUTH.user && (AUTH.user.display_name || "").trim(); return n || "Your account"; }
+function paintMeMenu() {
+  var u = AUTH.user, b = $("nav-account");
+  $("me-name").textContent = u ? meName() : "Sign in";
+  b.querySelector(".me-caret").toggleAttribute("hidden", !u); // an SVG has no .hidden property
+  if (u) { b.setAttribute("aria-haspopup", "menu"); b.setAttribute("aria-controls", "me-menu"); b.setAttribute("aria-expanded", "false"); }
+  else { b.removeAttribute("aria-haspopup"); b.removeAttribute("aria-controls"); b.removeAttribute("aria-expanded"); }
+  closeMeMenu(false);
+}
+function meItems() { return Array.prototype.slice.call($("me-menu").querySelectorAll('[role="menuitem"]')); }
+function openMeMenu(at) {
+  var menu = $("me-menu"); menu.style.right = ""; menu.hidden = false; $("nav-account").setAttribute("aria-expanded", "true");
+  var r = menu.getBoundingClientRect(), edge = 16; // on a phone your name can sit at the left: keep the menu on screen
+  if (r.left < edge) menu.style.right = (r.left - edge) + "px";
+  var items = meItems(); items[at === "last" ? items.length - 1 : 0].focus();
+}
+function closeMeMenu(refocus) {
+  if ($("me-menu").hidden) return;
+  $("me-menu").hidden = true; $("nav-account").setAttribute("aria-expanded", "false");
+  if (refocus) $("nav-account").focus();
+}
+$("nav-account").addEventListener("click", function () {
+  if (!AUTH.user) { openAccount(); return; }
+  if ($("me-menu").hidden) openMeMenu(); else closeMeMenu(true);
+});
+$("nav-account").addEventListener("keydown", function (ev) {
+  if (!AUTH.user) return;
+  if (ev.key === "ArrowDown" || ev.key === "ArrowUp") { ev.preventDefault(); openMeMenu(ev.key === "ArrowUp" ? "last" : "first"); }
+});
+$("me-menu").addEventListener("keydown", function (ev) {
+  var items = meItems(), i = items.indexOf(document.activeElement);
+  var to = ev.key === "ArrowDown" ? (i + 1) % items.length : ev.key === "ArrowUp" ? (i - 1 + items.length) % items.length :
+    ev.key === "Home" ? 0 : ev.key === "End" ? items.length - 1 : -1;
+  if (to >= 0) { ev.preventDefault(); items[to].focus(); return; }
+  if (ev.key === "Escape") { ev.preventDefault(); closeMeMenu(true); }
+  else if (ev.key === "Tab") closeMeMenu(false);
+});
+$("me-menu").addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-me]"); if (!b) return;
+  var go = b.getAttribute("data-me"); closeMeMenu(false);
+  if (go === "account") openAccount(); else if (go === "crews") openCrews(); else if (go === "planner") openPlanner(); else signOut();
+});
+document.addEventListener("click", function (ev) { if (!$("me-wrap").contains(ev.target)) closeMeMenu(false); });
+
 // ---------- account ----------
 var NOTICE_SET = false; // a one-off message (e.g. "email confirmed") showing instead of the usual notice
 function openAccount(notice) {
@@ -314,8 +377,9 @@ function openAccount(notice) {
 function renderAccount(withSubmissions) {
   var u = AUTH.user;
   $("signed-out").hidden = !!u; $("signed-in").hidden = !u;
+  $("account-eyebrow").textContent = u ? "Account settings" : "Your account";
   $("account-title").textContent = u ? (u.display_name ? "Hi, " + u.display_name : "Your account") : "Sign in";
-  $("account-sub").textContent = u ? "Your plans, what you've been to, and how the events you've sent us are doing." :
+  $("account-sub").textContent = u ? "Your profile and password, the events you've sent us, and your reports." :
     "Keep a list of what you've seen, and send us events we're missing.";
   paintJoin(); // an invite link's "Join <crew>" panel (crews.js), signed in or not
   if (!u) {
@@ -330,8 +394,6 @@ function renderAccount(withSubmissions) {
   } else if (u.email_verified && !NOTICE_SET) {
     $("account-notice").textContent = "";
   }
-  renderPlanner();
-  renderJournal();
   if (!withSubmissions) return;
   fillProfile();
   loadMyIssues(); // CC-84
@@ -373,7 +435,7 @@ $("profile-form").addEventListener("submit", function (ev) {
       return;
     }
     AUTH.user = res.body;
-    renderAccount(false); fillProfile();
+    renderAccount(false); fillProfile(); paintMeMenu(); // a new name shows in the header (CC-105)
     msg.textContent = "Saved.";
   });
 });
@@ -540,9 +602,11 @@ $("register-form").addEventListener("submit", function (ev) {
 ["login", "register"].forEach(function (f) {
   $(f + "-form").addEventListener("input", function () { $(f + "-error").textContent = ""; });
 });
-$("sign-out").addEventListener("click", function () {
-  var b = this; b.disabled = true;
-  api("/auth/logout", { method: "POST", cookies: true }).catch(function () {}).then(function () {
-    b.disabled = false; setSession(null); renderAccount(); $("account-title").focus();
+// Signing out (the account page's button, or the name menu): back to Sign in.
+function signOut() {
+  var b = $("sign-out"); b.disabled = true;
+  return api("/auth/logout", { method: "POST", cookies: true }).catch(function () {}).then(function () {
+    b.disabled = false; setSession(null); openAccount(); $("edit-live").textContent = "Signed out.";
   });
-});
+}
+$("sign-out").addEventListener("click", signOut);

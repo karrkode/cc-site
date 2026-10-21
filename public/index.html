@@ -162,8 +162,15 @@
       <button class="navlink" type="button" data-go="plan" id="nav-plan">Plan an outing</button>
       <button class="navlink" type="button" data-go="submit" id="nav-submit">Submit an event</button>
       <button class="navlink" type="button" data-go="review" id="nav-review" hidden>Review<span class="count" id="review-count"></span></button>
-      <button class="navlink" type="button" data-go="crews" id="nav-crews" hidden>Crews<span class="count" id="crews-count"></span></button>
-      <button class="navlink" type="button" data-go="account" id="nav-account">Sign in</button>
+      <span class="me-wrap" id="me-wrap">
+        <button class="navlink me-btn" type="button" id="nav-account"><span id="me-name">Sign in</span><span class="count" id="account-count"></span><svg class="me-caret" viewBox="0 0 12 12" aria-hidden="true" hidden><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg></button>
+        <span class="me-menu" id="me-menu" role="menu" aria-labelledby="nav-account" hidden>
+          <button type="button" role="menuitem" tabindex="-1" data-me="account">Account Settings</button>
+          <button type="button" role="menuitem" tabindex="-1" data-me="crews">Crews<span class="count" id="crews-count"></span></button>
+          <button type="button" role="menuitem" tabindex="-1" data-me="planner">Culture Planner</button>
+          <button type="button" role="menuitem" tabindex="-1" data-me="signout">Sign out</button>
+        </span>
+      </span>
       <button class="navlink theme-toggle" type="button" id="theme-toggle" aria-label="Switch to light theme" title="Switch to light theme">
         <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
         <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path></svg>
@@ -287,7 +294,7 @@
     <!-- Account: sign in / create account, or your lists once signed in -->
     <section class="view" id="view-account" hidden>
       <div class="view-head">
-        <p class="eyebrow">Your account</p>
+        <p class="eyebrow" id="account-eyebrow">Your account</p>
         <h1 id="account-title" tabindex="-1">Sign in</h1>
         <p id="account-sub">Keep a list of what you've seen, and send us events we're missing.</p>
       </div>
@@ -325,21 +332,6 @@
       <div id="signed-in" hidden>
         <div class="row"><p id="account-who"></p><button class="btn ghost" type="button" id="sign-out">Sign out</button></div>
         <div class="row" id="approver-row" hidden><button class="btn neutral" type="button" data-go="approvals">Photo approvals<span class="count" id="approver-count"></span></button></div>
-        <div class="section planner-section"><h2 id="myplans-title" tabindex="-1">Cultural Planner</h2>
-          <p class="hint">Your week ahead. Commit to a day on any event and it shows up here.</p>
-          <div class="row week-nav" role="group" aria-label="Weeks">
-            <button type="button" class="btn ghost" id="week-prev">← Previous week</button>
-            <p class="week-range" id="week-range" aria-live="polite"></p>
-            <button type="button" class="btn ghost" id="week-next">Next week →</button>
-            <button type="button" class="btn neutral" id="week-skip" hidden></button>
-            <button type="button" class="textbtn" id="week-now" hidden>Back to this week</button>
-          </div>
-          <div class="week" id="planner-week"></div>
-          <div class="planner-more" id="deciding-wrap" hidden><h3>Still deciding</h3><div class="grid" id="myplans-grid"></div></div>
-        </div>
-        <div class="section"><h2 id="journal-title" tabindex="-1">Cultural Journal</h2>
-          <p class="hint">The last five events you've been to. Sum each up in three words; a review is up to you. Only you can see it.</p>
-          <div class="journal" id="went-grid"></div></div>
         <div class="section"><h2>Events you've sent us</h2><div class="queue" id="my-submissions"></div></div>
         <div class="section" id="my-issues-section" hidden><h2 id="my-issues-title" tabindex="-1">Your reports</h2>
           <p class="hint">Problems you've told us about, and where each one stands.</p>
@@ -367,6 +359,36 @@
             <div class="row"><button class="btn" type="submit" id="password-btn">Change password</button><span class="hint" id="password-msg" role="status"></span></div>
           </form>
         </div>
+      </div>
+    </section>
+
+    <!-- Culture Planner (CC-105): the week ahead and the Cultural Journal, at #planner -->
+    <section class="view" id="view-planner" hidden>
+      <div class="view-head">
+        <p class="eyebrow">Culture Planner</p>
+        <h1 id="planner-title" tabindex="-1">Culture Planner</h1>
+        <p>Where you're going this week, and notes on where you've been.</p>
+      </div>
+      <div class="panel" id="planner-signin" hidden>
+        <p>Mark events you're interested in or committed to, and they're laid out by the day here, with a journal of where you've been.</p>
+        <div class="row"><button class="btn" type="button" id="planner-signin-btn">Sign in or create an account</button></div>
+      </div>
+      <div id="planner-main" hidden>
+          <div class="section planner-section"><h2 id="myplans-title" tabindex="-1">Your week ahead</h2>
+            <p class="hint">Commit to a day on any event and it shows up here.</p>
+            <div class="row week-nav" role="group" aria-label="Weeks">
+              <button type="button" class="btn ghost" id="week-prev">← Previous week</button>
+              <p class="week-range" id="week-range" aria-live="polite"></p>
+              <button type="button" class="btn ghost" id="week-next">Next week →</button>
+              <button type="button" class="btn neutral" id="week-skip" hidden></button>
+              <button type="button" class="textbtn" id="week-now" hidden>Back to this week</button>
+            </div>
+            <div class="week" id="planner-week"></div>
+            <div class="planner-more" id="deciding-wrap" hidden><h3>Still deciding</h3><div class="grid" id="myplans-grid"></div></div>
+          </div>
+          <div class="section"><h2 id="journal-title" tabindex="-1">Cultural Journal</h2>
+            <p class="hint">The last five events you've been to. Sum each up in three words; a review is up to you. Only you can see it.</p>
+            <div class="journal" id="went-grid"></div></div>
       </div>
     </section>
 
