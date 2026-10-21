@@ -13,10 +13,6 @@ function loadHome() { // events running today, soonest to close (open runs come 
 }
 function renderHome() {
   $("door-catalog-count").textContent = plural(FACETS.current, "event", "events") + " on the list";
-  var words = { "Theater": "plays and musicals", "Comedy": "comedy nights", "Concert": "concerts", "Visual Art": "exhibitions" };
-  var kinds = TYPES.map(function (t) { return words[t] || t.toLowerCase(); });
-  var listed = kinds.length > 1 ? kinds.slice(0, -1).join(", ") + " and " + kinds[kinds.length - 1] : kinds[0];
-  $("home-lede").textContent = "A running list of " + listed + " around Chicago. Plan an outing, look through all of it, or see what your crews are up to.";
   $("door-crews-desc").textContent = AUTH.user ? "See what your crews are planning, and who's been where." : // CC-103
     "Crews are the friends you go out with. Sign in to start one or join one.";
   $("soon-list").innerHTML = SOON.map(function (e) { return "<li>" + cardHTML(e) + "</li>"; }).join("");
