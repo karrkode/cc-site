@@ -202,6 +202,9 @@
             <button type="button" class="chip mine" data-mine="interested" aria-pressed="false" aria-label="Events yours truly is interested in"><img src="img/dolphin-interested.webp" width="24" height="24" alt=""><span class="tip" aria-hidden="true">Events yours truly is interested in.</span></button>
             <button type="button" class="chip mine" data-mine="going" aria-pressed="false" aria-label="Events yours truly is committed to!"><img src="img/dolphin-going.webp" width="28" height="28" alt=""><span class="tip" aria-hidden="true">Events yours truly is committed to!</span></button>
           </div>
+          <div class="chips mine-chips" id="crews-chips" role="group" aria-label="Your crews" hidden>
+            <button type="button" class="chip" id="crews-chip" aria-pressed="false">Your Crews Catalog</button>
+          </div>
         </div>
         <div class="fields">
           <div class="field"><label for="f-q">Search</label><input id="f-q" type="search" placeholder="Title or venue"></div>
@@ -218,7 +221,6 @@
             <button type="button" class="where-btn" id="f-where-btn" aria-haspopup="true" aria-expanded="false" aria-controls="f-where-panel" aria-labelledby="f-where-label f-where-btn">Anywhere</button>
             <div class="where-panel" id="f-where-panel" role="group" aria-labelledby="f-where-label" hidden></div>
           </div>
-          <div class="field" id="f-crews-field" hidden><label for="f-crews">Your crews' plans</label><select id="f-crews"><option value="">Everything</option></select></div>
           <div class="field"><label for="f-sort">Sort by</label>
             <select id="f-sort">
               <option value="closing">Closing soonest</option>

@@ -31,6 +31,7 @@ function syncMineChips() {
   Array.prototype.forEach.call($("mine-chips").children, function (b) {
     b.setAttribute("aria-pressed", String(!!cat.picks[b.getAttribute("data-mine")]));
   });
+  $("crews-chip").setAttribute("aria-pressed", String(cat.crews === "all"));
 }
 function catWindow() {
   var w = cat.when;
@@ -52,7 +53,7 @@ function buildCatalogControls() {
     TYPES.map(function (t) { return '<button type="button" class="chip" data-type="' + esc(t) + '">' + esc(t) + "</button>"; }).join("");
 }
 function syncCatalogControls() {
-  $("f-q").value = cat.q; $("f-cost").value = cat.cost; $("f-crews").value = cat.crews; $("f-sort").value = cat.sort;
+  $("f-q").value = cat.q; $("f-cost").value = cat.cost; $("f-sort").value = cat.sort;
   paintWhere();
   var c = $("f-when-custom");
   if (cat.when === "custom" && cat.custom) { c.hidden = false; c.textContent = "Outing dates: " + windowText(cat.custom.ws, cat.custom.we); } else { c.hidden = true; }
@@ -78,7 +79,7 @@ function catalogParams() {
   Object.keys(cat.regions).forEach(function (r) { p.push(["region", r]); }); // sides of town (CC-73, CC-85)
   Object.keys(cat.hoods).forEach(function (h) { p.push(["hood", h]); }); // and neighborhoods: any of them
   if (cat.q.trim()) p.push(["q", cat.q.trim()]);
-  if (cat.crews && AUTH.user) p.push(["crews", cat.crews]); // CC-75: events your crews have plans for
+  if (cat.crews && AUTH.user) p.push(["crews", cat.crews]); // CC-75, CC-94: events your crews have plans for or have been to
   p.push(["sort", cat.sort === "az" || cat.sort === "price" || cat.sort === "opening" ? cat.sort : "closing"]);
   return p;
 }
@@ -101,7 +102,9 @@ function paintCatalog(focusFrom) {
   $("tally").innerHTML = "<strong>" + CAT_TOTAL + "</strong> " + (CAT_TOTAL === 1 ? "event" : "events") + (cat.when === "past" ? " already closed" : "") +
     (CAT_ITEMS.length < CAT_TOTAL ? ", showing " + CAT_ITEMS.length : "");
   syncMineChips();
-  $("grid").innerHTML = CAT_ITEMS.length ? CAT_ITEMS.map(cardHTML).join("") : Object.keys(cat.picks).length ?
+  $("grid").innerHTML = CAT_ITEMS.length ? CAT_ITEMS.map(cardHTML).join("") : cat.crews ?
+    '<div class="empty" style="grid-column:1/-1"><p><strong>Nothing from your crews matches.</strong></p><p class="hint">No crew-mate has marked an event like this as interested, committed or been. Widen the other filters, or turn off Your Crews Catalog to see everything.</p></div>' :
+    Object.keys(cat.picks).length ?
     '<div class="empty" style="grid-column:1/-1"><p><strong>No picks match.</strong></p><p class="hint">Widen the other filters, or turn off the dolphin filters to see everything.</p></div>' :
     '<div class="empty" style="grid-column:1/-1"><p><strong>Nothing matches those filters.</strong></p><p class="hint">Try a wider date range or a higher price limit.</p></div>';
   $("more-row").hidden = CAT_ITEMS.length >= CAT_TOTAL; $("more-btn").disabled = false;
@@ -112,7 +115,7 @@ $("filters").addEventListener("submit", function (ev) { ev.preventDefault(); });
 var Q_TIMER = null; // wait for a pause in typing before asking the API
 $("f-q").addEventListener("input", function () { cat.q = this.value; clearTimeout(Q_TIMER); Q_TIMER = setTimeout(renderCatalog, 250); });
 $("more-btn").addEventListener("click", function () { loadCatalog(true); });
-["when", "cost", "sort", "crews"].forEach(function (k) {
+["when", "cost", "sort"].forEach(function (k) {
   $("f-" + k).addEventListener("change", function () { cat[k] = this.value; if (k === "when" && this.value !== "custom") cat.custom = null; renderCatalog(); });
 });
 
@@ -214,15 +217,13 @@ $("mine-chips").addEventListener("click", function (ev) {
   if (cat.picks[m]) delete cat.picks[m]; else cat.picks[m] = 1;
   renderCatalog();
 });
-// CC-75: "Your crews' plans" shows for members of a crew: everything, all your crews, or one crew.
+// CC-94: the Your Crews Catalog chip (it replaced CC-75's dropdown) shows for members of a crew: events other
+// members of any of your crews are interested in, committed to, or have been to.
+$("crews-chip").addEventListener("click", function () { cat.crews = cat.crews ? "" : "all"; renderCatalog(); });
 function buildCrewFilter() {
   var mine = AUTH.user ? CREWS : [];
-  $("f-crews-field").hidden = !mine.length;
-  $("f-crews").innerHTML = '<option value="">Everything</option>' + (mine.length ? '<option value="all">All my crews</option>' : "") +
-    mine.map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.name) + "</option>"; }).join("");
-  if (cat.crews && !(cat.crews === "all" && mine.length) && !mine.some(function (c) { return String(c.id) === cat.crews; })) {
-    cat.crews = ""; if (visible("catalog")) renderCatalog();
-  }
-  $("f-crews").value = cat.crews;
+  $("crews-chips").hidden = !mine.length;
+  if (cat.crews && !mine.length) { cat.crews = ""; if (visible("catalog")) renderCatalog(); }
+  syncMineChips();
 }
 $("clear-filters").addEventListener("click", function () { resetCatalog(); renderCatalog(); $("f-q").focus(); });
