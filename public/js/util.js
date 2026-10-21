@@ -151,7 +151,7 @@ function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
 // CC-88: a performance's show days under where it is ("Thu 8 PM · Fri, Sat 8 PM and 10:30 PM"): its own, else the
 // venue's usual show times. Not for one night, where the venue's usual times may not be this show's.
 function showDaysLine(e) {
-  var text = SHOW_TYPES[e.type] && !oneNight(e) && !isPast(e) ? showDaysText(e.sched.weekly) : "";
+  var text = SHOW_TYPES[e.type] && !oneNight(e) && !isPast(e) ? showDaysText(e.sched.weekly, e.sched.weeks) : "";
   return text ? '<p class="show-days-line">' + esc(text) + "</p>" : "";
 }
 function cardHTML(e) {

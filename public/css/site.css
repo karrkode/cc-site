@@ -392,6 +392,8 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .show-days .hours-row .show-times input { flex: 0 0 7.5rem; max-width: 7.5rem; }
 .show-days > .hours-grid:empty { display: none; }
 .show-days .hours-grid > .textbtn { justify-self: start; }
+.show-days .weeks-of { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.show-days .weeks-of select { background: var(--page); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 7px 9px; }
 .card .show-days-line { margin: 4px 0 0; font-size: 0.875rem; color: var(--muted); }
 .hours-grid { display: grid; gap: 8px; }
 .hours-row { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); align-items: center; gap: 6px 12px; }
@@ -406,7 +408,7 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
   .hours-row, .hours-row:has(select) { grid-template-columns: 1fr 1fr; }
   .hours-row .day { grid-column: 1 / -1; }
   .hours-row:has(select) .times { grid-column: 1 / -1; gap: 6px; }
-  .show-days .hours-row .times { grid-column: 1 / -1; }
+  .show-days .hours-row .times, .show-days .weeks-of { grid-column: 1 / -1; }
   .show-days .hours-row .day { padding-top: 0; }
   #hours-dialog { padding: 14px; }
   .editor fieldset.hours { padding: 10px 8px 12px; }

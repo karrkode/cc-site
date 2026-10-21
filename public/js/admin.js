@@ -281,7 +281,7 @@ $("edit-form").addEventListener("submit", function (ev) {
   if (openRun !== !!e.openRun) body.open_run = openRun;
   if (cost !== (e.costRaw || "")) { body.cost_text = cost; body.min_price = minPrice(cost); }
   if (url !== (e.url || "")) body.url = url;
-  if (weekly) body.weekly = weekly.weekly;
+  if (weekly) { body.weekly = weekly.weekly; body.weeks = weekly.weeks; }
   var wasAt = e.publishAt ? e.publishAt.getTime() : null, nowAt = at ? at.getTime() : null;
   if (Math.floor((wasAt || 0) / 60000) !== Math.floor((nowAt || 0) / 60000)) body.publish_at = at ? at.toISOString() : null;
   var venueChanged = venue.toLowerCase() !== e.venue.toLowerCase() || hood.toLowerCase() !== (e.hood || "").toLowerCase();

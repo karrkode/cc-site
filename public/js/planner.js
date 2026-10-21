@@ -37,8 +37,14 @@ function timesOn(e, d) {
   if (dates.length && iso >= dates[0].date && iso <= dates[dates.length - 1].date) {
     return dates.filter(function (p) { return p.date === iso; }).map(function (p) { return p.time || ""; });
   }
-  if (Object.keys(weekly).length) return weekly[DOW[d.getDay()]] || [];
+  if (Object.keys(weekly).length) return onWeekOf(e.sched.weeks, d) ? weekly[DOW[d.getDay()]] || [] : [];
   return dates.length ? [] : null; // past its listed dates: nothing known
+}
+// CC-88: a show day that's only on some weeks of the month ({thu: [1, 3]}; 5 is the last): is d one of them?
+function onWeekOf(weeks, d) {
+  var on = weeks && weeks[DOW[d.getDay()]]; if (!on || !on.length) return true;
+  var nth = Math.ceil(d.getDate() / 7), last = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 7).getMonth() !== d.getMonth();
+  return on.indexOf(nth) >= 0 || (last && on.indexOf(5) >= 0);
 }
 function hoursOn(e, d) { // [opens, closes, known] or null when closed
   var h = e.sched.hours || {}, k = DOW[d.getDay()];

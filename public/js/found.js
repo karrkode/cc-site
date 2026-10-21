@@ -12,7 +12,7 @@ var FOUND_KINDS = { production: "Production", exhibition: "Exhibition", concert:
   tour: "Tour", program: "Program", class: "Class", rental: "Rental", members_only: "Members only", recurring: "Recurring",
   permanent: "Permanent gallery", other: "Other" };
 var FOUND_STATES = { update: "Update", approved: "Approved", rejected: "Rejected", skipped: "Left out", listed: "Already listed" };
-var CHANGE_NAMES = { cost_text: "Price", min_price: "Lowest price", begin_date: "Opens", end_date: "Closes", weekly: "Show days" };
+var CHANGE_NAMES = { cost_text: "Price", min_price: "Lowest price", begin_date: "Opens", end_date: "Closes", weekly: "Show days", weeks: "Weeks of the month" };
 var FOUND_NEEDS = { date: "Needs a date", show_days: "Needs show days" }; // CC-88: approving asks for these
 
 function openFound() { if (!isAdmin()) { openAccount(); return; } show("found"); loadFoundSources(); loadFound(); loadRules(); }
@@ -72,6 +72,7 @@ function changeValue(field, v) {
   if (field === "begin_date" || field === "end_date") return short(parseISO(v));
   if (field === "min_price") return v === 0 ? "free" : "$" + v;
   if (field === "weekly") return showDaysText(v) || "none";
+  if (field === "weeks") return HOUR_DAYS.filter(function (d) { return v && v[d[0]]; }).map(function (d) { return weeksText(v[d[0]]) + d[1].slice(0, 3); }).join(", ") || "every week";
   return v;
 }
 function foundItemHTML(i) {
@@ -84,7 +85,7 @@ function foundItemHTML(i) {
     '<p class="alt-meta">Found on ' + esc(i.source_name) + " " + esc(short(new Date(i.first_seen_at))) +
       (i.dates_listed > 1 ? " · " + plural(i.dates_listed, "date", "dates") + " listed" : "") +
       (i.event && i.status !== "update" ? ' · in the catalog as “' + esc(i.event.title) + "”" : "") + "</p>" +
-    (Object.keys(i.weekly || {}).length ? '<p class="alt-meta">Shows: ' + esc(showDaysText(i.weekly)) + "</p>" : "") +
+    (Object.keys(i.weekly || {}).length ? '<p class="alt-meta">Shows: ' + esc(showDaysText(i.weekly, i.weeks)) + "</p>" : "") +
     (i.needs ? '<p class="alt-meta">' + esc(lookedText(i)) + "</p>" : "") +
     (i.possible_duplicate ? '<p class="alt-meta dup">Possibly already listed as “' + esc(i.possible_duplicate.title) + "”</p>" : "") +
     (i.skip_reason && i.status !== "approved" ? '<p class="alt-meta">Why: ' + esc(i.skip_reason) + "</p>" : "");
@@ -146,7 +147,7 @@ function foundPost(row, path, body) {
 function approveBody(i) {
   return { title: i.title, category: i.category, venue_id: i.venue_id, begin_date: i.begin_date, end_date: i.end_date,
     open_run: i.open_run && !i.end_date, cost_text: i.cost_text, min_price: i.cost_text ? i.min_price : null, url: i.url, publish: "now",
-    weekly: i.weekly || {} };
+    weekly: i.weekly || {}, weeks: i.weeks || {} };
 }
 $("found-list").addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-found-act]"); if (!b) return;
@@ -260,8 +261,8 @@ function openFoundEditor(i, opener) {
   $("ed-cost").value = i.cost_text || ""; $("ed-url").value = i.url || ""; $("ed-publish-at").value = "";
   // CC-88: the show days the page gave, else the venue's usual show times to start from
   var own = Object.keys(i.weekly || {}).length ? i.weekly : null, venueTimes = i.venue_show_times || {};
-  showDaysFor("ed", i.category); setShowDays("ed", own || venueTimes);
-  SHOW_DAYS.ed.from = {}; SHOW_DAYS.ed.venue = venueTimes;
+  showDaysFor("ed", i.category); setShowDays("ed", own || venueTimes, own ? i.weeks : {});
+  SHOW_DAYS.ed.from = { weekly: {}, weeks: {} }; SHOW_DAYS.ed.venue = venueTimes;
   $("ed-sched-hint").textContent = own ? "From the venue's page; check them." : Object.keys(venueTimes).length ?
     "These are the venue's usual show times; change them if this show is different." : "Choose the days, and give a start time for each.";
   $("ed-error").textContent = ""; $("ed-confirm").hidden = true; setEditorBusy(false);
@@ -286,16 +287,17 @@ function approveFromEditor() {
     (url && !/^https?:\/\//i.test(url)) ? ["ed-url", "The link should start with https://"] :
     (at && isNaN(at)) ? ["ed-publish-at", "Pick a date and time, or leave it blank."] : null;
   if (bad) { editorFail(null, bad[0], bad[1]); return; }
-  var days = $("ed-sched").hidden ? { weekly: {} } : readShowDays("ed");
+  var days = $("ed-sched").hidden ? { weekly: {}, weeks: {} } : readShowDays("ed");
   if (days.error) { editorFail(null, days.id, days.error); return; }
-  var weekly = sameHours(days.weekly, i.venue_show_times || {}) ? {} : days.weekly; // the venue's own times stay the venue's
+  var venueOwn = sameHours(days.weekly, i.venue_show_times || {}) && !Object.keys(days.weeks).length; // the venue's times stay the venue's
+  var weekly = venueOwn ? {} : days.weekly;
   var missing = stillNeeds(i, type, begin, end, $("ed-open-run").checked && !end, days.weekly);
   if (missing) {
     editorFail(null, missing === "date" ? "ed-begin" : null, missing === "date" ? "Add the date it opens." : "Choose the days it's on, with a start time for each.");
     if (missing !== "date") $("ed-days").firstElementChild.focus();
     return;
   }
-  var body = { title: title, category: type, begin_date: begin, end_date: end, open_run: $("ed-open-run").checked && !end, weekly: weekly,
+  var body = { title: title, category: type, begin_date: begin, end_date: end, open_run: $("ed-open-run").checked && !end, weekly: weekly, weeks: venueOwn ? {} : days.weeks,
     cost_text: cost, min_price: cost === (i.cost_text || "") && cost ? i.min_price : minPrice(cost), url: url,
     publish: review ? "review" : at && at > new Date() ? "later" : "now" };
   if (body.publish === "later") body.publish_at = at.toISOString();

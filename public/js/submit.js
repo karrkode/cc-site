@@ -67,12 +67,12 @@ $("submit-form").addEventListener("submit", function (ev) {
     (begin && end && end < begin) ? ["s-end", "The closing date is before the opening date."] :
     (url && !/^https?:\/\//i.test(url)) ? ["s-url", "The link should start with https://"] : null;
   if (bad) { err.textContent = bad[1]; $(bad[0]).focus(); return; }
-  var days = $("s-sched").hidden ? { weekly: {} } : readShowDays("s"); // CC-88: optional, but each day chosen needs a time
+  var days = $("s-sched").hidden ? { weekly: {}, weeks: {} } : readShowDays("s"); // CC-88: optional, but each day chosen needs a time
   if (days.error) { err.textContent = days.error; $(days.id).focus(); return; }
   var body = {
     title: title, category: $("s-category").value, venue: { name: venue, neighborhood: $("s-hood").value.trim() },
     begin_date: begin, end_date: end, cost_text: cost, min_price: minPrice(cost), url: url,
-    credit_me: $("s-credit").checked, weekly: days.weekly
+    credit_me: $("s-credit").checked, weekly: days.weekly, weeks: days.weeks
   };
   if (isAdmin()) {
     body.publish = publishChoice();
