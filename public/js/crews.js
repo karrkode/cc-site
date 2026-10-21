@@ -41,8 +41,8 @@ function crewHTML(c) {
   // CC-75: two halves, members and the crew's shared plans; each scrolls on its own past about 5 members' height
   html += '<div class="crew-cols"><div class="crew-col"><h4 class="crew-col-h" id="crew-m-' + id + '">Members</h4>' +
     '<ul class="members" aria-label="Members of ' + esc(c.name) + '">' + c.members.map(function (m) {
-    var tags = (m.owner ? ' <span class="state">Owner</span>' : "") + (m.you ? ' <span class="state">You</span>' : "");
-    var acts = c.owner && !m.you ? crewAct("owner", c, 'data-user="' + esc(m.user_id) + '"', "Make owner", "btn ghost", "Make " + m.name + " the owner of " + c.name) +
+    var tags = (m.owner ? ' <span class="state">Crew Leader</span>' : "") + (m.you ? ' <span class="state">You</span>' : "");
+    var acts = c.owner && !m.you ? crewAct("owner", c, 'data-user="' + esc(m.user_id) + '"', "Make crew leader", "btn ghost", "Make " + m.name + " the crew leader of " + c.name) +
       crewAct("remove", c, 'data-user="' + esc(m.user_id) + '"', "Remove", "btn ghost", "Remove " + m.name + " from " + c.name) : "";
     return '<li><span class="who">' + esc(m.name) + tags + "</span>" + (acts ? '<span class="row">' + acts + "</span>" : "") + "</li>";
   }).join("") + "</ul>" + "</div>" +
@@ -83,7 +83,7 @@ function crewHTML(c) {
       '<p class="hint small" id="crew-email-msg-' + id + '" role="status">We\u2019ll email them. They\u2019ll see it when they sign in, or once they register with that address.</p></form>';
   }
   html += '<div class="row">' + (full ? '<span class="hint">The crew is full.</span>' : crewAct("invite", c, "", "Make an invite link", "btn")) +
-    (c.owner ? crewAct("edit", c, "", "Rename") + crewAct("delete", c, "", "Delete crew…", "btn danger") : crewAct("leave", c, "", "Leave crew…")) + "</div>";
+    (c.owner ? crewAct("edit", c, "", "Rename") + crewAct("delete", c, "", "Dissolve crew…", "btn danger") : crewAct("leave", c, "", "Leave crew…")) + "</div>";
   return html + "</article>";
 }
 // Each half of a crew box stops at the height five member rows take, measured from a real row (rows with an
@@ -232,8 +232,8 @@ $("crew-list").addEventListener("click", function (ev) {
     return;
   }
   // the ones that need a "yes" first
-  var asks = { leave: "Leave " + c.name + "? You'd need a new invite link to come back.", delete: "Delete " + c.name + " for everyone? This can't be undone.",
-    remove: who && "Remove " + who.name + " from " + c.name + "?", owner: who && "Make " + who.name + " the owner? You'll stay a member, and they'll manage the crew." };
+  var asks = { leave: "Leave " + c.name + "? You'd need a new invite link to come back.", delete: "Dissolve " + c.name + " for everyone? This can't be undone.",
+    remove: who && "Remove " + who.name + " from " + c.name + "?", owner: who && "Make " + who.name + " the crew leader? You'll stay a member, and they'll lead the crew." };
   var confirmed = { "leave-yes": "leave", "delete-yes": "delete", "remove-yes": "remove", "owner-yes": "owner" }[act];
   if (asks[act]) { CREW_ASK = { crew: c.id, act: act + "-yes", text: asks[act], user: user }; paintCrews(); var yes = document.querySelector('[data-crew-card="' + c.id + '"] .confirm .btn'); if (yes) yes.focus(); return; }
   b.disabled = true;
@@ -252,7 +252,7 @@ $("crew-list").addEventListener("click", function (ev) {
       return loadCrews('#crew-link-' + c.id).then(function () { $("edit-live").textContent = "Invite link made. Copy it and send it to whoever you'd like to join."; });
     }
     var said = act === "revoke" ? "Turned off that invite link." : confirmed === "leave" ? "You left " + c.name + "." :
-      confirmed === "delete" ? "Deleted " + c.name + "." : confirmed === "remove" ? "Removed " + who.name + "." : who.name + " is now the owner.";
+      confirmed === "delete" ? "Dissolved " + c.name + "." : confirmed === "remove" ? "Removed " + who.name + "." : who.name + " is now the crew leader.";
     if (confirmed === "leave" || confirmed === "delete") delete CREW_LINKS[c.id];
     loadCrews(confirmed === "leave" || confirmed === "delete" ? "#crews-title" : '[data-crew-card="' + c.id + '"] [data-crew-act="invite"]')
       .then(function () { $("edit-live").textContent = said; });

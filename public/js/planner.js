@@ -97,7 +97,7 @@ function pool(ws, we, budget, types, regions, slot) {
 function whenChoices() {
   var hour = new Date().getHours(), out = [];
   if (hour < 17) out.push(["today", "Today", "Before 5 PM", [T, T], "today"]);
-  if (hour < 21) out.push(["tonight", "Tonight", "From 5 PM", [T, T], "tonight"]);
+  if (hour < 21) out.push(["tonight", "Tonight", "After 5 PM", [T, T], "tonight"]);
   if (T.getDay() !== 0) { var wk = thisWeekend(); out.push(["weekend", "This weekend", windowText(wk[0], wk[1]), wk, "day"]); }
   var nwk = nextWeekend(); out.push(["nextweekend", "Next weekend", windowText(nwk[0], nwk[1]), nwk, "day"]);
   return out;
