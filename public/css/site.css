@@ -591,17 +591,20 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .run-date input[type="time"] { background: var(--page); color: var(--text); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 5px 8px; }
 .run-date .textbtn { margin-left: auto; }
 
-/* CC-104: the crews page: a bold "Start a crew", and each crew's card opens with its faces and what's next */
-.crew-start { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-bottom: 16px; }
-.crew-start-btn { position: relative; overflow: hidden; font-size: 1.05rem; padding: 12px 22px; border-radius: 999px;
-  background: linear-gradient(120deg, var(--lead), var(--second)); color: var(--on-lead); box-shadow: 0 8px 24px color-mix(in srgb, var(--lead) 35%, transparent);
-  transition: transform 0.15s ease, box-shadow 0.15s ease; }
-.crew-start-btn span[aria-hidden] { font-weight: 800; }
-.crew-start-btn::after { content: ""; position: absolute; inset: 0; transform: translateX(-120%);
-  background: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / 0.35) 50%, transparent 70%); animation: crew-shine 3.2s ease-in-out 0.6s 3; }
-.crew-start-btn:hover:not(:disabled), .crew-start-btn:focus-visible { transform: translateY(-2px) scale(1.03); filter: none; box-shadow: 0 12px 28px color-mix(in srgb, var(--lead) 45%, transparent); }
+/* CC-104: the crews page: "Start a crew" in the Chicago flag's colors (the product owner's pick): star red on the card color,
+   with the flag's two light-blue bars above and below; the star makes a quarter turn on hover. Each crew's card opens
+   with its faces and what's next. */
+.crew-start { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 16px; margin-bottom: 18px; padding-block: 8px; }
+.crew-start-btn { --flag-red: var(--star); --flag-blue: #41B6E6; position: relative; display: inline-flex; align-items: center; gap: 10px;
+  font-size: 1.05rem; padding: 12px 22px; border-radius: 999px; background: var(--surface); color: var(--flag-red);
+  box-shadow: inset 0 0 0 2px var(--flag-red); transition: transform 0.15s ease; }
+.crew-start-btn::before, .crew-start-btn::after { content: ""; position: absolute; left: 22px; right: 22px; height: 3px; border-radius: 2px; background: var(--flag-blue); }
+.crew-start-btn::before { top: -8px; } .crew-start-btn::after { bottom: -8px; }
+.crew-start-btn .star { fill: var(--flag-red); width: 1.15em; height: 1.15em; transition: transform 0.3s ease; }
+.crew-start-btn:hover:not(:disabled), .crew-start-btn:focus-visible { filter: none; background: var(--surface); transform: translateY(-1px); }
+.crew-start-btn:hover .star, .crew-start-btn:focus-visible .star { transform: rotate(30deg); } /* a six-point star: 30° is a quarter of the way round */
 .crew-start-btn.first { font-size: 1.2rem; padding: 16px 28px; }
-@keyframes crew-shine { to { transform: translateX(120%); } }
+.crew-start-btn.first::before, .crew-start-btn.first::after { left: 28px; right: 28px; }
 .crews-empty { text-align: center; display: grid; gap: 6px; justify-items: center; padding-block: 28px; }
 .crews-empty h2 { font-family: var(--display); font-size: var(--step-1); }
 .crews-empty p { color: var(--muted); max-width: 46ch; }
@@ -614,4 +617,4 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .face.more { background: var(--neutral-soft); color: var(--text); }
 .crew-next { margin: 0; min-width: 0; flex: 1 1 14rem; }
 .crew-next-label { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--lead); margin-right: 4px; }
-@media (prefers-reduced-motion: reduce) { .crew-start-btn::after { animation: none; } .crew-start-btn { transition: none; } .crew-start-btn:hover, .crew-start-btn:focus-visible { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .crew-start-btn, .crew-start-btn .star { transition: none; } .crew-start-btn:hover, .crew-start-btn:focus-visible, .crew-start-btn:hover .star, .crew-start-btn:focus-visible .star { transform: none; } }
