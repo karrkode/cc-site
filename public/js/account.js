@@ -101,14 +101,15 @@ function redrawCardsNow(id, from, focusOn) {
   Array.prototype.forEach.call(document.querySelectorAll('[data-card="' + id + '"]'), function (c) { c.outerHTML = cardHTML(KNOWN[id]); });
   return loadMyPlans().then(function () {
     if (visible("account")) renderAccount();
-    var card = listId && $(listId) ? $(listId).querySelector('[data-card="' + id + '"]') : null;
-    if (!card && listId === "myplans-grid" && WENT[id]) card = $("went-grid").querySelector('[data-card="' + id + '"]');
-    var target = card ? card.querySelector(focusOn || "[data-myplan-toggle]") : listId === "myplans-grid" ? $("myplans-title") : null;
+    var item = '[data-card="' + id + '"],[data-day-item="' + id + '"]', planner = PLANNER_LISTS.indexOf(listId) >= 0;
+    var card = listId && $(listId) ? $(listId).querySelector(item) : null;
+    if (!card && planner) card = $("myplans-title").parentElement.querySelector(item) || (WENT[id] ? $("went-grid").querySelector(item) : null); // moved within the planner, or to "I've been"
+    var target = card ? card.querySelector(focusOn || "[data-myplan-toggle]") : planner ? $("myplans-title") : null;
     if (target) target.focus();
   });
 }
 function saveMyPlan(id, body, panel) {
-  var card = panel.closest("[data-card]"), err = panel.querySelector(".form-error");
+  var card = panel.closest("[data-card],[data-day-item]"), err = panel.querySelector(".form-error");
   var buttons = panel.querySelectorAll("button"); Array.prototype.forEach.call(buttons, function (b) { b.disabled = true; });
   err.textContent = "";
   var req = body ? api("/me/plans/" + encodeURIComponent(id) + "?today=" + isoDate(T), { method: "PUT", body: body })
@@ -159,6 +160,71 @@ document.addEventListener("keydown", function (ev) { // Escape closes the picker
   if (toggle) { closeMyPlan(toggle); toggle.focus(); }
 });
 
+// ---------- Cultural Planner (CC-97) ----------
+// The account page's week ahead, from today: each day lists the events you're going to that day, compactly;
+// an empty day offers the catalog for just that day. Previous and Next step a week at a time (never before this
+// week; at most two years out, as far as a plan can go), and "Skip to" jumps to the week of your next plan after
+// the one showing. Interested plans, with no day yet, sit under Still deciding as full cards; so does a going plan
+// for a day that's passed, where "I've been" is.
+var PLANNER_LISTS = ["planner-week", "myplans-grid"], PLANNER_WEEK = 0, PLANNER_MAX = 104;
+function dayTimesText(e, d) { // "7:30 PM", "Open 10 AM to 5 PM", or "" (planner.js knows the schedules)
+  if (isExhibit(e)) { var h = hoursOn(e, d); return h && h[2] ? "Open " + clockText(h[0]) + " to " + clockText(h[1]) : ""; }
+  return (timesOn(e, d) || []).filter(Boolean).map(clockText).join(" and ");
+}
+function dayItemHTML(e, d) {
+  var times = dayTimesText(e, d);
+  return '<li class="day-item" data-day-item="' + esc(e.id) + '">' +
+    '<a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" +
+    '<span class="day-where">' + esc(placeText(e)) + "</span>" + (times ? '<span class="day-time">' + esc(times) + "</span>" : "") +
+    '<div class="card-actions">' + myplanToggleHTML(e) + "</div>" + myplanHTML(e) + "</li>";
+}
+function goingAhead() { // your going plans from today on, soonest first: [{ e, n }] with n days from today
+  return MYPLAN_LIST.map(function (e) {
+    var mine = MYPLANS[e.id], d = mine && mine.status === "going" ? parseISO(mine.date) : null;
+    return { e: e, n: d ? diff(d, T) : -1 };
+  }).filter(function (x) { return x.n >= 0; }).sort(function (a, b) { return a.n - b.n; });
+}
+function renderPlanner() {
+  var start = PLANNER_WEEK * 7, days = [], ahead = goingAhead();
+  for (var i = 0; i < 7; i++) days.push({ d: add(T, start + i), items: [] });
+  ahead.forEach(function (x) { if (x.n >= start && x.n < start + 7) days[x.n - start].items.push(x.e); });
+  var deciding = MYPLAN_LIST.filter(function (e) { var mine = MYPLANS[e.id]; return !(mine && mine.status === "going" && parseISO(mine.date) >= T); });
+  var next = ahead.filter(function (x) { return x.n >= start + 7; })[0];
+  $("week-range").textContent = (PLANNER_WEEK === 0 ? "This week: " : "") + windowText(days[0].d, days[6].d);
+  $("week-prev").disabled = PLANNER_WEEK === 0; $("week-next").disabled = PLANNER_WEEK >= PLANNER_MAX;
+  $("week-now").hidden = PLANNER_WEEK === 0;
+  $("week-skip").hidden = !next;
+  if (next) $("week-skip").textContent = "Skip to your next plan: " + goingDay(MYPLANS[next.e.id].date);
+  $("planner-week").innerHTML = days.map(function (day, i) {
+    var now = same(day.d, T), label = (now ? "Today, " : "") + F.wmd.format(day.d), whole = dayName(day.d);
+    return '<section class="day' + (now ? " today" : "") + '" aria-label="' + esc((now ? "Today, " : "") + whole) + '">' +
+      '<h3 class="day-head">' + esc(label) + "</h3>" +
+      (day.items.length ? '<ul class="day-items">' + day.items.map(function (e) { return dayItemHTML(e, day.d); }).join("") + "</ul>" :
+        '<button type="button" class="btn ghost day-find" data-find-day="' + isoDate(day.d) + '" aria-label="Find something for ' + esc(whole) + '">Find something for that day!</button>') +
+      "</section>";
+  }).join("");
+  $("deciding-wrap").hidden = !deciding.length; $("myplans-grid").innerHTML = deciding.map(cardHTML).join("");
+}
+function showWeek(n, focusId) {
+  PLANNER_WEEK = Math.max(0, Math.min(PLANNER_MAX, n)); renderPlanner();
+  var b = $(focusId); // stay on the button pressed, or the nearest one still usable (Skip goes once it's used up)
+  (b && !b.hidden && !b.disabled ? b : !$("week-next").disabled ? $("week-next") : $("week-prev")).focus();
+}
+$("week-prev").addEventListener("click", function () { showWeek(PLANNER_WEEK - 1, "week-prev"); });
+$("week-next").addEventListener("click", function () { showWeek(PLANNER_WEEK + 1, "week-next"); });
+$("week-now").addEventListener("click", function () { showWeek(0, "week-next"); });
+$("week-skip").addEventListener("click", function () {
+  var next = goingAhead().filter(function (x) { return x.n >= PLANNER_WEEK * 7 + 7; })[0];
+  if (next) showWeek(Math.floor(next.n / 7), "week-skip");
+});
+// The catalog for just that day: When is a one-day range, and the other filters start fresh.
+document.addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-find-day]"); if (!b) return;
+  var d = parseISO(b.getAttribute("data-find-day"));
+  resetCatalog(); cat.when = "custom"; cat.custom = { ws: d, we: d };
+  loadCatalog(); show("catalog");
+});
+
 // ---------- account ----------
 var NOTICE_SET = false; // a one-off message (e.g. "email confirmed") showing instead of the usual notice
 function openAccount(notice) {
@@ -173,7 +239,7 @@ function renderAccount(withSubmissions) {
     "Keep a list of what you've seen, and send us events we're missing.";
   paintJoin(); // an invite link's "Join <crew>" panel (crews.js), signed in or not
   if (!u) {
-    $("myplans-grid").innerHTML = ""; $("went-grid").innerHTML = ""; $("my-submissions").innerHTML = "";
+    PLANNER_WEEK = 0; $("planner-week").innerHTML = ""; $("myplans-grid").innerHTML = ""; $("went-grid").innerHTML = ""; $("my-submissions").innerHTML = "";
     CREWS = []; CREW_LINKS = {}; CREW_ASK = null; CREW_EDIT = null; $("crew-list").innerHTML = "";
     return;
   }
@@ -184,8 +250,7 @@ function renderAccount(withSubmissions) {
   } else if (u.email_verified && !NOTICE_SET) {
     $("account-notice").textContent = "";
   }
-  $("myplans-grid").innerHTML = MYPLAN_LIST.length ? MYPLAN_LIST.map(cardHTML).join("") :
-    '<p class="hint" style="grid-column:1/-1">Use "Interested?" on any event to mark it, or commit to the day you\'re going.</p>';
+  renderPlanner();
   $("went-grid").innerHTML = WENT_LIST.length ? WENT_LIST.map(cardHTML).join("") :
     '<p class="hint" style="grid-column:1/-1">Mark events with "I\'ve been" and they\'ll show up here.</p>';
   if (!withSubmissions) return;
