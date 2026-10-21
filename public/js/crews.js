@@ -53,7 +53,7 @@ function crewHTML(c) {
     html += '<div class="link-box"><label for="crew-link-' + id + '">Invite link: send it to whoever you\'d like to join</label>' +
       '<input id="crew-link-' + id + '" type="text" readonly value="' + esc(link.url) + '">' +
       '<div class="row">' + crewAct("copy", c, "", "Copy link", "btn") +
-      crewAct("qr", c, 'aria-expanded="' + !!link.qr + '" aria-controls="crew-qr-' + id + '"', link.qr ? "Hide QR code" : "Show QR code", "btn ghost") +
+      crewAct("qr", c, 'aria-expanded="' + !!link.qr + '" aria-controls="crew-qr-' + id + '"', link.qr ? "Hide QR code" : "Show QR code", "btn neutral") +
       '<span class="small" role="status" id="crew-copied-' + id + '">Works until ' +
       esc(short(new Date(link.expires_at))) + ". Anyone with it can join.</span></div>" +
       '<figure class="crew-qr" id="crew-qr-' + id + '"' + (link.qr ? "" : " hidden") + ">" + (link.qr ?
