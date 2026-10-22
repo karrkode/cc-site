@@ -62,7 +62,8 @@ $("submit-form").addEventListener("submit", function (ev) {
   ev.preventDefault();
   var err = $("submit-error"), msg = $("submit-msg");
   var title = $("s-title").value.trim(), venue = $("s-venue").value.trim(), url = $("s-url").value.trim();
-  var fixed = isFixedRun("s"), begin = fixed ? null : $("s-begin").value || null, end = fixed ? null : $("s-end").value || null, cost = $("s-cost").value.trim();
+  var fixed = isFixedRun("s"), noDates = fixed || datesUnknown("s"); // CC-102: "Don't know!" sends no dates
+  var begin = noDates ? null : $("s-begin").value || null, end = noDates ? null : $("s-end").value || null, cost = $("s-cost").value.trim();
   var bad = !title ? ["s-title", "Give the event's name."] : !venue ? ["s-venue", "Say where it's happening."] :
     (begin && end && end < begin) ? ["s-end", "The closing date is before the opening date."] :
     (url && !/^https?:\/\//i.test(url)) ? ["s-url", "The link should start with https://"] : null;

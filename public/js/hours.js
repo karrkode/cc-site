@@ -248,7 +248,7 @@ function setShowDays(f, weekly, weeks) {
   });
   sd.from = { weekly: weekly || {}, weeks: weeks || {} }; paintShowDays(f);
 }
-function showDaysFor(f, type) { $(f + "-sched").hidden = !SHOW_TYPES[type] || isFixedRun(f); } // a fixed run has its own times (CC-96)
+function showDaysFor(f, type) { $(f + "-sched").hidden = !SHOW_TYPES[type] || isFixedRun(f) || datesUnknown(f); } // a fixed run has its own times (CC-96)
 // The show days as entered: {weekly, weeks} ({} for none), or {error, id} for a day without a time, a time we can't read,
 // or "Some weeks" without any weeks chosen.
 function readShowDays(f) {
@@ -318,9 +318,11 @@ $("s-category").addEventListener("change", function () { showDaysFor("s", this.v
 // dates are then its first and last. RUN[f] holds the dates while the form is open ("s" submit, "ed" the editor).
 var RUN_MAX = 30, RUN = { s: [], ed: [] };
 function isFixedRun(f) { var r = document.querySelector('input[name="' + f + '-runkind"]:checked'); return !!r && r.value === "fixed"; }
+// CC-102: "Don't know!" (Submit only): sent with no dates at all, and the crew looks them up
+function datesUnknown(f) { var r = document.querySelector('input[name="' + f + '-runkind"]:checked'); return !!r && r.value === "unknown"; }
 function paintRunKind(f) {
-  var fixed = isFixedRun(f);
-  $(f + "-range").hidden = fixed; $(f + "-run").hidden = !fixed;
+  var fixed = isFixedRun(f), unknown = datesUnknown(f);
+  $(f + "-range").hidden = fixed || unknown; $(f + "-run").hidden = !fixed;
   showDaysFor(f, $(f + "-category").value);
   $(f + "-run-day").min = isoDate(T);
 }
