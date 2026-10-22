@@ -99,6 +99,7 @@
   <form id="edit-form" novalidate>
     <h2 id="ed-heading">Edit event</h2>
     <p class="notice" id="ed-found" hidden></p>
+    <p class="notice" id="ed-dates-note" hidden>Whoever sent this didn't know the dates. Add them if you can find them; it can go live without, as "Dates not posted".</p>
     <div class="field"><label for="ed-title">Event name</label><input id="ed-title" type="text" maxlength="300" required></div>
     <div class="fields">
       <div class="field"><label for="ed-category">Type</label>
@@ -447,6 +448,7 @@
         <fieldset class="publish run-kind" id="s-runkind"><legend>When is it on?</legend>
           <label class="radio"><input type="radio" name="s-runkind" value="range" checked> Between an opening and a closing date</label>
           <label class="radio"><input type="radio" name="s-runkind" value="fixed"> Only on chosen dates (a fixed run)</label>
+          <label class="radio"><input type="radio" name="s-runkind" value="unknown"> Don't know! (Don't worry--we'll look into it for you <span aria-hidden="true">🙂</span>)</label>
         </fieldset>
         <div class="fields" id="s-range">
           <div class="field"><label for="s-begin">Opens</label><input id="s-begin" type="date"></div>

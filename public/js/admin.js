@@ -9,10 +9,13 @@ function submitterText(who) { // null: came from the old Google Sheet, or the ac
   return "Submitted by " + (who.display_name.trim() ? esc(who.display_name) + " (" + mail + ")" : mail);
 }
 function creditText(e) { return e.suggestedBy ? " · wants public credit" : e.creditMe ? " · wants credit, but has no name to show" : ""; }
+// CC-102: sent with "Don't know!" (or otherwise without any dates): the crew looks them up
+function datesToLookUp(e) { return !e.b && !e.n && !e.openRun && !(e.runDates && e.runDates.length); }
 function queueItemHTML(e, actions) {
   return '<div class="queue-item"><div class="alt-text"><p class="kind">' + esc(e.type) + '</p><p class="alt-title">' +
     (e.url ? '<a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" : esc(e.title)) + "</p>" +
-    '<p class="alt-meta">' + esc(placeText(e)) + " · " + esc(e.b || e.n ? dateText(e) : "Dates not given") + " · " + esc(costText(e)) + "</p>" +
+    '<p class="alt-meta">' + esc(placeText(e)) + " · " + (datesToLookUp(e) ? '<span class="state">Dates to look up</span>' : esc(e.b || e.n ? dateText(e) : "Dates not given")) +
+      " · " + esc(costText(e)) + "</p>" +
     (e.runDates && e.runDates.length ? '<p class="alt-meta">Fixed run: ' + esc(e.runDates.map(function (r) { return goingDay(r.date) + " " + clockText(r.time); }).join(", ")) + "</p>" : "") +
     (e.submitter !== undefined ? '<p class="alt-meta">' + submitterText(e.submitter) + creditText(e) + "</p>" :
       e.suggestedBy ? '<p class="alt-meta">Credited as "Suggested by ' + esc(e.suggestedBy) + '"</p>' : "") + "</div>" +
@@ -215,6 +218,7 @@ function openEditor(e, opener) {
   $("ed-publish-at").value = e.publishAt ? localInputValue(e.publishAt) : "";
   fillWeekly(e); // its own show times, for the planner (CC-79; hours.js)
   setRun("ed", e.runDates); $("ed-runkind").hidden = false; // its fixed run, if it has one (CC-96; hours.js)
+  $("ed-dates-note").hidden = !datesToLookUp(e); // CC-102: a reminder to find its dates
   $("ed-withdraw").textContent = e.status === "withdrawn" ? "Restore" : "Withdraw";
   $("ed-error").textContent = ""; $("ed-confirm").hidden = true; setEditorBusy(false);
   $("edit-dialog").showModal(); $("ed-title").focus();
