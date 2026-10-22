@@ -83,7 +83,7 @@ The API has these groups of routes:
 | `/venues` | Show, rename, merge and delete venues. Set opening hours and show times. | All users can read. Admins can change. |
 | `/crews` | Start a crew, make invite links, invite by email, accept or decline an invite, join, leave. The owner renames, removes members, hands over or deletes. | Signed-in users. Only a crew's members can see it. |
 | `/issues` | Report a problem with the site. Admins see the reports at `/admin/issues`, set a status and add a note. | Signed-in users report. Admins review. |
-| `/traffic` | Count a page view, a click to an event's page, or a planned outing. No cookies. | All visitors (the site sends it) |
+| `/traffic` | Count a page view, a click to an event's page, or a planned outing, and where the visit came from (a tagged link or the referring site's domain). No cookies. | All visitors (the site sends it) |
 
 ## 4. The database
 
@@ -105,7 +105,7 @@ The database has these main tables:
 - `plan_shares`: which crews can see a plan. A plan is private until its owner shares it. Only the members of those crews see it.
 - `attended_shares`: which crews see an "I've been" mark: the crews that the plan was shared with when its owner marked it. The crew box shows who has been, with 📸 for an approved photo and 📷 for none or one waiting. A closed event stays on the crew box for 2 weeks while someone has been.
 - `discovery_sources`, `discovered_items`, `discovery_checks` and `discovery_skip_rules`: event discovery (section 5).
-- `traffic_counts`, `traffic_visitors`, `traffic_visitor_days` and `user_active_days`: the counts for Site stats. These tables do not keep names or IP addresses.
+- `traffic_counts`, `traffic_visitors`, `traffic_visitor_days`, `traffic_source_visits`, `traffic_source_counts` and `user_active_days`: the counts for Site stats. These tables do not keep names or IP addresses, and a referring site is kept as its domain only.
 - `issue_reports`: problems that members reported, with a status and an optional note for the member.
 - `app_settings`: settings that an admin can change, for example the discovery budget.
 - `sheet_syncs`: the history of the old Google Sheet sync. Nothing writes to this table now.

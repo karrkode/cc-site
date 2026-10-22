@@ -68,7 +68,7 @@ function renderPrivacyNote() {
   p.innerHTML = COUNTING.off ? "Your visits aren't counted. " +
       '<button class="textbtn" type="button" id="count-toggle">Count my visits again</button>' :
     "We count visits without cookies: your browser keeps a random number so we can tell new visitors from returning ones. " +
-      "Nothing else about you is kept or shared. " + '<button class="textbtn" type="button" id="count-toggle">Don\'t count my visits</button>';
+      "We also note which site or tagged link brought you here (just the site, never the page). Nothing else about you is kept or shared. " + '<button class="textbtn" type="button" id="count-toggle">Don\'t count my visits</button>';
 }
 document.addEventListener("click", function (ev) {
   if (!ev.target.closest("#count-toggle")) return;

@@ -367,6 +367,19 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 
 /* visits (admins, CC-68) */
 .traffic-chart svg { display: block; width: 100%; height: 120px; margin-top: 6px; }
+/* CC-110: visitors and ticket clicks by where they came from */
+.section h3#sources-title { margin: 22px 0 8px; font-size: var(--step-1); }
+.table-wrap { overflow-x: auto; }
+.sources-table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
+.sources-table th, .sources-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.sources-table th { color: var(--muted); font-size: 0.8125rem; font-weight: 600; }
+.sources-table td.n, .sources-table th.n { text-align: right; white-space: nowrap; }
+.sources-table .how { color: var(--muted); font-size: 0.8125rem; }
+.sources-table tr.direct td { color: var(--muted); }
+.utm-help { margin-top: 12px; }
+.utm-help summary { cursor: pointer; color: var(--text); }
+.utm-help ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+.utm-help code { font-size: 0.8125rem; overflow-wrap: anywhere; }
 .traffic-chart rect.new { fill: var(--second); }
 .traffic-chart rect.ret { fill: var(--lead); }
 .sw.going + .sw, .interest-legend .sw:nth-of-type(2) { margin-left: 12px; }
