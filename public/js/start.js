@@ -11,6 +11,10 @@ function openFromHash() {
     return true;
   }
   var h = (location.hash || "").replace(/^#/, "");
+  // CC-117: an event (#e/<id>, from a card, a shared page or a reload), or Back out of one
+  var em = /^e\/(\d{1,9})$/.exec(h);
+  if (em) { (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(function () { openEvent(em[1], false); }); return true; }
+  if (visible("event") && EV.from) { closeEvent(); return true; }
   var m = /^o-(\d{8})-(\d{8})((?:-[0-9a-z]{1,12}){1,3})$/.exec(h); // ids: new numbers, or the old site's 6-hex ids
   if (m) {
     var ids = m[3].slice(1).split("-");

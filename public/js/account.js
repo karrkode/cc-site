@@ -10,6 +10,7 @@ function rerenderLists() {
   if (visible("catalog")) paintCatalog();
   if (visible("account")) renderAccount();
   if (visible("planner")) renderPlannerPage(); // CC-105
+  if (visible("event")) loadEventView(); // CC-117: signed in or out, the crews' plans change
 }
 function onAuthChange() {
   showReportLink(); // "Report an issue or request a feature" in the footer, signed in only (CC-84; issues.js)
@@ -31,6 +32,7 @@ function onAuthChange() {
   if (isAdmin()) updateReviewCount();
   var back = AFTER_SIGN_IN; AFTER_SIGN_IN = null; // signed in from the crews or planner page: back to it (CC-104, CC-105)
   if (back === "crews") openCrews(); else if (back === "planner") openPlanner();
+  else if (back && back.indexOf("e/") === 0) openEvent(back.slice(2), false); // signed in from an event (CC-117)
   else if (visible("account")) renderAccount(true);
   if (visible("crews")) renderCrewsPage();
   if (visible("planner")) renderPlannerPage();
@@ -109,8 +111,9 @@ function redrawCards(id, from, focusOn) {
 }
 function redrawCardsNow(id, from, focusOn) {
   var list = from && from.parentElement.closest("[id]"), listId = list ? list.id : null; // the grid this card was in
-  Array.prototype.forEach.call(document.querySelectorAll('[data-card="' + id + '"]'), function (c) { c.outerHTML = cardHTML(KNOWN[id]); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-card="' + id + '"]:not(.ev-panel)'), function (c) { c.outerHTML = cardHTML(KNOWN[id]); });
   return loadMyPlans().then(function () {
+    if (visible("event")) renderEventView(); // CC-117: the event view's buttons, redrawn as a view, not a card
     if (visible("account")) renderAccount();
     if (visible("planner")) renderPlannerPage();
     var item = '[data-card="' + id + '"],[data-day-item="' + id + '"],[data-journal="' + id + '"]', planner = PLANNER_LISTS.indexOf(listId) >= 0;

@@ -279,6 +279,12 @@
     </section>
 
     <!-- Planner -->
+    <!-- CC-117: one event, opened from a card (#e/<id>): its details, your plans, your crews', and the way out to tickets -->
+    <section class="view event-view" id="view-event" hidden>
+      <div class="row ev-back-row"><button class="textbtn" type="button" id="ev-back">← Back</button></div>
+      <p class="hint" id="ev-status" role="status"></p>
+      <div id="ev-body"></div>
+    </section>
     <section class="view plan" id="view-plan" hidden>
       <div id="plan-questions">
         <div class="view-head">

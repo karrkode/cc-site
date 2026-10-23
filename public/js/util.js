@@ -73,7 +73,7 @@ function fromApi(e) {
     region: e.venue.region || null, // the side of town (CC-73)
     pick: e.pick ? { status: e.pick.status, date: e.pick.date, by: e.pick.by } : null, // the owner's public pick (CC-66)
     sched: e.schedule || { dates: [], weekly: {}, weekly_from: "", hours: {} }, // when it's on, for the planner (CC-79)
-    crewPlans: e.crew_plans || [], // signed in: crew-mates' shared plans (CC-75)
+    crewPlans: (e.crew_plans || []).map(function (c) { c.been = c.been || []; return c; }), // signed in: crew-mates' shared plans (CC-75), and who's been (CC-117)
     runDates: (e.run_dates || []).map(function (r) { return { date: r.date, time: r.time, end_time: r.end_time || "" }; }), // a fixed run (CC-96)
     b: parseISO(e.begin_date), n: parseISO(e.end_date)
   };
@@ -180,19 +180,23 @@ function cardHTML(e) {
   var mark = pickHTML(e) + own;
   return '<article class="card" data-card="' + esc(e.id) + '">' +
     '<div class="card-top"><span class="kind">' + esc(e.type) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
-    '<h3><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a></h3>" +
+    // CC-117: the card opens the event's view in the site; its Tickets button there is the way out to the venue
+    '<h3><a href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '">' + esc(e.title) + "</a></h3>" +
     '<div class="card-body"><p class="where">' + placeHTML(e) + "</p>" + (e.runDates.length ? runDatesLine(e) : showDaysLine(e)) +
     (e.suggestedBy ? '<p class="credit">Suggested by ' + esc(e.suggestedBy) + "</p>" : "") +
-    (AUTH.user && e.crewPlans.length ? '<p class="crew-note">' + esc(crewNoteText(e)) + "</p>" : "") + "</div>" +
+    (AUTH.user && crewNoteText(e) ? '<p class="crew-note">' + esc(crewNoteText(e)) + "</p>" : "") + "</div>" +
     '<div class="card-foot"><span class="when">' + mark + (going ? '<span class="going-on">Going ' + esc(goingDay(mine.date)) + "</span>" :
       "<span>" + esc(dateText(e)) + "</span>") + "</span>" +
     '<span class="cost' + (e.min === 0 ? " free" : "") + '">' + esc(costText(e)) + "</span></div>" +
     (e.pick ? '<p class="pick-note" id="pick-note-' + PICK_SEQ + '" hidden>' + esc(pickText(e.pick)) + "</p>" : "") +
-    (AUTH.user ? '<div class="card-actions">' + (goingLater(e) && !WENT[e.id] ? "" : wentHTML(e)) +
-      (WENT[e.id] ? photoButtonHTML(e) : myplanToggleHTML(e)) + // been already: a photo, rather than a plan (CC-76; photos.js)
-      (WENT[e.id] ? "" : crewShareToggleHTML(e)) + // "Invite your Crew?": a plan, and crews to share it with (CC-75; crews.js)
-      (isAdmin() ? editButtonHTML(e, "went") : "") + "</div>" + (WENT[e.id] ? "" : myplanHTML(e) + crewShareHTML(e)) : "") +
-    "</article>";
+    (AUTH.user ? cardActionsHTML(e) : "") + "</article>";
+}
+// The signed-in buttons under a card, and in the event view (CC-117): I've been, your plan, sharing it with crews.
+function cardActionsHTML(e) {
+  return '<div class="card-actions">' + (goingLater(e) && !WENT[e.id] ? "" : wentHTML(e)) +
+    (WENT[e.id] ? photoButtonHTML(e) : myplanToggleHTML(e)) + // been already: a photo, rather than a plan (CC-76; photos.js)
+    (WENT[e.id] ? "" : crewShareToggleHTML(e)) + // "Invite your Crew?": a plan, and crews to share it with (CC-75; crews.js)
+    (isAdmin() ? editButtonHTML(e, "went") : "") + "</div>" + (WENT[e.id] ? "" : myplanHTML(e) + crewShareHTML(e));
 }
 // The owner's pick as a dolphin button: hovering shows what it means; tapping (phones) opens it in the card.
 var PICK_SEQ = 0;
@@ -223,7 +227,9 @@ function crewNoteText(e) {
     return names.length > 2 ? (NUMBER_WORDS[names.length] || String(names.length)).toLowerCase() + " more" :
       names.length === 2 ? names[0] + " and " + names[1] : names[0];
   }
-  return e.crewPlans.map(function (c) {
+  var planned = e.crewPlans.filter(function (c) { return c.going.length || c.interested.length; }); // been-only: the event view (CC-117)
+  if (!planned.length) return "";
+  return planned.map(function (c) {
     var parts = [];
     if (c.going.length) parts.push(who(c.going) + " from " + c.crew_name + (c.going.length === 1 ? " is going" : " are going"));
     if (c.interested.length) parts.push((c.going.length ? who(c.interested) : who(c.interested) + " from " + c.crew_name) +
@@ -273,13 +279,15 @@ function wentHTML(e) {
 }
 
 // ---------- views ----------
-var VIEWS = { home: "home-title", catalog: "catalog-title", plan: "plan-title", account: "account-title", crews: "crews-title", planner: "planner-title", submit: "submit-title", review: "review-title", venues: "venues-title", stats: "stats-title", sources: "sources-title", found: "found-title", issues: "issues-title", approvals: "approvals-title", members: "members-title", reset: "reset-title", verify: "verify-title" };
+var VIEWS = { home: "home-title", catalog: "catalog-title", event: "event-title", plan: "plan-title", account: "account-title", crews: "crews-title", planner: "planner-title", submit: "submit-title", review: "review-title", venues: "venues-title", stats: "stats-title", sources: "sources-title", found: "found-title", issues: "issues-title", approvals: "approvals-title", members: "members-title", reset: "reset-title", verify: "verify-title" };
 function show(name, focusId) {
   Object.keys(VIEWS).forEach(function (v) { $("view-" + v).hidden = v !== name; });
   ["catalog", "plan", "submit", "review", "account"].forEach(function (v) {
-    if (v === name || (v === "account" && (name === "crews" || name === "planner")) || (v === "review" && (name === "venues" || name === "stats" || name === "sources" || name === "found" || name === "issues" || name === "members" || (name === "approvals" && isAdmin())))) $("nav-" + v).setAttribute("aria-current", "page"); else $("nav-" + v).removeAttribute("aria-current");
+    if (v === name || (v === "catalog" && name === "event") || (v === "account" && (name === "crews" || name === "planner")) || (v === "review" && (name === "venues" || name === "stats" || name === "sources" || name === "found" || name === "issues" || name === "members" || (name === "approvals" && isAdmin())))) $("nav-" + v).setAttribute("aria-current", "page"); else $("nav-" + v).removeAttribute("aria-current");
   });
   window.scrollTo(0, 0);
+  // CC-117: leaving the event view some other way than Back: its #e/<id> comes off the address
+  if (name !== "event" && /^#e\//.test(location.hash)) { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} }
   if (typeof paintPending === "function") paintPending(); // the crew-invite notice hides on the crews page (CC-59, CC-104)
   var h = $(focusId || VIEWS[name]); if (h) h.focus({ preventScroll: true });
   track("view", name);
@@ -287,7 +295,7 @@ function show(name, focusId) {
 // A click out to an event's own page (tickets, showtimes) from a card or an outing (CC-68).
 document.addEventListener("click", function (ev) {
   var a = ev.target.closest('a[target="_blank"]');
-  if (a && a.closest(".card, .outing, .alts")) track("ticket");
+  if (a && a.closest(".card, .outing, .alts, .event-view")) track("ticket");
 });
 document.addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-go]"); if (!b || !FACETS) return; // the views need the filter options; they load first

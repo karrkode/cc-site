@@ -225,3 +225,135 @@ function buildCrewFilter() {
   syncMineChips();
 }
 $("clear-filters").addEventListener("click", function () { resetCatalog(); renderCatalog(); $("f-q").focus(); });
+
+// ---------- the event view (CC-117) ----------
+// A card opens its event here, at #e/<id>: the details, your plans and your crews', and Tickets as the way out
+// to the venue. Back returns to where you came from (the catalog keeps its filters, pages and place). Share gives
+// the event's public page (/e/<id>-<title>, CC-108), which anyone can open and which links back here.
+var EV = { id: null, e: null, from: null, y: 0, pushed: false, req: 0 }; // e: the event as GET /events/<id> gave it, with your crews' plans
+function evSlug(title) { // as the API makes it (app/seo.py slug): "Dead Girl's Quinceañera" -> "dead-girls-quinceanera"
+  var s = title.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/['’]/g, "")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  if (s.length > 60) s = s.slice(0, 60).replace(/-[^-]*$/, "");
+  return s || "event";
+}
+function evShareUrl(e) { return location.origin + "/e/" + e.id + "-" + evSlug(e.title); }
+// "Maya C. is going" / "Ben K. and Jordan R. have been", for one crew
+function evCrewLine(c) {
+  function who(names) {
+    names = names.map(shortName);
+    return names.length > 2 ? names.slice(0, -1).join(", ") + " and " + names[names.length - 1] : names.join(" and ");
+  }
+  var parts = [];
+  if (c.going.length) parts.push(who(c.going) + (c.going.length === 1 ? " is going" : " are going"));
+  if (c.interested.length) parts.push(who(c.interested) + (c.interested.length === 1 ? " is interested" : " are interested"));
+  if (c.been.length) parts.push(who(c.been) + (c.been.length === 1 ? " has been" : " have been"));
+  return parts.join(" · ");
+}
+function eventViewHTML(e) {
+  var st = eventStatus(e), past = isPast(e), facts = [["When", dateText(e)], ["Price", costText(e)]];
+  var times = e.runDates.length ? runDatesText(e) : SHOW_TYPES[e.type] && !oneNight(e) && !past ? showDaysText(e.sched.weekly, e.sched.weeks) : "";
+  if (times) facts.splice(1, 0, ["Shows", times]);
+  var html = '<div class="card-top"><span class="kind">' + esc(e.type) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
+    '<h1 id="event-title" tabindex="-1">' + esc(e.title) + "</h1>" +
+    '<p class="ev-place">' + placeHTML(e) + "</p>" +
+    (past ? '<p class="ev-closed">This run has closed.</p>' : "") +
+    '<dl class="ev-facts">' + facts.map(function (f) { return "<dt>" + esc(f[0]) + "</dt><dd>" + esc(f[1]) + "</dd>"; }).join("") + "</dl>" +
+    (e.suggestedBy ? '<p class="credit">Suggested by ' + esc(e.suggestedBy) + "</p>" : "") +
+    '<div class="row ev-actions">' +
+      (e.url && !past ? '<a class="btn" href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">Tickets and showtimes ↗</a>' : "") +
+      '<button class="btn ghost" type="button" id="ev-share">Share</button>' +
+    "</div>" +
+    '<input class="share-url" id="ev-share-url" type="text" readonly aria-label="Link to this event" hidden>' +
+    '<p class="hint small" id="ev-share-msg" role="status"></p>';
+  if (!AUTH.user) {
+    return html + '<div class="panel ev-signin"><p>Sign in to mark it interested or going, and to see who from your crews is going.</p>' +
+      '<div class="row"><button class="btn" type="button" id="ev-signin-btn">Sign in or create an account</button></div></div>';
+  }
+  // data-card: the card buttons find their event, and redraw it, the same way here (account.js redrawCards)
+  html += '<section class="section ev-panel" data-card="' + esc(e.id) + '" aria-labelledby="ev-mine-h"><h2 id="ev-mine-h">Your plans</h2>' +
+    (MYPLANS[e.id] ? '<p class="hint">' + esc(myplanSaid(MYPLANS[e.id])) + ".</p>" : WENT[e.id] ? "<p class=\"hint\">You've been.</p>" : "") +
+    cardActionsHTML(e) + "</section>";
+  var crews = e.crewPlans.filter(function (c) { return evCrewLine(c); });
+  html += '<section class="section ev-crews" aria-labelledby="ev-crews-h"><h2 id="ev-crews-h">Your crews</h2>' +
+    (crews.length ? '<ul class="ev-crew-list">' + crews.map(function (c) {
+      return '<li><span class="ev-crew-name">' + esc(c.crew_name) + "</span> " + esc(evCrewLine(c)) + "</li>";
+    }).join("") + "</ul>" :
+      '<p class="hint">' + (CREWS.length ? "Nobody from your crews has this on their list yet." : "Start a crew to see who's going with you.") + "</p>") +
+    "</section>";
+  return html;
+}
+function renderEventView() {
+  var e = EV.e && EV.e.id === EV.id ? EV.e : KNOWN[EV.id]; // a list fetched before sign-in may have replaced KNOWN's copy
+  if (!e) return;
+  var a = document.activeElement, first = !$("event-title"); // the details weren't there yet: focus waited on Back
+  var keep = !a || a === document.body || a.id === "event-title" || (first && a.id === "ev-back");
+  $("ev-body").innerHTML = eventViewHTML(e);
+  if (keep && visible("event")) $("event-title").focus({ preventScroll: true });
+}
+// The event from the API: its details, and (signed in) your crews' plans, which depend on who's signed in.
+function loadEventView() {
+  var id = EV.id, req = ++EV.req;
+  return api("/events/" + encodeURIComponent(id)).then(readJSON).then(function (res) {
+    if (req !== EV.req) return; // another event was opened since
+    $("ev-status").textContent = "";
+    if (!res.ok) {
+      EV.e = null;
+      $("ev-body").innerHTML = '<h1 id="event-title" tabindex="-1">That event isn’t on the list</h1>' +
+        '<p>It may have been taken down, or the link is wrong.</p><div class="row"><button class="btn" type="button" data-go="catalog">Browse the catalog</button></div>';
+      $("event-title").focus({ preventScroll: true });
+      return;
+    }
+    EV.e = toEvent(res.body); renderEventView();
+  }, function () { if (req === EV.req) $("ev-status").textContent = errorText(null); });
+}
+// Open event id: push (from a card) adds #e/<id> to the history so Back comes back here; otherwise (a link or a
+// reload) the address already says it.
+function openEvent(id, push) {
+  id = String(id);
+  if (push) {
+    var from = Object.keys(VIEWS).filter(visible)[0];
+    EV.from = from && from !== "event" ? from : EV.from; EV.y = window.scrollY;
+    try { history.pushState(null, "", "#e/" + id); EV.pushed = true; } catch (err) { EV.pushed = false; }
+  } else {
+    EV.pushed = false; if (!visible("event")) EV.from = null;
+    if (location.hash !== "#e/" + id) { try { history.replaceState(null, "", "#e/" + id); } catch (err) {} } // back from signing in: a reload stays here
+  }
+  EV.id = id; EV.e = null;
+  $("ev-status").textContent = KNOWN[id] ? "" : "Loading…";
+  $("ev-body").innerHTML = "";
+  renderEventView();
+  show("event", KNOWN[id] ? "event-title" : "ev-back");
+  loadEventView();
+}
+// Back to the view the event was opened from, at the same place, with focus on the card that opened it.
+function closeEvent() {
+  var from = EV.from || "catalog", id = EV.id;
+  EV.from = null; EV.pushed = false;
+  if (from === "catalog" && !CAT_ITEMS.length) renderCatalog();
+  show(from);
+  window.scrollTo(0, EV.y);
+  var link = document.querySelector('#view-' + from + ' [data-ev-open="' + id + '"]');
+  if (link) link.focus({ preventScroll: true });
+}
+document.addEventListener("click", function (ev) {
+  var a = ev.target.closest("a[data-ev-open]");
+  if (!a || ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return; // a new tab: the href does it
+  ev.preventDefault();
+  openEvent(a.getAttribute("data-ev-open"), true);
+});
+$("ev-back").addEventListener("click", function () {
+  if (EV.pushed) { history.back(); return; } // the hashchange comes back to closeEvent()
+  try { history.replaceState(null, "", location.pathname + location.search); } catch (err) {}
+  closeEvent();
+});
+$("ev-body").addEventListener("click", function (ev) {
+  var t = ev.target;
+  if (t.id === "ev-signin-btn") { AFTER_SIGN_IN = "e/" + EV.id; openAccount(); return; }
+  if (t.id !== "ev-share" || !KNOWN[EV.id]) return;
+  var e = KNOWN[EV.id], url = evShareUrl(e), field = $("ev-share-url"), msg = $("ev-share-msg");
+  var fallback = function () { field.value = url; field.hidden = false; field.focus(); field.select(); msg.textContent = "Copy the link above."; };
+  if (navigator.share) { navigator.share({ title: e.title, url: url }).catch(function () {}); return; } // phones: the share sheet
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { msg.textContent = "Link copied."; }, fallback);
+  else fallback();
+});
