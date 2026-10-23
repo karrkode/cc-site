@@ -367,7 +367,24 @@ $("me-menu").addEventListener("keydown", function (ev) {
 $("me-menu").addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-me]"); if (!b) return;
   var go = b.getAttribute("data-me"); closeMeMenu(false);
-  if (go === "account") openAccount(); else if (go === "crews") openCrews(); else if (go === "planner") openPlanner(); else signOut();
+  if (go === "account") openAccount(); else if (go === "crews") openCrews(); else if (go === "planner") openPlanner();
+  else if (go === "invite") inviteFriend(); else signOut();
+});
+// CC-115: invite a friend to the site: the phone's share sheet, or the link to copy. Tagged so these visits
+// show up as "invite" on Site stats. Only the public site link: crew invite links stay with their crew.
+var INVITE_TAGS = "?utm_source=invite&utm_medium=referral&utm_campaign=friend";
+function inviteFriend() {
+  var url = location.origin + "/" + INVITE_TAGS;
+  var text = "I use Culture Crew to find Chicago theater, comedy, music and art, and to plan nights out. Come see what's on:";
+  if (navigator.share) { navigator.share({ title: "Culture Crew", text: text, url: url }).catch(function () {}); return; }
+  $("invite-url").value = url; $("invite-msg").textContent = "";
+  $("invite-dialog").showModal(); $("invite-url").focus(); $("invite-url").select();
+}
+$("invite-copy").addEventListener("click", function () {
+  var field = $("invite-url"), msg = $("invite-msg");
+  var fallback = function () { field.focus(); field.select(); msg.textContent = "Press Ctrl+C (or ⌘C) to copy the selected link."; };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(field.value).then(function () { msg.textContent = "Link copied."; }, fallback);
+  else fallback();
 });
 document.addEventListener("click", function (ev) { if (!$("me-wrap").contains(ev.target)) closeMeMenu(false); });
 

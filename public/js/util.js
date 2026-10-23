@@ -279,11 +279,11 @@ function wentHTML(e) {
 }
 
 // ---------- views ----------
-var VIEWS = { home: "home-title", catalog: "catalog-title", event: "event-title", plan: "plan-title", account: "account-title", crews: "crews-title", planner: "planner-title", submit: "submit-title", review: "review-title", venues: "venues-title", stats: "stats-title", sources: "sources-title", found: "found-title", issues: "issues-title", approvals: "approvals-title", members: "members-title", reset: "reset-title", verify: "verify-title" };
+var VIEWS = { home: "home-title", catalog: "catalog-title", event: "event-title", plan: "plan-title", account: "account-title", crews: "crews-title", planner: "planner-title", submit: "submit-title", review: "review-title", venues: "venues-title", stats: "stats-title", sources: "sources-title", found: "found-title", issues: "issues-title", approvals: "approvals-title", members: "members-title", card: "card-title", reset: "reset-title", verify: "verify-title" };
 function show(name, focusId) {
   Object.keys(VIEWS).forEach(function (v) { $("view-" + v).hidden = v !== name; });
   ["catalog", "plan", "submit", "review", "account"].forEach(function (v) {
-    if (v === name || (v === "catalog" && name === "event") || (v === "account" && (name === "crews" || name === "planner")) || (v === "review" && (name === "venues" || name === "stats" || name === "sources" || name === "found" || name === "issues" || name === "members" || (name === "approvals" && isAdmin())))) $("nav-" + v).setAttribute("aria-current", "page"); else $("nav-" + v).removeAttribute("aria-current");
+    if (v === name || (v === "catalog" && name === "event") || (v === "account" && (name === "crews" || name === "planner")) || (v === "review" && (name === "venues" || name === "stats" || name === "sources" || name === "found" || name === "issues" || name === "members" || name === "card" || (name === "approvals" && isAdmin())))) $("nav-" + v).setAttribute("aria-current", "page"); else $("nav-" + v).removeAttribute("aria-current");
   });
   window.scrollTo(0, 0);
   // CC-117: leaving the event view some other way than Back: its #e/<id> comes off the address
@@ -301,6 +301,6 @@ document.addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-go]"); if (!b || !FACETS) return; // the views need the filter options; they load first
   var go = b.getAttribute("data-go");
   if (go === "plan") startPlan(); else if (go === "catalog") { renderCatalog(); show("catalog"); }
-  else if (go === "account") openAccount(); else if (go === "crews") openCrews(); else if (go === "planner") openPlanner(); else if (go === "submit") openSubmit(); else if (go === "review") openReview(); else if (go === "venues") openVenues(); else if (go === "stats") openStats(); else if (go === "sources") openSources(); else if (go === "found") openFound(); else if (go === "issues") openIssues(); else if (go === "approvals") openApprovals(); else if (go === "members") openMembers();
+  else if (go === "account") openAccount(); else if (go === "crews") openCrews(); else if (go === "planner") openPlanner(); else if (go === "submit") openSubmit(); else if (go === "review") openReview(); else if (go === "venues") openVenues(); else if (go === "stats") openStats(); else if (go === "sources") openSources(); else if (go === "found") openFound(); else if (go === "issues") openIssues(); else if (go === "approvals") openApprovals(); else if (go === "members") openMembers(); else if (go === "card") openCard();
   else show("home");
 });
