@@ -367,6 +367,27 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 
 /* visits (admins, CC-68) */
 .traffic-chart svg { display: block; width: 100%; height: 120px; margin-top: 6px; }
+/* CC-117: one event, opened from a card */
+.event-view { max-width: 760px; }
+.ev-back-row { padding-top: clamp(14px, 3vw, 24px); }
+#ev-body { display: grid; gap: 14px; padding-top: 12px; }
+#ev-body > .card-top { justify-content: flex-start; }
+#ev-body > .card-top .pill { margin-left: 0; }
+#ev-body h1 { font-family: var(--display); font-weight: 600; font-size: var(--step-3); line-height: 1.08; letter-spacing: -0.02em; overflow-wrap: anywhere; text-wrap: balance; }
+.ev-place { color: var(--muted); font-size: 1.0625rem; }
+.ev-closed { justify-self: start; padding: 4px 10px; border-radius: 999px; background: var(--danger-soft); color: var(--on-danger-soft); font-weight: 600; font-size: 0.875rem; }
+.ev-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px 20px; margin: 4px 0; padding: 16px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
+.ev-facts dt { color: var(--muted); font-size: 0.875rem; font-weight: 600; }
+.ev-facts dd { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ev-actions a.btn { text-decoration: none; }
+#ev-share-url { width: 100%; }
+.ev-signin { margin-top: 10px; }
+.ev-panel, .ev-crews { margin-top: 18px; gap: 10px; }
+.ev-panel h2, .ev-crews h2 { font-size: var(--step-1); }
+.ev-panel .card-actions { position: static; }
+.ev-crew-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ev-crew-list li { padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-ctl); }
+.ev-crew-name { font-weight: 700; margin-right: 6px; }
 /* CC-110: visitors and ticket clicks by where they came from */
 .section h3#sources-title { margin: 22px 0 8px; font-size: var(--step-1); }
 .table-wrap { overflow-x: auto; }

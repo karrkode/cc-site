@@ -427,7 +427,7 @@ $("i-closed").addEventListener("change", loadInterest);
 
 // CC-68: visits over the last 30 days: totals, a daily chart of visitors (returning ones stacked under
 // new ones), and views of each part of the site. Counts only.
-var VIEW_NAMES = { home: "Home", catalog: "Catalog", plan: "Plan an outing", submit: "Submit", account: "Account", crews: "Crews", planner: "Culture Planner",
+var VIEW_NAMES = { home: "Home", catalog: "Catalog", event: "Event view", plan: "Plan an outing", submit: "Submit", account: "Account", crews: "Crews", planner: "Culture Planner",
   review: "Review", venues: "Venues", stats: "Stats", sources: "Event sources", found: "Found events", issues: "Issues",
   reset: "Password reset", verify: "Email confirmation" };
 function loadTraffic() {

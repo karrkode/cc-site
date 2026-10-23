@@ -41,7 +41,7 @@ The site does not have a build step. At deploy, a script adds a content hash to 
 Thus, browsers can keep these files for one year and still get each new version.
 
 Amazon S3 keeps the files.
-Amazon CloudFront sends the files to the user's browser. Three paths come from the API instead (CC-108): `/e/*` (a plain HTML page per event, for search engines and link previews), `/sitemap.xml` and `/robots.txt`. CloudFront caches them for up to 10 minutes.
+Amazon CloudFront sends the files to the user's browser. Three paths come from the API instead (CC-108): `/e/*` (a plain HTML page per event, for search engines and link previews), `/sitemap.xml` and `/robots.txt`. CloudFront caches them for up to 10 minutes. Inside the site, a card opens the event view at `#e/<id>` (CC-117): the details, your plans and your crews', with Tickets as the way out. Its Share button gives the `/e/` page, whose main button opens the view.
 The browser runs the JavaScript.
 The JavaScript gets the data from the API.
 
