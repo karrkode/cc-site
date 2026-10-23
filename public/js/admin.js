@@ -461,7 +461,29 @@ function paintTraffic(t) {
     '<div class="bars-axis"><span>' + esc(short(parseISO(t.days[0].day))) + "</span><span>Today</span></div>";
   var views = Object.keys(t.by_view).map(function (k) { return (VIEW_NAMES[k] || k) + " " + t.by_view[k]; });
   $("traffic-views").textContent = views.length ? "Views by section: " + views.join(" · ") : "";
+  paintVisitSources(t);
 }
+// CC-110: visitors and ticket clicks by source: a tagged link's utm values, or the site that linked here.
+// Whatever had neither is "Direct or unknown" (typed in, a bookmark, or an app that hides where it came from).
+function paintVisitSources(t) {
+  var rows = (t.sources || []).map(function (r) {
+    var how = r.medium === "site" ? "Linked from this site" : "Tagged link" + (r.medium ? " · " + r.medium : "");
+    return "<tr><td>" + esc(r.source) + '<div class="how">' + esc(how) + "</div></td><td>" + esc(r.campaign || "—") + "</td>" +
+      '<td class="n">' + r.visitors + '</td><td class="n">' + r.tickets + "</td></tr>";
+  });
+  var d = t.direct || { visitors: 0, tickets: 0 };
+  rows.push('<tr class="direct"><td>Direct or unknown</td><td>—</td><td class="n">' + d.visitors + '</td><td class="n">' + d.tickets + "</td></tr>");
+  $("traffic-sources").innerHTML = '<thead><tr><th scope="col">Source</th><th scope="col">Campaign</th>' +
+    '<th scope="col" class="n">Visitors</th><th scope="col" class="n">Ticket clicks</th></tr></thead><tbody>' + rows.join("") + "</tbody>";
+}
+var UTM_EXAMPLES = [["Instagram", "?utm_source=instagram&utm_medium=social&utm_campaign=weekend"],
+  ["TikTok", "?utm_source=tiktok&utm_medium=social&utm_campaign=three-words"],
+  ["Facebook ads", "?utm_source=facebook&utm_medium=paid&utm_campaign=this-weekend"],
+  ["The weekly email", "?utm_source=newsletter&utm_medium=email&utm_campaign=crews-weekend"],
+  ["QR cards", "?utm_source=qr&utm_medium=print&utm_campaign=card"]];
+$("utm-examples").innerHTML = UTM_EXAMPLES.map(function (u) {
+  return "<li>" + esc(u[0]) + ": <code>chiculturecrew.com/" + esc(u[1]) + "</code></li>";
+}).join("");
 
 // ---------- event sources (admins, CC-70) ----------
 // The discovery job runs hourly on the server and checks only the sources that are due. Here an

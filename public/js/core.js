@@ -114,12 +114,35 @@ function visitorId() {
   } catch (e) { COUNTING.vid = null; } // storage blocked: counted for the day only
   return COUNTING.vid;
 }
+// CC-110: where this visit came from: the utm_ tags on the link it landed on, or else the domain of the
+// site that linked here (never the page). Kept for the tab's session so ticket clicks later in the visit
+// count for the same source. The tags come off the address so a copied link doesn't carry them on.
+var VISIT_SOURCE = (function () {
+  var src = null;
+  try {
+    var q = new URLSearchParams(location.search);
+    if (q.get("utm_source")) {
+      src = { utm_source: q.get("utm_source"), utm_medium: q.get("utm_medium") || "", utm_campaign: q.get("utm_campaign") || "" };
+      ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"].forEach(function (k) { q.delete(k); });
+      var rest = q.toString();
+      history.replaceState(history.state, "", location.pathname + (rest ? "?" + rest : "") + location.hash);
+    } else if (document.referrer) {
+      var host = new URL(document.referrer).hostname;
+      if (host && host !== location.hostname) src = { ref: host };
+    }
+    if (src) sessionStorage.setItem("cc_src", JSON.stringify(src));
+    else src = JSON.parse(sessionStorage.getItem("cc_src") || "null");
+  } catch (e) {}
+  return src;
+})();
 function track(kind, view) {
   Promise.resolve().then(function () { return COUNT_READY; }).then(function () {
     if (COUNTING.off || (AUTH.user && AUTH.user.role === "admin")) return;
+    var body = { kind: kind, view: view || "", vid: visitorId() };
+    if (VISIT_SOURCE) Object.keys(VISIT_SOURCE).forEach(function (k) { body[k] = VISIT_SOURCE[k]; });
     // text/plain keeps this a "simple" request (no preflight); keepalive lets it finish as a link opens
     return fetch(API + "/traffic", { method: "POST", credentials: "omit", keepalive: true, headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({ kind: kind, view: view || "", vid: visitorId() }) });
+      body: JSON.stringify(body) });
   }).catch(function () {});
 }
 function setCounting(on) {
