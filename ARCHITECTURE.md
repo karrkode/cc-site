@@ -41,7 +41,7 @@ The site does not have a build step. At deploy, a script adds a content hash to 
 Thus, browsers can keep these files for one year and still get each new version.
 
 Amazon S3 keeps the files.
-Amazon CloudFront sends the files to the user's browser.
+Amazon CloudFront sends the files to the user's browser. Three paths come from the API instead (CC-108): `/e/*` (a plain HTML page per event, for search engines and link previews), `/sitemap.xml` and `/robots.txt`. CloudFront caches them for up to 10 minutes.
 The browser runs the JavaScript.
 The JavaScript gets the data from the API.
 
@@ -83,6 +83,7 @@ The API has these groups of routes:
 | `/venues` | Show, rename, merge and delete venues. Set opening hours and show times. | All users can read. Admins can change. |
 | `/crews` | Start a crew, make invite links, invite by email, accept or decline an invite, join, leave. The owner renames, removes members, hands over or deletes. | Signed-in users. Only a crew's members can see it. |
 | `/issues` | Report a problem with the site. Admins see the reports at `/admin/issues`, set a status and add a note. | Signed-in users report. Admins review. |
+| `/e/{id}-{title}`, `/sitemap.xml`, `/robots.txt` | Plain HTML event pages with schema.org Event data, the sitemap of live events, and robots.txt (CC-108). Public details only. | Anyone, through chiculturecrew.com |
 | `/traffic` | Count a page view, a click to an event's page, or a planned outing, and where the visit came from (a tagged link or the referring site's domain). No cookies. | All visitors (the site sends it) |
 
 ## 4. The database

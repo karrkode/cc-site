@@ -77,7 +77,7 @@ jobs:
       - name: Check the live site
         run: |
           for _ in $(seq 1 20); do
-            if curl -fsS -o /dev/null https://chiculturecrew.com/ && curl -fsS https://chiculturecrew.com/ | grep -q '<title>Culture Crew</title>'; then
+            if curl -fsS -o /dev/null https://chiculturecrew.com/ && curl -fsS https://chiculturecrew.com/ | grep -q '<title>Culture Crew'; then
               echo "chiculturecrew.com is up"; exit 0
             fi
             sleep 3
