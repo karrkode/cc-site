@@ -367,6 +367,30 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 
 /* visits (admins, CC-68) */
 .traffic-chart svg { display: block; width: 100%; height: 120px; margin-top: 6px; }
+/* CC-115: the QR card. Always light, like paper, whatever the site's theme; 3.5 x 2 inches, like a business card. */
+.card-maker { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; max-width: 720px; }
+.card-maker > * { min-width: 0; } /* grid items: let long links wrap instead of widening the page */
+.card-maker a.btn { text-decoration: none; }
+.card-maker #card-campaign { max-width: 320px; }
+.card-maker code { overflow-wrap: anywhere; font-size: 0.8125rem; }
+.biz-card { box-sizing: border-box; width: 3.5in; max-width: 100%; aspect-ratio: 3.5 / 2; display: grid; grid-template-columns: 1fr auto; gap: 0.14in; align-items: center;
+  padding: 0.16in 0.18in; background: #ffffff; color: #111111; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 18px rgb(0 0 0 / 0.18);
+  -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.biz-text { display: grid; gap: 0.05in; min-width: 0; align-content: center; }
+.biz-brand { display: flex; align-items: center; gap: 0.05in; margin: 0; font-family: var(--display); font-weight: 600; font-size: 0.11in; }
+.biz-brand .star { width: 0.12in; height: 0.12in; fill: #D62839; }
+.biz-head { margin: 0; font-family: var(--display); font-weight: 600; font-size: 0.2in; line-height: 1.05; letter-spacing: -0.01em; }
+.biz-head span { color: #1D4ED8; }
+.biz-sub { margin: 0; font-size: 0.075in; line-height: 1.3; color: #444444; }
+.biz-url { margin: 0; font-weight: 700; font-size: 0.085in; }
+.biz-qr { width: 1.25in; max-width: 36vw; line-height: 0; }
+.biz-qr svg { width: 100%; height: auto; display: block; }
+@media print {
+  html.print-card body * { visibility: hidden; }
+  html.print-card #biz-card, html.print-card #biz-card * { visibility: visible; }
+  html.print-card #biz-card { position: fixed; inset: 0; width: 3.5in; height: 2in; max-width: none; border: 0; border-radius: 0; box-shadow: none; }
+  html.print-card, html.print-card body { background: #ffffff !important; }
+}
 /* CC-117: one event, opened from a card */
 .event-view { max-width: 760px; }
 .ev-back-row { padding-top: clamp(14px, 3vw, 24px); }

@@ -586,3 +586,53 @@ $("sources-list").addEventListener("change", function (ev) {
     loadSources('[data-src-every="' + id + '"]');
   }, function () { $("sources-status").textContent = errorText(null); });
 });
+
+// ---------- the QR card (admins, CC-115) ----------
+// A business card to hand out at shows. The QR code opens the site with utm tags (source qr, medium print, and
+// a campaign per batch), so those visits show up on Site stats (CC-110). Made here in the browser with
+// qrcode-generator (js/vendor/qrcode.js), like the crew invite codes: nothing goes to an outside QR service.
+var CARD_URLS = [];
+function cardCampaign() { return ($("card-campaign").value.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "card"); }
+function cardUrl() { return "https://chiculturecrew.com/?utm_source=qr&utm_medium=print&utm_campaign=" + cardCampaign(); }
+function qrSvgText(text) { // the code as an SVG: one path of dark squares on white, with the standard 4-module quiet zone
+  var qr = qrcode(0, "M"); qr.addData(text); qr.make();
+  var n = qr.getModuleCount(), q = 4, size = n + q * 2, d = [];
+  for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (qr.isDark(r, c)) d.push("M" + (c + q) + " " + (r + q) + "h1v1h-1z");
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + " " + size + '" shape-rendering="crispEdges">' +
+    '<rect width="' + size + '" height="' + size + '" fill="#ffffff"/><path fill="#111111" d="' + d.join("") + '"/></svg>';
+}
+function qrPngUrl(svg) { // 1024px, for printing or a print shop
+  return new Promise(function (resolve, reject) {
+    var img = new Image();
+    img.onload = function () {
+      var canvas = document.createElement("canvas"); canvas.width = canvas.height = 1024;
+      var g = canvas.getContext("2d"); g.imageSmoothingEnabled = false; g.drawImage(img, 0, 0, 1024, 1024);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = reject;
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  });
+}
+function paintCard() {
+  var url = cardUrl(), svg = qrSvgText(url), name = "culture-crew-qr-" + cardCampaign();
+  $("card-url").textContent = url;
+  $("biz-qr").innerHTML = svg;
+  CARD_URLS.forEach(function (u) { URL.revokeObjectURL(u); });
+  var svgUrl = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" })); CARD_URLS = [svgUrl];
+  $("card-svg").href = svgUrl; $("card-svg").download = name + ".svg";
+  $("card-png").download = name + ".png";
+  qrPngUrl(svg).then(function (png) { $("card-png").href = png; }, function () { $("card-png").removeAttribute("href"); });
+}
+function openCard() { if (!isAdmin()) { openAccount(); return; } show("card"); paintCard(); }
+$("card-campaign").addEventListener("input", paintCard);
+// Print just the card, on a business-card-sized page; the page size is only set for this print.
+$("card-print").addEventListener("click", function () {
+  var page = document.createElement("style"); page.id = "card-page";
+  page.textContent = "@page { size: 3.5in 2in; margin: 0; }";
+  document.head.appendChild(page); document.documentElement.classList.add("print-card");
+  window.print();
+});
+window.addEventListener("afterprint", function () {
+  var page = document.getElementById("card-page"); if (page) page.remove(); // added only while printing
+  document.documentElement.classList.remove("print-card");
+});

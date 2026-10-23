@@ -87,6 +87,16 @@
     <div class="row"><button class="btn" type="submit" id="ph-send" disabled>Send photo</button><button class="btn danger" type="button" id="ph-remove" hidden>Remove photo</button><button class="btn ghost" type="button" id="ph-cancel">Close</button></div>
   </form>
 </dialog>
+<!-- CC-115: the public site link, tagged so these visits show up on Site stats. Phones use the share sheet instead. -->
+<dialog class="editor" id="invite-dialog" aria-labelledby="invite-heading">
+  <form id="invite-form" method="dialog">
+    <h2 id="invite-heading" tabindex="-1">Invite a friend</h2>
+    <p class="hint">Send them this link. They can look around without an account, and sign up when they want to plan with you.</p>
+    <input type="text" id="invite-url" readonly aria-label="Link to Culture Crew">
+    <p class="hint small" id="invite-msg" role="status"></p>
+    <div class="row"><button class="btn" type="button" id="invite-copy">Copy link</button><button class="btn ghost" type="submit">Done</button></div>
+  </form>
+</dialog>
 <dialog class="editor" id="issue-dialog" aria-labelledby="is-heading">
   <form id="issue-form" novalidate>
     <h2 id="is-heading" tabindex="-1">Report an issue or request a feature</h2>
@@ -181,6 +191,7 @@
         <span class="me-menu" id="me-menu" role="menu" aria-labelledby="nav-account" hidden>
           <button type="button" role="menuitem" tabindex="-1" data-me="crews">Crews<span class="count" id="crews-count"></span></button>
           <button type="button" role="menuitem" tabindex="-1" data-me="planner">Culture Planner</button>
+          <button type="button" role="menuitem" tabindex="-1" data-me="invite">Invite a friend</button>
           <button type="button" role="menuitem" tabindex="-1" data-me="account">Account Settings</button>
           <button type="button" role="menuitem" tabindex="-1" data-me="signout">Sign out</button>
         </span>
@@ -538,7 +549,7 @@
         <p class="eyebrow">Review</p>
         <h1 id="review-title" tabindex="-1">Waiting for review</h1>
         <p>Approve to put an event on the list. Rejected events stay out of sight.</p>
-        <div class="row"><button class="btn neutral" type="button" data-go="found">Found events<span class="count" id="found-count"></span></button><button class="btn neutral" type="button" data-go="venues">Manage venues</button><button class="btn neutral" type="button" data-go="stats">Site stats</button><button class="btn neutral" type="button" data-go="sources">Event sources</button><button class="btn neutral" type="button" data-go="issues">Issues<span class="count" id="issues-count"></span></button><button class="btn neutral" type="button" data-go="approvals">Photo approvals<span class="count" id="approvals-count"></span></button><button class="btn neutral" type="button" data-go="members">Members</button></div>
+        <div class="row"><button class="btn neutral" type="button" data-go="found">Found events<span class="count" id="found-count"></span></button><button class="btn neutral" type="button" data-go="venues">Manage venues</button><button class="btn neutral" type="button" data-go="stats">Site stats</button><button class="btn neutral" type="button" data-go="sources">Event sources</button><button class="btn neutral" type="button" data-go="issues">Issues<span class="count" id="issues-count"></span></button><button class="btn neutral" type="button" data-go="approvals">Photo approvals<span class="count" id="approvals-count"></span></button><button class="btn neutral" type="button" data-go="members">Members</button><button class="btn neutral" type="button" data-go="card">QR card</button></div>
       </div>
       <div class="queue" id="review-list"></div>
       <div class="section"><h2>Scheduled</h2><p class="hint">Approved, and waiting for their publish time.</p><div class="queue" id="scheduled-list"></div></div>
@@ -633,6 +644,32 @@
       <div class="queue" id="issues-list"></div>
     </section>
 
+    <!-- CC-115: a QR card to hand out at shows, made here in the browser (no outside QR service) -->
+    <section class="view" id="view-card" hidden>
+      <div class="view-head">
+        <p class="eyebrow">Review</p>
+        <h1 id="card-title" tabindex="-1">QR card</h1>
+        <p>A card to hand out at shows. Its QR code opens chiculturecrew.com with tags, so these visits show up under “qr” on Site stats.</p>
+        <div class="row"><button class="textbtn" type="button" data-go="review">Back to review</button></div>
+      </div>
+      <div class="card-maker">
+        <div class="field"><label for="card-campaign">Campaign</label>
+          <input id="card-campaign" type="text" value="card" maxlength="40" autocomplete="off" spellcheck="false" aria-describedby="card-campaign-hint">
+          <span class="hint small" id="card-campaign-hint">Name each batch, for example lobby-goodman, to compare them on Site stats. Letters, numbers and dashes.</span></div>
+        <p class="hint small">The code opens <code id="card-url"></code></p>
+        <div class="biz-card" id="biz-card" role="img" aria-label="Preview of the printed card: Culture Crew, What's the crew seeing next?, chiculturecrew.com, and the QR code">
+          <div class="biz-text">
+            <p class="biz-brand"><svg class="star" aria-hidden="true"><use href="#chi-star"></use></svg>Culture Crew</p>
+            <p class="biz-head">What’s the crew seeing <span>next?</span></p>
+            <p class="biz-sub">Chicago theater, comedy, music and art, and the people you go with.</p>
+            <p class="biz-url">chiculturecrew.com</p>
+          </div>
+          <div class="biz-qr" id="biz-qr"></div>
+        </div>
+        <div class="row"><button class="btn" type="button" id="card-print">Print the card</button><a class="btn ghost" id="card-png" href="#" download="culture-crew-qr.png">Download QR (PNG)</a><a class="btn ghost" id="card-svg" href="#" download="culture-crew-qr.svg">Download QR (SVG)</a></div>
+        <p class="hint small">Prints one card at business-card size (3.5 × 2 inches). For a stack of cards, give a print shop the SVG, which stays sharp at any size.</p>
+      </div>
+    </section>
     <section class="view" id="view-stats" hidden>
       <div class="view-head">
         <p class="eyebrow">Review</p>
