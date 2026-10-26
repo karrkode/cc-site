@@ -501,13 +501,13 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .crew .confirm .btn.ghost { color: inherit; box-shadow: inset 0 0 0 1.5px currentColor; }
 .join h2 { font-family: var(--display); font-weight: 600; font-size: var(--step-2); }
 
-/* CC-75: a crew box is two halves, members and shared plans. Each half stops at five members' height
-   (crews.js measures a row) and scrolls on its own past that; the name and buttons stay put. */
+/* CC-75: a crew box is two halves, members and shared plans. The plans half stops at five members' height
+   (crews.js measures a row) and scrolls on its own past that; CC-120 lets the members half run its full length. */
 .crew-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 24px; }
 .crew-col { display: grid; gap: 6px; align-content: start; min-width: 0; }
 .crew-col-h { font-size: var(--step--1); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .crew ul.members:focus-visible, .crew ul.crew-plans:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
-.crew ul.members, .crew ul.crew-plans { overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; } /* max-height: crews.js */
+.crew ul.crew-plans { overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; } /* max-height: crews.js */
 .crew ul.crew-plans { list-style: none; margin: 0; padding-left: 0; display: grid; gap: 0; align-content: start; }
 .crew ul.crew-plans li { display: grid; gap: 2px; padding: 8px 0; border-top: 1px solid var(--line); }
 .crew ul.crew-plans li:first-child { border-top: 0; padding-top: 0; }
@@ -703,7 +703,6 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .crew-sum[aria-expanded="true"] .crew-caret { transform: rotate(180deg); }
 .crew-detail { display: grid; gap: 16px; padding: 4px 16px 16px 20px; }
 .crew-detail > .crew-cols { padding-top: 14px; border-top: 1px solid var(--line); }
-.crew-col-n { margin-left: 4px; font-weight: 600; letter-spacing: 0; text-transform: none; }
 .crew-manage-wrap { display: grid; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
 .crew-manage-btn { justify-self: start; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0; background: none; border: 0;
   color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }

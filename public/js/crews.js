@@ -86,12 +86,16 @@ function crewHTML(c) {
     '<span class="crew-banner">' + crewFacesHTML(c) + crewNextHTML(c) + "</span>" + CREW_CARET + "</button></h3>" +
     (open ? crewDetailHTML(c) : "") + "</article>";
 }
+function crewRoomText(c) { // "6 members — room for 19 more", "1 member — room for 24 more", "25 members — full"
+  var room = c.max_members - c.members.length;
+  return plural(c.members.length, "member", "members") + " \u2014 " + (room > 0 ? "room for " + room + " more" : "full");
+}
 // The open crew: its plans, then its members (CC-75's two halves, side by side on a wide screen), then Manage crew.
 function crewDetailHTML(c) {
   var id = esc(c.id), manage = CREW_MANAGE === String(c.id);
   return '<div class="crew-detail" id="crew-d-' + id + '">' +
     '<div class="crew-cols"><div class="crew-col"><h4 class="crew-col-h" id="crew-p-' + id + '">Plans</h4>' + crewPlansHTML(c) + "</div>" +
-    '<div class="crew-col"><h4 class="crew-col-h" id="crew-m-' + id + '">Members <span class="crew-col-n">' + c.members.length + " of " + c.max_members + "</span></h4>" +
+    '<div class="crew-col"><h4 class="crew-col-h" id="crew-m-' + id + '">' + esc(crewRoomText(c)) + "</h4>" +
     '<ul class="members" aria-labelledby="crew-m-' + id + '">' + c.members.map(function (m) {
       return '<li><span class="who">' + esc(m.name) + (m.owner ? ' <span class="state">Crew Leader</span>' : "") + (m.you ? ' <span class="state">You</span>' : "") + "</span></li>";
     }).join("") + "</ul></div></div>" +
@@ -161,19 +165,16 @@ function crewManageHTML(c) {
   }
   return html + ask(["leave-yes", "delete-yes"]) + "</section></div>";
 }
-// Each half of a crew box stops at the height five member rows take, measured from a real row (rows with an
-// owner's buttons are taller), and scrolls on its own past that (CC-75).
+// The plans list stops at the height five member rows take, measured from a real row, and scrolls on its own past
+// that (CC-75). CC-120: the members list no longer does: only one crew is open, and a capped list hid its last members.
 function capCrewHeights() {
   Array.prototype.forEach.call(document.querySelectorAll(".crew"), function (card) {
-    var list = card.querySelector("ul.members"), rows = list ? list.children : [];
-    if (!rows.length) return;
+    var list = card.querySelector("ul.members"), rows = list ? list.children : [], plans = card.querySelector("ul.crew-plans");
+    if (!rows.length || !plans) return;
     var gap = parseFloat(getComputedStyle(list).rowGap) || 0, tallest = 0;
     Array.prototype.forEach.call(rows, function (r) { tallest = Math.max(tallest, r.offsetHeight); });
-    var cap = Math.ceil(5 * tallest + 4 * gap);
-    Array.prototype.forEach.call(card.querySelectorAll("ul.members, ul.crew-plans"), function (ul) {
-      ul.style.maxHeight = cap + "px";
-      if (ul.scrollHeight > ul.clientHeight) ul.tabIndex = 0; else ul.removeAttribute("tabindex"); // keyboard users can scroll it too
-    });
+    plans.style.maxHeight = Math.ceil(5 * tallest + 4 * gap) + "px";
+    if (plans.scrollHeight > plans.clientHeight) plans.tabIndex = 0; else plans.removeAttribute("tabindex"); // keyboard users can scroll it too
   });
 }
 window.addEventListener("resize", function () { if (CREWS.length && visible("crews")) capCrewHeights(); });
