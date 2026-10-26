@@ -257,7 +257,9 @@
           </div>
         </div>
         <div class="fields">
-          <div class="field"><label for="f-q">Search</label><input id="f-q" type="search" placeholder="Title or venue"></div>
+          <div class="field search-field"><label for="f-q">Search</label><input id="f-q" type="search" placeholder="Title or venue"></div>
+          <!-- CC-116: on phones these four move into the Filters sheet below; on wider screens they sit in this row -->
+          <div class="more-fields" id="more-fields">
           <div class="field"><label for="f-when">When</label><select id="f-when"></select></div>
           <div class="field"><label for="f-cost">Cost</label>
             <select id="f-cost">
@@ -279,11 +281,21 @@
               <option value="price">Lowest price</option>
             </select>
           </div>
+          </div>
+          <button class="btn neutral filters-btn" type="button" id="filters-btn" aria-haspopup="dialog" aria-controls="filter-sheet">Filters<span class="count" id="filters-count"></span></button>
         </div>
       </form>
+      <div class="active-filters" id="active-filters" role="group" aria-label="Active filters"></div>
+      <dialog class="filter-sheet" id="filter-sheet" aria-labelledby="filter-sheet-h">
+        <div class="sheet-in">
+          <div class="sheet-head"><h2 id="filter-sheet-h">Filters</h2><button class="textbtn" type="button" id="sheet-close">Close</button></div>
+          <div class="sheet-body" id="sheet-body"></div>
+          <div class="sheet-foot"><button class="textbtn" type="button" id="sheet-reset">Reset</button><button class="btn" type="button" id="sheet-show">Show events</button></div>
+        </div>
+      </dialog>
       <div class="tally">
         <p id="tally" aria-live="polite"></p>
-        <button class="textbtn" type="button" id="clear-filters">Clear filters</button>
+        <button class="textbtn" type="button" id="clear-filters" hidden>Clear filters</button>
       </div>
       <h2 class="sr-only">Results</h2>
       <div class="grid" id="grid"></div>

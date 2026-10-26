@@ -62,6 +62,7 @@ function syncCatalogControls() {
     b.setAttribute("aria-pressed", String(t ? !!cat.types[t] : any));
   });
   syncMineChips();
+  paintActiveFilters();
 }
 var PAGE = 24, CAT_ITEMS = [], CAT_TOTAL = 0, CAT_REQ = 0;
 var COST_MAX = { free: "0", u40: "39.99", u100: "99.99" }; // "under $40" = a lowest price below 40
@@ -106,6 +107,7 @@ function paintCatalog(focusFrom) {
     '<div class="empty" style="grid-column:1/-1"><p><strong>No picks match.</strong></p><p class="hint">Widen the other filters, or turn off the dolphin filters to see everything.</p></div>' :
     '<div class="empty" style="grid-column:1/-1"><p><strong>Nothing matches those filters.</strong></p><p class="hint">Try a wider date range or a higher price limit.</p></div>';
   $("more-row").hidden = CAT_ITEMS.length >= CAT_TOTAL; $("more-btn").disabled = false;
+  $("sheet-show").textContent = CAT_TOTAL ? "Show " + plural(CAT_TOTAL, "event", "events") : "No events match";
   if (focusFrom) { var first = $("grid").children[focusFrom]; var a = first && first.querySelector("h3 a"); if (a) a.focus(); }
 }
 function renderCatalog() { loadCatalog(false); }
@@ -200,7 +202,7 @@ document.addEventListener("click", function (ev) { // a click elsewhere closes t
   openWhere(false);
 });
 $("f-where-panel").addEventListener("keydown", function (ev) {
-  if (ev.key === "Escape") { ev.stopPropagation(); openWhere(false); $("f-where-btn").focus(); }
+  if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); openWhere(false); $("f-where-btn").focus(); } // in the Filters sheet, not the sheet too
 });
 $("type-chips").addEventListener("click", function (ev) {
   var b = ev.target.closest(".chip"); if (!b) return;
@@ -225,6 +227,56 @@ function buildCrewFilter() {
   syncMineChips();
 }
 $("clear-filters").addEventListener("click", function () { resetCatalog(); renderCatalog(); $("f-q").focus(); });
+
+// ---------- phones: the Filters sheet and the active-filter chips (CC-116) ----------
+// At phone width When, Cost, Where and Sort sit behind one Filters button, so the first events show on the first
+// screen. The button opens a sheet (the same fields, moved into it while it's open); the results update behind it
+// as you change them. What's chosen shows as removable chips above the results, and as a count on the button.
+var PHONE = window.matchMedia("(max-width: 640px)"), ACTIVE = []; // ACTIVE: [label, undo] for each chip
+function optionText(id, value) { var o = $(id).querySelector('option[value="' + value + '"]'); return o ? o.textContent : value; }
+function activeFilters() { // the ones the sheet hides; search, types and the dolphins stay in view
+  var out = [];
+  if (cat.when !== "upcoming") out.push([cat.when === "custom" && cat.custom ? windowText(cat.custom.ws, cat.custom.we) : optionText("f-when", cat.when), function () { cat.when = "upcoming"; cat.custom = null; }]);
+  if (cat.cost !== "any") out.push([optionText("f-cost", cat.cost), function () { cat.cost = "any"; }]);
+  if (cat.where === "local") out.push(["City and suburbs", function () { cat.where = "any"; }]);
+  Object.keys(cat.regions).forEach(function (r) { out.push([REGION_NAMES[r] || r, function () { delete cat.regions[r]; }]); });
+  Object.keys(cat.hoods).sort().forEach(function (h) { out.push([h, function () { delete cat.hoods[h]; }]); });
+  return out;
+}
+function paintActiveFilters() {
+  ACTIVE = activeFilters();
+  $("active-filters").innerHTML = ACTIVE.map(function (f, i) {
+    return '<button type="button" class="chip" data-drop="' + i + '" aria-label="Remove ' + esc(f[0]) + '">' + esc(f[0]) + '<span aria-hidden="true">×</span></button>';
+  }).join("");
+  $("filters-count").textContent = ACTIVE.length || "";
+  $("filters-btn").setAttribute("aria-label", ACTIVE.length ? "Filters, " + ACTIVE.length + " on" : "Filters");
+  // review finding 14: only when there's something to clear (the sort order isn't a filter)
+  $("clear-filters").hidden = !(cat.q.trim() || Object.keys(cat.types).length || Object.keys(cat.picks).length || cat.crews || ACTIVE.length);
+}
+$("active-filters").addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-drop]"); if (!b) return;
+  var i = +b.getAttribute("data-drop");
+  ACTIVE[i][1](); renderCatalog(); // repaints the chips at once
+  ($("active-filters").children[Math.min(i, ACTIVE.length - 1)] || $("filters-btn")).focus(); // the next chip, or the button
+});
+$("filters-btn").addEventListener("click", function () {
+  $("sheet-body").appendChild($("more-fields"));
+  $("filter-sheet").showModal();
+  $("f-when").focus();
+});
+$("filter-sheet").addEventListener("close", function () { // Escape, Close, Show N events or a tap outside
+  openWhere(false);
+  $("filters-btn").parentElement.insertBefore($("more-fields"), $("filters-btn"));
+  if (PHONE.matches) $("filters-btn").focus();
+});
+$("filter-sheet").addEventListener("click", function (ev) {
+  if (ev.target === this || ev.target.id === "sheet-close" || ev.target.id === "sheet-show") this.close(); // the dialog itself is only its backdrop
+});
+$("sheet-reset").addEventListener("click", function () {
+  cat.when = "upcoming"; cat.custom = null; cat.cost = "any"; cat.where = "any"; cat.regions = {}; cat.hoods = {}; cat.sort = "closing";
+  renderCatalog();
+});
+PHONE.addEventListener("change", function () { if (!PHONE.matches && $("filter-sheet").open) $("filter-sheet").close(); });
 
 // ---------- the event view (CC-117) ----------
 // A card opens its event here, at #e/<id>: the details, your plans and your crews', and Tickets as the way out
