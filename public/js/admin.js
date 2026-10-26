@@ -610,7 +610,8 @@ $("sources-list").addEventListener("change", function (ev) {
 // a campaign per batch), so those visits show up on Site stats (CC-110). Made here in the browser with
 // qrcode-generator (js/vendor/qrcode.js), like the crew invite codes: nothing goes to an outside QR service.
 var CARD_URLS = [];
-function cardCampaign() { return ($("card-campaign").value.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "card"); }
+// CC-121: the campaign ends with the date the card is made, so each printed batch is its own row on Site stats
+function cardCampaign() { return ($("card-campaign").value.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "card") + "-" + isoDate(today()); }
 function cardUrl() { return "https://chiculturecrew.com/join?utm_source=qr&utm_medium=print&utm_campaign=" + cardCampaign(); }
 function qrSvgText(text) { // the code as an SVG: one path of dark squares on white, with the standard 4-module quiet zone
   var qr = qrcode(0, "M"); qr.addData(text); qr.make();
