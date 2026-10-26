@@ -76,6 +76,13 @@ def main() -> int:
         defined = set(re.findall(r'id="([\w-]+)"', text))
         for missing in sorted(looked_up - defined):
             problems.append(f'{path.name}: script looks up $("{missing}") but no element has that id')
+        # CC-119: search results and link previews say what the Home line says
+        line = re.search(r'id="home-line">([^<]+)<', text)
+        if line:
+            for name in ('name="description"', 'property="og:description"'):
+                meta = re.search(r'<meta ' + name + r' content="([^"]*)"', text)
+                if not meta or not meta.group(1).startswith(line.group(1)):
+                    problems.append(f"{path.name}: the {name} meta doesn't start with the Home line")
         for src in sorted(set(re.findall(r'src="(img/[^"]+)"', text))):
             if not (PUBLIC / src).is_file():
                 problems.append(f"{path.name}: uses {src}, which isn't in public/")

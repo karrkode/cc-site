@@ -128,6 +128,18 @@ a { color: inherit; }
 .textbtn { background: none; border: 0; padding: 0; cursor: pointer; font-weight: 600; color: var(--lead); text-decoration: underline; text-underline-offset: 3px; }
 .soon-list li { display: grid; min-width: 0; }
 .soon-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 12px; }
+/* CC-119: on phones, Last chance comes up between the line and the doors, so a first-time visitor sees a real event
+   on the first screen. Its cards sit in a row you swipe, so the doors stay close. Desktop keeps the CC-103 order. */
+@media (max-width: 640px) {
+  #view-home { display: flex; flex-direction: column; padding-top: 28px; }
+  #view-home .cover { display: contents; }
+  #home-title { margin-bottom: 12px; }
+  #view-home .soon { order: 1; padding-block: 24px 28px; gap: 12px; }
+  #view-home .doors { order: 2; padding-bottom: 32px; }
+  .soon-list { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 82%; overflow-x: auto;
+    scroll-snap-type: x mandatory; overscroll-behavior-x: contain; padding-bottom: 6px; }
+  .soon-list li { scroll-snap-align: start; }
+}
 
 /* listings */
 .card {
