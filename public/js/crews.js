@@ -34,23 +34,37 @@ function showCrewForm(open) {
 }
 $("crew-start-btn").addEventListener("click", function () { showCrewForm($("crew-new").hidden); });
 $("crew-new-cancel").addEventListener("click", function () { showCrewForm(false); });
-// The top of a crew's card: its members' initials, a few at a time, and what's next for the crew.
+// CC-120: each crew is a summary (name, about, faces, what's next) that opens, one crew at a time, into its plans and
+// members. Invites, Rename, Leave and Dissolve sit under "Manage crew", closed by default. The open crew is
+// remembered in this browser for the next visit ("" once you close it, so a lone crew doesn't reopen itself).
+var CREW_OPEN = null, CREW_MANAGE = null; // crew ids, as strings
+function crewOpenSaved() { try { return localStorage.getItem("cc_open_crew"); } catch (e) { return null; } }
+CREW_OPEN = crewOpenSaved() || null;
+function setCrewOpen(id) {
+  CREW_OPEN = id == null ? null : String(id);
+  if (CREW_MANAGE !== CREW_OPEN) CREW_MANAGE = null;
+  try { localStorage.setItem("cc_open_crew", CREW_OPEN || ""); } catch (e) {} // blocked storage: it's only forgotten
+}
 var FACES = 6;
 function initials(name) {
   var w = String(name || "?").trim().split(/\s+/);
   return ((w[0] || "?").charAt(0) + (w.length > 1 ? w[w.length - 1].charAt(0) : "")).toUpperCase();
 }
-function crewFacesHTML(c) {
+function crewFacesHTML(c) { // inside the summary button, so spans; a screen reader hears the count, not every name
   var shown = c.members.slice(0, FACES), more = c.members.length - shown.length;
-  return '<ul class="faces" aria-label="' + esc(plural(c.members.length, "member", "members")) + '">' + shown.map(function (m, i) {
-    return '<li class="face tone-' + (i % 4) + '" title="' + esc(m.name) + '"><span aria-hidden="true">' + esc(initials(m.name)) + '</span><span class="sr-only">' + esc(m.name) + "</span></li>";
-  }).join("") + (more > 0 ? '<li class="face more">+' + more + "</li>" : "") + "</ul>";
+  return '<span class="faces" aria-hidden="true">' + shown.map(function (m, i) {
+    return '<span class="face tone-' + (i % 4) + '" title="' + esc(m.name) + '">' + esc(initials(m.name)) + "</span>";
+  }).join("") + (more > 0 ? '<span class="face more">+' + more + "</span>" : "") + "</span>" +
+    '<span class="sr-only">' + esc(plural(c.members.length, "member", "members")) + ".</span>";
 }
-function crewNextHTML(c) {
-  var next = c.plans[0]; if (!next) return '<p class="crew-next hint">Nothing planned yet. Share a plan to get things going.</p>';
-  var e = toEvent(next.event), going = next.people.filter(function (p) { return p.status === "going"; }).length;
-  return '<p class="crew-next"><span class="crew-next-label">Next up</span> ' + esc(e.title) + ' <span class="hint small">' + esc(dateText(e)) +
-    (going ? " · " + plural(going, "going", "going") : "") + "</span></p>";
+function crewNextHTML(c) { // the soonest plan someone's going to, else the soonest anyone's interested in
+  var plans = c.plans.filter(function (p) { return p.people.length; });
+  var next = plans.filter(function (p) { return p.people.some(function (x) { return x.status === "going"; }); })[0] || plans[0];
+  if (!next) return '<span class="crew-next hint">Nothing planned yet</span>';
+  var e = toEvent(next.event), going = next.people.filter(function (p) { return p.status === "going"; });
+  var day = going.length && going[0].date ? goingDay(going[0].date) : dateText(e); // people come soonest going date first
+  return '<span class="crew-next"><span class="crew-next-label">Next up</span> <span class="crew-next-title">' + esc(e.title) + '</span> <span class="hint small">' +
+    esc(day) + " · " + (going.length ? plural(going.length, "going", "going") : plural(next.people.length, "interested", "interested")) + "</span></span>";
 }
 function crewById(id) { return CREWS.filter(function (c) { return String(c.id) === String(id); })[0]; }
 function crewAct(act, crew, extra, label, cls, aria) {
@@ -61,30 +75,38 @@ function askHTML(text, act, crew, extra) { // an inline "are you sure?" in place
   return '<div class="confirm"><p>' + esc(text) + '</p><div class="row" style="margin-top:8px">' +
     crewAct(act, crew, extra, "Yes", "btn danger solid") + crewAct("ask-no", crew, "", "Keep it", "btn ghost") + "</div></div>";
 }
+var CREW_CARET = '<svg class="crew-caret" aria-hidden="true" viewBox="0 0 12 12"><path d="M2 4.5l4 4 4-4"/></svg>';
 function crewHTML(c) {
-  var id = esc(c.id), asking = CREW_ASK && String(CREW_ASK.crew) === String(c.id) ? CREW_ASK : null;
-  var html = '<article class="panel crew" data-crew-card="' + id + '" aria-labelledby="crew-h-' + id + '">';
-  if (CREW_EDIT === c.id) {
-    html += '<form class="crew-edit" data-crew-form="' + id + '" novalidate><div class="fields">' +
-      '<div class="field"><label for="crew-ename-' + id + '">Name</label><input id="crew-ename-' + id + '" type="text" maxlength="60" value="' + esc(c.name) + '"></div>' +
-      '<div class="field"><label for="crew-edesc-' + id + '">About it</label><input id="crew-edesc-' + id + '" type="text" maxlength="200" value="' + esc(c.description) + '"></div></div>' +
-      '<p class="form-error" role="alert"></p><div class="row"><button class="btn" type="submit">Save</button>' + crewAct("edit-no", c, "", "Cancel") + "</div></form>";
-  } else {
-    html += '<div><h3 id="crew-h-' + id + '" tabindex="-1">' + esc(c.name) + (c.owner ? ' <span class="state">You started it</span>' : "") + "</h3>" +
-      (c.description ? '<p class="crew-about">' + esc(c.description) + "</p>" : "") + "</div>";
-  }
-  html += '<div class="crew-banner">' + crewFacesHTML(c) + crewNextHTML(c) + "</div>"; // CC-104
-  html += '<p class="hint small">' + plural(c.members.length, "member", "members") + " of " + c.max_members + "</p>";
-  // CC-75: two halves, members and the crew's shared plans; each scrolls on its own past about 5 members' height
-  html += '<div class="crew-cols"><div class="crew-col"><h4 class="crew-col-h" id="crew-m-' + id + '">Members</h4>' +
-    '<ul class="members" aria-label="Members of ' + esc(c.name) + '">' + c.members.map(function (m) {
-    var tags = (m.owner ? ' <span class="state">Crew Leader</span>' : "") + (m.you ? ' <span class="state">You</span>' : "");
-    var acts = c.owner && !m.you ? crewAct("owner", c, 'data-user="' + esc(m.user_id) + '"', "Make crew leader", "btn ghost", "Make " + m.name + " the crew leader of " + c.name) +
-      crewAct("remove", c, 'data-user="' + esc(m.user_id) + '"', "Remove", "btn ghost", "Remove " + m.name + " from " + c.name) : "";
-    return '<li><span class="who">' + esc(m.name) + tags + "</span>" + (acts ? '<span class="row">' + acts + "</span>" : "") + "</li>";
-  }).join("") + "</ul>" + "</div>" +
-    '<div class="crew-col"><h4 class="crew-col-h" id="crew-p-' + id + '">Plans</h4>' + crewPlansHTML(c) + "</div></div>";
-  if (asking) html += askHTML(asking.text, asking.act, c, asking.user ? 'data-user="' + esc(asking.user) + '"' : "");
+  var id = esc(c.id), open = CREW_OPEN === String(c.id);
+  return '<article class="panel crew' + (open ? " open" : "") + '" data-crew-card="' + id + '">' +
+    '<h3 class="crew-h"><button type="button" class="crew-sum" id="crew-h-' + id + '" data-crew-act="open" data-crew="' + id + '" aria-expanded="' + open + '"' +
+    (open ? ' aria-controls="crew-d-' + id + '"' : "") + ">" +
+    '<span class="crew-name">' + esc(c.name) + (c.owner ? ' <span class="state">You started it</span>' : "") + "</span>" +
+    (c.description ? '<span class="crew-about">' + esc(c.description) + "</span>" : "") +
+    '<span class="crew-banner">' + crewFacesHTML(c) + crewNextHTML(c) + "</span>" + CREW_CARET + "</button></h3>" +
+    (open ? crewDetailHTML(c) : "") + "</article>";
+}
+// The open crew: its plans, then its members (CC-75's two halves, side by side on a wide screen), then Manage crew.
+function crewDetailHTML(c) {
+  var id = esc(c.id), manage = CREW_MANAGE === String(c.id);
+  return '<div class="crew-detail" id="crew-d-' + id + '">' +
+    '<div class="crew-cols"><div class="crew-col"><h4 class="crew-col-h" id="crew-p-' + id + '">Plans</h4>' + crewPlansHTML(c) + "</div>" +
+    '<div class="crew-col"><h4 class="crew-col-h" id="crew-m-' + id + '">Members <span class="crew-col-n">' + c.members.length + " of " + c.max_members + "</span></h4>" +
+    '<ul class="members" aria-labelledby="crew-m-' + id + '">' + c.members.map(function (m) {
+      return '<li><span class="who">' + esc(m.name) + (m.owner ? ' <span class="state">Crew Leader</span>' : "") + (m.you ? ' <span class="state">You</span>' : "") + "</span></li>";
+    }).join("") + "</ul></div></div>" +
+    '<div class="crew-manage-wrap">' + crewAct("manage", c, 'aria-expanded="' + manage + '" aria-controls="crew-mg-' + id + '"', "Manage crew", "crew-manage-btn") +
+    (manage ? crewManageHTML(c) : '<div id="crew-mg-' + id + '" hidden></div>') + "</div></div>";
+}
+function crewManageHTML(c) {
+  var id = esc(c.id), asking = CREW_ASK && String(CREW_ASK.crew) === String(c.id) ? CREW_ASK : null, full = c.members.length >= c.max_members;
+  var ask = function (acts) {
+    return asking && acts.indexOf(asking.act) >= 0 ? askHTML(asking.text, asking.act, c, asking.user ? 'data-user="' + esc(asking.user) + '"' : "") : "";
+  };
+  var html = '<div class="crew-manage" id="crew-mg-' + id + '">';
+  // Invite people: any member can make a link or send an email invite
+  html += '<section class="crew-mg-part" aria-labelledby="crew-mi-' + id + '"><h4 class="crew-col-h" id="crew-mi-' + id + '">Invite people</h4>' +
+    (full ? '<p class="hint">The crew is full.</p>' : '<div class="row">' + crewAct("invite", c, "", "Make an invite link", "btn") + "</div>");
   var link = CREW_LINKS[c.id];
   if (link) {
     html += '<div class="link-box"><label for="crew-link-' + id + '">Invite link: send it to whoever you\'d like to join</label>' +
@@ -112,16 +134,32 @@ function crewHTML(c) {
           "Cancel this email invite") : "") + "</li>";
     }).join("") + "</ul>";
   }
-  var full = c.members.length >= c.max_members;
   if (!full) {
     html += '<form class="crew-email" data-crew-email="' + id + '" novalidate><label for="crew-email-' + id + '">Invite by email</label>' +
       '<div class="row"><input id="crew-email-' + id + '" type="email" autocomplete="off" placeholder="name@example.com" aria-describedby="crew-email-msg-' + id + '">' +
       '<button class="btn neutral" type="submit">Send invite</button></div>' +
-      '<p class="hint small" id="crew-email-msg-' + id + '" role="status">We\u2019ll email them. They\u2019ll see it when they sign in, or once they register with that address.</p></form>';
+      '<p class="hint small" id="crew-email-msg-' + id + '" role="status">We’ll email them. They’ll see it when they sign in, or once they register with that address.</p></form>';
   }
-  html += '<div class="row">' + (full ? '<span class="hint">The crew is full.</span>' : crewAct("invite", c, "", "Make an invite link", "btn")) +
-    (c.owner ? crewAct("edit", c, "", "Rename") + crewAct("delete", c, "", "Dissolve crew…", "btn danger") : crewAct("leave", c, "", "Leave crew…")) + "</div>";
-  return html + "</article>";
+  html += "</section>";
+  var others = c.members.filter(function (m) { return !m.you; });
+  if (c.owner && others.length) { // the crew leader hands over or removes members
+    html += '<section class="crew-mg-part" aria-labelledby="crew-mm-' + id + '"><h4 class="crew-col-h" id="crew-mm-' + id + '">Members</h4>' +
+      '<ul class="members" aria-labelledby="crew-mm-' + id + '">' + others.map(function (m) {
+        return '<li><span class="who">' + esc(m.name) + "</span><span class=\"row\">" +
+          crewAct("owner", c, 'data-user="' + esc(m.user_id) + '"', "Make crew leader", "btn ghost", "Make " + m.name + " the crew leader of " + c.name) +
+          crewAct("remove", c, 'data-user="' + esc(m.user_id) + '"', "Remove", "btn ghost", "Remove " + m.name + " from " + c.name) + "</span></li>";
+      }).join("") + "</ul>" + ask(["owner-yes", "remove-yes"]) + "</section>";
+  }
+  html += '<section class="crew-mg-part" aria-labelledby="crew-mc-' + id + '"><h4 class="crew-col-h" id="crew-mc-' + id + '">The crew</h4>';
+  if (CREW_EDIT === c.id) {
+    html += '<form class="crew-edit" data-crew-form="' + id + '" novalidate><div class="fields">' +
+      '<div class="field"><label for="crew-ename-' + id + '">Name</label><input id="crew-ename-' + id + '" type="text" maxlength="60" value="' + esc(c.name) + '"></div>' +
+      '<div class="field"><label for="crew-edesc-' + id + '">About it</label><input id="crew-edesc-' + id + '" type="text" maxlength="200" value="' + esc(c.description) + '"></div></div>' +
+      '<p class="form-error" role="alert"></p><div class="row"><button class="btn" type="submit">Save</button>' + crewAct("edit-no", c, "", "Cancel") + "</div></form>";
+  } else {
+    html += '<div class="row">' + (c.owner ? crewAct("edit", c, "", "Rename") + crewAct("delete", c, "", "Dissolve crew…", "btn danger") : crewAct("leave", c, "", "Leave crew…")) + "</div>";
+  }
+  return html + ask(["leave-yes", "delete-yes"]) + "</section></div>";
 }
 // Each half of a crew box stops at the height five member rows take, measured from a real row (rows with an
 // owner's buttons are taller), and scrolls on its own past that (CC-75).
@@ -140,8 +178,9 @@ function capCrewHeights() {
 }
 window.addEventListener("resize", function () { if (CREWS.length && visible("crews")) capCrewHeights(); });
 // The crew's shared plans (CC-75): each event once, soonest first, with who's going or interested, in the
-// product owner's words: "Only you are interested in this…for now.", "Jordan R. is interested!",
+// product owner's words: "Only you are interested in this…for now.", "Jordan Reyes is interested!",
 // "Three others are interested!" (the number is a button: hover shows the names; a tap opens them below).
+// CC-120: crew-mates are named in full; they're friends, and Members lists them that way.
 var NUMBER_WORDS = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve",
   "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty", "Twenty-one", "Twenty-two",
   "Twenty-three", "Twenty-four", "Twenty-five"];
@@ -150,46 +189,39 @@ function shortName(name) { // "Jordan Reyes" -> "Jordan R."; one word stays as i
   var parts = String(name || "").trim().split(/\s+/);
   return parts.length > 1 && /^[A-Za-z]/.test(parts[parts.length - 1]) ? parts[0] + " " + parts[parts.length - 1][0].toUpperCase() + "." : parts.join(" ");
 }
-function othersHTML(people, verb) { // "Jordan R. is interested!" or "<b><i>Three</i></b> others are interested!"
-  if (people.length === 1) {
-    var p = people[0];
-    return esc(shortName(p.name)) + " is " + verb + (verb === "going" && p.date ? " " + esc(goingDay(p.date)) : "") + "!";
-  }
+function crewCountHTML(count, names, rest) { // "<b><i>Three</i></b> others are going!", the names (one per line) behind the number
   CREWCOUNT_SEQ += 1;
-  var names = people.map(function (p) { return shortName(p.name) + (verb === "going" && p.date ? " (" + goingDay(p.date) + ")" : ""); }).join(", ");
-  var n = NUMBER_WORDS[people.length] || String(people.length);
+  var n = NUMBER_WORDS[count] || String(count);
   return '<button type="button" class="crew-count" data-crew-count aria-expanded="false" aria-controls="crew-count-' + CREWCOUNT_SEQ + '" aria-label="' +
-    esc(n + " others: " + names) + '" data-names="' + esc(names) + '"><b><i>' + esc(n) + "</i></b></button> others are " + verb + "!" +
+    esc(n + " others: " + names.replace(/\n/g, ", ")) + '" data-names="' + esc(names) + '"><b><i>' + esc(n) + "</i></b></button>" + rest +
     '<span class="crew-count-names" id="crew-count-' + CREWCOUNT_SEQ + '" hidden>' + esc(names) + "</span>";
+}
+function othersHTML(people, verb) { // "Jordan Reyes is interested!" or "<b><i>Three</i></b> others are interested!"
+  var day = function (p) { return verb === "going" && p.date ? goingDay(p.date) : ""; };
+  if (people.length === 1) return esc(people[0].name) + " is " + verb + (day(people[0]) ? " " + esc(day(people[0])) : "") + "!";
+  return crewCountHTML(people.length, people.map(function (p) { return p.name + (day(p) ? " (" + day(p) + ")" : ""); }).join("\n"), " others are " + verb + "!");
 }
 function crewLineHTML(people) {
   var you = people.filter(function (p) { return p.you; })[0], others = people.filter(function (p) { return !p.you; });
   var going = others.filter(function (p) { return p.status === "going"; }), interested = others.filter(function (p) { return p.status !== "going"; });
   var parts = [];
-  if (you && you.status === "going") parts.push("You\u2019re going" + (you.date ? " " + esc(goingDay(you.date)) : "") + ".");
+  if (you && you.status === "going") parts.push("You’re going" + (you.date ? " " + esc(goingDay(you.date)) : "") + ".");
   if (going.length) parts.push(othersHTML(going, "going"));
   if (interested.length) parts.push(othersHTML(interested, "interested"));
   if (you && you.status !== "going") {
-    parts.push(interested.length ? "You are too." : going.length ? "You\u2019re interested." : "Only you are interested in this\u2026for now.");
+    parts.push(interested.length ? "You are too." : going.length ? "You’re interested." : "Only you are interested in this…for now.");
   }
   return parts.join(" ");
 }
-// CC-93: who from the crew has been, under the plans line. 📸: their photo from it is approved; 📷: no photo, or one
-// waiting. One person is named in the line; for more, the count shows each person's line on hover (or a tap).
-function beenGroupHTML(people, emoji, one, many, each) {
-  if (!people.length) return "";
-  if (people.length === 1) return '<span aria-hidden="true">' + emoji + "</span> " + esc(shortName(people[0].name)) + " " + one;
-  CREWCOUNT_SEQ += 1;
-  var lines = people.map(function (p) { return shortName(p.name) + " " + each; }).join("\n");
-  var n = NUMBER_WORDS[people.length] || String(people.length);
-  return '<span aria-hidden="true">' + emoji + '</span> <button type="button" class="crew-count" data-crew-count aria-expanded="false" aria-controls="crew-count-' + CREWCOUNT_SEQ +
-    '" aria-label="' + esc(n + " others: " + lines.replace(/\n/g, " ")) + '" data-names="' + esc(lines) + '"><b><i>' + esc(n) + "</i></b></button> others " + many +
-    '<span class="crew-count-names" id="crew-count-' + CREWCOUNT_SEQ + '" hidden>' + esc(lines) + "</span>";
-}
+// CC-93: who from the crew has been, under the plans line (never you). CC-120: in plain words, with how many
+// added a photo that's been approved: "Jordan Reyes has been, with a photo." or "Three others have been, 1 with a photo."
 function beenLineHTML(been) {
-  var sure = (been || []).filter(function (b) { return b.approved; }), maybe = (been || []).filter(function (b) { return !b.approved; });
-  return [beenGroupHTML(sure, "\ud83d\udcf8", "very much has been!", "very much have been!", "very much has been!"),
-    beenGroupHTML(maybe, "\ud83d\udcf7", "has been...maybe.", "have been...maybe.", "has been...maybe.")].filter(Boolean).join(' <span class="sep" aria-hidden="true">\u00b7</span> ');
+  been = been || [];
+  if (!been.length) return "";
+  var photos = been.filter(function (b) { return b.approved; }).length;
+  if (been.length === 1) return esc(been[0].name) + " has been" + (photos ? ", with a photo" : "") + ".";
+  return crewCountHTML(been.length, been.map(function (b) { return b.name + (b.approved ? " (photo)" : ""); }).join("\n"),
+    " others have been" + (photos ? ", " + photos + " with a photo" : "") + ".");
 }
 function crewPlansHTML(c) {
   if (!c.plans.length) return '<p class="hint small">No plans shared yet. Use \u201cInvite your Crew?\u201d on an event you\u2019re interested in.</p>';
@@ -226,6 +258,7 @@ document.addEventListener("focusin", function (ev) { var b = ev.target.closest &
 window.addEventListener("scroll", function () { crewTip(null); }, true);
 
 function paintCrews() {
+  if (CREW_OPEN === null && crewOpenSaved() === null && CREWS.length === 1) CREW_OPEN = String(CREWS[0].id); // a lone crew starts open
   $("crew-list").innerHTML = CREWS.length ? CREWS.map(crewHTML).join("") :
     '<div class="panel crews-empty"><h2>No crews yet</h2><p>Start one for the friends you see shows with, then send them an invite link. ' +
     "Or ask a friend for theirs.</p></div>";
@@ -243,7 +276,12 @@ $("crew-list").addEventListener("click", function (ev) {
   var act = b.getAttribute("data-crew-act"), c = crewById(b.getAttribute("data-crew")), card = b.closest("[data-crew-card]");
   if (!c) return;
   var user = b.getAttribute("data-user"), who = user && c.members.filter(function (m) { return m.user_id === user; })[0];
-  var refocus = '[data-crew-card="' + c.id + '"] [data-crew-act]';
+  var refocus = '[data-crew-card="' + c.id + '"] [data-crew-act="manage"]';
+  if (act === "open") { setCrewOpen(CREW_OPEN === String(c.id) ? null : c.id); CREW_ASK = null; CREW_EDIT = null; paintCrews(); $("crew-h-" + c.id).focus(); return; }
+  if (act === "manage") {
+    CREW_MANAGE = CREW_MANAGE === String(c.id) ? null : String(c.id); CREW_ASK = null; CREW_EDIT = null; paintCrews();
+    document.querySelector('[data-crew-card="' + c.id + '"] [data-crew-act="manage"]').focus(); return;
+  }
   if (act === "edit") { CREW_EDIT = c.id; paintCrews(); $("crew-ename-" + c.id).focus(); return; }
   if (act === "edit-no") { CREW_EDIT = null; paintCrews(); document.querySelector('[data-crew-card="' + c.id + '"] [data-crew-act="edit"]').focus(); return; }
   if (act === "ask-no") { CREW_ASK = null; paintCrews(); var again = document.querySelector(refocus); if (again) again.focus(); return; }
@@ -332,6 +370,7 @@ $("crew-new").addEventListener("submit", function (ev) {
   err.textContent = "";
   api("/crews", { method: "POST", body: { name: name, description: $("crew-desc").value.trim() } }).then(readJSON).then(function (res) {
     if (!res.ok) { err.textContent = errorText(res); return; }
+    setCrewOpen(res.body.id); CREW_MANAGE = String(res.body.id); // CC-120: open, with its invites showing
     $("crew-name").value = ""; $("crew-desc").value = ""; $("crew-new").hidden = true; $("crew-start-btn").setAttribute("aria-expanded", "false");
     loadCrews('[data-crew-card="' + res.body.id + '"] [data-crew-act="invite"]').then(function () {
       $("edit-live").textContent = "Started " + res.body.name + ". Make an invite link to bring people in.";
@@ -366,7 +405,7 @@ $("join-yes").addEventListener("click", function () {
   var b = this; b.disabled = true;
   api("/crews/join", { method: "POST", body: { token: JOIN.token } }).then(readJSON).then(function (res) {
     if (!res.ok) { b.disabled = false; $("join-error").textContent = errorText(res); return; }
-    var name = res.body.name; JOIN = null; paintJoin();
+    var name = res.body.name; JOIN = null; paintJoin(); setCrewOpen(res.body.id); // CC-120
     openCrews(); loadCrews('#crew-h-' + res.body.id).then(function () { $("edit-live").textContent = "You joined " + name + "."; }); // CC-104
   }, function () { b.disabled = false; $("join-error").textContent = errorText(null); });
 });
@@ -473,6 +512,7 @@ document.addEventListener("click", function (ev) {
   api("/crews/pending/" + id + "/" + act, { method: "POST" }).then(readJSON).then(function (res) {
     if (!res.ok && res.status !== 404) { b.disabled = false; $("crews-status").textContent = errorText(res); return; }
     PENDING = PENDING.filter(function (x) { return String(x.id) !== id; }); paintPending();
+    if (act === "accept" && res.ok) setCrewOpen(res.body.id); // CC-120: the crew you just joined opens
     var said = act === "accept" ? (res.ok ? "You joined " + p.crew_name + "." : "That invite has expired or was cancelled.") : "Declined the invite to " + p.crew_name + ".";
     $("edit-live").textContent = said;
     if (fromBanner && act === "accept" && res.ok) { openCrews(said); loadCrews().then(buildCrewFilter); return; } // focus: the page heading

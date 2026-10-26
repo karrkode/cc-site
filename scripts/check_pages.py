@@ -90,6 +90,10 @@ def main() -> int:
         for old in ("Plan an outing", "Plan your outing", "Pick an outing", "Culture Planner"):
             if re.search(r'>[^<]*' + old, text) or re.search(r'"[^"\n]*' + old, text):
                 problems.append(f'{path.name}: still says "{old}" (CC-118 named it Find an outing / My week)')
+        # CC-120: the crew board says who's been in plain words
+        for old in ("been...maybe", "very much ha"):
+            if old in text:
+                problems.append(f'{path.name}: the crew board still says "{old}" (CC-120 made it "has been, with a photo")')
         for src in sorted(set(re.findall(r'src="(img/[^"]+)"', text))):
             if not (PUBLIC / src).is_file():
                 problems.append(f"{path.name}: uses {src}, which isn't in public/")

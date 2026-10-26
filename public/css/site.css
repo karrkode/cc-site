@@ -525,7 +525,6 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 }
 .crew-tip[hidden] { display: none; }
 .crew-tip, .crew-count-names { white-space: pre-line; } /* CC-93: one line per person who's been */
-.crew-been .sep { color: var(--muted); margin: 0 4px; }
 .crew-count-names { display: block; margin-top: 4px; padding: 6px 10px; border-radius: var(--r-ctl); background: var(--info-soft); color: var(--on-info-soft); font-size: 0.875rem; font-weight: 600; }
 .crew-count-names[hidden] { display: none; }
 /* CC-59: crew invites by email */
@@ -677,15 +676,44 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .crews-empty { text-align: center; display: grid; gap: 6px; justify-items: center; padding-block: 28px; }
 .crews-empty h2 { font-family: var(--display); font-size: var(--step-1); }
 .crews-empty p { color: var(--muted); max-width: 46ch; }
-.crew-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 12px; margin: -4px 0 4px;
-  border-radius: var(--r-ctl); background: linear-gradient(120deg, color-mix(in srgb, var(--lead) 14%, transparent), color-mix(in srgb, var(--second) 14%, transparent)); }
-.faces { list-style: none; margin: 0; padding: 0 0 0 8px; display: flex; }
+.faces { padding-left: 8px; display: flex; flex: none; }
 .face { width: 38px; height: 38px; margin-left: -8px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 0.85rem;
   border: 2px solid var(--surface); color: #fff; }
 .face.tone-0 { background: #D62839; } .face.tone-1 { background: #1D4ED8; } .face.tone-2 { background: #0F766E; } .face.tone-3 { background: #7C3AED; }
 .face.more { background: var(--neutral-soft); color: var(--text); }
-.crew-next { margin: 0; min-width: 0; flex: 1 1 14rem; }
+.crew-next { min-width: 0; flex: 1 1 14rem; }
+.crew-next-title { font-weight: 600; }
 .crew-next-label { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--lead); margin-right: 4px; }
+/* CC-120: a crew is a summary that opens into its plans and members, one crew at a time. The whole summary is one
+   button; the open crew gets a bar in the lead color down its left edge. Setup sits under Manage crew. */
+.crew { gap: 0; padding: 0; overflow: hidden; }
+.crew.open { box-shadow: inset 4px 0 0 var(--lead); }
+.crew .crew-h { font: inherit; }
+.crew-sum { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; width: 100%; padding: 14px 16px 14px 20px; text-align: left;
+  background: none; border: 0; color: inherit; font: inherit; text-wrap: wrap; cursor: pointer; }
+@media (hover: hover) { .crew-sum:hover { background: color-mix(in srgb, var(--text) 4%, transparent); } } /* no tint left behind by a tap */
+.crew-sum:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.crew-sum > * { grid-column: 1; }
+.crew-name { font-family: var(--display); font-weight: 600; font-size: var(--step-1); line-height: 1.2; }
+.crew-name .state { white-space: nowrap; margin-left: 6px; font-family: var(--body); font-size: 0.75rem; vertical-align: middle; }
+.crew-sum .crew-about { color: var(--muted); }
+.crew-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 6px; }
+.crew-caret { grid-column: 2; grid-row: 1 / -1; align-self: center; width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round; transition: transform 0.15s ease; }
+.crew-sum[aria-expanded="true"] .crew-caret { transform: rotate(180deg); }
+.crew-detail { display: grid; gap: 16px; padding: 4px 16px 16px 20px; }
+.crew-detail > .crew-cols { padding-top: 14px; border-top: 1px solid var(--line); }
+.crew-col-n { margin-left: 4px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.crew-manage-wrap { display: grid; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.crew-manage-btn { justify-self: start; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0; background: none; border: 0;
+  color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
+.crew-manage-btn::after { content: ""; width: 7px; height: 7px; margin-top: -3px; border: solid var(--muted); border-width: 0 1.8px 1.8px 0; transform: rotate(45deg);
+  transition: transform 0.15s ease; }
+.crew-manage-btn[aria-expanded="true"]::after { margin-top: 3px; transform: rotate(-135deg); }
+.crew-manage-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+.crew-manage { display: grid; gap: 18px; }
+.crew-mg-part { display: grid; gap: 10px; }
+@media (prefers-reduced-motion: reduce) { .crew-caret, .crew-manage-btn::after { transition: none; } }
 @media (prefers-reduced-motion: reduce) { .crew-start-btn, .crew-start-btn .star { transition: none; } .crew-start-btn:hover, .crew-start-btn:focus-visible, .crew-start-btn:hover .star, .crew-start-btn:focus-visible .star { transform: none; } }
 
 /* CC-105: your name in the header, and its menu */
