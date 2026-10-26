@@ -702,3 +702,35 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .me-menu [role="menuitem"]:hover, .me-menu [role="menuitem"]:focus-visible { background: var(--neutral-soft); outline: none; }
 .me-menu [data-me="signout"] { border-top: 1px solid var(--line); border-radius: 0 0 6px 6px; margin-top: 4px; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .me-caret { transition: none; } }
+/* CC-116: on phones When, Cost, Where and Sort sit behind one Filters button (a sheet), with what's chosen as
+   removable chips above the results. Wider screens keep the one row of fields. */
+.more-fields { display: contents; }
+.filters-btn, .active-filters { display: none; }
+.active-filters .chip { display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px 5px 14px; background: var(--neutral-soft); border-color: transparent; }
+.active-filters .chip span { font-size: 1.125rem; line-height: 1; color: var(--muted); }
+.active-filters .chip:hover span { color: var(--text); }
+.filter-sheet { margin: auto 0 0; width: 100%; max-width: 100%; max-height: 88dvh; padding: 0; border: 0; border-top: 1px solid var(--line);
+  border-radius: 16px 16px 0 0; background: var(--surface); color: var(--text); }
+.filter-sheet::backdrop { background: rgb(0 0 0 / 0.55); }
+.sheet-in { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; max-height: 88dvh; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.sheet-head h2 { font-family: var(--display); font-weight: 600; font-size: var(--step-1); }
+.sheet-body { overflow-y: auto; overscroll-behavior: contain; padding: 16px; }
+.sheet-body .more-fields { display: grid; gap: 16px; }
+.sheet-body .where-panel { position: static; width: auto; max-height: none; margin-top: 6px; box-shadow: none; }
+.sheet-body .where-foot { position: static; }
+.sheet-foot { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
+.sheet-foot .btn { flex: 1; max-width: 260px; }
+@media (max-width: 640px) {
+  .filters { padding: 12px; gap: 10px; }
+  .filters .chip-row { flex-wrap: nowrap; overflow-x: auto; margin-inline: -12px; padding: 2px 12px; scrollbar-width: none; } /* one row that scrolls sideways */
+  .filters .chip-row .chips { flex-wrap: nowrap; }
+  .filters .chip-row .chip { flex: none; white-space: nowrap; }
+  .fields { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  .search-field label { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .fields > .more-fields { display: none; }
+  .filters-btn { display: inline-flex; align-items: center; padding-block: 0; }
+  .active-filters { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; }
+  .active-filters:empty { display: none; }
+  .tally { padding-block: 12px 10px; }
+}
