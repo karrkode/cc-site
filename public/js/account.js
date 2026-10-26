@@ -312,7 +312,7 @@ document.addEventListener("submit", function (ev) {
   }, function () { btn.disabled = false; err.textContent = errorText(null); });
 });
 
-// ---------- Culture Planner page (CC-105) ----------
+// ---------- My week page (CC-105; renamed in CC-118) ----------
 // The week ahead and the Cultural Journal, on their own page (#planner). Signed out, a word on what it's for and a
 // way to sign in that comes back here.
 var AFTER_SIGN_IN = null; // "crews" or "planner": where to go once signed in from there
@@ -325,7 +325,7 @@ function renderPlannerPage() {
 $("planner-signin-btn").addEventListener("click", function () { AFTER_SIGN_IN = "planner"; openAccount(); });
 
 // ---------- your name in the header, and its menu (CC-105) ----------
-// Signed in, the header shows your name (or "Your account"); it opens a menu: Crews, Culture Planner, Account
+// Signed in, the header shows your name (or "Your account"); it opens a menu: Crews, My week, Account
 // Settings, Sign out. Arrow keys, Home and End move through it; Escape or Tab closes it and returns to your name.
 function meName() { var n = AUTH.user && (AUTH.user.display_name || "").trim(); return n || "Your account"; }
 function paintMeMenu() {
@@ -375,7 +375,7 @@ $("me-menu").addEventListener("click", function (ev) {
 var INVITE_TAGS = "?utm_source=invite&utm_medium=referral&utm_campaign=friend";
 function inviteFriend() {
   var url = location.origin + "/" + INVITE_TAGS;
-  var text = "I use Culture Crew to find Chicago theater, comedy, music and art, and to plan nights out. Come see what's on:";
+  var text = "I use Culture Crew to find Chicago theater, comedy, music and art, and to pick nights out. Come see what's on:";
   if (navigator.share) { navigator.share({ title: "Culture Crew", text: text, url: url }).catch(function () {}); return; }
   $("invite-url").value = url; $("invite-msg").textContent = "";
   $("invite-dialog").showModal(); $("invite-url").focus(); $("invite-url").select();

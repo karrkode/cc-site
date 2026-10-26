@@ -15,12 +15,12 @@
 <style>:root{color-scheme:dark;background:#0B1220}:root[data-theme="light"]{color-scheme:light;background:#F6F6F3}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Culture Crew · Chicago theater, comedy, music and art</title>
 <!-- CC-108: what search results and shared links show. CC-119: both descriptions start with the line under the Home headline. Event pages (/e/...) come from the API with their own. -->
-<meta name="description" content="Chicago theater, comedy, music, and art curated by you and your crew. Dates, prices and neighborhoods in one list, and an outing planned in four questions.">
+<meta name="description" content="Chicago theater, comedy, music, and art curated by you and your crew. Dates, prices and neighborhoods in one list, and an outing picked in four questions.">
 <link rel="canonical" href="https://chiculturecrew.com/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Culture Crew">
 <meta property="og:title" content="Culture Crew · Chicago theater, comedy, music and art">
-<meta property="og:description" content="Chicago theater, comedy, music, and art curated by you and your crew. Plan an outing in four questions.">
+<meta property="og:description" content="Chicago theater, comedy, music, and art curated by you and your crew. Pick an outing in four questions.">
 <meta property="og:url" content="https://chiculturecrew.com/">
 <meta property="og:image" content="https://chiculturecrew.com/img/preview.png">
 <meta property="og:image:width" content="1200">
@@ -91,7 +91,7 @@
 <dialog class="editor" id="invite-dialog" aria-labelledby="invite-heading">
   <form id="invite-form" method="dialog">
     <h2 id="invite-heading" tabindex="-1">Invite a friend</h2>
-    <p class="hint">Send them this link. They can look around without an account, and sign up when they want to plan with you.</p>
+    <p class="hint">Send them this link. They can look around without an account, and sign up when they want to go out with you.</p>
     <input type="text" id="invite-url" readonly aria-label="Link to Culture Crew">
     <p class="hint small" id="invite-msg" role="status"></p>
     <div class="row"><button class="btn" type="button" id="invite-copy">Copy link</button><button class="btn ghost" type="submit">Done</button></div>
@@ -183,14 +183,14 @@
     </button>
     <nav aria-label="Sections">
       <button class="navlink" type="button" data-go="catalog" id="nav-catalog">Catalog</button>
-      <button class="navlink" type="button" data-go="plan" id="nav-plan">Plan an outing</button>
+      <button class="navlink" type="button" data-go="plan" id="nav-plan">Pick an outing</button>
       <button class="navlink" type="button" data-go="submit" id="nav-submit">Submit an event</button>
       <button class="navlink" type="button" data-go="review" id="nav-review" hidden>Review<span class="count" id="review-count"></span></button>
       <span class="me-wrap" id="me-wrap">
         <button class="navlink me-btn" type="button" id="nav-account"><span id="me-name">Sign in</span><span class="count" id="account-count"></span><svg class="me-caret" viewBox="0 0 12 12" aria-hidden="true" hidden><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg></button>
         <span class="me-menu" id="me-menu" role="menu" aria-labelledby="nav-account" hidden>
           <button type="button" role="menuitem" tabindex="-1" data-me="crews">Crews<span class="count" id="crews-count"></span></button>
-          <button type="button" role="menuitem" tabindex="-1" data-me="planner">Culture Planner</button>
+          <button type="button" role="menuitem" tabindex="-1" data-me="planner">My week</button>
           <button type="button" role="menuitem" tabindex="-1" data-me="invite">Invite a friend</button>
           <button type="button" role="menuitem" tabindex="-1" data-me="account">Account Settings</button>
           <button type="button" role="menuitem" tabindex="-1" data-me="signout">Sign out</button>
@@ -214,7 +214,7 @@
         <div class="doors rise" id="doors">
           <button class="door door-a" type="button" data-go="plan" id="door-plan">
             <span class="eyebrow">Four questions</span>
-            <span class="door-title">Plan your outing!</span>
+            <span class="door-title">Pick an outing</span>
             <span class="door-go"><span class="door-desc">Tell us when, how much, what kind and where. Get one pick and a few backups.</span><span aria-hidden="true">→</span></span>
           </button>
           <button class="door door-c" type="button" data-go="crews" id="door-crews">
@@ -407,11 +407,11 @@
       </div>
     </section>
 
-    <!-- Culture Planner (CC-105): the week ahead and the Cultural Journal, at #planner -->
+    <!-- My week (CC-105, renamed from Culture Planner in CC-118): the week ahead and the Cultural Journal, at #planner -->
     <section class="view" id="view-planner" hidden>
       <div class="view-head">
-        <p class="eyebrow">Culture Planner</p>
-        <h1 id="planner-title" tabindex="-1">Culture Planner</h1>
+        <p class="eyebrow">Your calendar</p>
+        <h1 id="planner-title" tabindex="-1">My week</h1>
         <p>Where you're going this week, and notes on where you've been.</p>
       </div>
       <div class="panel" id="planner-signin" hidden>
@@ -442,7 +442,7 @@
       <div class="view-head crews-head">
         <p class="eyebrow">Your crews</p>
         <h1 id="crews-title" tabindex="-1">The people you go out with</h1>
-        <p>Plan together, see who's going, and who's been. Only a crew's members see who's in it, by name, never by email.</p>
+        <p>Share plans, see who's going, and who's been. Only a crew's members see who's in it, by name, never by email.</p>
       </div>
       <div class="panel" id="crews-signin" hidden>
         <p>A crew is a few friends you go out with. Share your plans with them, see what they're up to, and pick something together.</p>

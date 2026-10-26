@@ -48,7 +48,7 @@ The JavaScript gets the data from the API.
 The site has these views:
 - Home
 - Catalog
-- Plan an outing
+- Pick an outing
 - Submit an event
 - Your account
 - Review (admins only)
@@ -128,7 +128,7 @@ About 60 and 45 days before an event opens, discovery reads the event's own page
 
 **Missing dates and show days:** an event must have a date before an admin can approve it. A performance (Theater, Comedy or Concert) must also have start times: its show days with times, dated performances with times, or the venue's usual show times. An open run with show days, such as a weekly open mic, does not need a date. If a found event does not have these, Found events marks it "Needs a date" or "Needs show days". Discovery then reads the event's own page on the next day, and then each week for 4 weeks. The event stays marked until an admin adds what is missing in the approve form, or rejects it. The weekly recap shows how many events are marked.
 
-**Show days:** a performance has the days of the week that it is on, and one or more start times for each day. A day can be on some weeks of the month only: the 1st, 2nd, 3rd, 4th or last (for example, the 1st and 3rd Thursday). Plan an outing suggests only those weeks. The opening and closing dates do not change. Admins set the show days in the event forms. Members can give them in "Submit an event" (optional). Claude reads them from pages such as "Thursdays to Saturdays at 8 PM". The catalog cards show them under the venue.
+**Show days:** a performance has the days of the week that it is on, and one or more start times for each day. A day can be on some weeks of the month only: the 1st, 2nd, 3rd, 4th or last (for example, the 1st and 3rd Thursday). Pick an outing suggests only those weeks. The opening and closing dates do not change. Admins set the show days in the event forms. Members can give them in "Submit an event" (optional). Claude reads them from pages such as "Thursdays to Saturdays at 8 PM". The catalog cards show them under the venue.
 Discovery also fills in the venues' opening hours and usual show times. Discovery does not change hours that an admin set.
 
 > **NOTE:** The Anthropic API key is in AWS SSM Parameter Store. The scheduled job gives the key to discovery on standard input. The key is not in the code, on a command line or in a file.
@@ -153,13 +153,13 @@ The photo goes through these steps:
 
 Only the member and the approvers can see a photo. Crew-mates see only that the member has been, and whether the photo is approved (📸) or not (📷); they do not see the photo. The API shows a photo only through a link that it signs for 15 minutes. A member can send 10 photos each day. When a member removes the mark, or an admin deletes the event, the photo is deleted. Each hour, the discovery job also deletes stored photos that the database does not know (for example, from a deleted account). Site stats shows the number of checks this month and their cost.
 
-## 7. Plan an outing
+## 7. Pick an outing
 
-Plan an outing suggests only events that occur at the time that the user selects: Today, Tonight, This weekend, Next weekend or a date.
-- A performance must have a schedule: its own dates and times, its usual show times, or its venue's show times. If a performance does not have a schedule, Plan an outing does not suggest it. The catalog shows it.
-- An exhibition must be open: the venue's opening hours tell when. If the hours are not known, Plan an outing uses 10 AM to 5 PM. For "Tonight", the venue must be open after 6 PM.
+Pick an outing suggests only events that occur at the time that the user selects: Today, Tonight, This weekend, Next weekend or a date.
+- A performance must have a schedule: its own dates and times, its usual show times, or its venue's show times. If a performance does not have a schedule, Pick an outing does not suggest it. The catalog shows it.
+- An exhibition must be open: the venue's opening hours tell when. If the hours are not known, Pick an outing uses 10 AM to 5 PM. For "Tonight", the venue must be open after 6 PM.
 
-The site gets each event's schedule and its venue's hours from the API. Plan an outing does the calculation in the browser.
+The site gets each event's schedule and its venue's hours from the API. Pick an outing does the calculation in the browser.
 
 ## 8. Email
 

@@ -1,4 +1,4 @@
-// Culture Crew site: Plan an outing: the four questions, the pick and its backups, share links.
+// Culture Crew site: Pick an outing: the four questions, the pick and its backups, share links.
 // Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
@@ -249,11 +249,11 @@ function renderOuting() {
     body += '<div class="row" style="margin-top:18px"><button class="btn" type="button" data-go="plan">Start over</button><button class="btn ghost" type="button" data-go="catalog">Browse the catalog</button></div>';
     $("res-body").innerHTML = body; show("plan", "res-title"); return;
   }
-  $("res-sub").textContent = pick.shared ? "Someone sent you this plan. Showtimes are on the event's page." :
+  $("res-sub").textContent = pick.shared ? "Someone sent you this outing. Showtimes are on the event's page." :
     "Picked from " + plural(pick.total, "event that fits", "events that fit") + ". Showtimes are on the event's page.";
   var two = pick.stops.length > 1;
   body += '<div class="outing">' + pick.stops.map(function (s, i) {
-    return stopHTML(s, two ? (i === 0 ? "Afternoon" : "Evening") : (isArt(s) ? "The visit" : "The plan"), pick.ws, pick.we);
+    return stopHTML(s, two ? (i === 0 ? "Afternoon" : "Evening") : (isArt(s) ? "The visit" : "The show"), pick.ws, pick.we);
   }).join("") + "</div>";
   body += '<div class="section sharebox"><div class="row"><button class="btn ghost" type="button" id="share-btn">Copy link to this outing</button>' +
     '<span class="hint" id="share-msg" role="status"></span></div><input type="text" id="share-url" readonly hidden aria-label="Link to this outing"></div>';
@@ -264,7 +264,7 @@ function renderOuting() {
     }).join("") + "</div></div>";
   }
   body += '<div class="row" style="margin-top:28px">' +
-    (pick.shared ? '<button class="btn" type="button" data-go="plan">Plan your own</button><button class="btn ghost" type="button" data-go="catalog">Browse the catalog</button>' :
+    (pick.shared ? '<button class="btn" type="button" data-go="plan">Pick your own</button><button class="btn ghost" type="button" data-go="catalog">Browse the catalog</button>' :
       (pick.total > 1 ? '<button class="btn ghost" type="button" id="see-all">See all ' + pick.total + " in the catalog</button>" : "") +
       '<button class="textbtn" type="button" data-go="plan">Start over</button>') + "</div>";
   $("res-body").innerHTML = body;
