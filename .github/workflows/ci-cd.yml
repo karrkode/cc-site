@@ -67,6 +67,8 @@ jobs:
           aws s3 cp img "s3://$BUCKET/img/" --recursive --cache-control max-age=86400
           # index.html is revalidated on every visit; the 404 page can be cached briefly
           aws s3 cp index.html "s3://$BUCKET/index.html" --cache-control no-cache --content-type "text/html; charset=utf-8"
+          # CC-121: chiculturecrew.com/join is the same page with the join page's preview tags (stamp_assets.py)
+          aws s3 cp join "s3://$BUCKET/join" --cache-control no-cache --content-type "text/html; charset=utf-8"
           aws s3 cp 404.html "s3://$BUCKET/404.html" --cache-control max-age=300 --content-type "text/html; charset=utf-8"
 
       - name: Refresh CloudFront
@@ -77,8 +79,9 @@ jobs:
       - name: Check the live site
         run: |
           for _ in $(seq 1 20); do
-            if curl -fsS -o /dev/null https://chiculturecrew.com/ && curl -fsS https://chiculturecrew.com/ | grep -q '<title>Culture Crew'; then
-              echo "chiculturecrew.com is up"; exit 0
+            if curl -fsS -o /dev/null https://chiculturecrew.com/ && curl -fsS https://chiculturecrew.com/ | grep -q '<title>Culture Crew' &&
+               curl -fsS https://chiculturecrew.com/join | grep -q 'og:url" content="https://chiculturecrew.com/join"'; then
+              echo "chiculturecrew.com and /join are up"; exit 0
             fi
             sleep 3
           done

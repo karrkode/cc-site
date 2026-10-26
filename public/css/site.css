@@ -414,7 +414,8 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .ev-crew-list li { padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-ctl); }
 .ev-crew-name { font-weight: 700; margin-right: 6px; }
 /* CC-110: visitors and ticket clicks by where they came from */
-.section h3#sources-title { margin: 22px 0 8px; font-size: var(--step-1); }
+.section h3#sources-title, .section h3#join-stats-title { margin: 22px 0 8px; font-size: var(--step-1); }
+#join-summary { margin-bottom: 10px; }
 .table-wrap { overflow-x: auto; }
 .sources-table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
 .sources-table th, .sources-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -760,4 +761,23 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
   .active-filters { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; }
   .active-filters:empty { display: none; }
   .tally { padding-block: 12px 10px; }
+}
+/* CC-121: the join page (/join). The pitch and the sign-up box side by side, stacked on phones; the catalog
+   follows with its own heading hidden, under "Look around first". */
+.jp-cover { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: clamp(20px, 5vw, 64px); align-items: start;
+  padding-block: clamp(28px, 6vw, 72px) clamp(24px, 4vw, 40px); }
+.jp-pitch { display: grid; gap: 16px; }
+.jp-pitch h1 { font-family: var(--display); font-weight: 600; font-size: clamp(2.3rem, 6vw, 4.2rem); line-height: 1; letter-spacing: -0.025em; }
+.jp-pitch h1 em { font-style: normal; color: var(--lead); }
+.jp-line { font-size: clamp(1.2rem, 2.2vw, 1.4rem); font-weight: 600; line-height: 1.35; max-width: 34ch; }
+.jp-points { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 10px; max-width: 46ch; color: var(--muted); }
+.jp-points li { padding-left: 14px; border-left: 3px solid var(--star); line-height: 1.4; }
+.jp-form h2 { font-size: var(--step-1); }
+.jp-form .btn { justify-self: stretch; padding-block: 13px; }
+.jp-member { font-size: 0.9375rem; padding-top: 12px; border-top: 1px solid var(--line); }
+.jp-look { font-family: var(--display); font-weight: 600; font-size: var(--step-2); letter-spacing: -0.015em; padding-top: 24px; border-top: 1px solid var(--line); }
+#view-join:not([hidden]) + #view-catalog .view-head { display: none; }
+@media (max-width: 760px) {
+  .jp-cover { grid-template-columns: minmax(0, 1fr); }
+  .jp-points { display: none; } /* on phones the box comes right after the line */
 }

@@ -238,6 +238,38 @@
       </div>
     </section>
 
+    <!-- CC-121: the join page, at chiculturecrew.com/join (tagged links tell places apart). The catalog shows under it. -->
+    <section class="view" id="view-join" hidden>
+      <div class="jp-cover">
+        <div class="jp-pitch">
+          <p class="eyebrow">Culture Crew · Chicago</p>
+          <h1 id="jp-title" tabindex="-1">Ready to join the <em>culture crew</em>?</h1>
+          <p class="jp-line">Chicago theater, comedy, music and art, and the people you go with.</p>
+          <ul class="jp-points">
+            <li>Every show we know of on one list, with dates, prices and neighborhoods.</li>
+            <li>Find an outing in four questions.</li>
+            <li>Start a crew and see what your friends are going to.</li>
+          </ul>
+        </div>
+        <form class="panel jp-form" id="jp-form" novalidate aria-labelledby="jp-form-title">
+          <h2 id="jp-form-title">Join in one step</h2>
+          <div class="field"><label for="jp-name">Name <span class="opt-label">(optional)</span></label><input id="jp-name" type="text" autocomplete="name" maxlength="80"></div>
+          <div class="field"><label for="jp-email">Email</label><input id="jp-email" type="email" autocomplete="email" required></div>
+          <div class="field"><label for="jp-password">Password</label><input id="jp-password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required aria-describedby="jp-password-hint"><span class="hint small" id="jp-password-hint">At least 8 characters.</span></div>
+          <p class="form-error" id="jp-error" role="alert"></p>
+          <button class="btn" type="submit" id="jp-go">Join Culture Crew</button>
+          <p class="hint small">We'll email you a link to confirm your address.</p>
+          <p class="jp-member">Already a member? <button class="textbtn" type="button" id="jp-signin">Sign in</button></p>
+        </form>
+        <div class="panel jp-form" id="jp-in" hidden>
+          <h2 id="jp-in-title" tabindex="-1">You're in</h2>
+          <p id="jp-in-text"></p>
+          <div class="row"><button class="btn" type="button" data-go="plan">Find an outing</button><button class="btn neutral" type="button" data-go="home">Go to Home</button></div>
+        </div>
+      </div>
+      <h2 class="jp-look">Look around first</h2>
+    </section>
+
     <!-- Catalog -->
     <section class="view" id="view-catalog" hidden>
       <div class="view-head">
@@ -662,7 +694,7 @@
       <div class="view-head">
         <p class="eyebrow">Review</p>
         <h1 id="card-title" tabindex="-1">QR card</h1>
-        <p>A card to hand out at shows. Its QR code opens chiculturecrew.com with tags, so these visits show up under “qr” on Site stats.</p>
+        <p>A card to hand out at shows. Its QR code opens the join page, chiculturecrew.com/join, with tags, so these visits and sign-ups show up under “qr” on Site stats.</p>
         <div class="row"><button class="textbtn" type="button" data-go="review">Back to review</button></div>
       </div>
       <div class="card-maker">
@@ -670,12 +702,12 @@
           <input id="card-campaign" type="text" value="card" maxlength="40" autocomplete="off" spellcheck="false" aria-describedby="card-campaign-hint">
           <span class="hint small" id="card-campaign-hint">Name each batch, for example lobby-goodman, to compare them on Site stats. Letters, numbers and dashes.</span></div>
         <p class="hint small">The code opens <code id="card-url"></code></p>
-        <div class="biz-card" id="biz-card" role="img" aria-label="Preview of the printed card: Culture Crew, What's the crew seeing next?, chiculturecrew.com, and the QR code">
+        <div class="biz-card" id="biz-card" role="img" aria-label="Preview of the printed card: Culture Crew, What's the crew seeing next?, chiculturecrew.com/join, and the QR code">
           <div class="biz-text">
             <p class="biz-brand"><svg class="star" aria-hidden="true"><use href="#chi-star"></use></svg>Culture Crew</p>
             <p class="biz-head">What’s the crew seeing <span>next?</span></p>
             <p class="biz-sub">Chicago theater, comedy, music and art, and the people you go with.</p>
-            <p class="biz-url">chiculturecrew.com</p>
+            <p class="biz-url">chiculturecrew.com/join</p>
           </div>
           <div class="biz-qr" id="biz-qr"></div>
         </div>
@@ -708,6 +740,11 @@
           <p>Add these to the end of a chiculturecrew.com link so its visits show up here under their own name. Change the campaign to suit the post.</p>
           <ul id="utm-examples"></ul>
         </details>
+        <!-- CC-121: visits to chiculturecrew.com/join, and the sign-ups in those visits, by source -->
+        <h3 id="join-stats-title">Join page</h3>
+        <p class="hint small">Visits to chiculturecrew.com/join (a visitor on a day), and sign-ups in a visit that came by it.</p>
+        <div class="stat-summary" id="join-summary"></div>
+        <div class="table-wrap"><table class="sources-table" id="join-sources" aria-labelledby="join-stats-title"></table></div>
       </section>
       <section class="section" aria-labelledby="interest-title">
         <div class="interest-head">
