@@ -223,7 +223,7 @@ document.addEventListener("click", function (ev) {
 // "Ben K. and Maya C. from Thursday Theater are going" / "3 from Laughin Times are interested" (CC-75), per crew.
 function crewNoteText(e) {
   function who(names) {
-    names = names.map(shortName); // "Maya C.", as on the crew boxes (crews.js)
+    names = names.map(shortName); // "Maya C."
     return names.length > 2 ? (NUMBER_WORDS[names.length] || String(names.length)).toLowerCase() + " more" :
       names.length === 2 ? names[0] + " and " + names[1] : names[0];
   }
