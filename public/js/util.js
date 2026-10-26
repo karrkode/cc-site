@@ -52,7 +52,7 @@ var TYPE_ORDER = ["Theater", "Comedy", "Concert", "Visual Art"];
 var AREA_NAMES = { city: "City", suburbs: "Suburbs", out_of_town: "Out of town" };
 // The page no longer downloads every event (CC-33): each view asks the API for what it shows.
 // FACETS: the categories and neighborhoods in use, plus counts (GET /events/facets).
-// CC-73: the sides of town, in the order Pick an outing and the catalog offer them.
+// CC-73: the sides of town, in the order Find an outing and the catalog offer them.
 var REGIONS = [["downtown", "Downtown/Loop"], ["north", "Northside"], ["west", "Westside"], ["south", "Southside"],
   ["suburbs", "Suburbs"], ["out_of_town", "Out of town"]];
 var REGION_NAMES = {}; REGIONS.forEach(function (r) { REGION_NAMES[r[0]] = r[1]; });

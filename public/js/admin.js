@@ -336,7 +336,7 @@ function eventChanged(id, e) {
     return keep ? list.map(function (x) { return x.id === id ? e : x; }) : list.filter(function (x) { return x.id !== id; });
   }
   if (!e) { delete KNOWN[id]; delete WENT[id]; delete MYPLANS[id]; }
-  PLAN_RANGE = null; // Pick an outing loads its events again, with the new details and show times
+  PLAN_RANGE = null; // Find an outing loads its events again, with the new details and show times
   var shown = CAT_ITEMS.length; CAT_ITEMS = swap(CAT_ITEMS, live); CAT_TOTAL -= shown - CAT_ITEMS.length;
   SOON = swap(SOON, live); WENT_LIST = swap(WENT_LIST, !!e); MYPLAN_LIST = swap(MYPLAN_LIST, live);
   rerenderLists();
@@ -427,7 +427,7 @@ $("i-closed").addEventListener("change", loadInterest);
 
 // CC-68: visits over the last 30 days: totals, a daily chart of visitors (returning ones stacked under
 // new ones), and views of each part of the site. Counts only.
-var VIEW_NAMES = { home: "Home", catalog: "Catalog", event: "Event view", plan: "Pick an outing", submit: "Submit", account: "Account", crews: "Crews", planner: "My week",
+var VIEW_NAMES = { home: "Home", catalog: "Catalog", event: "Event view", plan: "Find an outing", submit: "Submit", account: "Account", crews: "Crews", planner: "My week",
   review: "Review", venues: "Venues", stats: "Stats", sources: "Event sources", found: "Found events", issues: "Issues",
   reset: "Password reset", verify: "Email confirmation" };
 function loadTraffic() {
@@ -445,7 +445,7 @@ function paintTraffic(t) {
     "<div><strong>" + pct(t.returning_visitors, t.visitors) + "</strong><span>came back (" + t.returning_visitors + ")</span></div>" +
     "<div><strong>" + sum("views") + "</strong><span>page views</span></div>" +
     "<div><strong>" + sum("tickets") + "</strong><span>clicks to an event's page</span></div>" +
-    "<div><strong>" + sum("outings") + "</strong><span>outings picked</span></div>";
+    "<div><strong>" + sum("outings") + "</strong><span>outings found</span></div>";
   var max = Math.max.apply(null, t.days.map(function (d) { return d.visitors; }).concat([1]));
   var W = 600, H = 120, gap = 3, bw = (W - gap * (t.days.length - 1)) / t.days.length;
   var bars = t.days.map(function (d, i) {

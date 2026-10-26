@@ -375,7 +375,7 @@ $("me-menu").addEventListener("click", function (ev) {
 var INVITE_TAGS = "?utm_source=invite&utm_medium=referral&utm_campaign=friend";
 function inviteFriend() {
   var url = location.origin + "/" + INVITE_TAGS;
-  var text = "I use Culture Crew to find Chicago theater, comedy, music and art, and to pick nights out. Come see what's on:";
+  var text = "I use Culture Crew to find Chicago theater, comedy, music and art, and to go out with friends. Come see what's on:";
   if (navigator.share) { navigator.share({ title: "Culture Crew", text: text, url: url }).catch(function () {}); return; }
   $("invite-url").value = url; $("invite-msg").textContent = "";
   $("invite-dialog").showModal(); $("invite-url").focus(); $("invite-url").select();

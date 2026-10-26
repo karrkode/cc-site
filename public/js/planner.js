@@ -1,4 +1,4 @@
-// Culture Crew site: Pick an outing: the four questions, the pick and its backups, share links.
+// Culture Crew site: Find an outing: the four questions, the pick and its backups, share links.
 // Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
@@ -264,7 +264,7 @@ function renderOuting() {
     }).join("") + "</div></div>";
   }
   body += '<div class="row" style="margin-top:28px">' +
-    (pick.shared ? '<button class="btn" type="button" data-go="plan">Pick your own</button><button class="btn ghost" type="button" data-go="catalog">Browse the catalog</button>' :
+    (pick.shared ? '<button class="btn" type="button" data-go="plan">Find your own</button><button class="btn ghost" type="button" data-go="catalog">Browse the catalog</button>' :
       (pick.total > 1 ? '<button class="btn ghost" type="button" id="see-all">See all ' + pick.total + " in the catalog</button>" : "") +
       '<button class="textbtn" type="button" data-go="plan">Start over</button>') + "</div>";
   $("res-body").innerHTML = body;
