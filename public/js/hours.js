@@ -155,7 +155,7 @@ $("hours-form").addEventListener("submit", function (ev) {
 });
 
 // ---------- show days (CC-79, CC-88): the days a performance is on, each with its start times ----------
-// In the event edit form ("ed": also approving a found event) and Submit an event ("s"). Plan an outing only
+// In the event edit form ("ed": also approving a found event) and Submit an event ("s"). Find an outing only
 // suggests a performance when it knows the start times: dated performances found on the venue's site, else
 // these show days, else the venue's usual show times. Only Theater, Comedy and Concert have them (musicals are
 // theater); Visual Art goes by the venue's opening hours.
@@ -299,7 +299,7 @@ function fillWeekly(e) { // e: an event as fromApi makes it
   $("ed-sched-hint").textContent = (e.sched.dates.length ? plural(e.sched.dates.length, "upcoming date", "upcoming dates") +
     " came from the venue's website; those come first. " : "") +
     (own ? "" : Object.keys(venue).length ? "These are the venue's usual show times; change them if this show is different. " :
-      "Choose the days, and give a start time for each. ") + "Without any, Plan an outing won't suggest it.";
+      "Choose the days, and give a start time for each. ") + "Without any, Find an outing won't suggest it.";
 }
 // What to save from the edit form: null if the show days are as they were (the venue's, untouched, stay the venue's).
 function weeklyChange(f) {

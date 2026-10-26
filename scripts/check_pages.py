@@ -83,6 +83,13 @@ def main() -> int:
                 meta = re.search(r'<meta ' + name + r' content="([^"]*)"', text)
                 if not meta or not meta.group(1).startswith(line.group(1)):
                     problems.append(f"{path.name}: the {name} meta doesn't start with the Home line")
+        # CC-118: a page heading says something its eyebrow doesn't, and the old names stay retired
+        for eyebrow, heading in re.findall(r'<p class="eyebrow"[^>]*>([^<]+)</p>\s*<h1[^>]*>([^<]+)<', text):
+            if eyebrow.strip().lower() == heading.strip().lower():
+                problems.append(f'{path.name}: the heading "{heading.strip()}" repeats its eyebrow')
+        for old in ("Plan an outing", "Plan your outing", "Pick an outing", "Culture Planner"):
+            if re.search(r'>[^<]*' + old, text) or re.search(r'"[^"\n]*' + old, text):
+                problems.append(f'{path.name}: still says "{old}" (CC-118 named it Find an outing / My week)')
         for src in sorted(set(re.findall(r'src="(img/[^"]+)"', text))):
             if not (PUBLIC / src).is_file():
                 problems.append(f"{path.name}: uses {src}, which isn't in public/")
