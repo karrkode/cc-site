@@ -83,7 +83,7 @@ function fillFromDraft(d) {
     "We filled this in from the page. Check it, then send it in.") +
     (d.other_events ? " The page lists more than one event, so make sure this is the one you meant." : "");
 }
-$("s-link-form").addEventListener("input", function () { $("s-link-error").textContent = ""; });
+$("s-link-form").addEventListener("input", function () { $("s-link-error").textContent = ""; $("s-link-msg").textContent = ""; });
 $("s-link-form").addEventListener("submit", function (ev) {
   ev.preventDefault();
   var url = $("s-link").value.trim(), err = $("s-link-error"), msg = $("s-link-msg"), btn = $("s-link-btn");
@@ -187,6 +187,8 @@ $("submit-form").addEventListener("submit", function (ev) {
     btn.disabled = false;
     if (!res || !res.ok) { msg.textContent = ""; err.textContent = errorText(res); return; }
     resetSubmitForm(); $("s-link").value = "";
+    // CC-124: after a link's event is sent, the emptied form goes away and the thanks shows under the link field
+    if (howChoice() === "link") { LINK_FILLED = false; paintHow(); msg.textContent = ""; msg = $("s-link-msg"); }
     var made = fromApi(res.body);
     if (made.status === "approved" && made.publishAt) {
       msg.textContent = "Scheduled. It goes live " + WHEN.format(made.publishAt) + ".";
@@ -197,6 +199,6 @@ $("submit-form").addEventListener("submit", function (ev) {
     } else {
       msg.textContent = "Thanks! It's waiting for review. You can follow it on your account page.";
     }
-    $("s-title").focus();
+    (howChoice() === "link" ? $("s-link") : $("s-title")).focus();
   });
 });
