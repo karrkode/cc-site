@@ -441,6 +441,7 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 /* CC-71: found events */
 .found-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 10px 18px; margin-bottom: 12px; }
 .found-filters .field { min-width: 180px; }
+.found-filters .field[hidden] { display: none; } /* CC-100: the rule form shows a phrase or a venue */
 #budget-form .field { min-width: 0; width: 12rem; }
 #budget-form .hint { flex-basis: 100%; margin: 0; }
 .queue-item.found { align-items: start; }

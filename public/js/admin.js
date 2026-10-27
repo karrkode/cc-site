@@ -11,14 +11,15 @@ function submitterText(who) { // null: came from the old Google Sheet, or the ac
 function creditText(e) { return e.suggestedBy ? " · wants public credit" : e.creditMe ? " · wants credit, but has no name to show" : ""; }
 // CC-102: sent with "Don't know!" (or otherwise without any dates): the crew looks them up
 function datesToLookUp(e) { return !e.b && !e.n && !e.openRun && !(e.runDates && e.runDates.length); }
-function queueItemHTML(e, actions) {
+function queueItemHTML(e, actions, note) { // note: an extra line, such as which rule caught it (CC-100)
   return '<div class="queue-item"><div class="alt-text"><p class="kind">' + esc(e.type) + '</p><p class="alt-title">' +
     (e.url ? '<a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" : esc(e.title)) + "</p>" +
     '<p class="alt-meta">' + esc(placeText(e)) + " · " + (datesToLookUp(e) ? '<span class="state">Dates to look up</span>' : esc(e.b || e.n ? dateText(e) : "Dates not given")) +
       " · " + esc(costText(e)) + "</p>" +
     (e.runDates && e.runDates.length ? '<p class="alt-meta">Fixed run: ' + esc(e.runDates.map(function (r) { return goingDay(r.date) + " " + clockText(r.time); }).join(", ")) + "</p>" : "") +
     (e.submitter !== undefined ? '<p class="alt-meta">' + submitterText(e.submitter) + creditText(e) + "</p>" :
-      e.suggestedBy ? '<p class="alt-meta">Credited as "Suggested by ' + esc(e.suggestedBy) + '"</p>' : "") + "</div>" +
+      e.suggestedBy ? '<p class="alt-meta">Credited as "Suggested by ' + esc(e.suggestedBy) + '"</p>' : "") +
+    (note ? '<p class="alt-meta">' + esc(note) + "</p>" : "") + "</div>" +
     '<div class="row">' + actions + "</div></div>";
 }
 function openReview() { if (!isAdmin()) { openAccount(); return; } renderReview(); updateFoundCount(); show("review"); }
@@ -26,9 +27,10 @@ function updateReviewCount(n) {
   if (n !== undefined) { $("review-count").textContent = n ? String(n) : ""; return; }
   api("/admin/events?limit=1").then(readJSON).then(function (res) { if (res.ok) updateReviewCount(res.body.total); }, function () {});
 }
-var EMPTY = { "review-list": "Nothing waiting for review.", "scheduled-list": "Nothing scheduled.", "withdrawn-list": "Nothing withdrawn." };
+var EMPTY = { "review-list": "Nothing waiting for review.", "scheduled-list": "Nothing scheduled.", "withdrawn-list": "Nothing withdrawn.",
+  "caught-list": "Nothing caught." };
 function renderReview() {
-  renderScheduled(); renderWithdrawn();
+  renderScheduled(); renderWithdrawn(); renderCaught(); loadSubmissionRules();
   $("review-list").innerHTML = '<p class="hint">Loading…</p>';
   api("/admin/events?limit=500").then(readJSON).then(function (res) {
     if (!res.ok) { $("review-list").innerHTML = '<p class="form-error">' + esc(errorText(res)) + "</p>"; return; }
@@ -63,6 +65,18 @@ function renderWithdrawn() { // CC-56: put back with Restore (approve), or edit 
     refocusAfterEdit();
   }, function () {});
 }
+function renderCaught() { // CC-100: rejected by an auto-reject rule, newest first; approve one if the rule was wrong
+  api("/admin/events?status=rejected&caught=true&limit=100").then(readJSON).then(function (res) {
+    if (!res.ok) { $("caught-list").innerHTML = '<p class="form-error">' + esc(errorText(res)) + "</p>"; return; }
+    $("caught-list").innerHTML = res.body.items.length ? res.body.items.map(function (raw) {
+      var e = toEvent(raw);
+      return queueItemHTML(e, '<button class="btn ghost" type="button" data-review="approve" data-id="' + esc(e.id) + '">Approve</button>' +
+        editButtonHTML(e, "btn ghost"), raw.reject_reason + " · " + short(new Date(raw.created_at)));
+    }).join("") + (res.body.total > res.body.items.length ? '<p class="hint">Showing the newest ' + res.body.items.length + " of " + res.body.total + ".</p>" : "") :
+      '<p class="hint">' + EMPTY["caught-list"] + "</p>";
+    refocusAfterEdit();
+  }, function () {});
+}
 function reviewClick(ev) {
   var b = ev.target.closest("[data-review]"); if (!b) return;
   var action = b.getAttribute("data-review"), item = b.closest(".queue-item"), list = item.parentNode;
@@ -74,12 +88,72 @@ function reviewClick(ev) {
     if (!list.children.length) list.innerHTML = '<p class="hint">' + EMPTY[list.id] + "</p>";
     updateReviewCount();
     if (action === "approve") reloadEvents();
-    var focusTo = next && next.querySelector && next.querySelector("button"); (focusTo || $("review-title")).focus();
+    var focusTo = next && next.querySelector && next.querySelector("button"); (focusTo || $(list.id === "caught-list" ? "caught-title" : "review-title")).focus();
   }).catch(function () { Array.prototype.forEach.call(item.querySelectorAll("button"), function (x) { x.disabled = false; }); });
 }
 $("review-list").addEventListener("click", reviewClick);
 $("scheduled-list").addEventListener("click", reviewClick);
 $("withdrawn-list").addEventListener("click", reviewClick);
+$("caught-list").addEventListener("click", reviewClick);
+
+// ---------- auto-reject rules for members' submissions (CC-100) ----------
+var SRULE_VENUES = null; // [{id, label}], loaded the first time "Venue" is chosen
+function loadSubmissionRules(focusSel) {
+  api("/admin/submission-rules").then(readJSON).then(function (res) {
+    if (!res.ok) { $("srules-list").innerHTML = '<p class="form-error">' + esc(errorText(res)) + "</p>"; return; }
+    $("srules-list").innerHTML = res.body.length ? res.body.map(function (r) {
+      var what = r.kind === "venue" ? "Venue: " + (r.venue_name || "a deleted venue") : "Event name contains “" + r.phrase + "”";
+      return '<div class="queue-item"><div class="alt-text"><p class="alt-title">' + esc(what) + "</p>" +
+        '<p class="alt-meta">Caught ' + plural(r.caught, "submission", "submissions") + " · since " + esc(short(new Date(r.created_at))) + "</p></div>" +
+        '<div class="row"><button class="btn ghost" type="button" data-srule="' + esc(r.id) + '" aria-label="Delete the rule: ' + esc(what) + '">Delete</button></div></div>';
+    }).join("") : '<p class="hint">No auto-reject rules yet.</p>';
+    var f = focusSel && document.querySelector(focusSel); if (f) f.focus();
+  }, function () {});
+}
+function loadRuleVenues() {
+  if (SRULE_VENUES) return Promise.resolve(SRULE_VENUES);
+  return api("/venues").then(readJSON).then(function (res) {
+    if (!res.ok) throw res;
+    SRULE_VENUES = res.body.map(function (v) { return { id: v.id, label: venueLabel(v) }; });
+    $("srule-venues").innerHTML = SRULE_VENUES.map(function (v) { return '<option value="' + esc(v.label) + '"></option>'; }).join("");
+    return SRULE_VENUES;
+  });
+}
+$("srule-kind").addEventListener("change", function () {
+  var venue = this.value === "venue";
+  $("srule-phrase-field").hidden = venue; $("srule-venue-field").hidden = !venue; $("srule-error").textContent = "";
+  if (venue) loadRuleVenues().catch(function (res) { $("srule-error").textContent = errorText(res); });
+});
+$("srule-form").addEventListener("input", function () { $("srule-error").textContent = ""; });
+$("srule-form").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var kind = $("srule-kind").value, body = { kind: kind }, field = kind === "venue" ? $("srule-venue") : $("srule-phrase");
+  if (kind === "venue") {
+    var label = field.value.trim().toLowerCase(), v = (SRULE_VENUES || []).filter(function (x) { return x.label.toLowerCase() === label; })[0];
+    if (!v) { $("srule-error").textContent = "Choose a venue from the list."; field.focus(); return; }
+    body.venue_id = v.id;
+  } else {
+    if (!field.value.trim()) { $("srule-error").textContent = "Give a word or phrase from the event name."; field.focus(); return; }
+    body.phrase = field.value;
+  }
+  $("srule-add").disabled = true;
+  api("/admin/submission-rules", { method: "POST", body: body }).then(readJSON).then(function (res) {
+    $("srule-add").disabled = false;
+    if (!res.ok) { $("srule-error").textContent = errorText(res); field.focus(); return; }
+    field.value = "";
+    $("edit-live").textContent = "Added the rule. Matching submissions from now on are rejected.";
+    loadSubmissionRules(); field.focus();
+  }, function () { $("srule-add").disabled = false; $("srule-error").textContent = errorText(null); });
+});
+$("srules-list").addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-srule]"); if (!b) return;
+  b.disabled = true;
+  api("/admin/submission-rules/" + encodeURIComponent(b.getAttribute("data-srule")), { method: "DELETE" }).then(function (r) {
+    if (!r.ok && r.status !== 404) { b.disabled = false; return; }
+    $("edit-live").textContent = "Deleted the rule. Submissions it already caught stay rejected.";
+    loadSubmissionRules("#srules-title");
+  }, function () { b.disabled = false; });
+});
 
 // ---------- venues (admins, CC-57) ----------
 // The list comes from GET /venues/manage (every venue, with how many events use it) and is filtered here.
