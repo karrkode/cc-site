@@ -315,6 +315,12 @@ a { color: inherit; }
 .radio input { width: 1.1rem; height: 1.1rem; margin: 0; accent-color: var(--lead); }
 .field label.radio { font-size: 1rem; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--text); } /* a checkbox, not a field label */
 .publish .field { margin-left: 1.6rem; max-width: 18rem; }
+/* CC-124: Suggest by link */
+.how-choice { grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); }
+.how-choice legend { grid-column: 1 / -1; }
+.link-form { display: grid; gap: 12px; }
+.field.missing input, .field.missing select { border-style: dashed; border-color: var(--lead); }
+.miss-tag { display: inline-block; white-space: nowrap; margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: var(--neutral-soft); color: var(--text); font-size: 0.6875rem; letter-spacing: 0.04em; }
 .queue-item { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: 14px 16px; }
 .queue-item .alt-text a { text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .state { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: var(--neutral-soft); }

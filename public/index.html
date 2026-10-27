@@ -533,7 +533,20 @@
         <p>You need an account to send us events, so we can follow up if anything's unclear.</p>
         <div class="row"><button class="btn" type="button" data-go="account">Sign in or create an account</button></div>
       </div>
+      <!-- CC-124: paste a link and the server fills in the form, or enter it by hand -->
+      <div class="panel" id="submit-how" hidden>
+        <fieldset class="publish how-choice" id="s-how"><legend>How do you want to add it?</legend>
+          <label class="radio"><input type="radio" name="s-how" value="link" checked> Paste a link</label>
+          <label class="radio"><input type="radio" name="s-how" value="manual"> Enter it myself</label>
+        </fieldset>
+        <form class="link-form" id="s-link-form" novalidate>
+          <div class="field"><label for="s-link">The event's page</label><input id="s-link" type="url" maxlength="2000" placeholder="https://" autocomplete="off" aria-describedby="s-link-hint"><span class="hint small" id="s-link-hint">The page for this one event works best. We read it and fill in what it says, for you to check.</span></div>
+          <div class="row"><button class="btn" type="submit" id="s-link-btn">Fill it in</button><span class="hint" id="s-link-msg" role="status"></span></div>
+          <p class="form-error" id="s-link-error" role="alert"></p>
+        </form>
+      </div>
       <form class="panel" id="submit-form" novalidate hidden>
+        <p class="notice" id="s-filled" role="status"></p>
         <div class="field"><label for="s-title">Event name</label><input id="s-title" type="text" maxlength="300" required></div>
         <div class="field"><label for="s-category">Type</label>
           <select id="s-category" required><option value="Theater">Theater</option><option value="Comedy">Comedy</option><option value="Music">Music</option><option value="Visual Art">Visual Art</option><option value="Educational">Educational</option></select>
