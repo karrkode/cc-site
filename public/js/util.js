@@ -48,7 +48,10 @@ function thisWeekend() {
 function nextWeekend() { var fri = add(thisWeekend()[1], 5); return [fri, add(fri, 2)]; }
 
 // ---------- events ----------
-var TYPE_ORDER = ["Theater", "Comedy", "Concert", "Visual Art"];
+var TYPE_ORDER = ["Theater", "Comedy", "Music", "Visual Art", "Educational"]; // CC-125: the five, as the API has them
+// CC-125: an opera's category is Music; it's also listed under Theater, and its card says "Opera"
+function typeLabel(category, opera) { return opera ? "Opera" : category; }
+function inType(e, types) { return !!types[e.type] || (e.opera && !!types.Theater); }
 var AREA_NAMES = { city: "City", suburbs: "Suburbs", out_of_town: "Out of town" };
 // The page no longer downloads every event (CC-33): each view asks the API for what it shows.
 // FACETS: the categories and neighborhoods in use, plus counts (GET /events/facets).
@@ -65,7 +68,7 @@ function fromApi(e) {
     id: String(e.id), sourceId: e.source_id, title: e.title, venue: e.venue.name, hood: e.venue.neighborhood,
     area: AREA_NAMES[e.venue.area] || "City", begin: e.begin_date, end: e.end_date, openRun: e.open_run,
     beginTbd: !e.begin_date, cost: usual ? usual.standard_cost : e.cost_text || "TBD", min: usual ? usual.standard_min_price : e.min_price,
-    costUsual: !!usual, type: e.category, url: e.url,
+    costUsual: !!usual, type: e.category, url: e.url, opera: !!e.opera, label: typeLabel(e.category, e.opera),
     venueId: e.venue.id, costRaw: e.cost_text, // for the admin edit form (CC-56)
     status: e.status, publishAt: e.publish_at ? new Date(e.publish_at) : null,
     submitter: e.submitted_by, // only the admin routes send this (undefined elsewhere; null = none on record)
@@ -102,7 +105,7 @@ var WENT = {}, WENT_LIST = [], WENT_PHOTO = {}; // WENT_PHOTO: your photos from 
 var WENT_JOURNAL = {}, JOURNAL_DRAFT = {};
 // Your plans (CC-55; "Oh the places you'll go" on the account page): MYPLANS[id] = { status: "interested" | "going", date: "YYYY-MM-DD" | null }.
 var MYPLANS = {}, MYPLAN_LIST = [], MYPLAN_SEQ = 0;
-var TYPE_PLURAL = { "Theater": "theater", "Comedy": "comedy", "Concert": "concerts", "Visual Art": "visual art" };
+var TYPE_PLURAL = { "Theater": "theater", "Comedy": "comedy", "Music": "music", "Visual Art": "visual art", "Educational": "educational events" };
 
 function isPast(e) { return !!e.n && e.n < T; }
 function oneNight(e) { return same(e.b, e.n); }
@@ -179,7 +182,7 @@ function cardHTML(e) {
   var own = mine && !going && !AUTH.user.dolphins ? '<span class="pill mine">Interested</span>' : "";
   var mark = pickHTML(e) + own;
   return '<article class="card" data-card="' + esc(e.id) + '">' +
-    '<div class="card-top"><span class="kind">' + esc(e.type) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
+    '<div class="card-top"><span class="kind">' + esc(e.label) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
     // CC-117: the card opens the event's view in the site; its Tickets button there is the way out to the venue
     '<h3><a href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '">' + esc(e.title) + "</a></h3>" +
     '<div class="card-body"><p class="where">' + placeHTML(e) + "</p>" + (e.runDates.length ? runDatesLine(e) : showDaysLine(e)) +

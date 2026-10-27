@@ -88,7 +88,7 @@ function pool(ws, we, budget, types, regions, slot) {
   var anyType = !types || Object.keys(types).length === 0, anyRegion = !regions || Object.keys(regions).length === 0;
   slot = slot || plan.slot || "day";
   return PLAN_EVENTS.filter(function (e) {
-    return !isPast(e) && overlaps(e, ws, we) && costOk(e, budget || "any") && (anyType || !!types[e.type]) &&
+    return !isPast(e) && overlaps(e, ws, we) && costOk(e, budget || "any") && (anyType || inType(e, types)) &&
       (anyRegion ? e.region !== "out_of_town" && e.area !== "Out of town" : !!regions[e.region]) && onDuring(e, ws, we, slot);
   });
 }
@@ -227,7 +227,7 @@ function whyText(e, ws, we) {
 }
 function stopHTML(e, slot, ws, we) {
   return '<div class="stop"><p class="stop-slot">' + esc(slot) + '</p><div class="stop-body">' +
-    '<p class="kind">' + esc(e.type) + "</p><h2>" + esc(e.title) + "</h2>" +
+    '<p class="kind">' + esc(e.label) + "</p><h2>" + esc(e.title) + "</h2>" +
     '<p class="where">' + placeHTML(e) + "</p>" +
     '<p class="facts">' + esc(dateText(e)) + " · " + esc(costText(e)) + "</p>" +
     "<p>" + esc([showTimesText(e, ws, we, plan.slot), whyText(e, ws, we)].filter(Boolean).join(" ")) + "</p>" +

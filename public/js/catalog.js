@@ -306,7 +306,7 @@ function eventViewHTML(e) {
   var st = eventStatus(e), past = isPast(e), facts = [["When", dateText(e)], ["Price", costText(e)]];
   var times = e.runDates.length ? runDatesText(e) : SHOW_TYPES[e.type] && !oneNight(e) && !past ? showDaysText(e.sched.weekly, e.sched.weeks) : "";
   if (times) facts.splice(1, 0, ["Shows", times]);
-  var html = '<div class="card-top"><span class="kind">' + esc(e.type) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
+  var html = '<div class="card-top"><span class="kind">' + esc(e.label) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
     '<h1 id="event-title" tabindex="-1">' + esc(e.title) + "</h1>" +
     '<p class="ev-place">' + placeHTML(e) + "</p>" +
     (past ? '<p class="ev-closed">This run has closed.</p>' : "") +

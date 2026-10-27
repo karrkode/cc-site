@@ -79,7 +79,7 @@ function foundItemHTML(i) {
   var id = esc(i.id), title = esc(i.title), state = FOUND_STATES[i.status];
   var where = i.venue_name + (i.neighborhood ? " · " + i.neighborhood : i.venue_id ? "" : " · new venue");
   var html = '<div class="queue-item found" data-found="' + id + '"><div class="alt-text">' +
-    '<p class="kind">' + esc(i.category || FOUND_KINDS[i.kind] || "Event") + (i.needs ? ' <span class="state needs">' + esc(FOUND_NEEDS[i.needs]) + "</span>" : "") + (state ? ' <span class="state' + (i.status === "rejected" ? " rejected" : i.status === "approved" ? " approved" : "") + '">' + esc(state) + "</span>" : "") + "</p>" +
+    '<p class="kind">' + esc(foundType(i).category ? typeLabel(foundType(i).category, foundType(i).opera) : FOUND_KINDS[i.kind] || "Event") + (i.needs ? ' <span class="state needs">' + esc(FOUND_NEEDS[i.needs]) + "</span>" : "") + (state ? ' <span class="state' + (i.status === "rejected" ? " rejected" : i.status === "approved" ? " approved" : "") + '">' + esc(state) + "</span>" : "") + "</p>" +
     '<p class="alt-title">' + (i.url ? '<a href="' + esc(safeUrl(i.url)) + '" target="_blank" rel="noopener">' + title + "</a>" : title) + "</p>" +
     '<p class="alt-meta">' + esc(where) + " · " + esc(foundDates(i)) + " · " + esc(i.cost_text || "Price not posted") + "</p>" +
     '<p class="alt-meta">Found on ' + esc(i.source_name) + " " + esc(short(new Date(i.first_seen_at))) +
@@ -144,8 +144,14 @@ function foundPost(row, path, body) {
   foundBusy(row, true);
   return api("/admin/discovery/items/" + row.getAttribute("data-found") + "/" + path, { method: "POST", body: body || {} }).then(readJSON);
 }
+// CC-125: a found event starts with its venue's default type, else what the page said; an opera source's are opera
+function foundType(i) {
+  var category = i.venue_category || i.category, opera = (i.venue_category ? i.venue_opera : false) || !!i.opera;
+  return { category: opera ? "Music" : category, opera: opera };
+}
 function approveBody(i) {
-  return { title: i.title, category: i.category, venue_id: i.venue_id, begin_date: i.begin_date, end_date: i.end_date,
+  var t = foundType(i);
+  return { title: i.title, category: t.category, opera: t.opera, venue_id: i.venue_id, begin_date: i.begin_date, end_date: i.end_date,
     open_run: i.open_run && !i.end_date, cost_text: i.cost_text, min_price: i.cost_text ? i.min_price : null, url: i.url, publish: "now",
     weekly: i.weekly || {}, weeks: i.weeks || {} };
 }
@@ -153,7 +159,7 @@ $("found-list").addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-found-act]"); if (!b) return;
   var row = b.closest("[data-found]"), i = foundById(row.getAttribute("data-found")), act = b.getAttribute("data-found-act");
   if (!i) return;
-  if (act === "edit" || (act === "approve" && (!i.venue_id || !i.category || i.needs))) { openFoundEditor(i, b); return; } // needs a type, venue, date or show days first
+  if (act === "edit" || (act === "approve" && (!i.venue_id || !foundType(i).category || i.needs))) { openFoundEditor(i, b); return; } // needs a type, venue, date or show days first
   if (act === "skip") { toggleSkipForm(row, i, b); return; }
   var path = act === "reject" ? "reject" : act;
   foundPost(row, path, act === "approve" ? approveBody(i) : {}).then(function (res) {
@@ -243,8 +249,9 @@ function foundMode(i) { // i: the found item, or null for the ordinary edit form
   $("ed-found").hidden = !on; $("ed-remove").hidden = on;
   $("ed-save").textContent = on ? "Approve" : "Save changes";
   Array.prototype.forEach.call($("ed-status").options, function (o) { o.hidden = on && o.value !== "approved" && o.value !== "pending"; });
-  if (on && !i.category && !blank) sel.insertAdjacentHTML("afterbegin", '<option value="">Choose a type</option>');
-  if ((!on || i.category) && blank) blank.remove();
+  var start = on ? foundType(i).category : true;
+  if (!start && !blank) sel.insertAdjacentHTML("afterbegin", '<option value="">Choose a type</option>');
+  if (start && blank) blank.remove();
 }
 function openFoundEditor(i, opener) {
   EDITING = { e: { id: "found-" + i.id }, found: i, opener: opener };
@@ -253,16 +260,17 @@ function openFoundEditor(i, opener) {
   $("ed-heading").textContent = "Approve " + i.title;
   $("ed-found").textContent = "Found on " + i.source_name + ". Check the details, then approve to add it to the catalog." +
     (!i.venue_id ? " The venue is new to us, so check its name and neighborhood; it's added when you approve." : "") +
-    (!i.category ? " Choose a type first." : "") +
+    (!foundType(i).category ? " Choose a type first." : "") +
     (i.needs === "date" ? " Its page doesn't give a date yet: add when it opens." :
       i.needs === "show_days" ? " Its page doesn't say when the shows are: choose the days, and give a start time for each." : "");
-  $("ed-title").value = i.title; $("ed-category").value = i.category || ""; $("ed-status").value = "approved";
+  $("ed-title").value = i.title; $("ed-category").value = foundType(i).category || ""; $("ed-status").value = "approved";
+  $("ed-opera").checked = foundType(i).opera;
   $("ed-venue").value = i.venue_name; $("ed-hood").value = i.neighborhood || "";
   $("ed-begin").value = i.begin_date || ""; $("ed-end").value = i.end_date || ""; $("ed-open-run").checked = i.open_run && !i.end_date;
   $("ed-cost").value = i.cost_text || ""; $("ed-url").value = i.url || ""; $("ed-publish-at").value = "";
   // CC-88: the show days the page gave, else the venue's usual show times to start from
   var own = Object.keys(i.weekly || {}).length ? i.weekly : null, venueTimes = i.venue_show_times || {};
-  showDaysFor("ed", i.category); setShowDays("ed", own || venueTimes, own ? i.weeks : {});
+  showDaysFor("ed", foundType(i).category); setShowDays("ed", own || venueTimes, own ? i.weeks : {});
   SHOW_DAYS.ed.from = { weekly: {}, weeks: {} }; SHOW_DAYS.ed.venue = venueTimes;
   $("ed-sched-hint").textContent = own ? "From the venue's page; check them." : Object.keys(venueTimes).length ?
     "These are the venue's usual show times; change them if this show is different." : "Choose the days, and give a start time for each.";
@@ -298,7 +306,7 @@ function approveFromEditor() {
     if (missing !== "date") $("ed-days").firstElementChild.focus();
     return;
   }
-  var body = { title: title, category: type, begin_date: begin, end_date: end, open_run: $("ed-open-run").checked && !end, weekly: weekly, weeks: venueOwn ? {} : days.weeks,
+  var body = { title: title, category: type, opera: $("ed-opera").checked, begin_date: begin, end_date: end, open_run: $("ed-open-run").checked && !end, weekly: weekly, weeks: venueOwn ? {} : days.weeks,
     cost_text: cost, min_price: cost === (i.cost_text || "") && cost ? i.min_price : minPrice(cost), url: url,
     publish: review ? "review" : at && at > new Date() ? "later" : "now" };
   if (body.publish === "later") body.publish_at = at.toISOString();

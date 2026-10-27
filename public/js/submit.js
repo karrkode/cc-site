@@ -34,7 +34,21 @@ $("s-venue").addEventListener("change", function () {
   });
   var found = Object.keys(hoods);
   if (found.length === 1 && !$("s-hood").value.trim()) $("s-hood").value = found[0];
+  venueDefaultType();
 });
+$("s-hood").addEventListener("change", venueDefaultType);
+// CC-125: the type starts as the venue's default, until the user picks one themselves. A name in two neighborhoods
+// goes by the one typed; if they don't agree and none is typed, the type is left alone.
+$("s-category").addEventListener("change", function (ev) { if (ev.isTrusted) this.dataset.chosen = "1"; });
+function venueDefaultType() {
+  if ($("s-category").dataset.chosen) return;
+  var name = $("s-venue").value.trim().toLowerCase(), hood = $("s-hood").value.trim().toLowerCase(), types = {};
+  (VENUES || []).forEach(function (v) {
+    if (v.category && v.name.toLowerCase() === name && (!hood || v.neighborhood.toLowerCase() === hood)) types[v.category] = 1;
+  });
+  var only = Object.keys(types);
+  if (only.length === 1 && $("s-category").value !== only[0]) { $("s-category").value = only[0]; $("s-category").dispatchEvent(new Event("change")); }
+}
 function publishChoice() { var r = document.querySelector('input[name="s-publish"]:checked'); return r ? r.value : null; }
 function localInputValue(d) { // a Date as the value a datetime-local input expects, in local time
   function p(n) { return ("0" + n).slice(-2); }
@@ -91,7 +105,7 @@ $("submit-form").addEventListener("submit", function (ev) {
   api("/events", { method: "POST", body: body }).then(readJSON, function () { return null; }).then(function (res) {
     btn.disabled = false;
     if (!res || !res.ok) { msg.textContent = ""; err.textContent = errorText(res); return; }
-    $("submit-form").reset(); $("s-publish-at-field").hidden = true; setShowDays("s", {}); setRun("s", []);
+    $("submit-form").reset(); delete $("s-category").dataset.chosen; $("s-publish-at-field").hidden = true; setShowDays("s", {}); setRun("s", []);
     var made = fromApi(res.body);
     if (made.status === "approved" && made.publishAt) {
       msg.textContent = "Scheduled. It goes live " + WHEN.format(made.publishAt) + ".";
