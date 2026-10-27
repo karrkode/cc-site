@@ -80,7 +80,7 @@ The API has these groups of routes:
 | `/photos` | Show one "I've been" photo | Anyone with a signed link (15 minutes) |
 | `/approvals` | The photos waiting for approval; approve or reject one | Approvers and admins |
 | `/admin/members` | Offer or remove the approver permission | Admins only |
-| `/admin` | Review queue, scheduled events, withdrawn events, site stats | Admins only |
+| `/admin` | Review queue, scheduled events, withdrawn events, auto-reject rules and what they caught, site stats | Admins only |
 | `/admin/discovery` | Event sources, found events, skip rules, the CSV download, the monthly budget | Admins only |
 | `/venues` | Show, rename, merge and delete venues. Set opening hours and show times. | All users can read. Admins can change. |
 | `/crews` | Start a crew, make invite links, invite by email, accept or decline an invite, join, leave. The owner renames, removes members, hands over or deletes. | Signed-in users. Only a crew's members can see it. |
