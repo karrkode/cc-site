@@ -282,6 +282,8 @@ function wentHTML(e) {
 }
 
 // ---------- views ----------
+// CC-121, CC-126: the join page is at chiculturecrew.com/join, and with the admins' invite pitch at /invite
+function onJoinPage() { return location.pathname === "/join" || location.pathname === "/invite"; }
 var VIEWS = { home: "home-title", join: "jp-title", catalog: "catalog-title", event: "event-title", plan: "plan-title", account: "account-title", crews: "crews-title", planner: "planner-title", submit: "submit-title", review: "review-title", venues: "venues-title", stats: "stats-title", sources: "sources-title", found: "found-title", issues: "issues-title", approvals: "approvals-title", members: "members-title", card: "card-title", reset: "reset-title", verify: "verify-title" };
 function show(name, focusId) {
   Object.keys(VIEWS).forEach(function (v) { $("view-" + v).hidden = v !== name && !(v === "catalog" && name === "join"); }); // CC-121: the catalog shows under the join page
@@ -291,8 +293,8 @@ function show(name, focusId) {
   window.scrollTo(0, 0);
   // CC-117: leaving the event view some other way than Back: its #e/<id> comes off the address
   if (name !== "event" && /^#e\//.test(location.hash)) { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} }
-  // CC-121: leaving the join page, the address goes back to the site's own, so a reload opens what's showing
-  if (name !== "join" && location.pathname === "/join") { try { history.replaceState(history.state, "", "/" + location.search + location.hash); } catch (e) {} }
+  // CC-121: leaving the join page (or /invite, CC-126), the address goes back to the site's own, so a reload opens what's showing
+  if (name !== "join" && onJoinPage()) { try { history.replaceState(history.state, "", "/" + location.search + location.hash); } catch (e) {} }
   if (typeof paintPending === "function") paintPending(); // the crew-invite notice hides on the crews page (CC-59, CC-104)
   var h = $(focusId || VIEWS[name]); if (h) h.focus({ preventScroll: true });
   track("view", name);

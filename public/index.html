@@ -95,11 +95,21 @@
 <dialog class="editor" id="invite-dialog" aria-labelledby="invite-heading">
   <form id="invite-form" method="dialog">
     <h2 id="invite-heading" tabindex="-1">Invite a friend</h2>
-    <p class="hint">Send them this link. They can look around without an account, and sign up when they want to go out with you.</p>
+    <p class="hint" id="invite-hint">Send them this link. They can look around without an account, and sign up when they want to go out with you.</p>
     <input type="text" id="invite-url" readonly aria-label="Link to Culture Crew">
     <p class="hint small" id="invite-msg" role="status"></p>
-    <div class="row"><button class="btn" type="button" id="invite-copy">Copy link</button><button class="btn ghost" type="submit">Done</button></div>
+    <div class="row"><button class="btn" type="button" id="invite-share" hidden>Share the link</button><button class="btn" type="button" id="invite-copy">Copy link</button><button class="btn neutral" type="button" id="invite-qr" hidden>Show a QR code</button><button class="btn ghost" type="submit">Done</button></div>
   </form>
+</dialog>
+<!-- CC-126: an admin's invite as a QR code that fills the screen, for a friend to scan from the admin's phone -->
+<dialog class="qr-full" id="qr-full" aria-labelledby="qr-full-title">
+  <div class="qr-full-in">
+    <p class="qr-full-brand"><svg class="star" aria-hidden="true"><use href="#chi-star"></use></svg>Culture Crew</p>
+    <h2 id="qr-full-title" tabindex="-1">Scan to join the crew</h2>
+    <div class="qr-full-code" id="qr-full-code" role="img" aria-label="QR code for the invite page"></div>
+    <p class="qr-full-url">chiculturecrew.com/invite</p>
+    <button class="btn" type="button" id="qr-full-done">Done</button>
+  </div>
 </dialog>
 <dialog class="editor" id="issue-dialog" aria-labelledby="is-heading">
   <form id="issue-form" novalidate>
@@ -246,7 +256,7 @@
     <!-- CC-121: the join page, at chiculturecrew.com/join (tagged links tell places apart). The catalog shows under it. -->
     <section class="view" id="view-join" hidden>
       <div class="jp-cover">
-        <div class="jp-pitch">
+        <div class="jp-pitch" id="jp-pitch">
           <p class="eyebrow">Culture Crew · Chicago</p>
           <h1 id="jp-title" tabindex="-1">Ready to join the <em>culture crew</em>?</h1>
           <p class="jp-line">Chicago theater, comedy, music and art, and the people you go with.</p>
@@ -255,6 +265,13 @@
             <li>Find an outing in four questions.</li>
             <li>Start a crew and see what your friends are going to.</li>
           </ul>
+        </div>
+        <!-- CC-126: the same page at chiculturecrew.com/invite, where an admin's Invite a friend leads, with the admins' own pitch -->
+        <div class="jp-pitch ip-pitch" id="ip-pitch" hidden>
+          <p class="eyebrow">Culture Crew · Chicago</p>
+          <h1 id="ip-title" tabindex="-1">Yours truly wants you to be part of the <em>Culture Crew</em>!</h1>
+          <p class="ip-why"><span class="ip-ask">Why, you ask?</span> Because live arts need people to choose, commit and communicate in order to thrive. To make that happen, create a profile that saves events and recommends shows.</p>
+          <p class="ip-why"><span class="ip-ask">Next, create your crew! Why a crew, you ask?</span> Because anything worth seeing is worth seeing together.</p>
         </div>
         <form class="panel jp-form" id="jp-form" novalidate aria-labelledby="jp-form-title">
           <h2 id="jp-form-title">Join in one step</h2>
@@ -759,7 +776,7 @@
         </details>
         <!-- CC-121: visits to chiculturecrew.com/join, and the sign-ups in those visits, by source -->
         <h3 id="join-stats-title">Join page</h3>
-        <p class="hint small">Visits to chiculturecrew.com/join (a visitor on a day), and sign-ups in a visit that came by it.</p>
+        <p class="hint small">Visits to chiculturecrew.com/join and /invite (a visitor on a day), and sign-ups in a visit that came by them. Admins' invites show as invite / link and invite / qr.</p>
         <div class="stat-summary" id="join-summary"></div>
         <div class="table-wrap"><table class="sources-table" id="join-sources" aria-labelledby="join-stats-title"></table></div>
       </section>

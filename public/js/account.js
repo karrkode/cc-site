@@ -375,13 +375,39 @@ $("me-menu").addEventListener("click", function (ev) {
 // CC-115: invite a friend to the site: the phone's share sheet, or the link to copy. Tagged so these visits
 // show up as "invite" on Site stats. Only the public site link: crew invite links stay with their crew.
 var INVITE_TAGS = "?utm_source=invite&utm_medium=referral&utm_campaign=friend";
+var INVITE_TEXT = "I use Culture Crew to find Chicago theater, comedy, music and art, and to go out with friends. Come see what's on:";
+// CC-126: an admin's invite opens the invite page (/invite), tagged invite / link, or invite / qr for the code
+function adminInviteUrl(medium) { return location.origin + "/invite?utm_source=invite&utm_medium=" + medium + "&utm_campaign=friend"; }
 function inviteFriend() {
-  var url = location.origin + "/" + INVITE_TAGS;
-  var text = "I use Culture Crew to find Chicago theater, comedy, music and art, and to go out with friends. Come see what's on:";
-  if (navigator.share) { navigator.share({ title: "Culture Crew", text: text, url: url }).catch(function () {}); return; }
+  var admin = isAdmin(), url = admin ? adminInviteUrl("link") : location.origin + "/" + INVITE_TAGS;
+  if (navigator.share && !admin) { navigator.share({ title: "Culture Crew", text: INVITE_TEXT, url: url }).catch(function () {}); return; }
+  // CC-126: admins choose: on a phone, Share the link or Show a QR code; elsewhere, Copy link or Show a QR code
+  var share = admin && !!navigator.share;
+  $("invite-share").hidden = !share; $("invite-copy").hidden = share; $("invite-qr").hidden = !admin;
+  $("invite-hint").textContent = admin ? "This link opens a page that tells them why to join, with a sign-up box. On your phone, show them the QR code to scan." :
+    "Send them this link. They can look around without an account, and sign up when they want to go out with you.";
   $("invite-url").value = url; $("invite-msg").textContent = "";
-  $("invite-dialog").showModal(); $("invite-url").focus(); $("invite-url").select();
+  $("invite-dialog").showModal();
+  if (share) { $("invite-url").scrollLeft = 0; $("invite-share").focus(); } else { $("invite-url").focus(); $("invite-url").select(); }
 }
+$("invite-share").addEventListener("click", function () {
+  navigator.share({ title: "Culture Crew", text: INVITE_TEXT, url: $("invite-url").value }).catch(function () {});
+});
+// CC-126: the code fills the screen, made here in the browser (qrSvgText, admin.js), never by an outside service.
+// The screen is kept awake while it shows, where the browser allows.
+var QR_WAKE = null;
+$("invite-qr").addEventListener("click", function () {
+  $("invite-dialog").close();
+  $("qr-full-code").innerHTML = qrSvgText(adminInviteUrl("qr"));
+  $("qr-full").querySelector(".qr-full-url").textContent = location.host + "/invite";
+  $("qr-full").showModal(); $("qr-full-title").focus();
+  try { if (navigator.wakeLock) navigator.wakeLock.request("screen").then(function (l) { QR_WAKE = l; }, function () {}); } catch (e) {}
+});
+$("qr-full-done").addEventListener("click", function () { $("qr-full").close(); });
+$("qr-full").addEventListener("close", function () {
+  if (QR_WAKE) { QR_WAKE.release().catch(function () {}); QR_WAKE = null; }
+  $("qr-full-code").innerHTML = "";
+});
 $("invite-copy").addEventListener("click", function () {
   var field = $("invite-url"), msg = $("invite-msg");
   var fallback = function () { field.focus(); field.select(); msg.textContent = "Press Ctrl+C (or ⌘C) to copy the selected link."; };
@@ -646,11 +672,13 @@ $("sign-out").addEventListener("click", signOut);
 // chiculturecrew.com/join: one question, a sign-up box, and the catalog under it. Production serves a copy of the
 // page there (with the join page's preview tags; scripts/stamp_assets.py). Arriving here marks the visit, for
 // this tab, as one that came by the join page, so a sign-up later in it counts for the join page (registerBody).
-if (location.pathname === "/join") { // before the events load, so Home doesn't show first
+// CC-126: chiculturecrew.com/invite is the same page with the admins' invite pitch, counted as the join page too.
+if (onJoinPage()) { // before the events load, so Home doesn't show first
   $("view-home").hidden = true; $("view-join").hidden = false;
+  if (location.pathname === "/invite") { $("jp-pitch").hidden = true; $("ip-pitch").hidden = false; }
   try { if (!sessionStorage.getItem("cc_join")) sessionStorage.setItem("cc_join", JSON.stringify(VISIT_SOURCE || {})); } catch (e) {}
 }
-function openJoinPage() { paintJoinPage(); renderCatalog(); show("join"); }
+function openJoinPage() { paintJoinPage(); renderCatalog(); show("join", $("ip-pitch").hidden ? null : "ip-title"); }
 function paintJoinPage(justJoined) {
   var u = AUTH.user;
   $("jp-form").hidden = !!u; $("jp-in").hidden = !u;

@@ -782,3 +782,21 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
   .jp-cover { grid-template-columns: minmax(0, 1fr); }
   .jp-points { display: none; } /* on phones the box comes right after the line */
 }
+/* CC-126: the invite page (/invite): the join page with the admins' pitch. Each "Why, you ask?" leads its paragraph in
+   the display face, so the page reads as two questions answered; both stay on phones (it's the reason to join). */
+.ip-pitch h1 { font-size: clamp(2.1rem, 5.4vw, 3.8rem); }
+.ip-why { max-width: 44ch; font-size: clamp(1.05rem, 1.8vw, 1.2rem); line-height: 1.45; }
+.ip-ask { display: block; margin-bottom: 2px; font-family: var(--display); font-weight: 600; letter-spacing: -0.01em; color: var(--star); }
+.ip-why + .ip-why { padding-top: 14px; border-top: 1px solid var(--line); }
+/* CC-126: the invite QR code fills the screen to be scanned from the admin's phone. Black on white in both themes:
+   a bright screen and full contrast scan best. */
+.qr-full { width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: #ffffff; color: #111111; }
+.qr-full::backdrop { background: #ffffff; }
+.qr-full-in { min-height: 100%; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 24px 16px calc(24px + env(safe-area-inset-bottom)); text-align: center; }
+.qr-full-brand { display: flex; align-items: center; gap: 6px; font-family: var(--display); font-weight: 600; font-size: 1rem; }
+.qr-full-brand .star { fill: #D62839; }
+.qr-full h2 { font-family: var(--display); font-weight: 600; font-size: clamp(1.6rem, 7vw, 2.4rem); line-height: 1.05; letter-spacing: -0.02em; }
+.qr-full-code { width: min(86vw, 60vh, 520px); line-height: 0; }
+.qr-full-code svg { width: 100%; height: auto; display: block; }
+.qr-full-url { font-size: 0.9375rem; color: #44443F; font-variant-numeric: tabular-nums; }
+.qr-full .btn { min-width: 160px; background: #111111; color: #ffffff; box-shadow: none; }
