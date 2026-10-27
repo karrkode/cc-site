@@ -48,6 +48,10 @@
         <div class="field"><label for="vd-area">Area</label><select id="vd-area"><option value="city">City</option><option value="suburbs">Suburbs</option><option value="out_of_town">Out of town</option></select></div>
         <div class="field"><label for="vd-region">Side of town</label><select id="vd-region"><option value="">Not set</option><option value="downtown">Downtown/Loop</option><option value="north">Northside</option><option value="west">Westside</option><option value="south">Southside</option><option value="suburbs">Suburbs</option><option value="out_of_town">Out of town</option></select></div>
       </div>
+      <div class="fields" style="margin-top:14px">
+        <div class="field"><label for="vd-category">Default type</label><select id="vd-category" aria-describedby="vd-category-hint"><option value="">Not set</option><option value="Theater">Theater</option><option value="Comedy">Comedy</option><option value="Music">Music</option><option value="Visual Art">Visual Art</option><option value="Educational">Educational</option></select>
+          <label class="radio"><input type="checkbox" id="vd-opera"> Opera</label><span class="hint small" id="vd-category-hint">New events here start with this type. Its events keep the type they have.</span></div>
+      </div>
       <div class="field" style="margin-top:14px"><label for="vd-cost">Standard cost <span class="opt-label">(optional)</span></label><input id="vd-cost" type="text" maxlength="120" placeholder="Free, or $25 general admission" aria-describedby="vd-cost-hint"><span class="hint small" id="vd-cost-hint">Shown as "Usually …" on its events that don't post a price, and used by the price filters. An event's own price always comes first.</span></div>
     </div>
     <div id="vd-merge" hidden>
@@ -126,7 +130,8 @@
     <div class="field"><label for="ed-title">Event name</label><input id="ed-title" type="text" maxlength="300" required></div>
     <div class="fields">
       <div class="field"><label for="ed-category">Type</label>
-        <select id="ed-category"><option value="Theater">Theater</option><option value="Comedy">Comedy</option><option value="Concert">Concert</option><option value="Visual Art">Visual Art</option></select></div>
+        <select id="ed-category"><option value="Theater">Theater</option><option value="Comedy">Comedy</option><option value="Music">Music</option><option value="Visual Art">Visual Art</option><option value="Educational">Educational</option></select>
+        <label class="radio"><input type="checkbox" id="ed-opera" aria-describedby="ed-opera-hint"> Opera</label><span class="hint small" id="ed-opera-hint">Also listed under Theater.</span></div>
       <div class="field"><label for="ed-status">Status</label>
         <select id="ed-status"><option value="approved">Live</option><option value="pending">Waiting for review</option><option value="withdrawn">Withdrawn (hidden)</option><option value="rejected">Rejected</option></select></div>
     </div>
@@ -514,7 +519,7 @@
       <form class="panel" id="submit-form" novalidate hidden>
         <div class="field"><label for="s-title">Event name</label><input id="s-title" type="text" maxlength="300" required></div>
         <div class="field"><label for="s-category">Type</label>
-          <select id="s-category" required><option value="Theater">Theater</option><option value="Comedy">Comedy</option><option value="Concert">Concert</option><option value="Visual Art">Visual Art</option></select>
+          <select id="s-category" required><option value="Theater">Theater</option><option value="Comedy">Comedy</option><option value="Music">Music</option><option value="Visual Art">Visual Art</option><option value="Educational">Educational</option></select>
         </div>
         <div class="fields">
           <div class="field"><label for="s-venue">Venue</label><input id="s-venue" type="text" maxlength="200" required autocomplete="off"></div>
@@ -596,6 +601,7 @@
         <p>Approve to put an event on the list. Rejected events stay out of sight.</p>
         <div class="row"><button class="btn neutral" type="button" data-go="found">Found events<span class="count" id="found-count"></span></button><button class="btn neutral" type="button" data-go="venues">Manage venues</button><button class="btn neutral" type="button" data-go="stats">Site stats</button><button class="btn neutral" type="button" data-go="sources">Event sources</button><button class="btn neutral" type="button" data-go="issues">Issues<span class="count" id="issues-count"></span></button><button class="btn neutral" type="button" data-go="approvals">Photo approvals<span class="count" id="approvals-count"></span></button><button class="btn neutral" type="button" data-go="members">Members</button><button class="btn neutral" type="button" data-go="card">QR card</button></div>
       </div>
+      <div class="section" id="othertypes" hidden><h2>Need a new type</h2><p class="notice" id="othertypes-note"></p><div class="queue" id="othertypes-list"></div></div>
       <div class="queue" id="review-list"></div>
       <div class="section"><h2>Scheduled</h2><p class="hint">Approved, and waiting for their publish time.</p><div class="queue" id="scheduled-list"></div></div>
       <div class="section"><h2>Withdrawn</h2><p class="hint">Hidden from the site, with everyone's marks and plans kept.</p><div class="queue" id="withdrawn-list"></div></div>

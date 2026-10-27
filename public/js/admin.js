@@ -12,7 +12,7 @@ function creditText(e) { return e.suggestedBy ? " · wants public credit" : e.cr
 // CC-102: sent with "Don't know!" (or otherwise without any dates): the crew looks them up
 function datesToLookUp(e) { return !e.b && !e.n && !e.openRun && !(e.runDates && e.runDates.length); }
 function queueItemHTML(e, actions, note) { // note: an extra line, such as which rule caught it (CC-100)
-  return '<div class="queue-item"><div class="alt-text"><p class="kind">' + esc(e.type) + '</p><p class="alt-title">' +
+  return '<div class="queue-item"><div class="alt-text"><p class="kind">' + esc(e.label) + '</p><p class="alt-title">' +
     (e.url ? '<a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" : esc(e.title)) + "</p>" +
     '<p class="alt-meta">' + esc(placeText(e)) + " · " + (datesToLookUp(e) ? '<span class="state">Dates to look up</span>' : esc(e.b || e.n ? dateText(e) : "Dates not given")) +
       " · " + esc(costText(e)) + "</p>" +
@@ -30,7 +30,7 @@ function updateReviewCount(n) {
 var EMPTY = { "review-list": "Nothing waiting for review.", "scheduled-list": "Nothing scheduled.", "withdrawn-list": "Nothing withdrawn.",
   "caught-list": "Nothing caught." };
 function renderReview() {
-  renderScheduled(); renderWithdrawn(); renderCaught(); loadSubmissionRules();
+  renderScheduled(); renderWithdrawn(); renderCaught(); loadSubmissionRules(); renderOtherTypes();
   $("review-list").innerHTML = '<p class="hint">Loading…</p>';
   api("/admin/events?limit=500").then(readJSON).then(function (res) {
     if (!res.ok) { $("review-list").innerHTML = '<p class="form-error">' + esc(errorText(res)) + "</p>"; return; }
@@ -42,6 +42,16 @@ function renderReview() {
     }).join("") : '<p class="hint">Nothing waiting for review.</p>';
     refocusAfterEdit();
   }, function () { $("review-list").innerHTML = '<p class="form-error">' + esc(errorText(null)) + "</p>"; });
+}
+// CC-125: events whose type isn't one of the five (the move to the five didn't guess); hidden when there are none
+function renderOtherTypes() {
+  api("/admin/events/other-types").then(readJSON).then(function (res) {
+    var list = res.ok ? res.body : [];
+    $("othertypes").hidden = !list.length;
+    $("othertypes-note").textContent = plural(list.length, "event has", "events have") + " a type that isn't Theater, Comedy, Music, Visual Art or Educational. Edit each to choose one.";
+    $("othertypes-list").innerHTML = list.map(function (raw) { var e = toEvent(raw); return queueItemHTML(e, stateHTML(e) + editButtonHTML(e, "btn ghost")); }).join("");
+    refocusAfterEdit();
+  }, function () {});
 }
 function renderScheduled() {
   api("/admin/events/scheduled").then(readJSON).then(function (res) {
@@ -186,7 +196,8 @@ function paintVenues() {
     var id = esc(v.id);
     return '<div class="queue-item"><div class="alt-text"><p class="alt-title">' + esc(v.name) + '</p><p class="alt-meta">' +
       esc(v.neighborhood || "No neighborhood") + " · " + esc(v.region ? REGION_NAMES[v.region] : "No side of town") + " · " + plural(v.events, "event", "events") +
-      "</p>" + (v.standard_cost ? '<p class="alt-meta">Standard cost: ' + esc(v.standard_cost) + "</p>" : "") + hoursNote(v) + "</div>" +
+      "</p>" + '<p class="alt-meta">' + (v.category ? "Default type: " + esc(typeLabel(v.category, v.opera)) : '<span class="state">No default type</span>') + "</p>" +
+      (v.standard_cost ? '<p class="alt-meta">Standard cost: ' + esc(v.standard_cost) + "</p>" : "") + hoursNote(v) + "</div>" +
       '<div class="row"><button class="btn ghost" type="button" data-venue-edit="' + id + '" aria-label="Edit ' + esc(venueLabel(v)) + '">Edit</button>' +
       '<button class="btn ghost" type="button" data-venue-hours="' + id + '" aria-label="Hours at ' + esc(venueLabel(v)) + '">Hours…</button>' +
       '<button class="btn ghost" type="button" data-venue-merge="' + id + '" aria-label="Merge ' + esc(venueLabel(v)) + ' into another venue">Merge…</button>' +
@@ -210,7 +221,8 @@ function openVenueDialog(mode, v, opener) {
   $("vd-go").textContent = mode === "edit" ? "Save changes" : mode === "merge" ? "Merge" : "Delete venue";
   $("vd-go").className = mode === "delete" ? "btn danger solid" : "btn";
   $("vd-error").textContent = ""; setVenueBusy(false);
-  if (mode === "edit") { $("vd-name").value = v.name; $("vd-hood").value = v.neighborhood; $("vd-area").value = v.area; $("vd-region").value = v.region || ""; $("vd-cost").value = v.standard_cost || ""; }
+  if (mode === "edit") { $("vd-name").value = v.name; $("vd-hood").value = v.neighborhood; $("vd-area").value = v.area; $("vd-region").value = v.region || ""; $("vd-cost").value = v.standard_cost || "";
+    $("vd-category").value = v.category || ""; $("vd-opera").checked = !!v.opera; }
   if (mode === "merge") { $("vd-find").value = ""; fillMergeTargets(); }
   if (mode === "delete") $("vd-delete").textContent = "No events use " + venueLabel(v) + ", so it can go. This can't be undone.";
   $("venue-dialog").showModal();
@@ -231,6 +243,7 @@ function mergePreview() {
     plural(v.events, "event", "events") + " will move to " + venueLabel(into) + ", and " + venueLabel(v) + " will be removed.";
 }
 $("vd-find").addEventListener("input", fillMergeTargets);
+operaGoesWithMusic("vd-category", "vd-opera");
 $("vd-into").addEventListener("change", mergePreview);
 function setVenueBusy(on) { Array.prototype.forEach.call($("venue-form").querySelectorAll("button, input, select"), function (x) { x.disabled = on; }); }
 $("vd-cancel").addEventListener("click", function () { $("venue-dialog").close(); });
@@ -252,6 +265,9 @@ $("venue-form").addEventListener("submit", function (ev) {
     if ($("vd-region").value !== (v.region || "")) body.region = $("vd-region").value || null; // left alone: worked out again if the venue moves
     var cost = $("vd-cost").value.trim(); // CC-89: what it usually costs, with its lowest price (0 = free)
     if (cost !== (v.standard_cost || "")) { body.standard_cost = cost; body.standard_min_price = cost ? minPrice(cost) : null; }
+    // CC-125: the type new events here start with; its events keep theirs
+    if ($("vd-category").value !== (v.category || "")) body.category = $("vd-category").value || null;
+    if ($("vd-opera").checked !== !!v.opera) body.opera = $("vd-opera").checked;
     if (!Object.keys(body).length) { $("venue-dialog").close(); return; }
     req = api("/venues/" + v.id, { method: "PATCH", body: body }); said = "Saved " + name + "."; after = v.id;
   } else if (d.mode === "merge") {
@@ -285,7 +301,8 @@ function openEditor(e, opener) {
   EDITING = { e: e, opener: opener };
   foundMode(null); // the same form approves found events (CC-71)
   $("ed-heading").textContent = "Edit " + e.title;
-  $("ed-title").value = e.title; $("ed-category").value = e.type; $("ed-status").value = e.status || "approved";
+  $("ed-title").value = e.title; $("ed-category").value = TYPE_ORDER.indexOf(e.type) >= 0 ? e.type : ""; $("ed-status").value = e.status || "approved";
+  $("ed-opera").checked = !!e.opera; // CC-125
   $("ed-venue").value = e.venue; $("ed-hood").value = e.hood || "";
   $("ed-begin").value = e.begin || ""; $("ed-end").value = e.end || ""; $("ed-open-run").checked = !!e.openRun;
   $("ed-cost").value = e.costRaw || ""; $("ed-url").value = e.url || "";
@@ -320,6 +337,12 @@ document.addEventListener("click", function (ev) {
   var e = KNOWN[b.getAttribute("data-edit")]; if (e) openEditor(e, b);
 });
 $("ed-cancel").addEventListener("click", closeEditor);
+// CC-125: an opera is Music, so ticking Opera picks Music, and another type unticks it (the venue dialog works the same way)
+function operaGoesWithMusic(sel, box) {
+  $(box).addEventListener("change", function () { if (this.checked) { $(sel).value = "Music"; $(sel).dispatchEvent(new Event("change")); } });
+  $(sel).addEventListener("change", function () { if (this.value !== "Music") $(box).checked = false; });
+}
+operaGoesWithMusic("ed-category", "ed-opera");
 $("edit-form").addEventListener("input", function () { $("ed-error").textContent = ""; });
 $("ed-open-run").addEventListener("change", function () { if (this.checked) $("ed-end").value = ""; });
 function editorFail(res, fieldId, text) {
@@ -347,7 +370,7 @@ $("edit-form").addEventListener("submit", function (ev) {
   var title = $("ed-title").value.trim(), venue = $("ed-venue").value.trim(), hood = $("ed-hood").value.trim();
   var fixed = isFixedRun("ed"), begin = $("ed-begin").value || null, end = $("ed-end").value || null, url = $("ed-url").value.trim(), cost = $("ed-cost").value.trim();
   var at = $("ed-publish-at").value ? new Date($("ed-publish-at").value) : null; // read as local time
-  var bad = !title ? ["ed-title", "Give the event's name."] : !venue ? ["ed-venue", "Say where it's happening."] :
+  var bad = !title ? ["ed-title", "Give the event's name."] : !$("ed-category").value ? ["ed-category", "Choose a type."] : !venue ? ["ed-venue", "Say where it's happening."] :
     (!fixed && begin && end && end < begin) ? ["ed-end", "The closing date is before the opening date."] :
     (url && !/^https?:\/\//i.test(url)) ? ["ed-url", "The link should start with https://"] :
     (at && isNaN(at)) ? ["ed-publish-at", "Pick a date and time, or leave it blank."] : null;
@@ -359,6 +382,7 @@ $("edit-form").addEventListener("submit", function (ev) {
   var body = {}, openRun = $("ed-open-run").checked;
   if (title !== e.title) body.title = title;
   if ($("ed-category").value !== e.type) body.category = $("ed-category").value;
+  if ($("ed-opera").checked !== !!e.opera) body.opera = $("ed-opera").checked;
   if ($("ed-status").value !== e.status) body.status = $("ed-status").value;
   if (JSON.stringify(run.run_dates) !== JSON.stringify(e.runDates)) body.run_dates = run.run_dates; // the run sets its own dates
   if (!fixed && begin !== (e.begin || null)) body.begin_date = begin;
@@ -487,7 +511,7 @@ function paintInterest(rows) {
     var e = toEvent(r.event);
     var counts = [[r.going, " committed"], [r.interested, " interested"], [r.attended, " \u201cI've been\u201d"]]
       .filter(function (c) { return c[0]; }).map(function (c) { return c[0] + c[1]; }).join(" · ");
-    return '<li><div class="interest-name"><span class="kind">' + esc(e.type) + '</span><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" +
+    return '<li><div class="interest-name"><span class="kind">' + esc(e.label) + '</span><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" +
       '<span class="hint small">' + esc(placeText(e)) + "</span></div>" +
       '<div class="interest-bar" role="img" aria-label="' + esc(counts) + '">' +
       '<span class="seg going" style="width:' + (100 * r.going / max).toFixed(1) + '%"></span>' +
