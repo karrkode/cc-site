@@ -42,11 +42,13 @@ Thus, browsers can keep these files for one year and still get each new version.
 
 Amazon S3 keeps the files.
 Amazon CloudFront sends the files to the user's browser. Three paths come from the API instead (CC-108): `/e/*` (a plain HTML page per event, for search engines and link previews), `/sitemap.xml` and `/robots.txt`. CloudFront caches them for up to 10 minutes. Inside the site, a card opens the event view at `#e/<id>` (CC-117): the details, your plans and your crews', with Tickets as the way out. Its Share button gives the `/e/` page, whose main button opens the view.
+The join page, `chiculturecrew.com/join` (CC-121), is a copy of `index.html` with its own title and link-preview tags. The deploy makes the copy and puts it in S3 as the object `join`. The page then opens the join view: a sign-up box, with the catalog below it. Locally, nginx serves `index.html` at `/join` (`web.nginx.conf` in cc-backend).
 The browser runs the JavaScript.
 The JavaScript gets the data from the API.
 
 The site has these views:
 - Home
+- Join page (`/join`)
 - Catalog
 - Find an outing
 - Submit an event
@@ -106,7 +108,7 @@ The database has these main tables:
 - `plan_shares`: which crews can see a plan. A plan is private until its owner shares it. Only the members of those crews see it.
 - `attended_shares`: which crews see an "I've been" mark: the crews that the plan was shared with when its owner marked it. The crew's plans show who has been and how many added an approved photo ("Three others have been, 1 with a photo."). A closed event stays on the crew's plans for 2 weeks while someone has been. On the crews page (CC-120) each crew is a summary that opens, one at a time, into its plans and members; invites, Rename, Leave and Dissolve sit under Manage crew.
 - `discovery_sources`, `discovered_items`, `discovery_checks` and `discovery_skip_rules`: event discovery (section 5).
-- `traffic_counts`, `traffic_visitors`, `traffic_visitor_days`, `traffic_source_visits`, `traffic_source_counts` and `user_active_days`: the counts for Site stats. These tables do not keep names or IP addresses, and a referring site is kept as its domain only.
+- `traffic_counts`, `traffic_visitors`, `traffic_visitor_days`, `traffic_source_visits`, `traffic_source_counts`, `traffic_join_visits`, `traffic_join_signups` and `user_active_days`: the counts for Site stats. The join tables (CC-121) keep the join page's visits and sign-ups by source. A sign-up counts for the join page when the visit came by `/join`. The count is not connected to the account. These tables do not keep names or IP addresses, and a referring site is kept as its domain only.
 - `issue_reports`: problems that members reported, with a status and an optional note for the member.
 - `app_settings`: settings that an admin can change, for example the discovery budget.
 - `sheet_syncs`: the history of the old Google Sheet sync. Nothing writes to this table now.

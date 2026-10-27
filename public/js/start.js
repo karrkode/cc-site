@@ -31,6 +31,8 @@ function openFromHash() {
     return true;
   }
   if (h === "catalog") { renderCatalog(); show("catalog"); return true; }
+  // CC-121: chiculturecrew.com/join (a signed-in visitor sees "You're already in" instead of the sign-up box)
+  if (!h && location.pathname === "/join") { (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(openJoinPage); return true; }
   if (h === "plan") { startPlan(); return true; }
   if (h === "account") { openAccount(); return true; }
   if (h === "planner") { (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(function () { openPlanner(); }); return true; } // CC-105

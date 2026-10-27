@@ -27,6 +27,7 @@ function onAuthChange() {
     rerenderLists();
     if (visible("crews")) renderCrewsPage();
     if (visible("planner")) renderPlannerPage();
+    if (visible("join")) paintJoinPage(); // CC-121
     return;
   }
   if (isAdmin()) updateReviewCount();
@@ -34,6 +35,7 @@ function onAuthChange() {
   if (back === "crews") openCrews(); else if (back === "planner") openPlanner();
   else if (back && back.indexOf("e/") === 0) openEvent(back.slice(2), false); // signed in from an event (CC-117)
   else if (visible("account")) renderAccount(true);
+  if (visible("join") && $("jp-in").hidden) paintJoinPage(); // CC-121 (just joined: the welcome stays)
   if (visible("crews")) renderCrewsPage();
   if (visible("planner")) renderPlannerPage();
   if (visible("submit")) renderSubmit();
@@ -604,6 +606,15 @@ function authForm(form, path, body, errEl) {
     $("account-title").focus();
   });
 }
+// CC-121: a sign-up in a visit that came by the join page says so, with where that visit came from, so Site stats
+// can count sign-ups by source. Only the source goes with it (never stored with the account), and not when visits
+// aren't counted.
+function registerBody(email, pw, name) {
+  var body = { email: email, password: pw, display_name: name }, via = null;
+  try { via = JSON.parse(sessionStorage.getItem("cc_join") || "null"); } catch (e) {}
+  if (via && !COUNTING.off) body.join_source = via;
+  return body;
+}
 function looksLikeEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
 $("login-form").addEventListener("submit", function (ev) {
   ev.preventDefault();
@@ -617,7 +628,7 @@ $("register-form").addEventListener("submit", function (ev) {
   var email = $("reg-email").value.trim(), pw = $("reg-password").value;
   if (!looksLikeEmail(email)) { $("register-error").textContent = "Enter a valid email address."; $("reg-email").focus(); return; }
   if (pw.length < 8) { $("register-error").textContent = "Use a password of at least 8 characters."; $("reg-password").focus(); return; }
-  authForm(this, "/auth/register", { email: email, password: pw, display_name: $("reg-name").value.trim() }, $("register-error"));
+  authForm(this, "/auth/register", registerBody(email, pw, $("reg-name").value.trim()), $("register-error"));
 });
 ["login", "register"].forEach(function (f) {
   $(f + "-form").addEventListener("input", function () { $(f + "-error").textContent = ""; });
@@ -630,3 +641,37 @@ function signOut() {
   });
 }
 $("sign-out").addEventListener("click", signOut);
+
+// ---------- the join page (CC-121) ----------
+// chiculturecrew.com/join: one question, a sign-up box, and the catalog under it. Production serves a copy of the
+// page there (with the join page's preview tags; scripts/stamp_assets.py). Arriving here marks the visit, for
+// this tab, as one that came by the join page, so a sign-up later in it counts for the join page (registerBody).
+if (location.pathname === "/join") { // before the events load, so Home doesn't show first
+  $("view-home").hidden = true; $("view-join").hidden = false;
+  try { if (!sessionStorage.getItem("cc_join")) sessionStorage.setItem("cc_join", JSON.stringify(VISIT_SOURCE || {})); } catch (e) {}
+}
+function openJoinPage() { paintJoinPage(); renderCatalog(); show("join"); }
+function paintJoinPage(justJoined) {
+  var u = AUTH.user;
+  $("jp-form").hidden = !!u; $("jp-in").hidden = !u;
+  if (!u) return;
+  var name = (u.display_name || "").trim();
+  $("jp-in-title").textContent = justJoined ? (name ? "Welcome, " + name : "Welcome to the crew") : "You're already in";
+  $("jp-in-text").textContent = justJoined ? "Check your email for a link to confirm your address. Then look around below, or let us find you an outing." :
+    "You're signed in" + (name ? " as " + name : "") + ". Look around below, or let us find you an outing.";
+}
+$("jp-form").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var form = this, email = $("jp-email").value.trim(), pw = $("jp-password").value, err = $("jp-error");
+  if (!looksLikeEmail(email)) { err.textContent = "Enter a valid email address."; $("jp-email").focus(); return; }
+  if (pw.length < 8) { err.textContent = "Use a password of at least 8 characters."; $("jp-password").focus(); return; }
+  err.textContent = ""; $("jp-go").disabled = true;
+  api("/auth/register", { method: "POST", body: registerBody(email, pw, $("jp-name").value.trim()), cookies: true })
+    .then(readJSON, function () { return null; }).then(function (res) {
+      $("jp-go").disabled = false;
+      if (!res || !res.ok) { err.textContent = errorText(res); return; }
+      form.reset(); setSession(res.body); paintJoinPage(true); $("jp-in-title").focus();
+    });
+});
+$("jp-form").addEventListener("input", function () { $("jp-error").textContent = ""; });
+$("jp-signin").addEventListener("click", function () { openAccount(); $("login-email").focus(); });

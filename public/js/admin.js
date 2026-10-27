@@ -427,7 +427,7 @@ $("i-closed").addEventListener("change", loadInterest);
 
 // CC-68: visits over the last 30 days: totals, a daily chart of visitors (returning ones stacked under
 // new ones), and views of each part of the site. Counts only.
-var VIEW_NAMES = { home: "Home", catalog: "Catalog", event: "Event view", plan: "Find an outing", submit: "Submit", account: "Account", crews: "Crews", planner: "My week",
+var VIEW_NAMES = { home: "Home", join: "Join page", catalog: "Catalog", event: "Event view", plan: "Find an outing", submit: "Submit", account: "Account", crews: "Crews", planner: "My week",
   review: "Review", venues: "Venues", stats: "Stats", sources: "Event sources", found: "Found events", issues: "Issues",
   reset: "Password reset", verify: "Email confirmation" };
 function loadTraffic() {
@@ -462,6 +462,23 @@ function paintTraffic(t) {
   var views = Object.keys(t.by_view).map(function (k) { return (VIEW_NAMES[k] || k) + " " + t.by_view[k]; });
   $("traffic-views").textContent = views.length ? "Views by section: " + views.join(" · ") : "";
   paintVisitSources(t);
+  paintJoinStats(t.join || { visits: 0, signups: 0, rate: null, sources: [], direct: { visits: 0, signups: 0, rate: null } });
+}
+// CC-121: the join page's visits, sign-ups and sign-up rate, overall and by source.
+function joinRate(r) { return r === null || r === undefined ? "—" : Math.round(r * 100) + "%"; }
+function paintJoinStats(j) {
+  $("join-summary").innerHTML = "<div><strong>" + j.visits + "</strong><span>visits</span></div>" +
+    "<div><strong>" + j.signups + "</strong><span>sign-ups</span></div>" +
+    "<div><strong>" + joinRate(j.rate) + "</strong><span>signed up</span></div>";
+  var rows = j.sources.map(function (r) {
+    var how = r.medium === "site" ? "Linked from this site" : "Tagged link" + (r.medium ? " · " + r.medium : "");
+    return "<tr><td>" + esc(r.source) + '<div class="how">' + esc(how) + "</div></td><td>" + esc(r.campaign || "—") + "</td>" +
+      '<td class="n">' + r.visits + '</td><td class="n">' + r.signups + '</td><td class="n">' + joinRate(r.rate) + "</td></tr>";
+  });
+  rows.push('<tr class="direct"><td>Direct or unknown</td><td>—</td><td class="n">' + j.direct.visits + '</td><td class="n">' + j.direct.signups +
+    '</td><td class="n">' + joinRate(j.direct.rate) + "</td></tr>");
+  $("join-sources").innerHTML = '<thead><tr><th scope="col">Source</th><th scope="col">Campaign</th><th scope="col" class="n">Visits</th>' +
+    '<th scope="col" class="n">Sign-ups</th><th scope="col" class="n">Rate</th></tr></thead><tbody>' + rows.join("") + "</tbody>";
 }
 // CC-110: visitors and ticket clicks by source: a tagged link's utm values, or the site that linked here.
 // Whatever had neither is "Direct or unknown" (typed in, a bookmark, or an app that hides where it came from).
@@ -480,7 +497,8 @@ var UTM_EXAMPLES = [["Instagram", "?utm_source=instagram&utm_medium=social&utm_c
   ["TikTok", "?utm_source=tiktok&utm_medium=social&utm_campaign=three-words"],
   ["Facebook ads", "?utm_source=facebook&utm_medium=paid&utm_campaign=this-weekend"],
   ["The weekly email", "?utm_source=newsletter&utm_medium=email&utm_campaign=crews-weekend"],
-  ["QR cards", "?utm_source=qr&utm_medium=print&utm_campaign=card"]];
+  ["QR cards", "join?utm_source=qr&utm_medium=print&utm_campaign=card"],
+  ["Someone you meet (the join page, CC-121)", "join?utm_source=talk&utm_medium=in-person&utm_campaign=book-club"]];
 $("utm-examples").innerHTML = UTM_EXAMPLES.map(function (u) {
   return "<li>" + esc(u[0]) + ": <code>chiculturecrew.com/" + esc(u[1]) + "</code></li>";
 }).join("");
@@ -588,12 +606,13 @@ $("sources-list").addEventListener("change", function (ev) {
 });
 
 // ---------- the QR card (admins, CC-115) ----------
-// A business card to hand out at shows. The QR code opens the site with utm tags (source qr, medium print, and
+// A business card to hand out at shows. The QR code opens the join page (CC-121) with utm tags (source qr, medium print, and
 // a campaign per batch), so those visits show up on Site stats (CC-110). Made here in the browser with
 // qrcode-generator (js/vendor/qrcode.js), like the crew invite codes: nothing goes to an outside QR service.
 var CARD_URLS = [];
-function cardCampaign() { return ($("card-campaign").value.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "card"); }
-function cardUrl() { return "https://chiculturecrew.com/?utm_source=qr&utm_medium=print&utm_campaign=" + cardCampaign(); }
+// CC-121: the campaign ends with the date the card is made, so each printed batch is its own row on Site stats
+function cardCampaign() { return ($("card-campaign").value.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "card") + "-" + isoDate(today()); }
+function cardUrl() { return "https://chiculturecrew.com/join?utm_source=qr&utm_medium=print&utm_campaign=" + cardCampaign(); }
 function qrSvgText(text) { // the code as an SVG: one path of dark squares on white, with the standard 4-module quiet zone
   var qr = qrcode(0, "M"); qr.addData(text); qr.make();
   var n = qr.getModuleCount(), q = 4, size = n + q * 2, d = [];
