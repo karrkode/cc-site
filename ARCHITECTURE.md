@@ -43,12 +43,13 @@ Thus, browsers can keep these files for one year and still get each new version.
 Amazon S3 keeps the files.
 Amazon CloudFront sends the files to the user's browser. Three paths come from the API instead (CC-108): `/e/*` (a plain HTML page per event, for search engines and link previews), `/sitemap.xml` and `/robots.txt`. CloudFront caches them for up to 10 minutes. Inside the site, a card opens the event view at `#e/<id>` (CC-117): the details, your plans and your crews', with Tickets as the way out. Its Share button gives the `/e/` page, whose main button opens the view.
 The join page, `chiculturecrew.com/join` (CC-121), is a copy of `index.html` with its own title and link-preview tags. The deploy makes the copy and puts it in S3 as the object `join`. The page then opens the join view: a sign-up box, with the catalog below it. Locally, nginx serves `index.html` at `/join` (`web.nginx.conf` in cc-backend).
+The invite page, `chiculturecrew.com/invite` (CC-126), is the same join view with the admins' invite text. The deploy puts a copy of `index.html` with the invite page's preview tags in S3 as the object `invite`. An admin's "Invite a friend" opens this page. The visits and sign-ups count with the join page, with the source `invite` and the medium `link` or `qr`.
 The browser runs the JavaScript.
 The JavaScript gets the data from the API.
 
 The site has these views:
 - Home
-- Join page (`/join`)
+- Join page (`/join`), and the invite page (`/invite`)
 - Catalog
 - Find an outing
 - Submit an event

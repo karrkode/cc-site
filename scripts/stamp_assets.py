@@ -6,6 +6,7 @@ and still fetch a new copy the moment its content changes. index.html itself is 
 
 CC-121: it also writes build/site/join, the same page with the join page's title, description and address,
 so chiculturecrew.com/join previews as the join page in messages. The deploy uploads it as the object "join".
+CC-126: likewise build/site/invite, uploaded as the object "invite".
 
     python3 scripts/stamp_assets.py
 """
@@ -23,16 +24,22 @@ JOIN_TITLE = "Ready to join the culture crew? · Culture Crew"
 JOIN_DESCRIPTION = ("Chicago theater, comedy, music and art, and the people you go with. "
                     "Join in one step, and look around the catalog first.")
 JOIN_URL = "https://chiculturecrew.com/join"
+# CC-126: chiculturecrew.com/invite, where an admin's Invite a friend leads: the join page with the admins' pitch
+INVITE_TITLE = "Yours truly wants you to be part of the Culture Crew!"
+INVITE_DESCRIPTION = ("Live arts need people to choose, commit and communicate in order to thrive. "
+                      "Save events, get shows recommended, and start a crew: anything worth seeing is worth seeing together.")
+INVITE_URL = "https://chiculturecrew.com/invite"
 
 
-def join_page(index: str) -> str | None:
-    """index.html with the join page's preview tags, or None if one of the tags it changes isn't there."""
-    swaps = [(r"<title>[^<]*</title>", f"<title>{JOIN_TITLE}</title>"),
-             (r'<meta name="description" content="[^"]*">', f'<meta name="description" content="{JOIN_DESCRIPTION}">'),
-             (r'<link rel="canonical" href="[^"]*">', f'<link rel="canonical" href="{JOIN_URL}">'),
-             (r'<meta property="og:title" content="[^"]*">', f'<meta property="og:title" content="{JOIN_TITLE}">'),
-             (r'<meta property="og:description" content="[^"]*">', f'<meta property="og:description" content="{JOIN_DESCRIPTION}">'),
-             (r'<meta property="og:url" content="[^"]*">', f'<meta property="og:url" content="{JOIN_URL}">')]
+def join_page(index: str, title: str = JOIN_TITLE, description: str = JOIN_DESCRIPTION, url: str = JOIN_URL) -> str | None:
+    """index.html with the join page's preview tags (or the invite page's), or None if one of the tags it changes
+    isn't there. The preview image stays the site's."""
+    swaps = [(r"<title>[^<]*</title>", f"<title>{title}</title>"),
+             (r'<meta name="description" content="[^"]*">', f'<meta name="description" content="{description}">'),
+             (r'<link rel="canonical" href="[^"]*">', f'<link rel="canonical" href="{url}">'),
+             (r'<meta property="og:title" content="[^"]*">', f'<meta property="og:title" content="{title}">'),
+             (r'<meta property="og:description" content="[^"]*">', f'<meta property="og:description" content="{description}">'),
+             (r'<meta property="og:url" content="[^"]*">', f'<meta property="og:url" content="{url}">')]
     for pattern, tag in swaps:
         index, n = re.subn(pattern, tag, index, count=1)
         if n != 1:
@@ -59,12 +66,15 @@ def main() -> int:
             print(f"ERROR: {page.name} still has an unstamped ?v=dev link", file=sys.stderr)
             return 1
         page.write_text(text, encoding="utf-8")
-    join = join_page((OUT / "index.html").read_text(encoding="utf-8"))
-    if join is None:
+    index = (OUT / "index.html").read_text(encoding="utf-8")
+    join = join_page(index)
+    invite = join_page(index, INVITE_TITLE, INVITE_DESCRIPTION, INVITE_URL)  # CC-126
+    if join is None or invite is None:
         print("ERROR: index.html is missing a preview tag the join page replaces", file=sys.stderr)
         return 1
     (OUT / "join").write_text(join, encoding="utf-8")
-    print(f"build/site ready: {stamped} links stamped, and the join page")
+    (OUT / "invite").write_text(invite, encoding="utf-8")
+    print(f"build/site ready: {stamped} links stamped, and the join and invite pages")
     return 0
 
 
