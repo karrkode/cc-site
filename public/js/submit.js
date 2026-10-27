@@ -7,7 +7,7 @@ var VENUES = null;
 function openSubmit() { renderSubmit(); show("submit"); }
 function renderSubmit() {
   var signedIn = !!AUTH.user;
-  $("submit-signin").hidden = signedIn; $("submit-form").hidden = !signedIn;
+  $("submit-signin").hidden = signedIn; $("submit-how").hidden = !signedIn; paintHow();
   $("submit-sub").textContent = isAdmin() ? "You're an admin: choose whether it goes live now, at a set time, or waits for review." :
     "Tell us about it. Someone from the crew checks each one before it goes on the list.";
   $("s-publish").hidden = !isAdmin();
@@ -25,6 +25,86 @@ function renderSubmit() {
     }, function () { VENUES = null; });
   }
 }
+// ---------- CC-124: suggest by link ----------
+// "Paste a link" (the default) shows the form only once a page has filled it in; "Enter it myself" is the form as it was.
+var LINK_FILLED = false;
+var MISSING_FIELDS = { title: ["s-title"], category: ["s-category"], venue: ["s-venue"], neighborhood: ["s-hood"],
+  dates: ["s-begin", "s-end"], price: ["s-cost"] };
+function howChoice() { var r = document.querySelector('input[name="s-how"]:checked'); return r ? r.value : "link"; }
+function paintHow() {
+  var link = howChoice() === "link";
+  $("s-link-form").hidden = !link;
+  $("submit-form").hidden = !AUTH.user || (link && !LINK_FILLED);
+}
+$("s-how").addEventListener("change", function () {
+  if (howChoice() === "manual") { $("s-filled").textContent = ""; clearMissing(); }
+  paintHow();
+});
+function clearMissing() {
+  document.querySelectorAll("#submit-form .field.missing").forEach(function (f) { f.classList.remove("missing"); });
+  document.querySelectorAll("#submit-form .miss-tag").forEach(function (t) { t.remove(); });
+  var blank = $("s-category").querySelector('option[value=""]'); if (blank) blank.remove();
+}
+function markMissing(names) {
+  names.forEach(function (n) {
+    (MISSING_FIELDS[n] || []).forEach(function (id, i) {
+      var field = $(id).closest(".field"); field.classList.add("missing");
+      if (i === 0) field.querySelector("label").insertAdjacentHTML("beforeend", '<span class="miss-tag">Not on the page</span>');
+    });
+  });
+}
+$("submit-form").addEventListener("input", function (ev) { // a field the member fills in is no longer missing
+  var field = ev.target.closest && ev.target.closest(".field.missing");
+  if (field && ev.target.value) { field.classList.remove("missing"); var t = field.querySelector(".miss-tag"); if (t) t.remove(); }
+});
+function resetSubmitForm() {
+  $("submit-form").reset(); delete $("s-category").dataset.chosen; $("s-publish-at-field").hidden = true;
+  setShowDays("s", {}); setRun("s", []); clearMissing(); $("s-filled").textContent = "";
+}
+function fillFromDraft(d) {
+  resetSubmitForm();
+  $("s-title").value = d.title || "";
+  if (d.category) { $("s-category").value = d.category; $("s-category").dataset.chosen = "1"; }
+  else { $("s-category").insertAdjacentHTML("afterbegin", '<option value="">Choose a type</option>'); $("s-category").value = ""; }
+  $("s-category").dispatchEvent(new Event("change"));
+  $("s-hood").value = d.neighborhood || "";
+  $("s-venue").value = d.venue || ""; $("s-venue").dispatchEvent(new Event("change")); // a known venue's neighborhood and type
+  if (d.run_dates && d.run_dates.length) setRun("s", d.run_dates);
+  else {
+    $("s-begin").value = d.begin_date || ""; $("s-end").value = d.end_date || "";
+    if (d.weekly) setShowDays("s", d.weekly, d.weeks);
+  }
+  $("s-cost").value = d.cost_text || ""; $("s-url").value = d.url || "";
+  var missing = (d.missing || []).filter(function (n) { // what a known venue filled in isn't missing any more
+    return !(n === "neighborhood" && $("s-hood").value.trim()) && !(n === "category" && $("s-category").value);
+  });
+  markMissing(missing);
+  $("s-filled").textContent = (missing.length ? "We filled in what the page says. Check it, and add what's marked." :
+    "We filled this in from the page. Check it, then send it in.") +
+    (d.other_events ? " The page lists more than one event, so make sure this is the one you meant." : "");
+}
+$("s-link-form").addEventListener("input", function () { $("s-link-error").textContent = ""; });
+$("s-link-form").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var url = $("s-link").value.trim(), err = $("s-link-error"), msg = $("s-link-msg"), btn = $("s-link-btn");
+  if (!/^https?:\/\/\S+\.\S+/i.test(url)) { err.textContent = "Paste the event's web address, starting with https://"; $("s-link").focus(); return; }
+  btn.disabled = true; err.textContent = ""; msg.textContent = "Reading the page…";
+  api("/events/from-link", { method: "POST", body: { url: url } }).then(readJSON, function () { return null; }).then(function (res) {
+    btn.disabled = false; msg.textContent = "";
+    if (res && res.ok) {
+      fillFromDraft(res.body); LINK_FILLED = true; paintHow();
+      var first = document.querySelector("#submit-form .field.missing input, #submit-form .field.missing select");
+      (first || $("s-title")).focus();
+      return;
+    }
+    if (!res || res.status === 429 || res.status === 401) { err.textContent = errorText(res); return; }
+    // the page couldn't be read: say so, and open the form with the link kept
+    resetSubmitForm(); $("s-url").value = url;
+    document.querySelector('input[name="s-how"][value="manual"]').checked = true; paintHow();
+    $("s-filled").textContent = errorText(res) + " Enter it yourself below; we kept the link.";
+    $("s-title").focus();
+  });
+});
 $("s-venue").addEventListener("change", function () {
   // Fill in the neighborhood when every known venue with this name agrees on one. Venues saved
   // with a blank neighborhood don't count; a name in two neighborhoods (The Second City) is left to the user.
@@ -78,7 +158,8 @@ $("submit-form").addEventListener("submit", function (ev) {
   var title = $("s-title").value.trim(), venue = $("s-venue").value.trim(), url = $("s-url").value.trim();
   var fixed = isFixedRun("s"), noDates = fixed || datesUnknown("s"); // CC-102: "Don't know!" sends no dates
   var begin = noDates ? null : $("s-begin").value || null, end = noDates ? null : $("s-end").value || null, cost = $("s-cost").value.trim();
-  var bad = !title ? ["s-title", "Give the event's name."] : !venue ? ["s-venue", "Say where it's happening."] :
+  var bad = !title ? ["s-title", "Give the event's name."] : !$("s-category").value ? ["s-category", "Choose a type."] :
+    !venue ? ["s-venue", "Say where it's happening."] :
     (begin && end && end < begin) ? ["s-end", "The closing date is before the opening date."] :
     (url && !/^https?:\/\//i.test(url)) ? ["s-url", "The link should start with https://"] : null;
   if (bad) { err.textContent = bad[1]; $(bad[0]).focus(); return; }
@@ -105,7 +186,7 @@ $("submit-form").addEventListener("submit", function (ev) {
   api("/events", { method: "POST", body: body }).then(readJSON, function () { return null; }).then(function (res) {
     btn.disabled = false;
     if (!res || !res.ok) { msg.textContent = ""; err.textContent = errorText(res); return; }
-    $("submit-form").reset(); delete $("s-category").dataset.chosen; $("s-publish-at-field").hidden = true; setShowDays("s", {}); setRun("s", []);
+    resetSubmitForm(); $("s-link").value = "";
     var made = fromApi(res.body);
     if (made.status === "approved" && made.publishAt) {
       msg.textContent = "Scheduled. It goes live " + WHEN.format(made.publishAt) + ".";

@@ -51,7 +51,7 @@ The site has these views:
 - Join page (`/join`)
 - Catalog
 - Find an outing
-- Submit an event
+- Submit an event: paste the event's link and the API fills in the form from the page (CC-124), or enter it by hand
 - Your account
 - Review (admins only)
 - Venues, with each venue's hours (admins only)
