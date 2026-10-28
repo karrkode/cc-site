@@ -4,10 +4,11 @@
 "use strict";
 // ---------- submit an event ----------
 var VENUES = null;
-function openSubmit() { renderSubmit(); show("submit"); }
+var SUBMIT_SENT = false; // CC-127: the "it's submitted" panel is showing in place of the form
+function openSubmit() { SUBMIT_SENT = false; renderSubmit(); show("submit"); }
 function renderSubmit() {
   var signedIn = !!AUTH.user;
-  $("submit-signin").hidden = signedIn; $("submit-how").hidden = !signedIn; paintHow();
+  $("submit-signin").hidden = signedIn; $("submit-how").hidden = !signedIn || SUBMIT_SENT; paintHow();
   $("submit-sub").textContent = isAdmin() ? "You're an admin: choose whether it goes live now, at a set time, or waits for review." :
     "Tell us about it. Someone from the crew checks each one before it goes on the list.";
   $("s-publish").hidden = !isAdmin();
@@ -34,7 +35,8 @@ function howChoice() { var r = document.querySelector('input[name="s-how"]:check
 function paintHow() {
   var link = howChoice() === "link";
   $("s-link-form").hidden = !link;
-  $("submit-form").hidden = !AUTH.user || (link && !LINK_FILLED);
+  $("submit-form").hidden = !AUTH.user || SUBMIT_SENT || (link && !LINK_FILLED);
+  $("submit-done").hidden = !AUTH.user || !SUBMIT_SENT;
 }
 $("s-how").addEventListener("change", function () {
   if (howChoice() === "manual") { $("s-filled").textContent = ""; clearMissing(); }
@@ -186,19 +188,33 @@ $("submit-form").addEventListener("submit", function (ev) {
   api("/events", { method: "POST", body: body }).then(readJSON, function () { return null; }).then(function (res) {
     btn.disabled = false;
     if (!res || !res.ok) { msg.textContent = ""; err.textContent = errorText(res); return; }
-    resetSubmitForm(); $("s-link").value = "";
-    // CC-124: after a link's event is sent, the emptied form goes away and the thanks shows under the link field
-    if (howChoice() === "link") { LINK_FILLED = false; paintHow(); msg.textContent = ""; msg = $("s-link-msg"); }
-    var made = fromApi(res.body);
+    resetSubmitForm(); $("s-link").value = ""; LINK_FILLED = false; msg.textContent = "";
+    var made = fromApi(res.body), head, text;
     if (made.status === "approved" && made.publishAt) {
-      msg.textContent = "Scheduled. It goes live " + WHEN.format(made.publishAt) + ".";
+      head = "Scheduled"; text = "It goes live " + WHEN.format(made.publishAt) + ".";
     } else if (made.status === "approved") {
-      msg.textContent = "Published. It's on the list now."; reloadEvents(); VENUES = null;
+      head = "Published"; text = "It's on the list now."; reloadEvents(); VENUES = null;
     } else if (isAdmin()) {
-      msg.textContent = "Saved for review. It's waiting in the Review queue."; updateReviewCount();
+      head = "Saved for review"; text = "It's waiting in the Review queue."; updateReviewCount();
     } else {
-      msg.textContent = "Thanks! It's waiting for review. You can follow it on your account page.";
+      head = "Thanks! We've got it."; text = "Someone from the crew checks it before it goes on the list. You can follow it on your account page.";
     }
-    (howChoice() === "link" ? $("s-link") : $("s-title")).focus();
+    showSubmitDone(made, head, text);
   });
+});
+// CC-127: a successful submit replaces the form with what was sent, so it's clear it went through
+function showSubmitDone(e, head, text) {
+  $("sd-title").textContent = head; $("sd-msg").textContent = text;
+  $("sd-event").textContent = e.title;
+  $("sd-when").textContent = e.b || e.n ? dateText(e) : "Not given. We'll look into it.";
+  $("sd-where").textContent = placeText(e);
+  SUBMIT_SENT = true; renderSubmit();
+  window.scrollTo(0, 0); $("sd-title").focus({ preventScroll: true });
+}
+$("sd-another").addEventListener("click", function () {
+  SUBMIT_SENT = false; renderSubmit(); // the form was emptied when it was sent
+  (howChoice() === "link" ? $("s-link") : $("s-title")).focus();
+});
+$("sd-account").addEventListener("click", function () {
+  openAccount(); $("my-submissions-title").focus();
 });

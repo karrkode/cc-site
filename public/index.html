@@ -432,7 +432,7 @@
       <div id="signed-in" hidden>
         <div class="row"><p id="account-who"></p><button class="btn ghost" type="button" id="sign-out">Sign out</button></div>
         <div class="row" id="approver-row" hidden><button class="btn neutral" type="button" data-go="approvals">Photo approvals<span class="count" id="approver-count"></span></button></div>
-        <div class="section"><h2>Events you've sent us</h2><div class="queue" id="my-submissions"></div></div>
+        <div class="section"><h2 id="my-submissions-title" tabindex="-1">Events you've sent us</h2><div class="queue" id="my-submissions"></div></div>
         <div class="section" id="my-issues-section" hidden><h2 id="my-issues-title" tabindex="-1">Your reports</h2>
           <p class="hint">Problems you've told us about, and where each one stands.</p>
           <div class="queue" id="my-issues"></div></div>
@@ -593,6 +593,17 @@
         <p class="form-error" id="submit-error" role="alert"></p>
         <div class="row"><button class="btn" type="submit" id="submit-btn">Send it in</button><span class="hint" id="submit-msg" role="status"></span></div>
       </form>
+      <!-- CC-127: after a successful submit, this takes the form's place -->
+      <div class="panel submit-done" id="submit-done" hidden>
+        <h2 id="sd-title" tabindex="-1"></h2>
+        <p id="sd-msg"></p>
+        <dl class="sent-facts">
+          <dt>Event</dt><dd id="sd-event"></dd>
+          <dt>When</dt><dd id="sd-when"></dd>
+          <dt>Where</dt><dd id="sd-where"></dd>
+        </dl>
+        <div class="row"><button class="btn" type="button" id="sd-another">Suggest another</button><button class="btn neutral" type="button" id="sd-account">See it on your account</button></div>
+      </div>
     </section>
 
     <!-- Review queue (admins) -->
