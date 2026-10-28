@@ -241,18 +241,19 @@ $("week-skip").addEventListener("click", function () {
 // to come). Each links to its event; the button closes it again. An empty day says so and offers the catalog.
 // FIND_DAY_OPEN and FIND_DAY keep, by day, which lists are open and what came back, so redrawing the week keeps them.
 // A busy day lists the first FIND_DAY_SHOWN (shows by start time, then exhibitions), then a link to the catalog
-// for just that day (When is a one-day range, and the other filters start fresh).
-var FIND_DAY = {}, FIND_DAY_OPEN = {}, FIND_DAY_SHOWN = 5;
+// for just that day (When is a one-day range, and the other filters start fresh). The list is FIND_DAY_TALL items
+// high, with the next one peeking out; the rest and the link are a scroll away.
+var FIND_DAY = {}, FIND_DAY_OPEN = {}, FIND_DAY_SHOWN = 5, FIND_DAY_TALL = 3;
 function dayFoundHTML(iso) { // what's in the open list: loading, an error, nothing, or that day's events
   var d = parseISO(iso), got = FIND_DAY[iso];
   if (!got || got.loading) return '<p class="hint small">Finding events\u2026</p>';
   if (got.error) return '<p class="form-error">The events couldn\u2019t be loaded. Check your connection and try again.</p>';
   if (!got.items.length) return '<p class="hint small">Nothing on the list for that day.</p><p class="small"><a href="#catalog" data-find-catalog>Browse the catalog</a></p>';
-  return '<ul class="day-items">' + got.items.slice(0, FIND_DAY_SHOWN).map(function (e) {
+  return '<div class="day-scroll"><ul class="day-items">' + got.items.slice(0, FIND_DAY_SHOWN).map(function (e) {
     var times = dayTimesText(e, d), id = esc(e.id);
     return '<li class="day-item"><a href="#e/' + id + '" data-ev-open="' + id + '">' + esc(e.title) + "</a>" +
       '<span class="day-where">' + esc(placeText(e)) + "</span>" + (times ? '<span class="day-time">' + esc(times) + "</span>" : "") + "</li>";
-  }).join("") + "</ul>" + (got.items.length > FIND_DAY_SHOWN ? '<p class="small"><a href="#catalog" data-find-catalog="' + iso + '">See more for that day in the catalog</a></p>' : "");
+  }).join("") + "</ul>" + (got.items.length > FIND_DAY_SHOWN ? '<p class="small"><a href="#catalog" data-find-catalog="' + iso + '">See more for that day in the catalog</a></p>' : "") + "</div>";
 }
 function dayFindHTML(d, whole) {
   var iso = isoDate(d), open = !!FIND_DAY_OPEN[iso];
@@ -266,7 +267,14 @@ function paintFindDay(iso) { // the button says what it does next; the list show
   b.textContent = open ? "Hide that day\u2019s events" : "Find something for that day!";
   b.setAttribute("aria-label", (open ? "Hide the events for " : "Find something for ") + b.getAttribute("data-whole"));
   box.hidden = !open; box.innerHTML = open ? dayFoundHTML(iso) : "";
+  fitFindDay(box);
 }
+function fitFindDay(box) { // FIND_DAY_TALL items high (the day-scroll is their offsetParent), measured, since titles wrap more in a narrow column
+  var sc = box.querySelector(".day-scroll"); if (!sc) return;
+  var next = sc.querySelectorAll(".day-item")[FIND_DAY_TALL];
+  sc.style.maxHeight = ""; if (next) sc.style.maxHeight = (next.offsetTop + 28) + "px";
+}
+window.addEventListener("resize", function () { Array.prototype.forEach.call(document.querySelectorAll(".day-found:not([hidden])"), fitFindDay); });
 function findDay(iso) { // a day's events, once (again after an error)
   var d = parseISO(iso), got = FIND_DAY[iso] = { loading: true, items: [] };
   return fetchEvents([["from", iso], ["to", iso], ["sort", "opening"], ["limit", 1000]]).then(function (page) {
