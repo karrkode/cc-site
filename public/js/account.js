@@ -114,7 +114,7 @@ function redrawCards(id, from, focusOn) {
 }
 function redrawCardsNow(id, from, focusOn) {
   var list = from && from.parentElement.closest("[id]"), listId = list ? list.id : null; // the grid this card was in
-  Array.prototype.forEach.call(document.querySelectorAll('[data-card="' + id + '"]:not(.ev-panel)'), function (c) { c.outerHTML = cardHTML(KNOWN[id], !!c.closest("#soon-list")); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-card="' + id + '"]:not(.ev-panel)'), function (c) { c.outerHTML = cardHTML(KNOWN[id]); });
   return loadMyPlans().then(function () {
     if (visible("event")) renderEventView(); // CC-117: the event view's buttons, redrawn as a view, not a card
     if (visible("account")) renderAccount();

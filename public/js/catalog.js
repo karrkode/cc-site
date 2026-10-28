@@ -15,15 +15,16 @@ function renderHome() {
   $("door-catalog-count").textContent = plural(FACETS.current, "event", "events") + " on the list";
   $("door-crews-desc").textContent = AUTH.user ? "See what your crews are planning, and who's been where." : // CC-103
     "Crews are the friends you go out with. Sign in to start one or join one.";
-  $("soon-list").innerHTML = SOON.map(function (e) { return "<li>" + cardHTML(e, true) + "</li>"; }).join("");
+  $("soon-list").innerHTML = SOON.map(function (e) { return "<li>" + cardHTML(e) + "</li>"; }).join("");
   $("foot").textContent = plural(FACETS.total, "event", "events") +
     " on the list, past and present. Dates and prices change, so check the event's page before you go.";
 }
 $("soon-more").addEventListener("click", function () { resetCatalog(); cat.sort = "closing"; cat.when = "week"; loadCatalog(); show("catalog"); });
 
 // ---------- catalog ----------
-var cat = { q: "", types: {}, hoods: {}, regions: {}, picks: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null, crews: "" };
-function resetCatalog() { cat = { q: "", types: {}, hoods: {}, regions: {}, picks: {}, when: "upcoming", cost: "any", where: "any", sort: "closing", custom: null, crews: "" }; }
+// CC-132: the catalog opens on "Opening soonest"; the home page's Last chance list and its button keep closing order
+var cat = { q: "", types: {}, hoods: {}, regions: {}, picks: {}, when: "upcoming", cost: "any", where: "any", sort: "opening", custom: null, crews: "" };
+function resetCatalog() { cat = { q: "", types: {}, hoods: {}, regions: {}, picks: {}, when: "upcoming", cost: "any", where: "any", sort: "opening", custom: null, crews: "" }; }
 // CC-66: the dolphin filters, for every visitor: the owner's picks (interested and/or committed).
 function syncMineChips() {
   Array.prototype.forEach.call($("mine-chips").children, function (b) {
@@ -82,7 +83,7 @@ function catalogParams() {
   Object.keys(cat.hoods).forEach(function (h) { p.push(["hood", h]); }); // and neighborhoods: any of them
   if (cat.q.trim()) p.push(["q", cat.q.trim()]);
   if (cat.crews && AUTH.user) p.push(["crews", cat.crews]); // CC-75, CC-94: events your crews have plans for or have been to
-  p.push(["sort", cat.sort === "az" || cat.sort === "price" || cat.sort === "opening" ? cat.sort : "closing"]);
+  p.push(["sort", cat.sort === "az" || cat.sort === "price" || cat.sort === "closing" ? cat.sort : "opening"]);
   return p;
 }
 function loadCatalog(more) { // a fresh first page, or (more) the next one; replies to stale requests are dropped
@@ -276,7 +277,7 @@ $("filter-sheet").addEventListener("click", function (ev) {
   if (ev.target === this || ev.target.id === "sheet-close" || ev.target.id === "sheet-show") this.close(); // the dialog itself is only its backdrop
 });
 $("sheet-reset").addEventListener("click", function () {
-  cat.when = "upcoming"; cat.custom = null; cat.cost = "any"; cat.where = "any"; cat.regions = {}; cat.hoods = {}; cat.sort = "closing";
+  cat.when = "upcoming"; cat.custom = null; cat.cost = "any"; cat.where = "any"; cat.regions = {}; cat.hoods = {}; cat.sort = "opening";
   renderCatalog();
 });
 PHONE.addEventListener("change", function () { if (!PHONE.matches && $("filter-sheet").open) $("filter-sheet").close(); });

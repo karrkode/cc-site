@@ -149,7 +149,6 @@ a { color: inherit; }
 .card-top .pill { margin-left: auto; }
 .card > .card-top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); } /* the category in the centre (CC-129) */
 .card > .card-top .kind { grid-column: 2; }
-.card > .card-top .pill { justify-self: end; }
 .kind { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cat, var(--muted)); }
 .pill { font-size: 0.8125rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; background: var(--neutral-soft); color: var(--text); }
 .pill.soon-t { background: var(--second); color: var(--on-second); }
