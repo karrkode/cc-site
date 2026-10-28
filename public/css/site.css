@@ -233,6 +233,13 @@ a { color: inherit; }
 .opt-main { font-family: var(--display); font-weight: 600; font-size: var(--step-1); line-height: 1.25; letter-spacing: -0.01em; }
 .opt-sub { color: var(--muted); font-size: 0.9375rem; }
 .opt-n { color: var(--muted); font-size: 0.875rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* CC-128: the Priced choice's top price slider, opened in place under it */
+.price-pick { display: grid; gap: 8px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
+.price-now { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.price-now label { font-family: var(--display); font-weight: 600; font-size: var(--step-1); }
+.price-pick input[type="range"] { width: 100%; margin: 4px 0; accent-color: var(--lead); }
+.price-ends { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.875rem; }
+.price-pick .hint { margin: 0; }
 .datepick { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
 .datepick .field { flex: 1 1 180px; }
 .btn {

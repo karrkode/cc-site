@@ -121,6 +121,7 @@ function costOk(e, key) {
   if (key === "free") return e.min === 0;
   if (key === "u40") return e.min !== null && e.min < 40;
   if (key === "u100") return e.min !== null && e.min < 100;
+  if (typeof key === "number") return e.min !== null && e.min <= key; // the planner's top price (CC-128)
   return true;
 }
 function dateText(e) {
