@@ -77,6 +77,7 @@ function fromApi(e) {
     pick: e.pick ? { status: e.pick.status, date: e.pick.date, by: e.pick.by } : null, // the owner's public pick (CC-66)
     sched: e.schedule || { dates: [], weekly: {}, weekly_from: "", hours: {} }, // when it's on, for the planner (CC-79)
     crewPlans: (e.crew_plans || []).map(function (c) { c.been = c.been || []; return c; }), // signed in: crew-mates' shared plans (CC-75), and who's been (CC-117)
+    takes: e.takes || [], // members' shared journal entries, GET /events/<id> only (CC-112)
     runDates: (e.run_dates || []).map(function (r) { return { date: r.date, time: r.time, end_time: r.end_time || "" }; }), // a fixed run (CC-96)
     b: parseISO(e.begin_date), n: parseISO(e.end_date)
   };
@@ -103,6 +104,8 @@ function setFacets(f) {
 var WENT = {}, WENT_LIST = [], WENT_PHOTO = {}; // WENT_PHOTO: your photos from events you've been to, by event (CC-76)
 // CC-98: your Cultural Journal entries, by event: { words, review, recommend } as saved, and what's typed but not saved yet.
 var WENT_JOURNAL = {}, JOURNAL_DRAFT = {};
+// CC-112: whether each entry is shared on its event's page, by event: { shared, anonymous }.
+var WENT_SHARE = {};
 // Your plans (CC-55; "Oh the places you'll go" on the account page): MYPLANS[id] = { status: "interested" | "going", date: "YYYY-MM-DD" | null }.
 var MYPLANS = {}, MYPLAN_LIST = [], MYPLAN_SEQ = 0;
 var TYPE_PLURAL = { "Theater": "theater", "Comedy": "comedy", "Music": "music", "Visual Art": "visual art", "Educational": "educational events" };

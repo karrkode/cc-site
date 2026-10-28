@@ -419,6 +419,18 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .ev-crew-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .ev-crew-list li { padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-ctl); }
 .ev-crew-name { font-weight: 700; margin-right: 6px; }
+/* CC-112: public takes, set like a page of short notes: the three words large, a hairline between each */
+.ev-takes { margin-top: 18px; gap: 4px; }
+.ev-takes h2 { font-size: var(--step-1); }
+.ev-takes ol { list-style: none; margin: 0; padding: 0; }
+.ev-take { display: grid; gap: 6px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.ev-take-words { font-family: var(--display); font-weight: 600; font-size: var(--step-2); line-height: 1.2; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.ev-take-words span + span::before { content: " · "; color: var(--star); }
+.ev-take-review { white-space: pre-line; overflow-wrap: anywhere; }
+.ev-take-by { color: var(--muted); font-size: 0.875rem; }
+.ev-take-by b { color: var(--text); font-weight: 600; }
+.ev-take.is-hidden > p { opacity: 0.55; }
+.ev-take-admin { gap: 10px; align-items: center; }
 /* CC-110: visitors and ticket clicks by where they came from */
 .section h3#sources-title, .section h3#join-stats-title { margin: 22px 0 8px; font-size: var(--step-1); }
 #join-summary { margin-bottom: 10px; }
@@ -652,6 +664,12 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .three-words legend { padding: 0; margin-bottom: 4px; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .three-words .row { flex-wrap: nowrap; gap: 8px; }
 .three-words input { flex: 1 1 0; min-width: 0; }
+/* CC-112: "Share publicly", under the entry's form; once on, how it's signed */
+.journal-share { display: grid; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+.journal-share .radio:has(input:disabled) { cursor: default; color: var(--muted); }
+.share-as { display: flex; flex-wrap: wrap; gap: 6px 18px; border: 0; margin: 0; padding: 0; }
+.share-as legend { padding: 0; margin-bottom: 4px; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.share-as .radio { font-weight: 400; }
 @media (max-width: 640px) { .journal-entry { grid-template-columns: minmax(0, 1fr); } }
 
 /* CC-96: a fixed run's dates, each with its start and (optional) end time */

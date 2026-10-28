@@ -17,7 +17,7 @@ function onAuthChange() {
   paintApproverRow(); // Photo approvals, for approvers and admins (CC-91; approvals.js)
   paintMeMenu(); // your name and its menu, or Sign in (CC-105)
   $("nav-review").hidden = !isAdmin();
-  WENT = {}; WENT_LIST = []; WENT_PHOTO = {}; WENT_JOURNAL = {}; JOURNAL_DRAFT = {}; MYPLANS = {}; MYPLAN_LIST = [];
+  WENT = {}; WENT_LIST = []; WENT_PHOTO = {}; WENT_JOURNAL = {}; JOURNAL_DRAFT = {}; WENT_SHARE = {}; MYPLANS = {}; MYPLAN_LIST = [];
   if (!AUTH.user) {
     NOTICE_SET = false; $("account-notice").textContent = "";
     if (visible("review") || visible("venues") || visible("stats") || visible("sources") || visible("found") || visible("issues")) show("home");
@@ -49,9 +49,10 @@ function onAuthChange() {
 function loadWent() {
   return api("/me/attended").then(readJSON).then(function (res) {
     if (!res.ok) return;
-    WENT = {}; WENT_PHOTO = {}; WENT_JOURNAL = {}; WENT_LIST = res.body.map(function (row) {
+    WENT = {}; WENT_PHOTO = {}; WENT_JOURNAL = {}; WENT_SHARE = {}; WENT_LIST = res.body.map(function (row) {
       var e = toEvent(row.event); if (row.photo) WENT_PHOTO[e.id] = row.photo; // your photos (CC-76)
       WENT_JOURNAL[e.id] = { words: row.words || "", review: row.review || "", recommend: !!row.recommend }; // CC-98
+      WENT_SHARE[e.id] = { shared: !!row.shared, anonymous: !!row.anonymous }; // CC-112
       return e;
     });
     WENT_LIST.forEach(function (e) { WENT[e.id] = true; });
@@ -74,8 +75,8 @@ document.addEventListener("click", function (ev) {
   b.disabled = true;
   api("/me/attended/" + encodeURIComponent(id), { method: on ? "PUT" : "DELETE" }).then(function (r) {
     if (!r.ok) throw new Error(r.status);
-    if (on) { WENT[id] = true; WENT_JOURNAL[id] = { words: "", review: "", recommend: false }; if (KNOWN[id]) WENT_LIST.unshift(KNOWN[id]); }
-    else { delete WENT[id]; delete WENT_PHOTO[id]; delete WENT_JOURNAL[id]; delete JOURNAL_DRAFT[id]; WENT_LIST = WENT_LIST.filter(function (e) { return e.id !== id; }); } // its photo goes too (CC-76)
+    if (on) { WENT[id] = true; WENT_JOURNAL[id] = { words: "", review: "", recommend: false }; WENT_SHARE[id] = { shared: false, anonymous: false }; if (KNOWN[id]) WENT_LIST.unshift(KNOWN[id]); }
+    else { delete WENT[id]; delete WENT_PHOTO[id]; delete WENT_JOURNAL[id]; delete JOURNAL_DRAFT[id]; delete WENT_SHARE[id]; WENT_LIST = WENT_LIST.filter(function (e) { return e.id !== id; }); } // its photo goes too (CC-76)
     if (on && MYPLANS[id]) { // been: the server cleared the plan, so the card moves from plans to gone (CC-63)
       delete MYPLANS[id];
       $("myplan-live").textContent = "Moved to your Cultural Journal: " + KNOWN[id].title;
@@ -265,9 +266,44 @@ function journalEntryHTML(e) {
     '<span class="hint small" id="' + k + '-count" aria-live="polite">' + esc(reviewCountText(j.review.length)) + "</span></div>" +
     '<label class="radio"><input type="checkbox" name="recommend"' + (j.recommend ? " checked" : "") + "> Would you recommend?</label>" +
     '<div class="row"><button class="btn" type="submit">Save</button><span class="hint small" data-journal-said role="status"></span></div>' +
-    '<p class="form-error" role="alert"></p></form>' +
+    '<p class="form-error" role="alert"></p></form>' + journalShareHTML(e) +
     '<div class="card-actions">' + wentHTML(e) + photoButtonHTML(e) + "</div></div></article>";
 }
+// CC-112: "Share publicly", off by default and saved the moment it's ticked or unticked (so unsharing can't be
+// forgotten). Once on, how it's signed: your first name and initial, or "A Culture Crew member". It needs the three
+// words saved first, since they're what's shared.
+function journalShareHTML(e) {
+  var id = esc(e.id), sh = WENT_SHARE[e.id] || { shared: false, anonymous: false }, saved = !!(WENT_JOURNAL[e.id] || {}).words, k = "js-" + id;
+  var me = AUTH.user && (AUTH.user.display_name || "").trim() ? shortName(AUTH.user.display_name) : "";
+  var sign = function (anon, text) {
+    return '<label class="radio"><input type="radio" name="' + k + '-as" value="' + (anon ? "anon" : "name") + '"' + (sh.anonymous === anon ? " checked" : "") + "> " + esc(text) + "</label>";
+  };
+  return '<div class="journal-share' + (sh.shared ? " on" : "") + '" data-share="' + id + '">' +
+    '<label class="radio"><input type="checkbox" name="share"' + (sh.shared ? " checked" : "") + (saved || sh.shared ? "" : " disabled") + ' aria-describedby="' + k + '-hint"> Share publicly</label>' +
+    '<p class="hint small" id="' + k + '-hint">' + (saved || sh.shared ? "Your three words, review and recommendation go on the event\u2019s page for anyone deciding whether to go." :
+      "Save your three words first, then you can share them on the event\u2019s page.") + "</p>" +
+    (sh.shared ? '<fieldset class="share-as"><legend>Signed as</legend>' + (me ? sign(false, me) : "") + sign(true, "A Culture Crew member") + "</fieldset>" +
+      '<p class="hint small"><a href="#e/' + id + '" data-ev-open="' + id + '">See it on the event</a></p>' : "") +
+    '<p class="form-error" role="alert" data-share-error></p></div>';
+}
+function redrawShare(id, focusName) {
+  var box = document.querySelector('[data-share="' + id + '"]'), e = KNOWN[id]; if (!box || !e) return;
+  box.outerHTML = journalShareHTML(e);
+  var f = focusName && document.querySelector('[data-share="' + id + '"] input[' + focusName + "]"); if (f) f.focus();
+}
+document.addEventListener("change", function (ev) {
+  var box = ev.target.closest && ev.target.closest("[data-share]"); if (!box) return;
+  var id = box.getAttribute("data-share"), was = WENT_SHARE[id] || { shared: false, anonymous: false };
+  var radio = box.querySelector('input[type="radio"]:checked'), named = !!(AUTH.user && (AUTH.user.display_name || "").trim());
+  var body = { shared: box.querySelector('input[name="share"]').checked, anonymous: !named || (radio ? radio.value === "anon" : was.anonymous) }; // no display name: unsigned
+  var focusName = ev.target.type === "radio" ? 'value="' + ev.target.value + '"' : 'name="share"';
+  box.querySelectorAll("input").forEach(function (i) { i.disabled = true; });
+  api("/me/attended/" + encodeURIComponent(id) + "/share", { method: "PUT", body: body }).then(readJSON).then(function (res) {
+    if (res.ok) WENT_SHARE[id] = res.body;
+    redrawShare(id, focusName);
+    if (!res.ok) document.querySelector('[data-share="' + id + '"] [data-share-error]').textContent = errorText(res);
+  }, function () { redrawShare(id, focusName); document.querySelector('[data-share="' + id + '"] [data-share-error]').textContent = errorText(null); });
+});
 function renderJournal() {
   var shown = WENT_LIST.slice(0, JOURNAL_SHOWN);
   $("went-grid").innerHTML = shown.length ? shown.map(journalEntryHTML).join("") :
@@ -308,9 +344,11 @@ document.addEventListener("submit", function (ev) {
   api("/me/attended/" + encodeURIComponent(id) + "/journal", { method: "PUT", body: body }).then(readJSON).then(function (res) {
     btn.disabled = false;
     if (!res.ok) { err.textContent = errorText(res); return; }
+    var first = !(WENT_JOURNAL[id] || {}).words;
     WENT_JOURNAL[id] = res.body; delete JOURNAL_DRAFT[id];
     form.elements.review.value = res.body.review; // as saved (trimmed)
-    said.textContent = "Saved.";
+    said.textContent = WENT_SHARE[id] && WENT_SHARE[id].shared ? "Saved, and updated on the event\u2019s page." : "Saved.";
+    if (first) redrawShare(id); // CC-112: now it can be shared
   }, function () { btn.disabled = false; err.textContent = errorText(null); });
 });
 
