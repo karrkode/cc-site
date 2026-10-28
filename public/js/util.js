@@ -166,13 +166,7 @@ function capList(list, n, label) {
   list.tabIndex = 0; list.setAttribute("role", "region"); list.setAttribute("aria-label", label);
 }
 function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
-// CC-88: a performance's show days under where it is ("Thu 8 PM · Fri, Sat 8 PM and 10:30 PM"): its own, else the
-// venue's usual show times. Not for one night, where the venue's usual times may not be this show's.
-function showDaysLine(e) {
-  var text = SHOW_TYPES[e.type] && !oneNight(e) && !isPast(e) ? showDaysText(e.sched.weekly, e.sched.weeks) : "";
-  return text ? '<p class="show-days-line">' + esc(text) + "</p>" : "";
-}
-// CC-96: a fixed run's upcoming dates and times under where it is ("Fri, Oct 24, 8 PM · Sun, Nov 2, 7:30 PM · 2 more").
+// CC-96: a fixed run's upcoming dates and times, in the event view ("Fri, Oct 24, 8 PM · Sun, Nov 2, 7:30 PM · 2 more").
 var RUN_SHOWN = 3;
 function runDatesText(e) {
   var left = e.runDates.filter(function (r) { return parseISO(r.date) >= T; });
@@ -180,19 +174,19 @@ function runDatesText(e) {
     return goingDay(r.date) + ", " + clockText(r.time) + (r.end_time ? "–" + clockText(r.end_time) : "");
   }).join(" · ") + (left.length > RUN_SHOWN ? " · " + (left.length - RUN_SHOWN) + " more" : "");
 }
-function runDatesLine(e) { var text = e.runDates.length ? runDatesText(e) : ""; return text ? '<p class="show-days-line run-line">' + esc(text) + "</p>" : ""; }
 function cardHTML(e) {
-  var st = eventStatus(e), mine = AUTH.user ? MYPLANS[e.id] : null, going = mine && mine.status === "going";
+  var mine = AUTH.user ? MYPLANS[e.id] : null, going = mine && mine.status === "going";
   // Marks sit next to the date at the bottom of the card (CC-64; the top row had no room for them).
   // The dolphins are the owner's public picks (CC-66): every visitor sees them. Your own plans stay private:
   // a plain "Interested" label, or "Going <date>". An owner's own plan is already their dolphin.
   var own = mine && !going && !AUTH.user.dolphins ? '<span class="pill mine">Interested</span>' : "";
   var mark = pickHTML(e) + own;
   return '<article class="card' + catClass(e.type) + '" data-card="' + esc(e.id) + '">' +
-    '<div class="card-top"><span class="kind">' + esc(e.label) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
+    // CC-129: the category alone, centred; the status ("Closes Fri") is in the event view, and "Last chance" on home
+    '<div class="card-top"><span class="kind">' + esc(e.label) + "</span></div>" +
     // CC-117: the card opens the event's view in the site; its Tickets button there is the way out to the venue
     '<h3><a href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '">' + esc(e.title) + "</a></h3>" +
-    '<div class="card-body"><p class="where">' + placeHTML(e) + "</p>" + (e.runDates.length ? runDatesLine(e) : showDaysLine(e)) +
+    '<div class="card-body"><p class="where">' + placeHTML(e) + "</p>" + // CC-129: show times are in the event view
     (e.suggestedBy ? '<p class="credit">Suggested by ' + esc(e.suggestedBy) + "</p>" : "") +
     (AUTH.user && crewNoteText(e) ? '<p class="crew-note">' + esc(crewNoteText(e)) + "</p>" : "") + "</div>" +
     '<div class="card-foot"><span class="when">' + mark + (going ? '<span class="going-on">Going ' + esc(goingDay(mine.date)) + "</span>" :
