@@ -681,6 +681,9 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .day-item .myplan { top: 100%; left: 0; right: auto; width: max(100%, 260px); }
 .day:nth-child(n+5) .day-item .myplan { left: auto; right: 0; } /* the right-hand days open leftward, never past the page */
 .day-find { justify-self: stretch; white-space: normal; padding-inline: 8px; font-size: 0.875rem; }
+.day-found { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); } /* CC-131: that day's events, under its button */
+.day-found .hint, .day-found p { margin: 0; }
+.day-scroll { display: grid; gap: 10px; overflow-y: auto; overscroll-behavior: contain; position: relative; } /* three to see, scroll for the rest */
 .planner-more { display: grid; gap: 12px; margin-top: 8px; }
 .planner-more h3 { font-size: var(--step-1, 1.125rem); font-weight: 700; }
 @media (max-width: 960px) {

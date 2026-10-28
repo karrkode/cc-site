@@ -218,9 +218,10 @@ function renderPlanner() {
     return '<section class="day' + (now ? " today" : "") + '" aria-label="' + esc((now ? "Today, " : "") + whole) + '">' +
       '<h3 class="day-head">' + esc(label) + "</h3>" +
       (day.items.length ? '<ul class="day-items">' + day.items.map(function (e) { return dayItemHTML(e, day.d); }).join("") + "</ul>" :
-        '<button type="button" class="btn ghost day-find" data-find-day="' + isoDate(day.d) + '" aria-label="Find something for ' + esc(whole) + '">Find something for that day!</button>') +
+        dayFindHTML(day.d, whole)) +
       "</section>";
   }).join("");
+  days.forEach(function (day) { paintFindDay(isoDate(day.d)); });
   $("deciding-wrap").hidden = !deciding.length; $("myplans-grid").innerHTML = deciding.map(function (e) { return cardHTML(e); }).join("");
 }
 function showWeek(n, focusId) {
@@ -235,12 +236,67 @@ $("week-skip").addEventListener("click", function () {
   var next = goingAhead().filter(function (x) { return x.n >= PLANNER_WEEK * 7 + 7; })[0];
   if (next) showWeek(Math.floor(next.n / 7), "week-skip");
 });
-// The catalog for just that day: When is a one-day range, and the other filters start fresh.
+// CC-131: "Find something for that day!" opens a list under the day, in place, of only what's on that day (the
+// planner's rule, CC-79: a show with a time that day, an exhibition on a day it's open; on today, only what's still
+// to come). Each links to its event; the button closes it again. An empty day says so and offers the catalog.
+// FIND_DAY_OPEN and FIND_DAY keep, by day, which lists are open and what came back, so redrawing the week keeps them.
+// A busy day lists the first FIND_DAY_SHOWN (shows by start time, then exhibitions), then a link to the catalog
+// for just that day (When is a one-day range, and the other filters start fresh). The list is FIND_DAY_TALL items
+// high, with the next one peeking out; the rest and the link are a scroll away.
+var FIND_DAY = {}, FIND_DAY_OPEN = {}, FIND_DAY_SHOWN = 5, FIND_DAY_TALL = 3;
+function dayFoundHTML(iso) { // what's in the open list: loading, an error, nothing, or that day's events
+  var d = parseISO(iso), got = FIND_DAY[iso];
+  if (!got || got.loading) return '<p class="hint small">Finding events\u2026</p>';
+  if (got.error) return '<p class="form-error">The events couldn\u2019t be loaded. Check your connection and try again.</p>';
+  if (!got.items.length) return '<p class="hint small">Nothing on the list for that day.</p><p class="small"><a href="#catalog" data-find-catalog>Browse the catalog</a></p>';
+  return '<div class="day-scroll"><ul class="day-items">' + got.items.slice(0, FIND_DAY_SHOWN).map(function (e) {
+    var times = dayTimesText(e, d), id = esc(e.id);
+    return '<li class="day-item"><a href="#e/' + id + '" data-ev-open="' + id + '">' + esc(e.title) + "</a>" +
+      '<span class="day-where">' + esc(placeText(e)) + "</span>" + (times ? '<span class="day-time">' + esc(times) + "</span>" : "") + "</li>";
+  }).join("") + "</ul>" + (got.items.length > FIND_DAY_SHOWN ? '<p class="small"><a href="#catalog" data-find-catalog="' + iso + '">See more for that day in the catalog</a></p>' : "") + "</div>";
+}
+function dayFindHTML(d, whole) {
+  var iso = isoDate(d), open = !!FIND_DAY_OPEN[iso];
+  return '<button type="button" class="btn ghost day-find" data-find-day="' + iso + '" data-whole="' + esc(whole) + '" aria-controls="find-' + iso + '"></button>' +
+    '<div class="day-found" id="find-' + iso + '" aria-live="polite"' + (open ? "" : " hidden") + ">" + (open ? dayFoundHTML(iso) : "") + "</div>";
+}
+function paintFindDay(iso) { // the button says what it does next; the list shows when it's open
+  var b = document.querySelector('[data-find-day="' + iso + '"]'), box = $("find-" + iso); if (!b || !box) return;
+  var open = !!FIND_DAY_OPEN[iso];
+  b.setAttribute("aria-expanded", String(open));
+  b.textContent = open ? "Hide that day\u2019s events" : "Find something for that day!";
+  b.setAttribute("aria-label", (open ? "Hide the events for " : "Find something for ") + b.getAttribute("data-whole"));
+  box.hidden = !open; box.innerHTML = open ? dayFoundHTML(iso) : "";
+  fitFindDay(box);
+}
+function fitFindDay(box) { // FIND_DAY_TALL items high (the day-scroll is their offsetParent), measured, since titles wrap more in a narrow column
+  var sc = box.querySelector(".day-scroll"); if (!sc) return;
+  var next = sc.querySelectorAll(".day-item")[FIND_DAY_TALL];
+  sc.style.maxHeight = ""; if (next) sc.style.maxHeight = (next.offsetTop + 28) + "px";
+}
+window.addEventListener("resize", function () { Array.prototype.forEach.call(document.querySelectorAll(".day-found:not([hidden])"), fitFindDay); });
+function findDay(iso) { // a day's events, once (again after an error)
+  var d = parseISO(iso), got = FIND_DAY[iso] = { loading: true, items: [] };
+  return fetchEvents([["from", iso], ["to", iso], ["sort", "opening"], ["limit", 1000]]).then(function (page) {
+    var first = function (e) { return !isExhibit(e) && (timesOn(e, d) || []).filter(Boolean).sort()[0] || "~"; }; // exhibitions and untimed last
+    got.items = page.items.filter(function (e) { return onDay(e, d, "day"); });
+    got.items.sort(function (a, b) { var x = first(a), y = first(b); return x < y ? -1 : x > y ? 1 : 0; }); // stable: else opening order
+    got.loading = false;
+  }, function () { got.loading = false; got.error = true; });
+}
 document.addEventListener("click", function (ev) {
+  var c = ev.target.closest("[data-find-catalog]");
+  if (c) { // the catalog: for just that day from a busy day, or all of it from an empty one
+    ev.preventDefault(); resetCatalog();
+    var on = c.getAttribute("data-find-catalog"); if (on) { cat.when = "custom"; cat.custom = { ws: parseISO(on), we: parseISO(on) }; }
+    loadCatalog(); show("catalog"); return;
+  }
   var b = ev.target.closest("[data-find-day]"); if (!b) return;
-  var d = parseISO(b.getAttribute("data-find-day"));
-  resetCatalog(); cat.when = "custom"; cat.custom = { ws: d, we: d };
-  loadCatalog(); show("catalog");
+  var iso = b.getAttribute("data-find-day");
+  if (FIND_DAY_OPEN[iso]) { delete FIND_DAY_OPEN[iso]; paintFindDay(iso); return; }
+  FIND_DAY_OPEN[iso] = true;
+  if (!FIND_DAY[iso] || FIND_DAY[iso].error) findDay(iso).then(function () { paintFindDay(iso); });
+  paintFindDay(iso);
 });
 
 // ---------- Cultural Journal (CC-98) ----------
