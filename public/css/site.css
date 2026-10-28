@@ -433,6 +433,10 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .ev-facts dt { color: var(--muted); font-size: 0.875rem; font-weight: 600; }
 .ev-facts dd { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .ev-actions a.btn { text-decoration: none; }
+/* CC-127: what was sent, on the "it's submitted" panel */
+.sent-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 20px; margin: 0; }
+.sent-facts dt { color: var(--muted); font-size: 0.875rem; font-weight: 600; }
+.sent-facts dd { margin: 0; overflow-wrap: anywhere; }
 #ev-share-url { width: 100%; }
 .ev-signin { margin-top: 10px; }
 .ev-panel, .ev-crews { margin-top: 18px; gap: 10px; }
