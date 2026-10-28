@@ -52,6 +52,10 @@ var TYPE_ORDER = ["Theater", "Comedy", "Music", "Visual Art", "Educational"]; //
 // CC-125: an opera's category is Music; it's also listed under Theater, and its card says "Opera"
 function typeLabel(category, opera) { return opera ? "Opera" : category; }
 function inType(e, types) { return !!types[e.type] || (e.opera && !!types.Theater); }
+// CC-130: each category's colour (the --cat-* tokens in site.css), on its filter chip, its cards and the legend.
+// An opera is Music, so it's Music's colour. Its name is always shown in text too.
+var CAT_KEYS = { "Theater": "theater", "Music": "music", "Visual Art": "art" };
+function catClass(type) { return CAT_KEYS[type] ? " cat-" + CAT_KEYS[type] : ""; }
 var AREA_NAMES = { city: "City", suburbs: "Suburbs", out_of_town: "Out of town" };
 // The page no longer downloads every event (CC-33): each view asks the API for what it shows.
 // FACETS: the categories and neighborhoods in use, plus counts (GET /events/facets).
@@ -184,7 +188,7 @@ function cardHTML(e) {
   // a plain "Interested" label, or "Going <date>". An owner's own plan is already their dolphin.
   var own = mine && !going && !AUTH.user.dolphins ? '<span class="pill mine">Interested</span>' : "";
   var mark = pickHTML(e) + own;
-  return '<article class="card" data-card="' + esc(e.id) + '">' +
+  return '<article class="card' + catClass(e.type) + '" data-card="' + esc(e.id) + '">' +
     '<div class="card-top"><span class="kind">' + esc(e.label) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
     // CC-117: the card opens the event's view in the site; its Tickets button there is the way out to the venue
     '<h3><a href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '">' + esc(e.title) + "</a></h3>" +

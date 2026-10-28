@@ -15,6 +15,9 @@
   --danger-soft: #3D1420; --on-danger-soft: #FFB3BD;
   --focus: #5CC8F5;
   --plan: #5CC8F5; /* the going date beside the dolphin (CC-55) */
+  --cat-theater: #FDA15C; --on-cat-theater: #2B1203; /* CC-130: a colour for each category */
+  --cat-music: #C9A2FB; --on-cat-music: #22093D;
+  --cat-art: #5FD9A8; --on-cat-art: #03261A;
   color-scheme: dark;
 }
 :root[data-theme="light"] {
@@ -28,6 +31,9 @@
   --danger-soft: #FBE4E6; --on-danger-soft: #9E1B28;
   --focus: #1D4ED8;
   --plan: #1D4ED8;
+  --cat-theater: #B84E05; --on-cat-theater: #FFFFFF;
+  --cat-music: #7A2BC8; --on-cat-music: #FFFFFF;
+  --cat-art: #08795A; --on-cat-art: #FFFFFF;
   color-scheme: light;
 }
 :root {
@@ -141,7 +147,7 @@ a { color: inherit; }
 .card h3 a:focus-visible { outline: none; } /* the whole card shows the focus ring */
 .card-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; min-height: 1.5rem; } /* never past the edge (CC-62) */
 .card-top .pill { margin-left: auto; }
-.kind { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.kind { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cat, var(--muted)); }
 .pill { font-size: 0.8125rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; background: var(--neutral-soft); color: var(--text); }
 .pill.soon-t { background: var(--second); color: var(--on-second); }
 .pill.next-t { background: var(--info-soft); color: var(--on-info-soft); }
@@ -159,6 +165,20 @@ a { color: inherit; }
 }
 .card-foot .cost { color: var(--muted); font-weight: 500; }
 .card-foot .cost.free { color: var(--lead); font-weight: 700; }
+/* CC-130: a category's colour, on its cards (a band across the top and the type's name), its filter chip and the
+   legend. Every pair is at least 4.5:1 on the page and the cards, and the name is always there in text too. */
+.cat-theater { --cat: var(--cat-theater); --on-cat: var(--on-cat-theater); }
+.cat-music { --cat: var(--cat-music); --on-cat: var(--on-cat-music); }
+.cat-art { --cat: var(--cat-art); --on-cat: var(--on-cat-art); }
+.card[class*="cat-"] { box-shadow: inset 0 4px 0 var(--cat); padding-top: 20px; }
+.chip[class*="cat-"]::before, .cat-legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--cat); margin-right: 7px; vertical-align: 0.02em; }
+.chip[class*="cat-"]:hover { border-color: var(--cat); }
+.chip[class*="cat-"][aria-pressed="true"] { background: var(--cat); color: var(--on-cat); border-color: var(--cat); }
+.chip[class*="cat-"][aria-pressed="true"]::before { background: currentColor; }
+.cat-legend { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; font-size: 0.875rem; color: var(--muted); }
+.cat-legend:empty { display: none; }
+.cat-legend span { color: var(--text); font-weight: 600; }
 
 /* catalog */
 .view-head { padding-block: clamp(20px, 4vw, 40px) 20px; display: grid; gap: 8px; }
