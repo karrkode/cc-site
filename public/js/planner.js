@@ -193,7 +193,9 @@ function priceSliderHTML(inWindow) {
 function paintPrice() { // the label and the live count for the slider's price; the count is what the next questions start from
   var n = pool(plan.ws, plan.we, plan.budget).length, text = budgetText(plan.budget);
   $("plan-price-text").textContent = text; $("plan-price-n").textContent = plural(n, "event", "events");
-  var r = $("plan-price"); if (r) r.setAttribute("aria-valuetext", text + ", " + plural(n, "event", "events"));
+  var r = $("plan-price"); if (!r) return;
+  r.setAttribute("aria-valuetext", text + ", " + plural(n, "event", "events"));
+  r.style.setProperty("--fill", (+r.max ? 100 * r.value / r.max : 100) + "%");
 }
 $("plan-opts").addEventListener("input", function (ev) {
   if (ev.target.id !== "plan-price") return;
