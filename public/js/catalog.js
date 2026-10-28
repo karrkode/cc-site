@@ -55,7 +55,7 @@ function buildCatalogControls() {
   $("cat-legend").innerHTML = keyed.length ? "Colours: " + keyed.map(function (t) { return '<span class="' + catClass(t).trim() + '">' + esc(t) + "</span>"; }).join("") : "";
 }
 function syncCatalogControls() {
-  $("f-q").value = cat.q; $("f-cost").value = cat.cost; $("f-sort").value = cat.sort;
+  costOption(); $("f-q").value = cat.q; $("f-cost").value = cat.cost; $("f-sort").value = cat.sort;
   paintWhere();
   var c = $("f-when-custom");
   if (cat.when === "custom" && cat.custom) { c.hidden = false; c.textContent = "Outing dates: " + windowText(cat.custom.ws, cat.custom.we); } else { c.hidden = true; }
@@ -70,6 +70,16 @@ function syncCatalogControls() {
 }
 var PAGE = 24, CAT_ITEMS = [], CAT_TOTAL = 0, CAT_REQ = 0;
 var COST_MAX = { free: "0", u40: "39.99", u100: "99.99" }; // "under $40" = a lowest price below 40
+// CC-128: the planner's top price comes over as "le40" (a lowest price of $40 or less); it gets its own option
+function costMax(c) { return COST_MAX[c] || (/^le\d+$/.test(c) ? c.slice(2) : null); }
+function costOption() {
+  var sel = $("f-cost"), old = sel.querySelector("option[data-top]"), top = /^le\d+$/.test(cat.cost);
+  if (old && (!top || old.value !== cat.cost)) old.remove();
+  if (top && !sel.querySelector("option[data-top]")) {
+    var o = document.createElement("option"); o.value = cat.cost; o.textContent = "Tickets from $" + cat.cost.slice(2) + " or less"; o.setAttribute("data-top", "");
+    sel.appendChild(o);
+  }
+}
 var WHERE_AREAS = { city: ["city"], suburbs: ["suburbs"], far: ["out_of_town"], local: ["city", "suburbs"] };
 function catalogParams() {
   var p = [], w = catWindow();
@@ -77,7 +87,7 @@ function catalogParams() {
   else { if (w[0]) p.push(["from", isoDate(w[0])]); if (w[1]) p.push(["to", isoDate(w[1])]); }
   Object.keys(cat.types).forEach(function (t) { p.push(["category", t]); });
   Object.keys(cat.picks).forEach(function (m) { p.push(["picks", m]); });
-  if (COST_MAX[cat.cost]) p.push(["max_price", COST_MAX[cat.cost]]);
+  if (costMax(cat.cost)) p.push(["max_price", costMax(cat.cost)]);
   (WHERE_AREAS[cat.where] || []).forEach(function (a) { p.push(["area", a]); });
   Object.keys(cat.regions).forEach(function (r) { p.push(["region", r]); }); // sides of town (CC-73, CC-85)
   Object.keys(cat.hoods).forEach(function (h) { p.push(["hood", h]); }); // and neighborhoods: any of them
