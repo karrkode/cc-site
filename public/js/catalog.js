@@ -48,7 +48,10 @@ function buildCatalogControls() {
   $("f-when").innerHTML = opts.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + "</option>"; }).join("") + '<option value="custom" id="f-when-custom" hidden></option>';
   buildWherePanel();
   $("type-chips").innerHTML = '<button type="button" class="chip" data-type="">All types</button>' +
-    TYPES.map(function (t) { return '<button type="button" class="chip" data-type="' + esc(t) + '">' + esc(t) + "</button>"; }).join("");
+    TYPES.map(function (t) { return '<button type="button" class="chip' + catClass(t) + '" data-type="' + esc(t) + '">' + esc(t) + "</button>"; }).join("");
+  // CC-130: what the colours mean, for the categories that have one
+  var keyed = TYPES.filter(function (t) { return CAT_KEYS[t]; });
+  $("cat-legend").innerHTML = keyed.length ? "Colours: " + keyed.map(function (t) { return '<span class="' + catClass(t).trim() + '">' + esc(t) + "</span>"; }).join("") : "";
 }
 function syncCatalogControls() {
   $("f-q").value = cat.q; $("f-cost").value = cat.cost; $("f-sort").value = cat.sort;
@@ -323,7 +326,7 @@ function eventViewHTML(e) {
   var st = eventStatus(e), past = isPast(e), facts = [["When", dateText(e)], ["Price", costText(e)]];
   var times = e.runDates.length ? runDatesText(e) : SHOW_TYPES[e.type] && !oneNight(e) && !past ? showDaysText(e.sched.weekly, e.sched.weeks) : "";
   if (times) facts.splice(1, 0, ["Shows", times]);
-  var html = '<div class="card-top"><span class="kind">' + esc(e.label) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
+  var html = '<div class="card-top' + catClass(e.type) + '"><span class="kind">' + esc(e.label) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
     '<h1 id="event-title" tabindex="-1">' + esc(e.title) + "</h1>" +
     '<p class="ev-place">' + placeHTML(e) + "</p>" +
     (past ? '<p class="ev-closed">This run has closed.</p>' : "") +
