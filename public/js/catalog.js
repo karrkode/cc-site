@@ -15,7 +15,7 @@ function renderHome() {
   $("door-catalog-count").textContent = plural(FACETS.current, "event", "events") + " on the list";
   $("door-crews-desc").textContent = AUTH.user ? "See what your crews are planning, and who's been where." : // CC-103
     "Crews are the friends you go out with. Sign in to start one or join one.";
-  $("soon-list").innerHTML = SOON.map(function (e) { return "<li>" + cardHTML(e, true) + "</li>"; }).join("");
+  $("soon-list").innerHTML = SOON.map(function (e) { return "<li>" + cardHTML(e) + "</li>"; }).join("");
   $("foot").textContent = plural(FACETS.total, "event", "events") +
     " on the list, past and present. Dates and prices change, so check the event's page before you go.";
 }
