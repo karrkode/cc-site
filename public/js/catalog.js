@@ -302,6 +302,23 @@ function evCrewLine(c) {
   if (c.been.length) parts.push(who(c.been) + (c.been.length === 1 ? " has been" : " have been"));
   return parts.join(" · ");
 }
+// CC-112: members' shared journal entries, newest first: three words, the review, who and whether they'd recommend
+// it. Admins also see hidden ones (marked) and can hide or unhide each; the member's entry isn't touched.
+function evTakesHTML(e) {
+  if (!e.takes || !e.takes.length) return "";
+  var admin = isAdmin();
+  return '<section class="section ev-takes" aria-labelledby="ev-takes-h"><h2 id="ev-takes-h">From people who went</h2><ol>' +
+    e.takes.map(function (t) {
+      return '<li class="ev-take' + (t.hidden ? " is-hidden" : "") + '">' +
+        '<p class="ev-take-words">' + t.words.split(" ").map(function (w) { return "<span>" + esc(w) + "</span>"; }).join("") + "</p>" +
+        (t.review ? '<p class="ev-take-review">' + esc(t.review) + "</p>" : "") +
+        '<p class="ev-take-by"><b>' + esc(t.name) + "</b>" + (t.recommend ? " · Would recommend" : "") + "</p>" +
+        (admin && t.user_id ? '<div class="row ev-take-admin">' + (t.hidden ? '<span class="pill">Hidden from everyone but admins</span>' : "") +
+          '<button class="btn ghost" type="button" data-take-hide="' + esc(t.user_id) + '" data-hidden="' + (t.hidden ? "0" : "1") + '">' +
+          (t.hidden ? "Unhide" : "Hide") + "</button></div>" : "") +
+        "</li>";
+    }).join("") + "</ol></section>";
+}
 function eventViewHTML(e) {
   var st = eventStatus(e), past = isPast(e), facts = [["When", dateText(e)], ["Price", costText(e)]];
   var times = e.runDates.length ? runDatesText(e) : SHOW_TYPES[e.type] && !oneNight(e) && !past ? showDaysText(e.sched.weekly, e.sched.weeks) : "";
@@ -319,7 +336,7 @@ function eventViewHTML(e) {
     '<input class="share-url" id="ev-share-url" type="text" readonly aria-label="Link to this event" hidden>' +
     '<p class="hint small" id="ev-share-msg" role="status"></p>';
   if (!AUTH.user) {
-    return html + '<div class="panel ev-signin"><p>Sign in to mark it interested or going, and to see who from your crews is going.</p>' +
+    return html + evTakesHTML(e) + '<div class="panel ev-signin"><p>Sign in to mark it interested or going, and to see who from your crews is going.</p>' +
       '<div class="row"><button class="btn" type="button" id="ev-signin-btn">Sign in or create an account</button></div></div>';
   }
   // data-card: the card buttons find their event, and redraw it, the same way here (account.js redrawCards)
@@ -333,7 +350,7 @@ function eventViewHTML(e) {
     }).join("") + "</ul>" :
       '<p class="hint">' + (CREWS.length ? "Nobody from your crews has this on their list yet." : "Start a crew to see who's going with you.") + "</p>") +
     "</section>";
-  return html;
+  return html + evTakesHTML(e);
 }
 function renderEventView() {
   var e = EV.e && EV.e.id === EV.id ? EV.e : KNOWN[EV.id]; // a list fetched before sign-in may have replaced KNOWN's copy
@@ -402,6 +419,16 @@ $("ev-back").addEventListener("click", function () {
 $("ev-body").addEventListener("click", function (ev) {
   var t = ev.target;
   if (t.id === "ev-signin-btn") { AFTER_SIGN_IN = "e/" + EV.id; openAccount(); return; }
+  var hide = t.closest("[data-take-hide]");
+  if (hide) { // CC-112: an admin hides or unhides a take, then the view reloads with it marked
+    hide.disabled = true;
+    api("/admin/takes/" + encodeURIComponent(EV.id) + "/" + encodeURIComponent(hide.getAttribute("data-take-hide")),
+      { method: "PUT", body: { hidden: hide.getAttribute("data-hidden") === "1" } }).then(readJSON).then(function (res) {
+      if (!res.ok) { hide.disabled = false; $("ev-status").textContent = errorText(res); return; }
+      loadEventView();
+    }, function () { hide.disabled = false; $("ev-status").textContent = errorText(null); });
+    return;
+  }
   if (t.id !== "ev-share" || !KNOWN[EV.id]) return;
   var e = KNOWN[EV.id], url = evShareUrl(e), field = $("ev-share-url"), msg = $("ev-share-msg");
   var fallback = function () { field.value = url; field.hidden = false; field.focus(); field.select(); msg.textContent = "Copy the link above."; };
