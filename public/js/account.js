@@ -240,19 +240,19 @@ $("week-skip").addEventListener("click", function () {
 // planner's rule, CC-79: a show with a time that day, an exhibition on a day it's open; on today, only what's still
 // to come). Each links to its event; the button closes it again. An empty day says so and offers the catalog.
 // FIND_DAY_OPEN and FIND_DAY keep, by day, which lists are open and what came back, so redrawing the week keeps them.
-// A busy day lists the first FIND_DAY_SHOWN (shows by start time, then exhibitions), with a button for the rest.
-var FIND_DAY = {}, FIND_DAY_OPEN = {}, FIND_DAY_SHOWN = 10;
+// A busy day lists the first FIND_DAY_SHOWN (shows by start time, then exhibitions), then a link to the catalog
+// for just that day (When is a one-day range, and the other filters start fresh).
+var FIND_DAY = {}, FIND_DAY_OPEN = {}, FIND_DAY_SHOWN = 5;
 function dayFoundHTML(iso) { // what's in the open list: loading, an error, nothing, or that day's events
   var d = parseISO(iso), got = FIND_DAY[iso];
   if (!got || got.loading) return '<p class="hint small">Finding events\u2026</p>';
   if (got.error) return '<p class="form-error">The events couldn\u2019t be loaded. Check your connection and try again.</p>';
   if (!got.items.length) return '<p class="hint small">Nothing on the list for that day.</p><p class="small"><a href="#catalog" data-find-catalog>Browse the catalog</a></p>';
-  var shown = got.all ? got.items : got.items.slice(0, FIND_DAY_SHOWN), more = got.items.length - shown.length;
-  return '<ul class="day-items">' + shown.map(function (e) {
+  return '<ul class="day-items">' + got.items.slice(0, FIND_DAY_SHOWN).map(function (e) {
     var times = dayTimesText(e, d), id = esc(e.id);
     return '<li class="day-item"><a href="#e/' + id + '" data-ev-open="' + id + '">' + esc(e.title) + "</a>" +
       '<span class="day-where">' + esc(placeText(e)) + "</span>" + (times ? '<span class="day-time">' + esc(times) + "</span>" : "") + "</li>";
-  }).join("") + "</ul>" + (more ? '<button type="button" class="btn ghost day-find" data-find-more="' + iso + '">Show ' + more + " more</button>" : "");
+  }).join("") + "</ul>" + (got.items.length > FIND_DAY_SHOWN ? '<p class="small"><a href="#catalog" data-find-catalog="' + iso + '">See more for that day in the catalog</a></p>' : "");
 }
 function dayFindHTML(d, whole) {
   var iso = isoDate(d), open = !!FIND_DAY_OPEN[iso];
@@ -277,12 +277,11 @@ function findDay(iso) { // a day's events, once (again after an error)
   }, function () { got.loading = false; got.error = true; });
 }
 document.addEventListener("click", function (ev) {
-  if (ev.target.closest("[data-find-catalog]")) { ev.preventDefault(); resetCatalog(); loadCatalog(); show("catalog"); return; }
-  var m = ev.target.closest("[data-find-more]");
-  if (m) { // the rest of the day, with focus on the first one that was hidden
-    var day = m.getAttribute("data-find-more"); FIND_DAY[day].all = true; paintFindDay(day);
-    var next = $("find-" + day).querySelectorAll("[data-ev-open]")[FIND_DAY_SHOWN]; if (next) next.focus();
-    return;
+  var c = ev.target.closest("[data-find-catalog]");
+  if (c) { // the catalog: for just that day from a busy day, or all of it from an empty one
+    ev.preventDefault(); resetCatalog();
+    var on = c.getAttribute("data-find-catalog"); if (on) { cat.when = "custom"; cat.custom = { ws: parseISO(on), we: parseISO(on) }; }
+    loadCatalog(); show("catalog"); return;
   }
   var b = ev.target.closest("[data-find-day]"); if (!b) return;
   var iso = b.getAttribute("data-find-day");
