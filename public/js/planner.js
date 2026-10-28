@@ -144,11 +144,11 @@ function renderStep() {
   } else if (plan.step === 1) {
     $("plan-title").textContent = "What's the budget per person?";
     $("plan-help").textContent = "We go by the lowest ticket price listed for each event.";
-    // CC-128: Free, or Priced with a top price set on a slider that opens in place
+    // CC-128: Free, or Priced with a top price set on a slider that opens in place of Free (Back, or Priced again, closes it)
     var inWindow = pool(plan.ws, plan.we, "any"), freeN = pool(plan.ws, plan.we, "free").length;
     PLAN_STOPS = priceStops(inWindow);
     if (!PLAN_STOPS.length) plan.priced = false;
-    html = optHTML('data-budget="free"', "Free", "No ticket cost", freeN, freeN === 0) +
+    html = (plan.priced ? "" : optHTML('data-budget="free"', "Free", "No ticket cost", freeN, freeN === 0)) +
       optHTML('data-budget="priced"', "Priced", "Set a top price per person", inWindow.length, !PLAN_STOPS.length, String(plan.priced));
     if (plan.priced) html += priceSliderHTML(inWindow);
   } else if (plan.step === 2) {
@@ -185,8 +185,8 @@ function priceSliderHTML(inWindow) {
   var unpriced = inWindow.filter(function (e) { return e.min === null; }).length, last = PLAN_STOPS.length - 1;
   return '<div class="price-pick">' +
     '<div class="price-now"><label for="plan-price" id="plan-price-text">' + esc(budgetText(plan.budget)) + '</label><span class="opt-n" id="plan-price-n" aria-live="polite"></span></div>' +
-    (last > 0 ? '<input type="range" id="plan-price" min="0" max="' + last + '" step="1" value="' + at + '">' +
-      '<div class="price-ends" aria-hidden="true"><span>' + esc(budgetText(PLAN_STOPS[0])) + "</span><span>" + esc(budgetText(PLAN_STOPS[last])) + "</span></div>" : "") +
+    '<input type="range" id="plan-price" min="0" max="' + last + '" step="1" value="' + at + '"' + (last ? "" : " disabled") + ">" +
+    '<div class="price-ends" aria-hidden="true"><span>' + esc(budgetText(PLAN_STOPS[0])) + "</span><span>" + (last ? esc(budgetText(PLAN_STOPS[last])) : "") + "</span></div>" +
     (unpriced ? '<p class="hint">' + plural(unpriced, "event has", "events have") + " no price posted yet. " + (unpriced === 1 ? "It's" : "They're") + " only included at Any price.</p>" : "") +
     "</div>";
 }
@@ -220,7 +220,7 @@ $("plan-opts").addEventListener("click", function (ev) {
     if (!w) { renderStep(); return; } // the hour passed while the page was open
     plan.when = k; plan.ws = w[3][0]; plan.we = w[3][1]; plan.slot = w[4]; plan.step = 1; renderStep(); $("plan-title").focus();
   } else if (b.getAttribute("data-budget") === "priced") {
-    plan.priced = true; renderStep(); ($("plan-price") || b).focus();
+    plan.priced = !plan.priced; renderStep(); (plan.priced && !$("plan-price").disabled ? $("plan-price") : $("plan-opts").querySelector("[data-budget]")).focus();
   } else if (b.hasAttribute("data-budget")) {
     plan.budget = "free"; plan.priced = false; plan.types = {}; plan.regions = {}; plan.step = 2; renderStep(); $("plan-title").focus();
   } else if (b.hasAttribute("data-ptype")) {
@@ -233,6 +233,7 @@ $("plan-opts").addEventListener("click", function (ev) {
 });
 $("plan-back").addEventListener("click", function () {
   if (plan.step === 0) { show("home"); return; }
+  if (plan.step === 1 && plan.priced) { plan.priced = false; renderStep(); $("plan-opts").querySelector("[data-budget]").focus(); return; } // back to Free or Priced
   plan.step -= 1;
   var back = function () { renderStep(); $("plan-title").focus(); };
   if (plan.step === 0) withPlanEvents(T, add(T, 34), back); else back(); // the presets need the five weeks loaded
