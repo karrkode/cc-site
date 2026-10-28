@@ -157,9 +157,9 @@ $("hours-form").addEventListener("submit", function (ev) {
 // ---------- show days (CC-79, CC-88): the days a performance is on, each with its start times ----------
 // In the event edit form ("ed": also approving a found event) and Submit an event ("s"). Find an outing only
 // suggests a performance when it knows the start times: dated performances found on the venue's site, else
-// these show days, else the venue's usual show times. Only Theater, Comedy and Music have them (musicals are
+// these show days, else the venue's usual show times. Only Theater and Music have them (musicals are
 // theater); Visual Art goes by the venue's opening hours.
-var SHOW_TYPES = { Theater: 1, Comedy: 1, Music: 1 }; // CC-125: Concert is now Music
+var SHOW_TYPES = { Theater: 1, Music: 1 }; // CC-125: Concert is now Music
 var SHOW_DAYS = {}; // per form: { days: {mon: ["8 PM", ...]} as typed, weeks: {mon: [1, 3]} (some weeks of the month only),
                     //   some: {mon: true} while "Some weeks" is chosen, from: the pattern the form started with }
 var WEEK_NAMES = [[1, "1st"], [2, "2nd"], [3, "3rd"], [4, "4th"], [5, "Last"]];

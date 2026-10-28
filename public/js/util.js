@@ -48,7 +48,7 @@ function thisWeekend() {
 function nextWeekend() { var fri = add(thisWeekend()[1], 5); return [fri, add(fri, 2)]; }
 
 // ---------- events ----------
-var TYPE_ORDER = ["Theater", "Comedy", "Music", "Visual Art", "Educational"]; // CC-125: the five, as the API has them
+var TYPE_ORDER = ["Theater", "Music", "Visual Art"]; // CC-125, CC-133: the three, as the API has them
 // CC-125: an opera's category is Music; it's also listed under Theater, and its card says "Opera"
 function typeLabel(category, opera) { return opera ? "Opera" : category; }
 function inType(e, types) { return !!types[e.type] || (e.opera && !!types.Theater); }
@@ -112,7 +112,7 @@ var WENT_JOURNAL = {}, JOURNAL_DRAFT = {};
 var WENT_SHARE = {};
 // Your plans (CC-55; "Oh the places you'll go" on the account page): MYPLANS[id] = { status: "interested" | "going", date: "YYYY-MM-DD" | null }.
 var MYPLANS = {}, MYPLAN_LIST = [], MYPLAN_SEQ = 0;
-var TYPE_PLURAL = { "Theater": "theater", "Comedy": "comedy", "Music": "music", "Visual Art": "visual art", "Educational": "educational events" };
+var TYPE_PLURAL = { "Theater": "theater", "Music": "music", "Visual Art": "visual art" };
 
 function isPast(e) { return !!e.n && e.n < T; }
 function oneNight(e) { return same(e.b, e.n); }

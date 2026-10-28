@@ -30,7 +30,7 @@ function updateReviewCount(n) {
 var EMPTY = { "review-list": "Nothing waiting for review.", "scheduled-list": "Nothing scheduled.", "withdrawn-list": "Nothing withdrawn.",
   "caught-list": "Nothing caught." };
 function renderReview() {
-  renderScheduled(); renderWithdrawn(); renderCaught(); loadSubmissionRules(); renderOtherTypes();
+  renderScheduled(); renderWithdrawn(); renderCaught(); loadSubmissionRules(); renderOtherTypes(); renderRemoved();
   $("review-list").innerHTML = '<p class="hint">Loading…</p>';
   api("/admin/events?limit=500").then(readJSON).then(function (res) {
     if (!res.ok) { $("review-list").innerHTML = '<p class="form-error">' + esc(errorText(res)) + "</p>"; return; }
@@ -43,12 +43,49 @@ function renderReview() {
     refocusAfterEdit();
   }, function () { $("review-list").innerHTML = '<p class="form-error">' + esc(errorText(null)) + "</p>"; });
 }
-// CC-125: events whose type isn't one of the five (the move to the five didn't guess); hidden when there are none
+// CC-133: what removing Comedy and Educational withdrew (and everything at The Second City and The Annoyance). Bring one
+// back with one of the three types, or Edit to delete it. Hidden when there are none.
+function removedItemHTML(raw) {
+  var e = toEvent(raw), id = esc(e.id), reason = raw.withdrawn_reason; // its old type, or its venue's name
+  var why = (reason === "Comedy" || reason === "Educational" ? "Type was " : "At ") + reason;
+  var pick = TYPE_ORDER.indexOf(raw.category) >= 0 ? raw.category : "";
+  return queueItemHTML(e, '<label class="sr-only" for="rm-type-' + id + '">Type to bring ' + esc(e.title) + " back as</label>" +
+    '<select id="rm-type-' + id + '" data-rm-type="' + id + '"><option value=""' + (pick ? "" : " selected") + ">Bring back as…</option>" +
+      TYPE_ORDER.map(function (t) { return '<option value="' + esc(t) + '"' + (t === pick ? " selected" : "") + ">" + esc(t) + "</option>"; }).join("") + "</select>" +
+    '<button class="btn" type="button" data-rm-back="' + id + '" aria-label="Bring back ' + esc(e.title) + '">Bring back</button>' + editButtonHTML(e, "btn ghost"), why);
+}
+function renderRemoved() {
+  api("/admin/events/removed").then(readJSON).then(function (res) {
+    var list = res.ok ? res.body : [];
+    $("removed").hidden = !list.length;
+    $("removed-note").textContent = plural(list.length, "event is", "events are") + " hidden from the site. Each stays that way unless you bring it back as Theater, Music or Visual Art.";
+    $("removed-list").innerHTML = list.map(removedItemHTML).join("");
+    refocusAfterEdit();
+  }, function () {});
+}
+$("removed-list").addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-rm-back]"); if (!b) return;
+  var id = b.getAttribute("data-rm-back"), item = b.closest(".queue-item"), sel = $("rm-type-" + id);
+  var old = item.querySelector(".form-error"); if (old) old.remove();
+  if (!sel.value) { item.querySelector(".alt-text").insertAdjacentHTML("beforeend", '<p class="form-error">Choose its type first.</p>'); sel.focus(); return; }
+  b.disabled = sel.disabled = true;
+  api("/events/" + encodeURIComponent(id), { method: "PATCH", body: { status: "approved", category: sel.value } }).then(readJSON).then(function (res) {
+    if (!res.ok) { b.disabled = sel.disabled = false; item.querySelector(".alt-text").insertAdjacentHTML("beforeend", '<p class="form-error">' + esc(errorText(res)) + "</p>"); return; }
+    $("edit-live").textContent = res.body.title + " is back on the site, as " + sel.value + ".";
+    var next = item.nextElementSibling || item.previousElementSibling;
+    item.remove();
+    if (!$("removed-list").children.length) $("removed").hidden = true;
+    else $("removed-note").textContent = plural($("removed-list").children.length, "event is", "events are") + " hidden from the site. Each stays that way unless you bring it back as Theater, Music or Visual Art.";
+    reloadEvents();
+    var f = next && next.querySelector("select"); (f || $("review-title")).focus();
+  }, function () { b.disabled = sel.disabled = false; });
+});
+// CC-125: events whose type isn't one of ours (the move to the five didn't guess); hidden when there are none
 function renderOtherTypes() {
   api("/admin/events/other-types").then(readJSON).then(function (res) {
     var list = res.ok ? res.body : [];
     $("othertypes").hidden = !list.length;
-    $("othertypes-note").textContent = plural(list.length, "event has", "events have") + " a type that isn't Theater, Comedy, Music, Visual Art or Educational. Edit each to choose one.";
+    $("othertypes-note").textContent = plural(list.length, "event has", "events have") + " a type that isn't Theater, Music or Visual Art. Edit each to choose one.";
     $("othertypes-list").innerHTML = list.map(function (raw) { var e = toEvent(raw); return queueItemHTML(e, stateHTML(e) + editButtonHTML(e, "btn ghost")); }).join("");
     refocusAfterEdit();
   }, function () {});
@@ -67,7 +104,8 @@ function renderScheduled() {
 function renderWithdrawn() { // CC-56: put back with Restore (approve), or edit / delete
   api("/admin/events?status=withdrawn&limit=500").then(readJSON).then(function (res) {
     if (!res.ok) { $("withdrawn-list").innerHTML = '<p class="form-error">' + esc(errorText(res)) + "</p>"; return; }
-    $("withdrawn-list").innerHTML = res.body.items.length ? res.body.items.map(function (raw) {
+    var items = res.body.items.filter(function (raw) { return !raw.withdrawn_reason; }); // CC-133: those have their own list
+    $("withdrawn-list").innerHTML = items.length ? items.map(function (raw) {
       var e = toEvent(raw);
       return queueItemHTML(e, '<button class="btn ghost" type="button" data-review="approve" data-id="' + esc(e.id) + '">Restore</button>' +
         editButtonHTML(e, "btn ghost"));
@@ -604,12 +642,12 @@ $("utm-examples").innerHTML = UTM_EXAMPLES.map(function (u) {
 // ---------- event sources (admins, CC-70) ----------
 // The discovery job runs hourly on the server and checks only the sources that are due. Here an
 // admin sees each source's last check (and why one couldn't be read), changes how often it's checked,
-// turns it off, or asks for a check at the next hourly run.
+// turns it off, or asks for a check at the next hourly run. CC-133: or deletes it, after an inline "are you sure?".
 var SOURCE_KINDS = { theater: "Theater", opera: "Opera", museum: "Museum", music: "Music", comedy: "Comedy" };
 var SOURCE_STATUS = { ok: ["Found changes", "ok"], unchanged: ["No changes", ""], blocked: ["Can't be read", "bad"], error: ["Check failed", "bad"], "": ["Not checked yet", ""] };
 var EVERY = [[7, "Every week"], [14, "Every 2 weeks"], [30, "Every month"], [60, "Every 2 months"]];
 function openSources(focusSel) { if (!isAdmin()) { openAccount(); return; } show("sources"); loadSources(focusSel); }
-var SOURCES = null, SOURCES_SORT = "name";
+var SOURCES = null, SOURCES_SORT = "name", SRC_ASK = null; // SRC_ASK: the source whose delete is being confirmed
 // Sort the sources list: by name, by found items waiting, or by when each was last checked (never-checked last
 // for "most recent", first for "longest ago"). Ties keep name order.
 function sortedSources(list) {
@@ -664,10 +702,38 @@ function paintSources(o) {
       '<button class="btn ghost" type="button" data-src-manual="' + id + '" data-on="' + s.manual + '" aria-label="' + (s.manual ? "Check " + esc(s.name) + " automatically again" : "Check " + esc(s.name) + " by hand only") + '">' +
         (s.manual ? "Check automatically" : "Check by hand only") + "</button>" +
       '<button class="btn ghost" type="button" data-src-toggle="' + id + '" data-on="' + s.active + '" aria-label="' + (s.active ? "Turn off " : "Turn on ") + esc(s.name) + '">' + (s.active ? "Turn off" : "Turn on") + "</button>" +
-      "</div></div>";
+      '<button class="btn danger" type="button" data-src-delete="' + id + '" aria-label="Delete ' + esc(s.name) + '">Delete…</button>' +
+      "</div>" + (SRC_ASK === s.id ? srcAskHTML(s) : "") + "</div>";
   }).join("");
 }
+function srcAskHTML(s) { // CC-133
+  var id = esc(s.id);
+  return '<div class="confirm src-confirm" role="group" aria-labelledby="src-ask-' + id + '"><p id="src-ask-' + id + '"><strong>Delete ' + esc(s.name) + "?</strong> It won't be checked again. " +
+    (s.waiting ? "Its " + plural(s.waiting, "found event", "found events") + " waiting for review stay on Found events. " : "") +
+    "Events already in the catalog aren't touched. This can't be undone.</p>" +
+    '<div class="row"><button class="btn danger solid" type="button" data-src-delete-yes="' + id + '">Delete source</button>' +
+    '<button class="btn ghost" type="button" data-src-delete-no="' + id + '">Keep it</button></div></div>';
+}
 $("sources-list").addEventListener("click", function (ev) {
+  var ask = ev.target.closest("[data-src-delete],[data-src-delete-no]");
+  if (ask) {
+    var asking = ask.hasAttribute("data-src-delete"), sid = ask.getAttribute(asking ? "data-src-delete" : "data-src-delete-no");
+    SRC_ASK = asking ? +sid : null; paintSources(SOURCES);
+    $("sources-list").querySelector(asking ? '[data-src-delete-no="' + sid + '"]' : '[data-src-delete="' + sid + '"]').focus();
+    return;
+  }
+  var yes = ev.target.closest("[data-src-delete-yes]");
+  if (yes) {
+    var did = +yes.getAttribute("data-src-delete-yes"), gone = SOURCES.sources.filter(function (x) { return x.id === did; })[0];
+    yes.disabled = true;
+    api("/admin/discovery/sources/" + did, { method: "DELETE" }).then(function (r) {
+      if (!r.ok && r.status !== 404) { yes.disabled = false; return readJSON(r).then(function (res) { $("sources-status").textContent = errorText(res); }); }
+      SRC_ASK = null;
+      $("edit-live").textContent = (gone ? gone.name : "The source") + " was deleted.";
+      loadSources(); $("sources-title").focus();
+    }, function () { yes.disabled = false; $("sources-status").textContent = errorText(null); });
+    return;
+  }
   var b = ev.target.closest("[data-src-check],[data-src-toggle],[data-src-manual]"); if (!b) return;
   var check = b.hasAttribute("data-src-check"), manual = b.hasAttribute("data-src-manual");
   var id = b.getAttribute(check ? "data-src-check" : manual ? "data-src-manual" : "data-src-toggle");

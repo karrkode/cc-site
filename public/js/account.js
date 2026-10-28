@@ -413,7 +413,7 @@ $("me-menu").addEventListener("click", function (ev) {
 // CC-115: invite a friend to the site: the phone's share sheet, or the link to copy. Tagged so these visits
 // show up as "invite" on Site stats. Only the public site link: crew invite links stay with their crew.
 var INVITE_TAGS = "?utm_source=invite&utm_medium=referral&utm_campaign=friend";
-var INVITE_TEXT = "I use Culture Crew to find Chicago theater, comedy, music and art, and to go out with friends. Come see what's on:";
+var INVITE_TEXT = "I use Culture Crew to find Chicago theater, music and art, and to go out with friends. Come see what's on:";
 // CC-126: an admin's invite opens the invite page (/invite), tagged invite / link, or invite / qr for the code
 function adminInviteUrl(medium) { return location.origin + "/invite?utm_source=invite&utm_medium=" + medium + "&utm_campaign=friend"; }
 function inviteFriend() {

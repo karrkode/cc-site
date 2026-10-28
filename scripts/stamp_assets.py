@@ -21,7 +21,7 @@ PUBLIC = ROOT / "public"
 OUT = ROOT / "build" / "site"
 
 JOIN_TITLE = "Ready to join the culture crew? · Culture Crew"
-JOIN_DESCRIPTION = ("Chicago theater, comedy, music and art, and the people you go with. "
+JOIN_DESCRIPTION = ("Chicago theater, music and art, and the people you go with. "
                     "Join in one step, and look around the catalog first.")
 JOIN_URL = "https://chiculturecrew.com/join"
 # CC-126: chiculturecrew.com/invite, where an admin's Invite a friend leads: the join page with the admins' pitch
