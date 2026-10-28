@@ -1,6 +1,6 @@
 # Culture Crew — the site
 
-The page at **https://chiculturecrew.com**: a running list of plays, comedy, concerts and
+The page at **https://chiculturecrew.com**: a running list of plays, concerts and
 exhibitions around Chicago, with a catalog, an outing planner that suggests only what's on, accounts,
 plans and an "I've been" list with optional photos, culture crews that share plans and see who's been,
 event submissions, issue reports, and admin pages (review, found events from event discovery, venues,
