@@ -147,6 +147,9 @@ a { color: inherit; }
 .card h3 a:focus-visible { outline: none; } /* the whole card shows the focus ring */
 .card-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; min-height: 1.5rem; } /* never past the edge (CC-62) */
 .card-top .pill { margin-left: auto; }
+.card > .card-top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); } /* the category in the centre (CC-129) */
+.card > .card-top .kind { grid-column: 2; }
+.card > .card-top .pill { justify-self: end; }
 .kind { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cat, var(--muted)); }
 .pill { font-size: 0.8125rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; background: var(--neutral-soft); color: var(--text); }
 .pill.soon-t { background: var(--second); color: var(--on-second); }
@@ -211,7 +214,7 @@ a { color: inherit; }
 .tally { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; padding-block: 18px 12px; }
 .tally strong { font-variant-numeric: tabular-nums; }
 .more-row { display: flex; justify-content: center; margin-top: 18px; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 12px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; } /* at most 3 across (CC-129) */
 .empty { padding: 40px 20px; text-align: center; background: var(--surface); border: 1px dashed var(--line); border-radius: var(--r-card); display: grid; gap: 10px; justify-items: center; }
 
 /* box office (planner) */
@@ -507,7 +510,6 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .show-days .hours-grid > .textbtn { justify-self: start; }
 .show-days .weeks-of { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
 .show-days .weeks-of select { background: var(--page); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 7px 9px; }
-.card .show-days-line { margin: 4px 0 0; font-size: 0.875rem; color: var(--muted); }
 .hours-grid { display: grid; gap: 8px; }
 .hours-row { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); align-items: center; gap: 6px 12px; }
 .hours-row .day { font-weight: 600; }
