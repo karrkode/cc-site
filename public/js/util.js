@@ -142,6 +142,9 @@ function eventStatus(e) {
   if (left <= 6) return { label: "Closes " + F.wd.format(e.n), tone: "soon-t" };
   return { label: "Now playing", tone: "" };
 }
+// CC-129: a catalog card doesn't count down to closing ("Closes Fri" reads "Now playing"); the event view and the
+// home page's "Last chance" cards (lastChance) still do.
+function cardStatus(e, lastChance) { var st = eventStatus(e); return !lastChance && /^Closes /.test(st.label) ? { label: "Now playing", tone: "" } : st; }
 function costText(e) { // the venue's standard cost reads "Usually free", "Usually $25 general admission" (CC-89)
   if (e.costUsual) return "Usually " + (/^[A-Z][a-z]/.test(e.cost) ? e.cost.charAt(0).toLowerCase() + e.cost.slice(1) : e.cost);
   return e.min === null ? "Price not posted" : e.cost;
@@ -174,16 +177,15 @@ function runDatesText(e) {
     return goingDay(r.date) + ", " + clockText(r.time) + (r.end_time ? "–" + clockText(r.end_time) : "");
   }).join(" · ") + (left.length > RUN_SHOWN ? " · " + (left.length - RUN_SHOWN) + " more" : "");
 }
-function cardHTML(e) {
-  var mine = AUTH.user ? MYPLANS[e.id] : null, going = mine && mine.status === "going";
+function cardHTML(e, lastChance) {
+  var st = cardStatus(e, lastChance), mine = AUTH.user ? MYPLANS[e.id] : null, going = mine && mine.status === "going";
   // Marks sit next to the date at the bottom of the card (CC-64; the top row had no room for them).
   // The dolphins are the owner's public picks (CC-66): every visitor sees them. Your own plans stay private:
   // a plain "Interested" label, or "Going <date>". An owner's own plan is already their dolphin.
   var own = mine && !going && !AUTH.user.dolphins ? '<span class="pill mine">Interested</span>' : "";
   var mark = pickHTML(e) + own;
   return '<article class="card' + catClass(e.type) + '" data-card="' + esc(e.id) + '">' +
-    // CC-129: the category alone, centred; the status ("Closes Fri") is in the event view, and "Last chance" on home
-    '<div class="card-top"><span class="kind">' + esc(e.label) + "</span></div>" +
+    '<div class="card-top"><span class="kind">' + esc(e.label) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
     // CC-117: the card opens the event's view in the site; its Tickets button there is the way out to the venue
     '<h3><a href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '">' + esc(e.title) + "</a></h3>" +
     '<div class="card-body"><p class="where">' + placeHTML(e) + "</p>" + // CC-129: show times are in the event view

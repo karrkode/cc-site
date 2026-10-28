@@ -145,7 +145,11 @@ a { color: inherit; }
 .card:hover { border-color: var(--lead); }
 .card:has(h3 a:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; } /* keyboard focus on the card's link */
 .card h3 a:focus-visible { outline: none; } /* the whole card shows the focus ring */
-.card-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; min-height: 1.5rem; } /* never past the edge (CC-62); centred (CC-129) */
+.card-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; min-height: 1.5rem; } /* never past the edge (CC-62) */
+.card-top .pill { margin-left: auto; }
+.card > .card-top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); } /* the category in the centre (CC-129) */
+.card > .card-top .kind { grid-column: 2; }
+.card > .card-top .pill { justify-self: end; }
 .kind { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cat, var(--muted)); }
 .pill { font-size: 0.8125rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; background: var(--neutral-soft); color: var(--text); }
 .pill.soon-t { background: var(--second); color: var(--on-second); }
@@ -422,6 +426,7 @@ footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits 
 .ev-back-row { padding-top: clamp(14px, 3vw, 24px); }
 #ev-body { display: grid; gap: 14px; padding-top: 12px; }
 #ev-body > .card-top { justify-content: flex-start; }
+#ev-body > .card-top .pill { margin-left: 0; }
 #ev-body h1 { font-family: var(--display); font-weight: 600; font-size: var(--step-3); line-height: 1.08; letter-spacing: -0.02em; overflow-wrap: anywhere; text-wrap: balance; }
 .ev-place { color: var(--muted); font-size: 1.0625rem; }
 .ev-closed { justify-self: start; padding: 4px 10px; border-radius: 999px; background: var(--danger-soft); color: var(--on-danger-soft); font-weight: 600; font-size: 0.875rem; }

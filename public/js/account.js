@@ -114,7 +114,7 @@ function redrawCards(id, from, focusOn) {
 }
 function redrawCardsNow(id, from, focusOn) {
   var list = from && from.parentElement.closest("[id]"), listId = list ? list.id : null; // the grid this card was in
-  Array.prototype.forEach.call(document.querySelectorAll('[data-card="' + id + '"]:not(.ev-panel)'), function (c) { c.outerHTML = cardHTML(KNOWN[id]); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-card="' + id + '"]:not(.ev-panel)'), function (c) { c.outerHTML = cardHTML(KNOWN[id], !!c.closest("#soon-list")); });
   return loadMyPlans().then(function () {
     if (visible("event")) renderEventView(); // CC-117: the event view's buttons, redrawn as a view, not a card
     if (visible("account")) renderAccount();
@@ -221,7 +221,7 @@ function renderPlanner() {
         '<button type="button" class="btn ghost day-find" data-find-day="' + isoDate(day.d) + '" aria-label="Find something for ' + esc(whole) + '">Find something for that day!</button>') +
       "</section>";
   }).join("");
-  $("deciding-wrap").hidden = !deciding.length; $("myplans-grid").innerHTML = deciding.map(cardHTML).join("");
+  $("deciding-wrap").hidden = !deciding.length; $("myplans-grid").innerHTML = deciding.map(function (e) { return cardHTML(e); }).join("");
 }
 function showWeek(n, focusId) {
   PLANNER_WEEK = Math.max(0, Math.min(PLANNER_MAX, n)); renderPlanner();

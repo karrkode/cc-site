@@ -15,7 +15,7 @@ function renderHome() {
   $("door-catalog-count").textContent = plural(FACETS.current, "event", "events") + " on the list";
   $("door-crews-desc").textContent = AUTH.user ? "See what your crews are planning, and who's been where." : // CC-103
     "Crews are the friends you go out with. Sign in to start one or join one.";
-  $("soon-list").innerHTML = SOON.map(function (e) { return "<li>" + cardHTML(e) + "</li>"; }).join("");
+  $("soon-list").innerHTML = SOON.map(function (e) { return "<li>" + cardHTML(e, true) + "</li>"; }).join("");
   $("foot").textContent = plural(FACETS.total, "event", "events") +
     " on the list, past and present. Dates and prices change, so check the event's page before you go.";
 }
@@ -104,7 +104,7 @@ function paintCatalog(focusFrom) {
   $("tally").innerHTML = "<strong>" + CAT_TOTAL + "</strong> " + (CAT_TOTAL === 1 ? "event" : "events") + (cat.when === "past" ? " already closed" : "") +
     (CAT_ITEMS.length < CAT_TOTAL ? ", showing " + CAT_ITEMS.length : "");
   syncMineChips();
-  $("grid").innerHTML = CAT_ITEMS.length ? CAT_ITEMS.map(cardHTML).join("") : cat.crews ?
+  $("grid").innerHTML = CAT_ITEMS.length ? CAT_ITEMS.map(function (e) { return cardHTML(e); }).join("") : cat.crews ?
     '<div class="empty" style="grid-column:1/-1"><p><strong>Nothing from your crews matches.</strong></p><p class="hint">No crew-mate has marked an event like this as interested, committed or been. Widen the other filters, or turn off Your Crews Catalog to see everything.</p></div>' :
     Object.keys(cat.picks).length ?
     '<div class="empty" style="grid-column:1/-1"><p><strong>No picks match.</strong></p><p class="hint">Widen the other filters, or turn off the dolphin filters to see everything.</p></div>' :
