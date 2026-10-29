@@ -291,6 +291,7 @@ function show(name, focusId) {
   ["catalog", "plan", "submit", "review", "account"].forEach(function (v) {
     if (v === name || (v === "catalog" && name === "event") || (v === "account" && (name === "crews" || name === "planner")) || (v === "review" && (name === "venues" || name === "stats" || name === "sources" || name === "found" || name === "issues" || name === "members" || name === "card" || (name === "approvals" && isAdmin())))) $("nav-" + v).setAttribute("aria-current", "page"); else $("nav-" + v).removeAttribute("aria-current");
   });
+  paintMast(name);
   window.scrollTo(0, 0);
   // CC-117: leaving the event view some other way than Back: its #e/<id> comes off the address
   if (name !== "event" && /^#e\//.test(location.hash)) { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} }
@@ -300,6 +301,31 @@ function show(name, focusId) {
   var h = $(focusId || VIEWS[name]); if (h) h.focus({ preventScroll: true });
   track("view", name);
 }
+// ---------- the masthead (CC-137) ----------
+// Full on home and the join page, compact on every other view. On a phone the nav is a sheet the hamburger opens;
+// Escape, a click outside or tabbing out closes it. The date is Chicago's, like the listings.
+var MAST_PHONE = window.matchMedia("(max-width: 960px)");
+$("mast-date").textContent = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "America/Chicago" }).format(new Date());
+function paintMast(name) {
+  $("mast").classList.toggle("mast-full", name === "home" || name === "join");
+  $("me-menu").querySelectorAll("[data-me]").forEach(function (b) { // the you menu shows the current page in bold
+    if (b.getAttribute("data-me") === name) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+  });
+  closeMastSheet(false);
+}
+function mastSheetOpen() { return $("mast").classList.contains("open"); }
+function closeMastSheet(refocus) {
+  if (!mastSheetOpen()) return;
+  $("mast").classList.remove("open"); $("mast-burger").setAttribute("aria-expanded", "false");
+  if (refocus) $("mast-burger").focus();
+}
+$("mast-burger").addEventListener("click", function () {
+  if (mastSheetOpen()) { closeMastSheet(false); return; }
+  $("mast").classList.add("open"); $("mast-burger").setAttribute("aria-expanded", "true");
+});
+document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && mastSheetOpen()) closeMastSheet(true); });
+document.addEventListener("click", function (ev) { if (!$("mast").contains(ev.target)) closeMastSheet(false); });
+$("mast").addEventListener("focusout", function (ev) { if (ev.relatedTarget && !$("mast").contains(ev.relatedTarget)) closeMastSheet(false); });
 // A click out to an event's own page (tickets, showtimes) from a card or an outing (CC-68).
 document.addEventListener("click", function (ev) {
   var a = ev.target.closest('a[target="_blank"]');
