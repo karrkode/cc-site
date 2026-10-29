@@ -76,6 +76,10 @@ jobs:
           # CC-126: chiculturecrew.com/invite, the same page with the invite page's preview tags
           aws s3 cp invite "s3://$BUCKET/invite" --cache-control no-cache --content-type "text/html; charset=utf-8"
           aws s3 cp 404.html "s3://$BUCKET/404.html" --cache-control max-age=300 --content-type "text/html; charset=utf-8"
+          # CC-150: then remove what the site no longer has (a file deleted from public/). The uploads above made
+          # every size match, so --size-only copies nothing here; it only deletes keys that aren't in build/site.
+          # css/ and js/ keep their names (the hash is a ?v= query), so nothing a cached page links goes away.
+          aws s3 sync . "s3://$BUCKET/" --delete --size-only
 
       - name: Refresh CloudFront
         run: |
