@@ -189,6 +189,29 @@
 </dialog>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <symbol id="chi-star" viewBox="0 0 24 24"><polygon points="12,1 14.5,7.67 21.53,6.5 17,12 21.53,17.5 14.5,16.33 12,23 9.5,16.33 2.47,17.5 7,12 2.47,6.5 9.5,7.67"></polygon></symbol>
+  <!-- CC-139: the dolphin (brief section 4; drawn in design/dolphin-editor.html). #dolphin-art is the one drawing, level;
+       #dolphin leans it −21° for your own marks (lake = interested, ink = going), and #dolphin-ring puts it through the
+       host's 3-D gold ring with the gold star. Colours come from the .mark-* classes in site.css. CC-144 can animate
+       .dolphin-lean. -->
+  <defs>
+    <clipPath id="dolphin-clip"><path d="M94.8 27.4 C91.8 27.12 86.5 26.8 84 26 C82 18.7 76 14.7 66 16 C62 15.5 59 15.5 57 15.6 L50.4 4.4 C51.4 9.4 48 13 45 16.5 C34 19 24 25 17 33 C13 30 8 27 3 27 C7 31 10 35 12 38 C9 42 6 46 5 51 C11 47 16 42 20 39 C30 36 42 34 52 34.5 C54 38 55 42 52 47 C57 44 61 39 63 35 C72 35.6 80 35.4 85 33.88 C88 33 91 32.4 95.8 31.9 C102.8 31.3 101.8 27.4 94.8 27.4 Z"/></clipPath>
+    <radialGradient id="gold-tube" gradientUnits="userSpaceOnUse" cx="50" cy="50" r="48.5"><stop offset="0.9175" style="stop-color:var(--gold-shade)"/><stop offset="0.9464" style="stop-color:var(--gold-hi)"/><stop offset="0.9712" style="stop-color:var(--gold)"/><stop offset="1" style="stop-color:var(--gold-deep)"/></radialGradient>
+    <linearGradient id="gold-light" gradientUnits="userSpaceOnUse" x1="15" y1="10" x2="85" y2="90"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#5a3c00" stop-opacity=".28"/></linearGradient>
+    <g id="dolphin-art">
+      <path class="dol-edge" d="M94.8 27.4 C91.8 27.12 86.5 26.8 84 26 C82 18.7 76 14.7 66 16 C62 15.5 59 15.5 57 15.6 L50.4 4.4 C51.4 9.4 48 13 45 16.5 C34 19 24 25 17 33 C13 30 8 27 3 27 C7 31 10 35 12 38 C9 42 6 46 5 51 C11 47 16 42 20 39 C30 36 42 34 52 34.5 C54 38 55 42 52 47 C57 44 61 39 63 35 C72 35.6 80 35.4 85 33.88 C88 33 91 32.4 95.8 31.9 C102.8 31.3 101.8 27.4 94.8 27.4 Z"/>
+      <path class="dol-body" d="M94.8 27.4 C91.8 27.12 86.5 26.8 84 26 C82 18.7 76 14.7 66 16 C62 15.5 59 15.5 57 15.6 L50.4 4.4 C51.4 9.4 48 13 45 16.5 C34 19 24 25 17 33 C13 30 8 27 3 27 C7 31 10 35 12 38 C9 42 6 46 5 51 C11 47 16 42 20 39 C30 36 42 34 52 34.5 C54 38 55 42 52 47 C57 44 61 39 63 35 C72 35.6 80 35.4 85 33.88 C88 33 91 32.4 95.8 31.9 C102.8 31.3 101.8 27.4 94.8 27.4 Z"/>
+      <path class="dol-belly" clip-path="url(#dolphin-clip)" d="M101.8 29.42 L100.05 29.42 C92.4 30.8 89.9 31.1 86.7 29.7 C84.1 32.6 75 33.2 66 33.4 C50 33.6 34 34.1 18 37.2 L20 41 C34 37.4 50 36.4 62 35.6 C76 36.5 88 37.5 101.8 37.5 Z"/>
+      <path class="dol-mouth" d="M100.05 29.42 C92.4 30.8 89.9 31.1 86.7 29.7"/>
+      <circle class="dol-eye" cx="75.8" cy="23.2" r="3.2"/><circle class="dol-pupil" cx="75.1" cy="23.5" r="1.9"/><circle class="dol-glint" cx="75.77" cy="22.74" r="0.61"/>
+    </g>
+  </defs>
+  <symbol id="dolphin" viewBox="4.59 4.58 94.67 62.36"><g class="dolphin-lean" transform="rotate(-21 50 28)"><use href="#dolphin-art"/></g></symbol>
+  <symbol id="dolphin-ring" viewBox="-3 -7.5 111 107.5">
+    <circle class="ring-tube" cx="50" cy="50" r="46.5"/><circle class="ring-light" cx="50" cy="50" r="46.5"/>
+    <circle class="ring-rim" cx="50" cy="50" r="48.5" stroke-width="1.5"/><circle class="ring-rim" cx="50" cy="50" r="44.5" stroke-width="1.2"/>
+    <g class="dolphin-lean" transform="translate(50 52) rotate(-21) scale(1.15) translate(-50 -28)"><use href="#dolphin-art"/></g>
+    <path class="star-gap" d="M70.38 -4.79 L73.63 2.58 L81.64 1.71 L76.88 8.21 L81.64 14.71 L73.63 13.84 L70.38 21.21 L67.13 13.84 L59.13 14.71 L63.88 8.21 L59.13 1.71 L67.13 2.58 Z"/><path class="star-shade" d="M70.38 8.21 L70.38 -4.79 L73.63 2.58 Z"/><path class="star-lit" d="M70.38 8.21 L73.63 2.58 L81.64 1.71 Z"/><path class="star-shade" d="M70.38 8.21 L81.64 1.71 L76.88 8.21 Z"/><path class="star-lit" d="M70.38 8.21 L76.88 8.21 L81.64 14.71 Z"/><path class="star-shade" d="M70.38 8.21 L81.64 14.71 L73.63 13.84 Z"/><path class="star-lit" d="M70.38 8.21 L73.63 13.84 L70.38 21.21 Z"/><path class="star-shade" d="M70.38 8.21 L70.38 21.21 L67.13 13.84 Z"/><path class="star-lit" d="M70.38 8.21 L67.13 13.84 L59.13 14.71 Z"/><path class="star-shade" d="M70.38 8.21 L59.13 14.71 L63.88 8.21 Z"/><path class="star-lit" d="M70.38 8.21 L63.88 8.21 L59.13 1.71 Z"/><path class="star-shade" d="M70.38 8.21 L59.13 1.71 L67.13 2.58 Z"/><path class="star-lit" d="M70.38 8.21 L67.13 2.58 L70.38 -4.79 Z"/><path class="star-rim" d="M70.38 -4.79 L73.63 2.58 L81.64 1.71 L76.88 8.21 L81.64 14.71 L73.63 13.84 L70.38 21.21 L67.13 13.84 L59.13 14.71 L63.88 8.21 L59.13 1.71 L67.13 2.58 Z"/>
+  </symbol>
 </svg>
 
 <!-- CC-137: the masthead is the Chicago flag on the lake. Home (and the join page) get the full one: the date, the
@@ -307,8 +330,8 @@
         <div class="chip-row">
           <div class="chips" id="type-chips" role="group" aria-label="Type of event"></div>
           <div class="chips mine-chips" id="mine-chips" role="group" aria-label="Culture Crew picks">
-            <button type="button" class="chip mine" data-mine="interested" aria-pressed="false" aria-label="Events yours truly is interested in"><img src="img/dolphin-interested.webp" width="24" height="24" alt=""><span class="tip" aria-hidden="true">Events yours truly is interested in.</span></button>
-            <button type="button" class="chip mine" data-mine="going" aria-pressed="false" aria-label="Events yours truly is committed to!"><img src="img/dolphin-going.webp" width="28" height="28" alt=""><span class="tip" aria-hidden="true">Events yours truly is committed to!</span></button>
+            <button type="button" class="chip mine" data-mine="interested" aria-pressed="false" aria-label="Events yours truly is interested in"><svg class="mark mark-int" aria-hidden="true"><use href="#dolphin"></use></svg><span class="tip" aria-hidden="true">Events yours truly is interested in.</span></button>
+            <button type="button" class="chip mine" data-mine="going" aria-pressed="false" aria-label="Events yours truly is committed to!"><svg class="mark mark-going" aria-hidden="true"><use href="#dolphin"></use></svg><span class="tip" aria-hidden="true">Events yours truly is committed to!</span></button>
           </div>
           <div class="chips mine-chips" id="crews-chips" role="group" aria-label="Your crews" hidden>
             <button type="button" class="chip" id="crews-chip" aria-pressed="false">Your Crews Catalog</button>

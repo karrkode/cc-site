@@ -67,7 +67,7 @@ jobs:
           # content hash (stamp_assets.py), so browsers may keep them for a year (CC-65).
           aws s3 cp css "s3://$BUCKET/css/" --recursive --cache-control "public, max-age=31536000, immutable" --content-type "text/css; charset=utf-8"
           aws s3 cp js "s3://$BUCKET/js/" --recursive --cache-control "public, max-age=31536000, immutable" --content-type "text/javascript; charset=utf-8"
-          # images (the plan dolphins, CC-55): a day in browsers; the invalidation below refreshes CloudFront
+          # images (the link preview): a day in browsers; the invalidation below refreshes CloudFront
           aws s3 cp img "s3://$BUCKET/img/" --recursive --cache-control max-age=86400
           # index.html is revalidated on every visit; the 404 page can be cached briefly
           aws s3 cp index.html "s3://$BUCKET/index.html" --cache-control no-cache --content-type "text/html; charset=utf-8"
