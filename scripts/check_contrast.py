@@ -13,7 +13,7 @@ from pathlib import Path
 
 CSS = Path(__file__).resolve().parents[1] / "public" / "css" / "site.css"
 
-TEXT, NON_TEXT = 4.5, 3.0
+TEXT, LARGE, NON_TEXT = 4.5, 3.0, 3.0  # LARGE: text of 24px, or 18.66px bold, and up
 PAIRS = [  # (foreground, background, minimum, where it's used)
     ("text", "page", TEXT, "all text"),
     ("text", "surface", TEXT, "text on panels"),
@@ -41,6 +41,13 @@ PAIRS = [  # (foreground, background, minimum, where it's used)
     ("cat-theater", "page", NON_TEXT, "theater field"),
     ("cat-music", "page", NON_TEXT, "music field"),
     ("cat-art", "page", NON_TEXT, "art field"),
+    # CC-138: where text crosses a water line (white at the line's opacity over the field, written "lake+13%")
+    ("on-lake", "lake+13%", TEXT, "masthead text across its water"),
+    ("on-lake-muted", "lake+13%", TEXT, "muted masthead text across its water"),
+    ("stripe", "lake+13%", NON_TEXT, "active nav across the masthead's water"),
+    ("on-cat", "cat-theater+24%", LARGE, "poster title across a theater poster's water"),
+    ("on-cat", "cat-music+24%", LARGE, "poster title across a music poster's water"),
+    ("on-cat", "cat-art+24%", LARGE, "poster title across an art poster's water"),
 ] + [("dot-ink", f"dot-{i}", TEXT, "initials on a crew dot") for i in range(6)]
 
 
@@ -64,6 +71,17 @@ def luminance(hex_colour: str) -> float:
     return 0.2126 * out[0] + 0.7152 * out[1] + 0.0722 * out[2]
 
 
+def colour(tokens: dict[str, str], name: str) -> str:
+    """A token's #RRGGBB, or for "token+N%" the token under white at N% opacity (a water line over it)."""
+    m = re.fullmatch(r"(.+)\+(\d+)%", name)
+    if not m:
+        return tokens[name]
+    base, alpha = tokens[m.group(1)].strip().lstrip("#"), int(m.group(2)) / 100
+    if not re.fullmatch(r"[0-9A-Fa-f]{6}", base):
+        raise ValueError(f"not a #RRGGBB colour: {base}")
+    return "#" + "".join(f"{round(int(base[i:i + 2], 16) * (1 - alpha) + 255 * alpha):02X}" for i in (0, 2, 4))
+
+
 def ratio(a: str, b: str) -> float:
     la, lb = sorted((luminance(a), luminance(b)), reverse=True)
     return (la + 0.05) / (lb + 0.05)
@@ -80,11 +98,11 @@ def main() -> int:
     for name, tokens in themes.items():
         for fg, bg, minimum, where in PAIRS:
             try:
-                r = ratio(tokens[fg], tokens[bg])
+                r = ratio(colour(tokens, fg), colour(tokens, bg))
             except (KeyError, ValueError) as e:
                 problems.append(f"{name}: {fg} on {bg}: {e}")
                 continue
-            line = f"{name:20} {fg:>15} on {bg:<12} {r:5.2f}  (needs {minimum}, {where})"
+            line = f"{name:20} {fg:>15} on {bg:<16} {r:5.2f}  (needs {minimum}, {where})"
             if r < minimum:
                 problems.append(line)
             else:

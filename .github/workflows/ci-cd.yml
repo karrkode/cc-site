@@ -25,6 +25,8 @@ jobs:
         run: python3 scripts/check_pages.py
       - name: Every colour pair meets WCAG AA in both themes
         run: python3 scripts/check_contrast.py
+      - name: Each event always gets the same water pattern
+        run: node scripts/test_water.js
       - name: Asset links can be stamped for deploy
         run: python3 scripts/stamp_assets.py
       - name: JavaScript syntax

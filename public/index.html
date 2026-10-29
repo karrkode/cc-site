@@ -194,6 +194,7 @@
 <!-- CC-137: the masthead is the Chicago flag on the lake. Home (and the join page) get the full one: the date, the
      wordmark between two stripes, and the tagline. Every other view gets the compact one. On a phone the nav is a sheet. -->
 <header class="mast mast-full" id="mast">
+  <canvas class="water" aria-hidden="true" data-water="mast" data-seed="5" data-kind="theater"></canvas><!-- CC-138: the lake's water, behind the masthead -->
   <div class="wrap mast-in">
     <p class="mast-date" id="mast-date"></p>
     <button class="brand" type="button" id="brand" data-go="home" aria-label="Culture Crew">Culture<svg class="star" aria-hidden="true"><use href="#chi-star"></use></svg>Crew</button>
@@ -857,6 +858,7 @@
 <!-- The page's scripts, in order (see js/core.js). ?v=dev is replaced with each file's hash when deployed. -->
 <script src="js/core.js?v=dev"></script>
 <script src="js/util.js?v=dev"></script>
+<script src="js/water.js?v=dev"></script>
 <script src="js/catalog.js?v=dev"></script>
 <script src="js/planner.js?v=dev"></script>
 <script src="js/account.js?v=dev"></script>

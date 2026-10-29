@@ -6,7 +6,7 @@ serves this site locally on http://localhost:4173.
 
 ## Code
 
-- `public/js/*.js` are plain scripts loaded in order (core, util, catalog, planner, account, crews, submit, admin,
+- `public/js/*.js` are plain scripts loaded in order (core, util, water, catalog, planner, account, crews, submit, admin,
   hours, found, issues, photos, approvals, start). They share one global scope, so check that a name is free before
   adding it.
 - `start.js` routes on the URL hash (`#account`, `#submit`, `#approvals`, ...). Links in emails use these.
