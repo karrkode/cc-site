@@ -368,6 +368,12 @@ a { color: inherit; }
 
 footer { margin-top: clamp(40px, 7vw, 80px); padding-block: 24px 32px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.875rem; }
 footer p { max-width: 70ch; }
+footer .roundup-links { margin-top: 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; } /* CC-109 */
+footer .roundup-links a { display: inline-flex; align-items: center; min-height: 44px; color: var(--lead); }
+.queue-item.roundup { align-items: end; }
+.queue-item.roundup .alt-text { flex: 1 1 100%; }
+.queue-item.roundup .field { flex: 1 1 320px; }
+.queue-item.roundup textarea { display: block; width: 100%; background: var(--page); color: var(--text); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 9px 10px; font: inherit; resize: vertical; }
 footer .privacy { margin-top: 8px; font-size: 0.8125rem; } /* CC-68: how visits are counted */
 .view { animation: rise 0.28s ease both; }
 @keyframes rise { from { transform: translateY(8px); } to { transform: none; } }

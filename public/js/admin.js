@@ -30,7 +30,7 @@ function updateReviewCount(n) {
 var EMPTY = { "review-list": "Nothing waiting for review.", "scheduled-list": "Nothing scheduled.", "withdrawn-list": "Nothing withdrawn.",
   "caught-list": "Nothing caught." };
 function renderReview() {
-  renderScheduled(); renderWithdrawn(); renderCaught(); loadSubmissionRules(); renderOtherTypes(); renderRemoved();
+  renderScheduled(); renderWithdrawn(); renderCaught(); loadSubmissionRules(); loadRoundups(); renderOtherTypes(); renderRemoved();
   $("review-list").innerHTML = '<p class="hint">Loading…</p>';
   api("/admin/events?limit=500").then(readJSON).then(function (res) {
     if (!res.ok) { $("review-list").innerHTML = '<p class="form-error">' + esc(errorText(res)) + "</p>"; return; }
@@ -201,6 +201,41 @@ $("srules-list").addEventListener("click", function (ev) {
     $("edit-live").textContent = "Deleted the rule. Submissions it already caught stay rejected.";
     loadSubmissionRules("#srules-title");
   }, function () { b.disabled = false; });
+});
+
+// ---------- roundup pages' intros (CC-109) ----------
+function loadRoundups(focusSel) {
+  api("/admin/roundups").then(readJSON).then(function (res) {
+    if (!res.ok) { $("roundups-list").innerHTML = '<p class="form-error">' + esc(errorText(res)) + "</p>"; return; }
+    $("roundups-list").innerHTML = res.body.map(function (r) {
+      var id = "rup-" + r.slug;
+      return '<form class="queue-item roundup" data-roundup="' + esc(r.slug) + '" novalidate><div class="alt-text">' +
+        '<p class="alt-title"><a href="' + esc(r.path) + '" target="_blank" rel="noopener">' + esc(r.group + ": " + r.name) +
+        '<span class="sr-only"> (opens in a new tab)</span></a></p>' +
+        '<p class="alt-meta">' + plural(r.count, "event", "events") + " today · " + (r.custom ? "Your intro" : "The default intro") + "</p></div>" +
+        '<div class="field"><label for="' + id + '">Intro</label><textarea id="' + id + '" rows="3" maxlength="600" placeholder="' + esc(r.default_intro) + '">' +
+        esc(r.custom ? r.intro : "") + "</textarea></div>" +
+        '<div class="row"><button class="btn" type="submit">Save</button>' +
+        (r.custom ? '<button class="btn ghost" type="button" data-reset>Use the default</button>' : "") + "</div></form>";
+    }).join("");
+    var f = focusSel && document.querySelector(focusSel); if (f) f.focus();
+  }, function () {});
+}
+function saveRoundup(form, text) {
+  var slug = form.getAttribute("data-roundup");
+  Array.prototype.forEach.call(form.querySelectorAll("button"), function (x) { x.disabled = true; });
+  api("/admin/roundups/" + encodeURIComponent(slug), { method: "PUT", body: { intro: text } }).then(readJSON).then(function (res) {
+    if (!res.ok) { Array.prototype.forEach.call(form.querySelectorAll("button"), function (x) { x.disabled = false; }); $("edit-live").textContent = errorText(res); return; }
+    $("edit-live").textContent = res.body.custom ? "Saved the intro. The page shows it within 10 minutes." : "The page uses the default intro again.";
+    loadRoundups("#rup-" + slug);
+  }, function () { Array.prototype.forEach.call(form.querySelectorAll("button"), function (x) { x.disabled = false; }); });
+}
+$("roundups-list").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var form = ev.target.closest("[data-roundup]"); if (form) saveRoundup(form, form.querySelector("textarea").value);
+});
+$("roundups-list").addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-reset]"); if (b) saveRoundup(b.closest("[data-roundup]"), "");
 });
 
 // ---------- venues (admins, CC-57) ----------

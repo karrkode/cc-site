@@ -41,7 +41,7 @@ The site does not have a build step. At deploy, a script adds a content hash to 
 Thus, browsers can keep these files for one year and still get each new version.
 
 Amazon S3 keeps the files.
-Amazon CloudFront sends the files to the user's browser. Three paths come from the API instead (CC-108): `/e/*` (a plain HTML page per event, for search engines and link previews), `/sitemap.xml` and `/robots.txt`. CloudFront caches them for up to 10 minutes. Inside the site, a card opens the event view at `#e/<id>` (CC-117): the details, your plans and your crews', with Tickets as the way out. Its Share button gives the `/e/` page, whose main button opens the view. Both show public takes (CC-112): Cultural Journal entries their members chose to share from #planner ("Share publicly" saves at once), which admins can hide from the event view.
+Amazon CloudFront sends the files to the user's browser. Some paths come from the API instead: `/e/*` (CC-108: a plain HTML page per event, for search engines and link previews), `/chicago/*` (CC-109: roundup pages such as this weekend, free and $25 and under, closing soon, each kind and each side of town, linked from the footer), `/sitemap.xml` and `/robots.txt`. CloudFront caches them for up to 10 minutes. Inside the site, a card opens the event view at `#e/<id>` (CC-117): the details, your plans and your crews', with Tickets as the way out. Its Share button gives the `/e/` page, whose main button opens the view. Both show public takes (CC-112): Cultural Journal entries their members chose to share from #planner ("Share publicly" saves at once), which admins can hide from the event view.
 The join page, `chiculturecrew.com/join` (CC-121), is a copy of `index.html` with its own title and link-preview tags. The deploy makes the copy and puts it in S3 as the object `join`. The page then opens the join view: a sign-up box, with the catalog below it. Locally, nginx serves `index.html` at `/join` (`web.nginx.conf` in cc-backend).
 The invite page, `chiculturecrew.com/invite` (CC-126), is the same join view with the admins' invite text. The deploy puts a copy of `index.html` with the invite page's preview tags in S3 as the object `invite`. An admin's "Invite a friend" opens this page. The visits and sign-ups count with the join page, with the source `invite` and the medium `link` or `qr`.
 The browser runs the JavaScript.
@@ -87,6 +87,7 @@ The API has these groups of routes:
 | `/crews` | Start a crew, make invite links, invite by email, accept or decline an invite, join, leave. The owner renames, removes members, hands over or deletes. | Signed-in users. Only a crew's members can see it. |
 | `/issues` | Report a problem with the site. Admins see the reports at `/admin/issues`, set a status and add a note. | Signed-in users report. Admins review. |
 | `/e/{id}-{title}`, `/sitemap.xml`, `/robots.txt` | Plain HTML event pages with schema.org Event data, the sitemap of live events, and robots.txt (CC-108). Public details only. | Anyone, through chiculturecrew.com |
+| `/chicago/`, `/chicago/{slug}` | Plain HTML roundup pages (CC-109), each with an intro admins edit on the Review page (`/admin/roundups`). | Anyone, through chiculturecrew.com. Intros: admins only |
 | `/traffic` | Count a page view, a click to an event's page, or a planned outing, and where the visit came from (a tagged link or the referring site's domain). No cookies. | All visitors (the site sends it) |
 
 ## 4. The database
@@ -111,7 +112,7 @@ The database has these main tables:
 - `discovery_sources`, `discovered_items`, `discovery_checks` and `discovery_skip_rules`: event discovery (section 5).
 - `traffic_counts`, `traffic_visitors`, `traffic_visitor_days`, `traffic_source_visits`, `traffic_source_counts`, `traffic_join_visits`, `traffic_join_signups` and `user_active_days`: the counts for Site stats. The join tables (CC-121) keep the join page's visits and sign-ups by source. A sign-up counts for the join page when the visit came by `/join`. The count is not connected to the account. These tables do not keep names or IP addresses, and a referring site is kept as its domain only.
 - `issue_reports`: problems that members reported, with a status and an optional note for the member.
-- `app_settings`: settings that an admin can change, for example the discovery budget.
+- `app_settings`: settings that an admin can change, for example the discovery budget and the roundup intros (CC-109).
 - `sheet_syncs`: the history of the old Google Sheet sync. Nothing writes to this table now.
 
 ## 5. Event discovery
