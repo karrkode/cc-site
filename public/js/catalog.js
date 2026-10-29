@@ -307,67 +307,93 @@ function evSlug(title) { // as the API makes it (app/seo.py slug): "Dead Girl's 
   return s || "event";
 }
 function evShareUrl(e) { return location.origin + "/e/" + e.id + "-" + evSlug(e.title); }
-// "Maya C. is going" / "Ben K. and Jordan R. have been", for one crew
-function evCrewLine(c) {
-  function who(names) {
-    names = names.map(shortName);
-    return names.length > 2 ? names.slice(0, -1).join(", ") + " and " + names[names.length - 1] : names.join(" and ");
+// One crew under Your crews (CC-142): a line each for who's going, interested and been, with their dots (circles are
+// people). "" when nobody from it has the event on their list.
+function evCrewHTML(c) {
+  function line(names, one, many) {
+    if (!names.length) return "";
+    var short = names.map(shortName);
+    var who = short.length > 2 ? short.slice(0, -1).join(", ") + " and " + short[short.length - 1] : short.join(" and ");
+    return '<li class="ev-who"><span class="dots" aria-hidden="true">' + names.slice(0, 3).map(function (n) {
+      return '<span class="face tone-' + crewTone(n) + '">' + esc(initials(n)) + "</span>";
+    }).join("") + "</span><span>" + esc(who + (names.length === 1 ? one : many)) + "</span></li>";
   }
-  var parts = [];
-  if (c.going.length) parts.push(who(c.going) + (c.going.length === 1 ? " is going" : " are going"));
-  if (c.interested.length) parts.push(who(c.interested) + (c.interested.length === 1 ? " is interested" : " are interested"));
-  if (c.been.length) parts.push(who(c.been) + (c.been.length === 1 ? " has been" : " have been"));
-  return parts.join(" · ");
+  var lines = line(c.going, " is going", " are going") + line(c.interested, " is interested", " are interested") + line(c.been, " has been", " have been");
+  return lines ? '<div class="ev-crew"><h3>' + esc(c.crew_name) + "</h3><ul>" + lines + "</ul></div>" : "";
 }
 // CC-112: members' shared journal entries, newest first: three words, the review, who and whether they'd recommend
 // it. Admins also see hidden ones (marked) and can hide or unhide each; the member's entry isn't touched.
 function evTakesHTML(e) {
   if (!e.takes || !e.takes.length) return "";
   var admin = isAdmin();
-  return '<section class="section ev-takes" aria-labelledby="ev-takes-h"><h2 id="ev-takes-h">From people who went</h2><ol>' +
+  return '<section class="ev-takes" aria-labelledby="ev-takes-h"><h2 id="ev-takes-h">Takes</h2><ol>' +
     e.takes.map(function (t) {
       return '<li class="ev-take' + (t.hidden ? " is-hidden" : "") + '">' +
         '<p class="ev-take-words">' + t.words.split(" ").map(function (w) { return "<span>" + esc(w) + "</span>"; }).join("") + "</p>" +
         (t.review ? '<p class="ev-take-review">' + esc(t.review) + "</p>" : "") +
         '<p class="ev-take-by"><b>' + esc(t.name) + "</b>" + (t.recommend ? " · Would recommend" : "") + "</p>" +
-        (admin && t.user_id ? '<div class="row ev-take-admin">' + (t.hidden ? '<span class="pill">Hidden from everyone but admins</span>' : "") +
+        (admin && t.user_id ? '<div class="row ev-take-admin">' + (t.hidden ? '<span class="hint">Hidden from everyone but admins</span>' : "") +
           '<button class="btn ghost" type="button" data-take-hide="' + esc(t.user_id) + '" data-hidden="' + (t.hidden ? "0" : "1") + '">' +
           (t.hidden ? "Unhide" : "Hide") + "</button></div>" : "") +
         "</li>";
     }).join("") + "</ol></section>";
 }
+// CC-142: Interested and Going as buttons on the page (the cards' picker, laid out in it: the same data-myplan-*
+// buttons, so account.js saves them). A run picks its day in the date field; a one-night event needs none.
+function evPlanHTML(e) {
+  var mine = MYPLANS[e.id], range = goingRange(e), id = esc(e.id);
+  if (WENT[e.id] || (!mine && !range)) return ""; // been already, or closed with nothing planned
+  var going = "";
+  if (range) {
+    var one = same(range[0], range[1]), on = !!mine && mine.status === "going";
+    going = '<button class="btn ghost" type="button" data-myplan-going="' + id + '"' + (one ? ' data-date="' + isoDate(range[0]) + '"' : "") +
+      ' aria-pressed="' + on + '">' + markHTML("going") + "Going</button>" +
+      (one ? "" : '<input type="date" id="ev-going-day" aria-label="The day you’re going" min="' + isoDate(range[0]) + '" max="' + isoDate(range[1]) +
+        '" value="' + esc(on && mine.date ? mine.date : isoDate(range[0])) + '">');
+  }
+  return '<div class="ev-plan myplan" role="group" aria-label="Your plan for ' + esc(e.title) + '"><div class="row">' +
+    '<button class="btn ghost" type="button" data-myplan-set="' + id + '" aria-pressed="' + (!!mine && mine.status === "interested") + '">' +
+    markHTML("interested") + "Interested</button>" + going + "</div>" +
+    (mine ? '<p class="ev-said">' + esc(myplanSaid(mine)) + '. <button class="textbtn" type="button" data-myplan-clear="' + id + '">Clear plan</button></p>' : "") +
+    '<p class="form-error" role="alert"></p></div>';
+}
+// The page: "← The listings", the poster, then the facts and actions (and takes) beside your crews. The poster is one
+// element, data-poster="<id>", for CC-144's tile-becomes-poster transition.
 function eventViewHTML(e) {
   var st = eventStatus(e), past = isPast(e), facts = [["When", dateText(e)], ["Price", costText(e)]];
   var times = e.runDates.length ? runDatesText(e) : SHOW_TYPES[e.type] && !oneNight(e) && !past ? showDaysText(e.sched.weekly, e.sched.weeks) : "";
   if (times) facts.splice(1, 0, ["Shows", times]);
-  var html = '<div class="card-top' + catClass(e.type) + '"><span class="kind">' + esc(e.label) + '</span><span class="pill ' + st.tone + '">' + esc(st.label) + "</span></div>" +
+  var html = '<div class="poster water-field' + catClass(e.type) + '" data-poster="' + esc(e.id) + '">' + waterHTML(e, "poster") +
+    '<div class="poster-in"><p class="poster-k">' + esc(e.label) + " · " + esc(st.label) + "</p>" +
     '<h1 id="event-title" tabindex="-1">' + esc(e.title) + "</h1>" +
-    '<p class="ev-place">' + placeHTML(e) + "</p>" +
+    '<p class="poster-where">' + esc(placeText(e)) + "</p></div></div>";
+  // data-card: the card buttons (I've been, crew sharing, a photo, Edit) find their event, and redraw it, the same way
+  // here; .ev-panel keeps account.js from swapping it for a card
+  var main = '<div class="ev-main ev-panel" data-card="' + esc(e.id) + '">' +
     (past ? '<p class="ev-closed">This run has closed.</p>' : "") +
     '<dl class="ev-facts">' + facts.map(function (f) { return "<dt>" + esc(f[0]) + "</dt><dd>" + esc(f[1]) + "</dd>"; }).join("") + "</dl>" +
     (e.suggestedBy ? '<p class="credit">Suggested by ' + esc(e.suggestedBy) + "</p>" : "") +
-    '<div class="row ev-actions">' +
+    '<div class="ev-actions">' +
       (e.url && !past ? '<a class="btn" href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">Tickets and showtimes ↗</a>' : "") +
       '<button class="btn ghost" type="button" id="ev-share">Share</button>' +
     "</div>" +
     '<input class="share-url" id="ev-share-url" type="text" readonly aria-label="Link to this event" hidden>' +
     '<p class="hint small" id="ev-share-msg" role="status"></p>';
+  var side = '<aside class="ev-side" aria-labelledby="ev-crews-h"><h2 id="ev-crews-h">Your crews</h2>' +
+    (e.pick ? '<div class="ev-crew"><p class="ev-who">' + markHTML("host") + "<span>" + esc(pickText(e.pick)) + "</span></p></div>" : "");
   if (!AUTH.user) {
-    return html + evTakesHTML(e) + '<div class="panel ev-signin"><p>Sign in to mark it interested or going, and to see who from your crews is going.</p>' +
-      '<div class="row"><button class="btn" type="button" id="ev-signin-btn">Sign in or create an account</button></div></div>';
+    main += "</div>";
+    side += '<p class="hint">Sign in to mark it interested or going, and to see who from your crews is going.</p>' +
+      '<button class="btn" type="button" id="ev-signin-btn">Sign in or create an account</button></aside>';
+  } else {
+    var more = (goingLater(e) && !WENT[e.id] ? "" : wentHTML(e)) + (WENT[e.id] ? photoButtonHTML(e) : crewShareToggleHTML(e)) +
+      (isAdmin() ? editButtonHTML(e, "went") : "");
+    main += evPlanHTML(e) + (more ? '<div class="ev-more">' + more + (WENT[e.id] ? "" : crewShareHTML(e)) + "</div>" : "") + "</div>";
+    var crews = e.crewPlans.map(evCrewHTML).join("");
+    side += crews || '<p class="hint">' + (CREWS.length ? "Nobody from your crews has this on their list yet." : "Start a crew to see who's going with you.") + "</p>";
+    side += "</aside>";
   }
-  // data-card: the card buttons find their event, and redraw it, the same way here (account.js redrawCards)
-  html += '<section class="section ev-panel" data-card="' + esc(e.id) + '" aria-labelledby="ev-mine-h"><h2 id="ev-mine-h">Your plans</h2>' +
-    (MYPLANS[e.id] ? '<p class="hint">' + esc(myplanSaid(MYPLANS[e.id])) + ".</p>" : WENT[e.id] ? "<p class=\"hint\">You've been.</p>" : "") +
-    cardActionsHTML(e) + "</section>";
-  var crews = e.crewPlans.filter(function (c) { return evCrewLine(c); });
-  html += '<section class="section ev-crews" aria-labelledby="ev-crews-h"><h2 id="ev-crews-h">Your crews</h2>' +
-    (crews.length ? '<ul class="ev-crew-list">' + crews.map(function (c) {
-      return '<li><span class="ev-crew-name">' + esc(c.crew_name) + "</span> " + esc(evCrewLine(c)) + "</li>";
-    }).join("") + "</ul>" :
-      '<p class="hint">' + (CREWS.length ? "Nobody from your crews has this on their list yet." : "Start a crew to see who's going with you.") + "</p>") +
-    "</section>";
-  return html + evTakesHTML(e);
+  return html + '<div class="ev-cols">' + main + side + evTakesHTML(e) + "</div>";
 }
 function renderEventView() {
   var e = EV.e && EV.e.id === EV.id ? EV.e : KNOWN[EV.id]; // a list fetched before sign-in may have replaced KNOWN's copy
@@ -375,6 +401,7 @@ function renderEventView() {
   var a = document.activeElement, first = !$("event-title"); // the details weren't there yet: focus waited on Back
   var keep = !a || a === document.body || a.id === "event-title" || (first && a.id === "ev-back");
   $("ev-body").innerHTML = eventViewHTML(e);
+  paintWater($("ev-body"));
   if (keep && visible("event")) $("event-title").focus({ preventScroll: true });
 }
 // The event from the API: its details, and (signed in) your crews' plans, which depend on who's signed in.
@@ -406,6 +433,7 @@ function openEvent(id, push) {
     if (location.hash !== "#e/" + id) { try { history.replaceState(null, "", "#e/" + id); } catch (err) {} } // back from signing in: a reload stays here
   }
   EV.id = id; EV.e = null;
+  $("ev-back").textContent = !EV.from || EV.from === "catalog" || EV.from === "home" ? "← The listings" : "← Back"; // CC-142
   $("ev-status").textContent = KNOWN[id] ? "" : "Loading…";
   $("ev-body").innerHTML = "";
   renderEventView();

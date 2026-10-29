@@ -576,43 +576,90 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
   html.print-card #biz-card { position: fixed; inset: 0; width: 3.5in; height: 2in; max-width: none; border: 0; box-shadow: none; }
   html.print-card, html.print-card body { background: #ffffff !important; }
 }
-/* CC-117: one event, opened from a card */
-.event-view { max-width: 760px; }
-.ev-back-row { padding-top: clamp(14px, 3vw, 24px); }
-#ev-body { display: grid; gap: 14px; padding-top: 12px; }
-#ev-body > .card-top { justify-content: flex-start; }
-#ev-body > .card-top .pill { margin-left: 0; }
-#ev-body h1 { font-family: var(--display); font-weight: 600; font-size: var(--step-3); line-height: 1.08; letter-spacing: -0.02em; overflow-wrap: anywhere; text-wrap: balance; }
-.ev-place { color: var(--muted); font-size: 1.0625rem; }
-.ev-closed { justify-self: start; padding: 4px 10px; background: var(--danger-soft); color: var(--on-danger-soft); font-family: var(--sign); font-weight: 700; font-size: 1rem; }
-.ev-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px 20px; margin: 4px 0; padding: 16px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
-.ev-facts dt { color: var(--muted); font-size: 1rem; font-weight: 600; }
-.ev-facts dd { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.ev-actions a.btn { text-decoration: none; }
+/* CC-142: the event page as a poster (brief section 5). "← The listings", then the poster: the category field with
+   its water, and the kicker, title and venue in white. Then two columns, 7/5: the facts and actions on the left with
+   the takes under them, your crews on the right. On a phone they stack: facts and actions, crews, takes.
+   The poster is one element (.poster, data-poster="<id>") so CC-144 can give it and the row's tile the same
+   view-transition-name for the tile-becomes-poster move. */
+.event-view { max-width: none; }
+.ev-back-row { padding-top: 12px; }
+.ev-back { display: inline-flex; text-decoration: none; align-items: center; min-height: 44px; font-size: 1.1875rem; color: var(--text); }
+.ev-back:hover { text-decoration: underline; }
+#ev-body { display: block; padding-top: 4px; }
+#ev-body > h1 { font-family: var(--display); font-weight: 600; font-size: var(--step-3); line-height: 1.08; letter-spacing: -0.02em; overflow-wrap: anywhere; text-wrap: balance; } /* "That event isn't on the list" */
+#ev-body > p, #ev-body > .row { margin-top: 14px; }
+.poster { display: flex; align-items: flex-end; min-height: 340px; padding: clamp(20px, 4vw, 40px); }
+.poster-in { display: grid; gap: 10px; max-width: 920px; min-width: 0; }
+.poster-k { font-family: var(--sign); font-weight: 700; font-size: 1.25rem; line-height: 1.2; } /* bold 20px: large text across the lines */
+#ev-body .poster h1 { font-family: var(--display); font-weight: 500; font-size: clamp(2.75rem, 7vw, 5.5rem); line-height: 0.98; letter-spacing: -0.02em;
+  color: inherit; overflow-wrap: anywhere; text-wrap: balance; }
+.poster-where { font-size: 1.5rem; line-height: 1.25; } /* 24px: large text across the lines */
+@media (max-width: 560px) { .poster { min-height: 300px; } }
+
+.ev-cols { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); grid-template-areas: "main side" "takes side";
+  column-gap: clamp(32px, 5vw, 64px); margin-top: 32px; align-items: start; }
+.ev-main { grid-area: main; min-width: 0; }
+.ev-side { grid-area: side; min-width: 0; }
+.ev-cols > .ev-takes { grid-area: takes; }
+@media (max-width: 860px) { .ev-cols { grid-template-columns: minmax(0, 1fr); grid-template-areas: "main" "side" "takes"; } .ev-side { margin-top: 48px; } }
+
+/* the facts table: Big Shoulders keys, Newsreader values; a rule above and below, hairlines between */
+.ev-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); margin: 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.ev-facts dt, .ev-facts dd { margin: 0; padding: 12px 0; border-top: 1px solid var(--line); }
+.ev-facts dt:first-of-type, .ev-facts dd:first-of-type { border-top: 0; }
+.ev-facts dt { padding-right: 32px; font-family: var(--sign); font-weight: 700; font-size: 1.125rem; line-height: 1.6; color: var(--muted); }
+.ev-facts dd { font-size: 1.375rem; line-height: 1.3; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ev-closed, .ev-main .credit { margin-top: 12px; font-family: var(--sign); font-weight: 700; font-size: 1.125rem; color: var(--muted); }
+
+/* the actions: all Big Shoulders 19px, 48px high, square. Primary is the lead fill; Interested and Going are
+   secondary (an ink outline) with their dolphins, and pressed is the ink fill. */
+.ev-actions, .ev-plan .row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.ev-actions { margin-top: 24px; }
+.ev-plan { margin-top: 12px; display: grid; gap: 12px; }
+.ev-plan.myplan { position: static; padding: 0; background: none; border: 0; } /* the card's picker, laid out in the page */
+.ev-actions .btn, .ev-plan .btn { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 20px; text-decoration: none; }
+.ev-plan .btn[aria-pressed="true"] { background: var(--text); color: var(--page); box-shadow: none; }
+.ev-plan .btn[aria-pressed="true"] .mark-int { --dol-edge: var(--page); }
+.ev-plan .btn[aria-pressed="true"] .mark-going { --dol-body: var(--page); --dol-mouth: var(--text); }
+.ev-plan .mark { --mark-bg: var(--page); }
+.ev-plan input[type="date"] { min-height: 48px; padding: 0 12px; background: var(--page); color: var(--text); border: 1.5px solid var(--field-line); border-radius: 0;
+  font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; }
+.ev-said { font-family: var(--sign); font-weight: 700; font-size: 1.125rem; }
+.ev-said .textbtn { min-height: 44px; margin-left: 8px; }
+.ev-more { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin-top: 16px; }
+.ev-more .went, .ev-more .textbtn { min-height: 44px; }
+.ev-more .crewshare { top: 100%; left: 0; right: auto; width: min(100%, 360px); } /* the crew-share picker opens under the row */
+
+/* your crews: the host's pick first, then each crew, with its people as dots (circles are people) */
+.ev-side h2, .ev-takes h2 { font-family: var(--sign); font-weight: 700; font-size: 1.375rem; padding-bottom: 6px; border-bottom: 1px solid var(--rule); }
+.ev-crew { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.ev-crew h3 { font-family: var(--sign); font-weight: 700; font-size: 1.125rem; }
+.ev-crew ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.ev-who { display: flex; align-items: center; gap: 10px; font-size: 1.0625rem; line-height: 1.35; }
+.ev-who .dots { display: inline-flex; flex: none; padding-left: 5px; }
+.ev-who .face { width: 26px; height: 26px; margin-left: -5px; font-size: 12px; border-color: var(--page); }
+.ev-who .mark-host { width: 30px; height: 29px; }
+.ev-side .hint { margin-top: 12px; }
+.ev-side .btn { margin-top: 12px; display: inline-flex; align-items: center; min-height: 48px; padding: 0 20px; }
+
+/* takes, under the actions */
+.ev-takes { margin-top: 48px; }
+.ev-takes ol { list-style: none; margin: 0; padding: 0; }
+.ev-take { display: grid; gap: 6px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.ev-take-words { font-family: var(--display); font-style: italic; font-weight: 400; font-size: 1.625rem; line-height: 1.2; overflow-wrap: anywhere; }
+.ev-take-words span + span::before { content: " · "; color: var(--muted); font-style: normal; }
+.ev-take-review { white-space: pre-line; overflow-wrap: anywhere; }
+.ev-take-by { font-family: var(--sign); font-weight: 700; font-size: 1rem; color: var(--muted); }
+.ev-take-by b { color: var(--text); font-weight: 700; }
+#ev-share-url { width: 100%; margin-top: 12px; }
+#ev-share-msg:empty { display: none; }
+#ev-share-msg { margin-top: 8px; }
+.ev-take.is-hidden > p { opacity: 0.55; }
+.ev-take-admin { gap: 10px; align-items: center; }
 /* CC-127: what was sent, on the "it's submitted" panel */
 .sent-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 20px; margin: 0; }
 .sent-facts dt { color: var(--muted); font-size: 1rem; font-weight: 600; }
 .sent-facts dd { margin: 0; overflow-wrap: anywhere; }
-#ev-share-url { width: 100%; }
-.ev-signin { margin-top: 10px; }
-.ev-panel, .ev-crews { margin-top: 18px; gap: 10px; }
-.ev-panel h2, .ev-crews h2 { font-size: var(--step-1); }
-.ev-panel .card-actions { position: static; }
-.ev-crew-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.ev-crew-list li { padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-ctl); }
-.ev-crew-name { font-weight: 700; margin-right: 6px; }
-/* CC-112: public takes, set like a page of short notes: the three words large, a hairline between each */
-.ev-takes { margin-top: 18px; gap: 4px; }
-.ev-takes h2 { font-size: var(--step-1); }
-.ev-takes ol { list-style: none; margin: 0; padding: 0; }
-.ev-take { display: grid; gap: 6px; padding: 16px 0; border-bottom: 1px solid var(--line); }
-.ev-take-words { font-family: var(--display); font-weight: 600; font-size: var(--step-2); line-height: 1.2; letter-spacing: -0.01em; overflow-wrap: anywhere; }
-.ev-take-words span + span::before { content: " · "; color: var(--star); }
-.ev-take-review { white-space: pre-line; overflow-wrap: anywhere; }
-.ev-take-by { color: var(--muted); font-size: 1rem; }
-.ev-take-by b { color: var(--text); font-weight: 600; }
-.ev-take.is-hidden > p { opacity: 0.55; }
-.ev-take-admin { gap: 10px; align-items: center; }
 /* CC-110: visitors and ticket clicks by where they came from */
 .section h3#sources-title, .section h3#join-stats-title { margin: 22px 0 8px; font-size: var(--step-1); }
 #join-summary { margin-bottom: 10px; }
