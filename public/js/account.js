@@ -421,8 +421,9 @@ function renderPlannerPage() {
 $("planner-signin-btn").addEventListener("click", function () { AFTER_SIGN_IN = "planner"; openAccount(); });
 
 // ---------- your name in the header, and its menu (CC-105) ----------
-// Signed in, the header shows your name (or "Your account"); it opens a menu: Crews, My week, Account
-// Settings, Sign out. Arrow keys, Home and End move through it; Escape or Tab closes it and returns to your name.
+// Signed in, the header shows your name (or "Your account"); it opens a menu: Crews, My week, Invite a friend, Account
+// settings, Sign out. Arrow keys, Home and End move through it; Escape or Tab closes it and returns to your name.
+// CC-137: on a phone the menu sits open in the masthead's sheet instead, as a plain list under your name.
 function meName() { var n = AUTH.user && (AUTH.user.display_name || "").trim(); return n || "Your account"; }
 function paintMeMenu() {
   var u = AUTH.user, b = $("nav-account");
@@ -431,8 +432,23 @@ function paintMeMenu() {
   if (u) { b.setAttribute("aria-haspopup", "menu"); b.setAttribute("aria-controls", "me-menu"); b.setAttribute("aria-expanded", "false"); }
   else { b.removeAttribute("aria-haspopup"); b.removeAttribute("aria-controls"); b.removeAttribute("aria-expanded"); }
   closeMeMenu(false);
+  paintMeMode();
 }
-function meItems() { return Array.prototype.slice.call($("me-menu").querySelectorAll('[role="menuitem"]')); }
+function meInSheet() { return MAST_PHONE.matches && !!AUTH.user; }
+function paintMeMode() {
+  var sheet = meInSheet(), menu = $("me-menu");
+  $("nav-account").hidden = sheet;
+  $("me-head").hidden = !sheet; $("me-head").textContent = sheet ? meName() : "";
+  menu.setAttribute("role", sheet ? "group" : "menu");
+  menu.setAttribute("aria-labelledby", sheet ? "me-head" : "nav-account");
+  meItems().forEach(function (it) { // in the sheet each item is a plain button that Tab reaches
+    if (sheet) { it.removeAttribute("role"); it.removeAttribute("tabindex"); } else { it.setAttribute("role", "menuitem"); it.setAttribute("tabindex", "-1"); }
+  });
+  menu.hidden = !sheet;
+  if (!sheet && AUTH.user) $("nav-account").setAttribute("aria-expanded", "false");
+}
+MAST_PHONE.addEventListener("change", paintMeMode);
+function meItems() { return Array.prototype.slice.call($("me-menu").querySelectorAll("[data-me]")); }
 function openMeMenu(at) {
   var menu = $("me-menu"); menu.style.right = ""; menu.hidden = false; $("nav-account").setAttribute("aria-expanded", "true");
   var r = menu.getBoundingClientRect(), edge = 16; // on a phone your name can sit at the left: keep the menu on screen
@@ -440,7 +456,7 @@ function openMeMenu(at) {
   var items = meItems(); items[at === "last" ? items.length - 1 : 0].focus();
 }
 function closeMeMenu(refocus) {
-  if ($("me-menu").hidden) return;
+  if ($("me-menu").hidden || meInSheet()) return;
   $("me-menu").hidden = true; $("nav-account").setAttribute("aria-expanded", "false");
   if (refocus) $("nav-account").focus();
 }
@@ -453,6 +469,7 @@ $("nav-account").addEventListener("keydown", function (ev) {
   if (ev.key === "ArrowDown" || ev.key === "ArrowUp") { ev.preventDefault(); openMeMenu(ev.key === "ArrowUp" ? "last" : "first"); }
 });
 $("me-menu").addEventListener("keydown", function (ev) {
+  if (meInSheet()) return;
   var items = meItems(), i = items.indexOf(document.activeElement);
   var to = ev.key === "ArrowDown" ? (i + 1) % items.length : ev.key === "ArrowUp" ? (i - 1 + items.length) % items.length :
     ev.key === "Home" ? 0 : ev.key === "End" ? items.length - 1 : -1;
@@ -462,7 +479,7 @@ $("me-menu").addEventListener("keydown", function (ev) {
 });
 $("me-menu").addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-me]"); if (!b) return;
-  var go = b.getAttribute("data-me"); closeMeMenu(false);
+  var go = b.getAttribute("data-me"); closeMeMenu(false); closeMastSheet(false);
   if (go === "account") openAccount(); else if (go === "crews") openCrews(); else if (go === "planner") openPlanner();
   else if (go === "invite") inviteFriend(); else signOut();
 });

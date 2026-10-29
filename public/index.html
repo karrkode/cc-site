@@ -191,30 +191,36 @@
   <symbol id="chi-star" viewBox="0 0 24 24"><polygon points="12,1 14.5,7.67 21.53,6.5 17,12 21.53,17.5 14.5,16.33 12,23 9.5,16.33 2.47,17.5 7,12 2.47,6.5 9.5,7.67"></polygon></symbol>
 </svg>
 
-<div class="wrap">
-  <header class="bar">
-    <button class="brand" type="button" id="brand" data-go="home">
-      <svg class="star" aria-hidden="true"><use href="#chi-star"></use></svg>Culture Crew
-    </button>
-    <nav aria-label="Sections">
+<!-- CC-137: the masthead is the Chicago flag on the lake. Home (and the join page) get the full one: the date, the
+     wordmark between two stripes, and the tagline. Every other view gets the compact one. On a phone the nav is a sheet. -->
+<header class="mast mast-full" id="mast">
+  <div class="wrap mast-in">
+    <p class="mast-date" id="mast-date"></p>
+    <button class="brand" type="button" id="brand" data-go="home" aria-label="Culture Crew">Culture<svg class="star" aria-hidden="true"><use href="#chi-star"></use></svg>Crew</button>
+    <button class="burger" type="button" id="mast-burger" aria-label="Menu" aria-expanded="false" aria-controls="mast-nav"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="burger-lines" d="M3 7h18M3 12h18M3 17h18"></path><path class="burger-x" d="M5 5l14 14M19 5 5 19"></path></svg></button>
+    <nav aria-label="Sections" id="mast-nav">
       <button class="navlink" type="button" data-go="catalog" id="nav-catalog">Catalog</button>
       <button class="navlink" type="button" data-go="plan" id="nav-plan">Find an outing</button>
       <button class="navlink" type="button" data-go="submit" id="nav-submit">Submit an event</button>
       <button class="navlink" type="button" data-go="review" id="nav-review" hidden>Review<span class="count" id="review-count"></span></button>
       <span class="me-wrap" id="me-wrap">
         <button class="navlink me-btn" type="button" id="nav-account"><span id="me-name">Sign in</span><span class="count" id="account-count"></span><svg class="me-caret" viewBox="0 0 12 12" aria-hidden="true" hidden><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg></button>
+        <span class="me-head" id="me-head" hidden></span><!-- in the phone sheet, your name heads the you menu (CC-137) -->
         <span class="me-menu" id="me-menu" role="menu" aria-labelledby="nav-account" hidden>
           <button type="button" role="menuitem" tabindex="-1" data-me="crews">Crews<span class="count" id="crews-count"></span></button>
           <button type="button" role="menuitem" tabindex="-1" data-me="planner">My week</button>
           <button type="button" role="menuitem" tabindex="-1" data-me="invite">Invite a friend</button>
-          <button type="button" role="menuitem" tabindex="-1" data-me="account">Account Settings</button>
+          <button type="button" role="menuitem" tabindex="-1" data-me="account">Account settings</button>
           <button type="button" role="menuitem" tabindex="-1" data-me="signout">Sign out</button>
         </span>
       </span>
       <button class="navlink theme-toggle" type="button" id="theme-toggle" aria-pressed="false">Lights down</button>
     </nav>
-  </header>
+    <p class="mast-tag">Chicago theater, music and visual art, kept by the crew</p>
+  </div>
+</header>
 
+<div class="wrap">
   <section class="invite-banner" id="invite-banner" hidden aria-label="Crew invites waiting for you"></section>
   <main>
     <!-- Welcome -->

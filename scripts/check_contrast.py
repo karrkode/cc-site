@@ -30,6 +30,7 @@ PAIRS = [  # (foreground, background, minimum, where it's used)
     ("page", "text", TEXT, "tooltips"),
     ("on-lake", "lake", TEXT, "masthead"),
     ("on-lake-muted", "lake", TEXT, "masthead, muted"),
+    ("stripe", "lake", NON_TEXT, "focus ring and active nav on the masthead"),
     ("on-cat", "cat-theater", TEXT, "text on a theater field"),
     ("on-cat", "cat-music", TEXT, "text on a music field"),
     ("on-cat", "cat-art", TEXT, "text on an art field"),
