@@ -534,6 +534,15 @@ document.addEventListener("click", function (ev) {
 // Made in the browser with qrcode-generator (js/vendor/qrcode.js), so the link (a secret token) never goes to an
 // outside service. High error correction (H, ~30%) lets the dolphin cover the middle and the code still scan.
 var QR_DOLPHIN = null;
+// CC-139: the lake dolphin from the page's own drawing (#dolphin-art), as a standalone SVG image for the canvas. The
+// page's CSS doesn't reach inside an image, so its colours are written in (light theme, as the code is always on white).
+function qrDolphinSrc() {
+  var css = ".dol-edge{fill:none;stroke:#0E2A40;stroke-width:1.8;stroke-linejoin:round}.dol-body{fill:#9CD3EF}.dol-belly{fill:#DCF0F9}" +
+    ".dol-mouth{fill:none;stroke:#0E2A40;stroke-width:1;stroke-linecap:round}.dol-eye,.dol-glint{fill:#fff}.dol-pupil{fill:#0E2A40}";
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="4.59 4.58 94.67 62.36" width="400" height="264"><style>' + css + "</style>" +
+    "<defs>" + $("dolphin-clip").outerHTML + '</defs><g transform="rotate(-21 50 28)">' + $("dolphin-art").innerHTML + "</g></svg>";
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
 function qrFileName(name) { return "culture-crew-invite-" + (String(name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "crew") + ".png"; }
 function qrWithDolphin(text) {
   return new Promise(function (resolve, reject) {
@@ -551,11 +560,11 @@ function qrWithDolphin(text) {
         g.fillStyle = "#ffffff"; g.beginPath();
         if (g.roundRect) g.roundRect(x, x, badge, badge, badge * 0.18); else g.rect(x, x, badge, badge);
         g.fill();
-        var pic = badge * 0.8; g.drawImage(dolphin, (size - pic) / 2, (size - pic) / 2, pic, pic);
+        var pw = badge * 0.86, ph = pw * 264 / 400; g.drawImage(dolphin, (size - pw) / 2, (size - ph) / 2, pw, ph);
         resolve(canvas.toDataURL("image/png"));
       } catch (e) { reject(e); }
     }
     if (QR_DOLPHIN && QR_DOLPHIN.complete) { draw(); return; }
-    dolphin.onload = function () { QR_DOLPHIN = dolphin; draw(); }; dolphin.onerror = reject; dolphin.src = "img/dolphin-interested.webp";
+    dolphin.onload = function () { QR_DOLPHIN = dolphin; draw(); }; dolphin.onerror = reject; dolphin.src = qrDolphinSrc();
   });
 }

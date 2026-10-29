@@ -2,8 +2,8 @@
 /* Colours by purpose (CC-136, Lakefront; design/lakefront-brief.md section 3). Light, "Paper and lake", leads; dark is
    "Lights down", the lake at night. Every pair used below meets WCAG AA: scripts/check_contrast.py checks them in CI.
    page/surface/line/rule: backgrounds, hairlines and structural rules · text/muted: type (deep lake, never black)
-   field-line: form borders (3:1) · lead: primary buttons, links, active chips, "Free" · star: the star, the host's
-   dolphin and "Closes today", nothing else · lake/on-lake/stripe: the masthead band and the flag's stripes
+   field-line: form borders (3:1) · lead: primary buttons, links, active chips, "Free" · star: the star in the wordmark
+   and "Closes today", nothing else · gold-*: the host's ring and its star, nothing else (CC-139) · lake/on-lake/stripe: the masthead band and the flag's stripes
    info-soft: calm notes ("Opens…", notices, plain tags) · danger-soft: errors (a band, never red text)
    cat-*: the three category fields, with only white (--on-cat) on them */
 :root, :root[data-theme="light"] {
@@ -12,6 +12,7 @@
   --lake: #0E3A5B; --on-lake: #FFFFFF; --on-lake-muted: #C9DEEA; --stripe: #9CD3EF;
   --lead: #0E3A5B; --on-lead: #FFFFFF;
   --star: #C8102E;
+  --gold-rim: #9A7300; /* CC-139: the pale gold is ~1.4:1 on the page, so in light the rim carries the ring */
   --info-soft: #E6F2F8; --on-info-soft: #0E2A40;
   --danger-soft: #FBE9E7; --on-danger-soft: #0E2A40;
   --focus: #0F5E8C;
@@ -24,6 +25,7 @@
   --lake: #06121C; --on-lake: #EAF2F7; --on-lake-muted: #A6BDCC; --stripe: #5E9FC2;
   --lead: #9CD3EF; --on-lead: #06121C;
   --star: #FF5C70;
+  --gold-rim: #B8860B;
   --info-soft: #12304A; --on-info-soft: #EAF2F7;
   --danger-soft: #3A1C22; --on-danger-soft: #EAF2F7;
   --focus: #9CD3EF;
@@ -34,6 +36,8 @@
   --on-cat: #FFFFFF;
   /* Crew dots (people): pale tints with ink type, by member, the same in both themes */
   --dot-ink: #0E2A40;
+  /* CC-139: the host's ring and star, shaded as 3-D metal: highlight, gold, shade, deep. The same in both themes. */
+  --gold-hi: #FFF3A6; --gold: #FFD700; --gold-shade: #F4C430; --gold-deep: #D4A20F;
   --dot-0: #9CD3EF; --dot-1: #F2C14E; --dot-2: #F4A99A; --dot-3: #B8E0C2; --dot-4: #D9C8F5; --dot-5: #F7D9A8;
   /* Type (CC-136): Newsreader is the reading voice (titles, body, form text); Big Shoulders Text is the signage voice
      (navigation, labels, buttons, dates, prices), small, bold and condensed, in sentence case. */
@@ -238,8 +242,7 @@ a { color: inherit; }
 /* CC-66: the dolphin filters sit after the type chips, set off by a hairline */
 .mine-chips { padding-left: 8px; border-left: 1px solid var(--line); }
 .chip.mine { display: inline-grid; place-items: center; padding: 2px 10px; min-height: 36px; }
-.chip.mine img { display: block; width: 24px; height: 24px; }
-.chip.mine[data-mine="going"] img { width: 28px; height: 28px; margin-block: -2px; }
+.chip.mine .mark { display: block; }
 .chip.mine[aria-pressed="true"] { background: var(--info-soft); border-color: var(--lead); box-shadow: inset 0 0 0 1px var(--lead); } /* a soft fill: the dolphins clash with the solid accent */
 .chip {
   border: 1px solid var(--line); background: transparent; padding: 6px 14px; cursor: pointer;
@@ -366,11 +369,33 @@ a { color: inherit; }
 .went:hover { border-color: var(--lead); }
 .went[aria-pressed="true"] { background: var(--info-soft); color: var(--on-info-soft); border-color: transparent; }
 .went:disabled { opacity: 0.6; cursor: progress; }
-/* plans (CC-55): a dolphin for interested, the ringed dolphin for going, and the picker under each card */
+/* plans (CC-55) and the picker under each card */
 .card-foot .when { display: inline-flex; align-items: center; gap: 6px; }
-.dolphin { display: block; flex: none; width: 24px; height: 24px; margin-block: -4px; }
-.dolphin.going { width: 30px; height: 30px; margin-block: -7px; }
-.pill.mine { background: var(--info-soft); color: var(--on-info-soft); }
+.own-plan, .card-foot .going-on { display: inline-flex; align-items: center; gap: 4px; }
+/* CC-139: the dolphin marks (the symbols in index.html; brief section 4). One drawing in three looks: the host's pick
+   (the ink dolphin through the gold ring, with the gold star), interested (lake, with an ink edge) and going (ink).
+   --mark-bg is whatever the mark sits on, for the gap around the star. */
+.mark { display: inline-block; flex: none; vertical-align: middle; overflow: visible; --mark-bg: var(--page); }
+.mark-int, .mark-going { width: 30px; height: 20px; }
+.mark-host { width: 27px; height: 26px; } /* the ring itself is 24px */
+.card .mark, .myplan .mark { --mark-bg: var(--surface); }
+.mark-int { --dol-body: var(--stripe); --dol-belly: color-mix(in srgb, var(--stripe) 35%, #fff); --dol-edge: var(--text); --dol-mouth: #0E2A40; }
+.mark-going, .mark-host { --dol-body: var(--text); --dol-belly: var(--stripe); --dol-edge: none; --dol-mouth: var(--page); }
+.dol-edge { fill: none; stroke: var(--dol-edge, none); stroke-width: 1.8; stroke-linejoin: round; }
+.dol-body { fill: var(--dol-body); }
+.dol-belly { fill: var(--dol-belly); }
+.dol-mouth { fill: none; stroke: var(--dol-mouth); stroke-width: 1; stroke-linecap: round; }
+.dol-eye, .dol-glint { fill: #fff; }
+.dol-pupil { fill: #0E2A40; }
+.ring-tube, .ring-light { fill: none; stroke-width: 4; }
+.ring-tube { stroke: url(#gold-tube); }
+.ring-light { stroke: url(#gold-light); }
+.ring-rim, .star-rim { fill: none; stroke: var(--gold-rim); }
+.star-rim { stroke-width: 1.2; stroke-linejoin: round; }
+.star-gap { fill: var(--mark-bg); stroke: var(--mark-bg); stroke-width: 4.5; stroke-linejoin: round; }
+.star-lit { fill: var(--gold-hi); }
+.star-shade { fill: var(--gold-shade); }
+.went .mark { margin: -4px 6px -4px -2px; }
 /* CC-66: the owner's picks. The dolphin is a button: hover shows what it means, a tap opens it in the card. */
 .pick { position: relative; z-index: 1; display: inline-grid; place-items: center; padding: 0; border: 0; background: none; cursor: pointer; }
 .pick:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }

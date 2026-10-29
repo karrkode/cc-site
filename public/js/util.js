@@ -179,8 +179,9 @@ function cardHTML(e) {
   var mine = AUTH.user ? MYPLANS[e.id] : null, going = mine && mine.status === "going";
   // Marks sit next to the date at the bottom of the card (CC-64; the top row had no room for them).
   // The dolphins are the owner's public picks (CC-66): every visitor sees them. Your own plans stay private:
-  // a plain "Interested" label, or "Going <date>". An owner's own plan is already their dolphin.
-  var own = mine && !going && !AUTH.user.dolphins ? '<span class="pill mine">Interested</span>' : "";
+  // "Interested" with the lake dolphin, or "Going <date>" with the ink one (CC-139). An owner's own plan is already
+  // their dolphin.
+  var own = mine && !going && !AUTH.user.dolphins ? '<span class="own-plan">' + markHTML("interested") + "Interested</span>" : "";
   var mark = pickHTML(e) + own;
   return '<article class="card' + catClass(e.type) + '" data-card="' + esc(e.id) + '">' +
     '<div class="card-top"><span class="kind">' + esc(e.label) + "</span></div>" + // CC-132: no status pill on cards; the event view keeps it
@@ -189,7 +190,7 @@ function cardHTML(e) {
     '<div class="card-body"><p class="where">' + placeHTML(e) + "</p>" + // CC-129: show times are in the event view
     (e.suggestedBy ? '<p class="credit">Suggested by ' + esc(e.suggestedBy) + "</p>" : "") +
     (AUTH.user && crewNoteText(e) ? '<p class="crew-note">' + esc(crewNoteText(e)) + "</p>" : "") + "</div>" +
-    '<div class="card-foot"><span class="when">' + mark + (going ? '<span class="going-on">Going ' + esc(goingDay(mine.date)) + "</span>" :
+    '<div class="card-foot"><span class="when">' + mark + (going ? '<span class="going-on">' + markHTML("going") + "Going " + esc(goingDay(mine.date)) + "</span>" :
       "<span>" + esc(dateText(e)) + "</span>") + "</span>" +
     '<span class="cost' + (e.min === 0 ? " free" : "") + '">' + esc(costText(e)) + "</span></div>" +
     (e.pick ? '<p class="pick-note" id="pick-note-' + PICK_SEQ + '" hidden>' + esc(pickText(e.pick)) + "</p>" : "") +
@@ -202,6 +203,14 @@ function cardActionsHTML(e) {
     (WENT[e.id] ? "" : crewShareToggleHTML(e)) + // "Invite your Crew?": a plan, and crews to share it with (CC-75; crews.js)
     (isAdmin() ? editButtonHTML(e, "went") : "") + "</div>" + (WENT[e.id] ? "" : myplanHTML(e) + crewShareHTML(e));
 }
+// CC-139: a dolphin mark (the symbols in index.html; brief section 4). "host" is the host's pick, the dolphin through
+// the gold ring; "interested" (lake) and "going" (ink) are your own. With a label it's an image; without one it's hidden,
+// for when the words next to it already say it.
+function markHTML(kind, label) {
+  var cls = { host: "mark-host", interested: "mark-int", going: "mark-going" }[kind];
+  return '<svg class="mark ' + cls + '"' + (label ? ' role="img" aria-label="' + esc(label) + '"' : ' aria-hidden="true"') +
+    '><use href="#' + (kind === "host" ? "dolphin-ring" : "dolphin") + '"></use></svg>';
+}
 // The owner's pick as a dolphin button: hovering shows what it means; tapping (phones) opens it in the card.
 var PICK_SEQ = 0;
 function pickText(p) {
@@ -212,10 +221,9 @@ function pickText(p) {
 function pickHTML(e) {
   if (!e.pick) return "";
   PICK_SEQ += 1;
-  var going = e.pick.status === "going", text = pickText(e.pick);
+  var text = pickText(e.pick); // one mark for interested and going; the label says which (CC-139)
   return '<button type="button" class="pick" data-pick aria-expanded="false" aria-controls="pick-note-' + PICK_SEQ + '" aria-label="' + esc(text) + '">' +
-    (going ? '<img class="dolphin going" src="img/dolphin-going.webp" width="30" height="30" alt="">' :
-      '<img class="dolphin" src="img/dolphin-interested.webp" width="24" height="24" alt="">') +
+    markHTML("host") +
     '<span class="tip" aria-hidden="true">' + esc(text) + "</span></button>";
 }
 document.addEventListener("click", function (ev) {
@@ -262,17 +270,17 @@ function myplanHTML(e) {
   var going = "";
   if (range && same(range[0], range[1])) {
     going = '<button type="button" class="went" data-myplan-going="' + id + '" data-date="' + isoDate(range[0]) + '" aria-pressed="' +
-      !!(mine && mine.status === "going") + '">Commit to ' + esc(goingDay(isoDate(range[0]))) + "</button>";
+      !!(mine && mine.status === "going") + '">' + markHTML("going") + "Commit to " + esc(goingDay(isoDate(range[0]))) + "</button>";
   } else if (range) {
     var value = mine && mine.date ? mine.date : isoDate(range[0]);
     going = '<button type="button" class="went" data-myplan-going="' + id + '" aria-pressed="' + !!(mine && mine.status === "going") +
-      '" aria-describedby="myplan-date-' + n + '">Commit to</button>' +
+      '" aria-describedby="myplan-date-' + n + '">' + markHTML("going") + "Commit to</button>" +
       '<input type="date" id="myplan-date-' + n + '" aria-label="Date for ' + esc(e.title) + '" min="' + isoDate(range[0]) +
       '" max="' + isoDate(range[1]) + '" value="' + esc(value) + '">';
   }
   return '<div class="myplan" id="myplan-' + n + '" role="group" aria-label="Your plan for ' + esc(e.title) + '" hidden>' +
     '<div class="row"><button type="button" class="went" data-myplan-set="' + id + '" aria-pressed="' + !!(mine && mine.status === "interested") +
-    '">Interested</button>' + (mine ? '<button type="button" class="textbtn" data-myplan-clear="' + id + '">Clear plan</button>' : "") + "</div>" +
+    '">' + markHTML("interested") + "Interested</button>" + (mine ? '<button type="button" class="textbtn" data-myplan-clear="' + id + '">Clear plan</button>' : "") + "</div>" +
     (going ? '<div class="row">' + going + "</div>" : "") +
     '<p class="form-error" role="alert"></p></div>';
 }

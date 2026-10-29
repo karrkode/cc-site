@@ -48,6 +48,13 @@ PAIRS = [  # (foreground, background, minimum, where it's used)
     ("on-cat", "cat-theater+24%", LARGE, "poster title across a theater poster's water"),
     ("on-cat", "cat-music+24%", LARGE, "poster title across a music poster's water"),
     ("on-cat", "cat-art+24%", LARGE, "poster title across an art poster's water"),
+    # CC-139: the host's gold ring. In light the pale gold is ~1.4:1 on the page, so its rim carries it; on a field
+    # (the lead pick, the poster) the gold itself does. The lake dolphin's edge is --text, checked above.
+    ("gold-rim", "page", NON_TEXT, "the host's ring and star, their rim"),
+    ("gold-rim", "surface", NON_TEXT, "the host's ring on a card"),
+    ("gold", "cat-theater", NON_TEXT, "the host's ring on a theater field"),
+    ("gold", "cat-music", NON_TEXT, "the host's ring on a music field"),
+    ("gold", "cat-art", NON_TEXT, "the host's ring on an art field"),
 ] + [("dot-ink", f"dot-{i}", TEXT, "initials on a crew dot") for i in range(6)]
 
 

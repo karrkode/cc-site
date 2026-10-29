@@ -19,7 +19,7 @@ public/index.html        the page's HTML
 public/css/site.css      its styles
 public/js/               its scripts, by area, loaded in order (see js/core.js)
 public/404.html          shown by CloudFront for any missing path
-public/img/              images the page uses (the plan dolphins)
+public/img/              images the page uses (the link preview; the dolphins are SVG in index.html, CC-139)
 public/js/vendor/        qrcode.js, for crew invite QR codes (CC-86), kept with the site so invite links stay private
 scripts/check_pages.py   checks run in CI before every deploy
 scripts/check_contrast.py  CI check: every colour pair in site.css meets WCAG AA, in both themes
