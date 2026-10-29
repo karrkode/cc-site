@@ -46,9 +46,9 @@ PAIRS = [  # (foreground, background, minimum, where it's used)
     ("on-lake", "lake+13%", TEXT, "masthead text across its water"),
     ("on-lake-muted", "lake+13%", TEXT, "muted masthead text across its water"),
     ("stripe", "lake+13%", NON_TEXT, "active nav across the masthead's water"),
-    ("on-cat", "cat-theater+24%", LARGE, "poster title across a theater poster's water"),
-    ("on-cat", "cat-music+24%", LARGE, "poster title across a music poster's water"),
-    ("on-cat", "cat-art+24%", LARGE, "poster title across an art poster's water"),
+    ("on-cat", "cat-theater+24%", LARGE, "poster kicker, title and venue (all large) across a theater poster's water"),
+    ("on-cat", "cat-music+24%", LARGE, "poster kicker, title and venue (all large) across a music poster's water"),
+    ("on-cat", "cat-art+24%", LARGE, "poster kicker, title and venue (all large) across an art poster's water"),
     # CC-139: the host's gold ring. In light the pale gold is ~1.4:1 on the page, so its rim carries it; on a field
     # (the lead pick, the poster) the gold itself does. The lake dolphin's edge is --text, checked above.
     ("gold-rim", "page", NON_TEXT, "the host's ring and star, their rim"),

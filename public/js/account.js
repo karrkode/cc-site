@@ -129,7 +129,7 @@ function redrawCardsNow(id, from, focusOn) {
     if (target) target.focus();
   });
 }
-function saveMyPlan(id, body, panel) {
+function saveMyPlan(id, body, panel, focusOn) {
   var card = panel.closest("[data-card],[data-day-item]"), err = panel.querySelector(".form-error");
   var buttons = panel.querySelectorAll("button"); Array.prototype.forEach.call(buttons, function (b) { b.disabled = true; });
   err.textContent = "";
@@ -139,7 +139,7 @@ function saveMyPlan(id, body, panel) {
     if (!res.ok) throw res;
     if (body) MYPLANS[id] = { status: body.status, date: body.date || null, crews: (MYPLANS[id] && MYPLANS[id].crews) || [] }; else delete MYPLANS[id];
     $("myplan-live").textContent = myplanSaid(MYPLANS[id]) + ": " + KNOWN[id].title;
-    return redrawCards(id, card);
+    return redrawCards(id, card, focusOn);
   }).catch(function (res) {
     Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
     err.textContent = res && res.status ? errorText(res) : "Couldn't save your plan. Check your connection and try again.";
@@ -164,15 +164,17 @@ document.addEventListener("click", function (ev) {
     return;
   }
   var box = t.closest(".myplan");
-  if (t.hasAttribute("data-myplan-set")) return saveMyPlan(t.getAttribute("data-myplan-set"), { status: "interested" }, box);
-  if (t.hasAttribute("data-myplan-clear")) return saveMyPlan(t.getAttribute("data-myplan-clear"), null, box);
+  // CC-142: on the event page the buttons stay out, so focus comes back to the one you pressed (Clear: Interested)
+  var back = box.classList.contains("ev-plan") ? (t.hasAttribute("data-myplan-going") ? "[data-myplan-going]" : "[data-myplan-set]") : undefined;
+  if (t.hasAttribute("data-myplan-set")) return saveMyPlan(t.getAttribute("data-myplan-set"), { status: "interested" }, box, back);
+  if (t.hasAttribute("data-myplan-clear")) return saveMyPlan(t.getAttribute("data-myplan-clear"), null, box, back);
   var input = box.querySelector('input[type="date"]'), day = t.getAttribute("data-date") || (input && input.value);
   if (input && (!day || day < input.min || day > input.max)) {
     box.querySelector(".form-error").textContent = !day ? "Choose a date." :
       "Choose a date from " + goingDay(input.min) + " to " + goingDay(input.max) + ".";
     input.focus(); return;
   }
-  saveMyPlan(t.getAttribute("data-myplan-going"), { status: "going", date: day }, box);
+  saveMyPlan(t.getAttribute("data-myplan-going"), { status: "going", date: day }, box, back);
 });
 document.addEventListener("keydown", function (ev) { // Escape closes the picker and returns to its button
   if (ev.key !== "Escape") return;
