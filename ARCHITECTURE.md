@@ -61,8 +61,8 @@ The site has these views:
 - Found events (admins only)
 - Issues (admins only)
 
-The site has two themes: dark and light.
-The user can change the theme with the theme button.
+The site has two themes: light, which is the default, and dark, called "Lights down".
+The user can change the theme with the Lights down button. Each device remembers the choice.
 
 ## 3. The API
 

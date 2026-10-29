@@ -22,6 +22,7 @@ public/404.html          shown by CloudFront for any missing path
 public/img/              images the page uses (the plan dolphins)
 public/js/vendor/        qrcode.js, for crew invite QR codes (CC-86), kept with the site so invite links stay private
 scripts/check_pages.py   checks run in CI before every deploy
+scripts/check_contrast.py  CI check: every colour pair in site.css meets WCAG AA, in both themes
 scripts/stamp_assets.py  stamps each css/js link with its file's hash at deploy
 .github/workflows/       CI/CD
 ARCHITECTURE.md          how the site, API, database and AWS parts fit together (with diagrams in docs/architecture/)
@@ -52,7 +53,8 @@ links code to issues by their key: branches are named `CC-123-short-description`
 start with `CC-123:`.
 
 - **Pull request** into `main`: CI runs `scripts/check_pages.py` (each page parses and has a
-  title, and every element the script looks up exists) and a JavaScript syntax check.
+  title, and every element the script looks up exists), `scripts/check_contrast.py` (every
+  colour pair meets WCAG AA in both themes) and a JavaScript syntax check.
 - **Merge**: CI uploads the pages to S3, refreshes CloudFront, checks that
   chiculturecrew.com serves the page, and records the deploy on the Jira issue.
 

@@ -2,13 +2,12 @@
 // Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
-// ---------- light/dark switch (CC-49) ----------
-// The theme itself is set in <head> before the page paints; this is just the button.
+// ---------- light/dark switch (CC-49), "Lights down" since CC-136 ----------
+// The theme itself is set in <head> before the page paints; this is just the button. It's pressed while it's dark.
 (function () {
   var btn = document.getElementById("theme-toggle");
   function label() {
-    var next = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
-    btn.setAttribute("aria-label", "Switch to " + next + " theme"); btn.title = "Switch to " + next + " theme";
+    btn.setAttribute("aria-pressed", String(document.documentElement.getAttribute("data-theme") === "dark"));
   }
   btn.addEventListener("click", function () {
     var t = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
