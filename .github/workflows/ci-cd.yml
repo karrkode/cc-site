@@ -27,6 +27,8 @@ jobs:
         run: python3 scripts/check_contrast.py
       - name: Each event always gets the same water pattern
         run: node scripts/test_water.js
+      - name: Listings sit under the right day heads, one link per row
+        run: node scripts/test_listings.js
       - name: Asset links can be stamped for deploy
         run: python3 scripts/stamp_assets.py
       - name: JavaScript syntax
