@@ -659,6 +659,8 @@
         </form>
         <p class="form-error" id="srule-error" role="alert"></p>
         <div class="queue" id="srules-list"></div></div>
+      <!-- CC-109: the roundup pages' intros -->
+      <div class="section"><h2 id="roundups-title" tabindex="-1">Roundup pages</h2><p class="hint">Public pages at chiculturecrew.com/chicago/ that list events by when, price, kind and side of town. Each opens with a short intro. Leave one empty to use the default.</p><div class="queue" id="roundups-list"></div></div>
     </section>
 
     <!-- Found events (admins, CC-71) -->
@@ -841,6 +843,8 @@
 
   <footer>
     <p id="foot"></p>
+    <!-- CC-109: plain HTML roundup pages, served by the API at /chicago/ -->
+    <nav class="roundup-links" aria-label="Roundups"><span>Roundups:</span> <a href="/chicago/this-weekend">This weekend</a> <a href="/chicago/free-and-cheap">Free and $25 and under</a> <a href="/chicago/closing-soon">Closing soon</a> <a href="/chicago/">All roundups</a></nav>
     <p class="privacy" id="privacy-note"></p>
     <p class="report-row" id="report-row"><button class="textbtn" type="button" id="report-open" aria-haspopup="dialog" hidden>Report an issue or request a feature</button>
       <a class="textbtn" id="how-made" href="https://claude.ai/artifact/8KkaXnDa2ULvyVmXSQnRx2" target="_blank" rel="noopener">Curious about how this was made?<span class="sr-only"> (opens in a new tab)</span></a></p>
