@@ -179,8 +179,51 @@ a { color: inherit; }
 .soon-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; }
 .soon-head h2 { font-family: var(--display); font-weight: 600; font-size: var(--step-2); letter-spacing: -0.015em; }
 .textbtn { background: none; border: 0; padding: 0; cursor: pointer; font-family: var(--sign); font-weight: 700; color: var(--lead); text-decoration: underline; text-underline-offset: 3px; }
-.soon-list li { display: grid; min-width: 0; }
-.soon-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 12px; }
+
+/* CC-140: listings as rows, under day heads (brief section 5). The rows follow the width of their own column, not the
+   window's, so they also fit a narrower home column (CC-143). No card, border or shadow: hairlines between rows. */
+.listing-days { container: listings / inline-size; }
+.listing-day + .listing-day { margin-top: 32px; }
+.listing-day-head { font-family: var(--sign); font-weight: 700; font-size: 20px; line-height: 1.2; padding-bottom: 6px; border-bottom: 1px solid var(--rule); }
+.listing-day > .listings:first-child { border-top: 1px solid var(--rule); } /* a sort with no heads (A to Z, price) */
+.listings { list-style: none; margin: 0; padding: 0; }
+.listing { display: grid; grid-template-columns: 112px 150px minmax(0, 1fr) 110px; gap: 20px; align-items: center; min-height: 44px;
+  padding: 12px 0; border-bottom: 1px solid var(--line); color: var(--text); text-decoration: none; }
+.listing-t { font-family: var(--display); font-size: 26px; font-weight: 500; line-height: 1.12; overflow-wrap: anywhere;
+  text-decoration: underline transparent; text-decoration-thickness: 1px; text-underline-offset: 5px; transition: text-decoration-color 0.15s ease; }
+.listing:hover .listing-t, .listing:focus-visible .listing-t { text-decoration-color: currentColor; }
+.listing-t .mark { margin-left: 8px; vertical-align: -3px; }
+.listing-main { display: grid; gap: 3px; min-width: 0; }
+.listing-where { font-size: 1rem; color: var(--muted); }
+.listing-when, .listing-cost { font-family: var(--sign); font-weight: 700; font-size: 19px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.listing-when .going-day { display: block; margin-top: 2px; font-size: 1rem; color: var(--muted); }
+.listing-cost { text-align: right; overflow-wrap: anywhere; }
+.listing-meta { display: contents; }
+.listing-meta .listing-when { grid-column: 2; grid-row: 1; }
+.listing-meta .listing-cost { grid-column: 4; grid-row: 1; }
+/* the tile: the category field and the event's water. Its name sits on a solid patch of the field, because white
+   across the 42% lines is only about 2.4:1 (CC-138). */
+.tile { display: block; width: 112px; height: 76px; }
+.tile-k { position: absolute; left: 6px; bottom: 5px; max-width: calc(100% - 12px); padding: 0 4px; background: var(--cat);
+  font-family: var(--sign); font-weight: 700; font-size: 15px; line-height: 1.15; }
+.crewline { display: flex; align-items: center; gap: 10px; margin-top: 2px; font-family: var(--sign); font-weight: 700; font-size: 1rem; }
+.crewline .dots { display: inline-flex; padding-left: 5px; }
+.crewline .face { width: 22px; height: 22px; margin-left: -5px; font-size: 12px; border-color: var(--page); }
+.listing.ghost .tile, .listing.ghost .bar { background: var(--surface); }
+.listing.ghost .bar { display: block; width: 60%; height: 16px; }
+.listing.ghost .bar.short { width: 35%; }
+.list-state { display: grid; gap: 6px; padding: 24px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--line); }
+.list-state strong { font-family: var(--display); font-size: var(--step-1); font-weight: 500; }
+.list-state .hint { color: var(--muted); }
+@container listings (max-width: 700px) {
+  .listing { grid-template-columns: 76px minmax(0, 1fr); gap: 12px; align-items: start; }
+  .tile { width: 76px; height: 76px; grid-row: span 2; }
+  .listing-t { font-size: 21px; }
+  .listing-meta { display: flex; flex-wrap: wrap; grid-column: 2; justify-content: space-between; align-items: baseline; gap: 4px 8px; }
+  .listing-meta .listing-when, .listing-meta .listing-cost { grid-column: auto; grid-row: auto; }
+  .listing-when, .listing-cost { font-size: 1rem; }
+  .listing-when .going-day { display: inline; margin: 0 0 0 6px; }
+}
 
 /* listings */
 .card {

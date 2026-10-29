@@ -15,7 +15,7 @@ function renderHome() {
   $("door-catalog-count").textContent = plural(FACETS.current, "event", "events") + " on the list";
   $("door-crews-desc").textContent = AUTH.user ? "See what your crews are planning, and who's been where." : // CC-103
     "Crews are the friends you go out with. Sign in to start one or join one.";
-  $("soon-list").innerHTML = SOON.map(function (e) { return "<li>" + cardHTML(e) + "</li>"; }).join("");
+  $("soon-list").innerHTML = listingsHTML(SOON, "closing"); paintWater($("soon-list")); // CC-140: rows, soonest to close
   $("foot").textContent = plural(FACETS.total, "event", "events") +
     " on the list, past and present. Dates and prices change, so check the event's page before you go.";
 }
@@ -99,7 +99,7 @@ function catalogParams() {
 function loadCatalog(more) { // a fresh first page, or (more) the next one; replies to stale requests are dropped
   syncCatalogControls();
   var req = ++CAT_REQ, offset = more ? CAT_ITEMS.length : 0;
-  if (!more) { $("tally").textContent = "Loading…"; }
+  if (!more) { $("tally").textContent = "Loading…"; if (!CAT_ITEMS.length) $("grid").innerHTML = listingGhostsHTML(3); }
   $("more-btn").disabled = true;
   return fetchEvents(catalogParams().concat([["limit", PAGE], ["offset", offset]])).then(function (page) {
     if (req !== CAT_REQ) return;
@@ -108,6 +108,7 @@ function loadCatalog(more) { // a fresh first page, or (more) the next one; repl
   }, function () {
     if (req !== CAT_REQ) return;
     $("tally").textContent = "The events couldn't be loaded. Check your connection and try again.";
+    if ($("grid").querySelector(".ghost")) $("grid").innerHTML = "";
     $("more-btn").disabled = false;
   });
 }
@@ -115,14 +116,16 @@ function paintCatalog(focusFrom) {
   $("tally").innerHTML = "<strong>" + CAT_TOTAL + "</strong> " + (CAT_TOTAL === 1 ? "event" : "events") + (cat.when === "past" ? " already closed" : "") +
     (CAT_ITEMS.length < CAT_TOTAL ? ", showing " + CAT_ITEMS.length : "");
   syncMineChips();
-  $("grid").innerHTML = CAT_ITEMS.length ? CAT_ITEMS.map(function (e) { return cardHTML(e); }).join("") : cat.crews ?
-    '<div class="empty" style="grid-column:1/-1"><p><strong>Nothing from your crews matches.</strong></p><p class="hint">No crew-mate has marked an event like this as interested, committed or been. Widen the other filters, or turn off Your Crews Catalog to see everything.</p></div>' :
+  // CC-140: rows under day heads for Opening soonest and Closing soonest; already closed and the other sorts have none
+  $("grid").innerHTML = CAT_ITEMS.length ? listingsHTML(CAT_ITEMS, cat.when === "past" ? "" : cat.sort) : cat.crews ?
+    '<div class="list-state"><p><strong>Nothing from your crews matches.</strong></p><p class="hint">No crew-mate has marked an event like this as interested, committed or been. Widen the other filters, or turn off Your Crews Catalog to see everything.</p></div>' :
     Object.keys(cat.picks).length ?
-    '<div class="empty" style="grid-column:1/-1"><p><strong>No picks match.</strong></p><p class="hint">Widen the other filters, or turn off the dolphin filters to see everything.</p></div>' :
-    '<div class="empty" style="grid-column:1/-1"><p><strong>Nothing matches those filters.</strong></p><p class="hint">Try a wider date range or a higher price limit.</p></div>';
+    '<div class="list-state"><p><strong>No picks match.</strong></p><p class="hint">Widen the other filters, or turn off the dolphin filters to see everything.</p></div>' :
+    '<div class="list-state"><p><strong>Nothing matches those filters.</strong></p><p class="hint">Try a wider date range or a higher price limit.</p></div>';
+  paintWater($("grid"));
   $("more-row").hidden = CAT_ITEMS.length >= CAT_TOTAL; $("more-btn").disabled = false;
   $("sheet-show").textContent = CAT_TOTAL ? "Show " + plural(CAT_TOTAL, "event", "events") : "No events match";
-  if (focusFrom) { var first = $("grid").children[focusFrom]; var a = first && first.querySelector("h3 a"); if (a) a.focus(); }
+  if (focusFrom) { var first = $("grid").querySelectorAll(".listing")[focusFrom]; if (first) first.focus(); } // the first new row
 }
 function renderCatalog() { loadCatalog(false); }
 $("filters").addEventListener("submit", function (ev) { ev.preventDefault(); });

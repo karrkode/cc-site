@@ -276,7 +276,7 @@
           <h2>Last chance</h2>
           <button class="textbtn" type="button" id="soon-more">See everything closing soon</button>
         </div>
-        <ul class="soon-list" id="soon-list"></ul>
+        <div class="listing-days" id="soon-list"></div>
       </div>
     </section>
 
@@ -324,7 +324,7 @@
       <div class="view-head">
         <p class="eyebrow">The catalog</p>
         <h1 id="catalog-title" tabindex="-1">Everything on the list</h1>
-        <p>Each card opens the event's own page for tickets and showtimes.</p>
+        <p>Each listing opens the event's own page for tickets and showtimes.</p>
       </div>
       <form class="filters" id="filters" autocomplete="off">
         <div class="chip-row">
@@ -380,7 +380,7 @@
         <button class="textbtn" type="button" id="clear-filters" hidden>Clear filters</button>
       </div>
       <h2 class="sr-only">Results</h2>
-      <div class="grid" id="grid"></div>
+      <div class="listing-days" id="grid"></div>
       <div class="more-row" id="more-row" hidden><button class="btn ghost" type="button" id="more-btn">Show more</button></div>
     </section>
 
@@ -882,6 +882,7 @@
 <script src="js/core.js?v=dev"></script>
 <script src="js/util.js?v=dev"></script>
 <script src="js/water.js?v=dev"></script>
+<script src="js/listings.js?v=dev"></script>
 <script src="js/catalog.js?v=dev"></script>
 <script src="js/planner.js?v=dev"></script>
 <script src="js/account.js?v=dev"></script>
