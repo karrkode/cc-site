@@ -50,10 +50,15 @@ function initials(name) {
   var w = String(name || "?").trim().split(/\s+/);
   return ((w[0] || "?").charAt(0) + (w.length > 1 ? w[w.length - 1].charAt(0) : "")).toUpperCase();
 }
+function crewTone(id) { // CC-136: each member keeps their dot's tint (one of six) wherever they appear
+  var s = String(id || ""), h = 0;
+  for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 9973;
+  return h % 6;
+}
 function crewFacesHTML(c) { // inside the summary button, so spans; a screen reader hears the count, not every name
   var shown = c.members.slice(0, FACES), more = c.members.length - shown.length;
-  return '<span class="faces" aria-hidden="true">' + shown.map(function (m, i) {
-    return '<span class="face tone-' + (i % 4) + '" title="' + esc(m.name) + '">' + esc(initials(m.name)) + "</span>";
+  return '<span class="faces" aria-hidden="true">' + shown.map(function (m) {
+    return '<span class="face tone-' + crewTone(m.user_id) + '" title="' + esc(m.name) + '">' + esc(initials(m.name)) + "</span>";
   }).join("") + (more > 0 ? '<span class="face more">+' + more + "</span>" : "") + "</span>" +
     '<span class="sr-only">' + esc(plural(c.members.length, "member", "members")) + ".</span>";
 }

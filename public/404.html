@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <script>
-// Theme before first paint (CC-49): the visitor's saved choice, otherwise dark. Storage can be
-// blocked (private windows, strict settings); then it's simply dark.
+// Theme before first paint (CC-49): the visitor's saved choice, otherwise light (CC-136: light leads, and
+// dark is "Lights down"). Storage can be blocked (private windows, strict settings); then it's simply light.
 (function () {
-  var t = "dark";
+  var t = "light";
   try { var s = localStorage.getItem("cc_theme"); if (s === "light" || s === "dark") t = s; } catch (e) {}
   document.documentElement.setAttribute("data-theme", t);
 })();
@@ -16,34 +16,34 @@
 <title>Not found · Culture Crew</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400..700&family=Outfit:wght@600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Text:wght@600..800&amp;family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400&amp;display=swap">
 <style>
-/* Shown by CloudFront for any path that isn't on the site. Colors match index.html (CC-48). */
-:root, :root[data-theme="dark"] {
-  --page: #0B1220; --surface: #141D2F; --line: #26334C; --text: #EAF0F8; --lead: #5CC8F5; --star: #FF5C70; --focus: #5CC8F5;
-  color-scheme: dark;
-}
-:root[data-theme="light"] {
-  --page: #F6F6F3; --surface: #FFFFFF; --line: #E2E2DC; --text: #111111; --lead: #D62839; --star: #D62839; --focus: #1D4ED8;
+/* Shown by CloudFront for any path that isn't on the site. Colours and type match site.css (CC-136, Lakefront). */
+:root, :root[data-theme="light"] {
+  --page: #FFFFFF; --surface: #F2F7F9; --line: #D3E3EA; --text: #0E2A40; --lead: #0E3A5B; --star: #C8102E; --focus: #0F5E8C;
   color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --page: #0A1A28; --surface: #0F2334; --line: #22394D; --text: #EAF2F7; --lead: #9CD3EF; --star: #FF5C70; --focus: #9CD3EF;
+  color-scheme: dark;
 }
 *, *::before, *::after { box-sizing: border-box; }
 body {
   margin: 0; min-height: 100vh; min-height: 100dvh; display: grid; place-items: center;
   padding: 24px 16px; background: var(--page); color: var(--text);
-  font-family: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased;
+  font-family: "Newsreader", Georgia, "Times New Roman", serif; -webkit-font-smoothing: antialiased;
 }
 main {
-  max-width: 34rem; text-align: center; background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--lead); border-radius: 12px;
+  max-width: 34rem; text-align: center; background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--lead);
   padding: clamp(32px, 7vw, 56px) clamp(20px, 6vw, 48px); display: grid; gap: 18px; justify-items: center;
 }
 .star { width: 1.6rem; height: 1.6rem; fill: var(--star); }
 h1 {
-  margin: 0; font-family: "Outfit", "Figtree", system-ui, sans-serif; font-weight: 600; letter-spacing: -0.02em;
+  margin: 0; font-family: "Newsreader", Georgia, serif; font-weight: 600; letter-spacing: -0.02em;
   font-size: clamp(1.6rem, 5vw, 2.3rem); line-height: 1.15; text-wrap: balance;
 }
 p { margin: 0; font-size: 1.125rem; }
-a { color: var(--lead); font-weight: 700; text-underline-offset: 3px; }
+a { color: var(--lead); font-family: "Big Shoulders Text", "Arial Narrow", sans-serif; font-weight: 700; font-size: 1.1875rem; text-underline-offset: 3px; }
 a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 </style>
 </head>
