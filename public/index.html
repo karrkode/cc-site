@@ -328,12 +328,12 @@
       </div>
       <form class="filters" id="filters" autocomplete="off">
         <div class="chip-row">
-          <div class="chips" id="type-chips" role="group" aria-label="Type of event"></div>
-          <div class="chips mine-chips" id="mine-chips" role="group" aria-label="Culture Crew picks">
-            <button type="button" class="chip mine" data-mine="interested" aria-pressed="false" aria-label="Events yours truly is interested in"><svg class="mark mark-int" aria-hidden="true"><use href="#dolphin"></use></svg><span class="tip" aria-hidden="true">Events yours truly is interested in.</span></button>
-            <button type="button" class="chip mine" data-mine="going" aria-pressed="false" aria-label="Events yours truly is committed to!"><svg class="mark mark-going" aria-hidden="true"><use href="#dolphin"></use></svg><span class="tip" aria-hidden="true">Events yours truly is committed to!</span></button>
+          <div class="chips segs" id="type-chips" role="group" aria-label="Type of event"></div>
+          <div class="chips segs" id="mine-chips" role="group" aria-label="Culture Crew picks">
+            <button type="button" class="chip mine" data-mine="interested" aria-pressed="false" aria-describedby="mine-int-tip"><svg class="mark mark-int" aria-hidden="true"><use href="#dolphin"></use></svg>Interested<span class="tip" id="mine-int-tip" aria-hidden="true">Events yours truly is interested in.</span></button>
+            <button type="button" class="chip mine" data-mine="going" aria-pressed="false" aria-describedby="mine-going-tip"><svg class="mark mark-going" aria-hidden="true"><use href="#dolphin"></use></svg>Going<span class="tip" id="mine-going-tip" aria-hidden="true">Events yours truly is committed to!</span></button>
           </div>
-          <div class="chips mine-chips" id="crews-chips" role="group" aria-label="Your crews" hidden>
+          <div class="chips segs" id="crews-chips" role="group" aria-label="Your crews" hidden>
             <button type="button" class="chip" id="crews-chip" aria-pressed="false">Your Crews Catalog</button>
           </div>
         </div>
@@ -363,7 +363,7 @@
             </select>
           </div>
           </div>
-          <button class="btn neutral filters-btn" type="button" id="filters-btn" aria-haspopup="dialog" aria-controls="filter-sheet">Filters<span class="count" id="filters-count"></span></button>
+          <button class="btn ghost filters-btn" type="button" id="filters-btn" aria-haspopup="dialog" aria-controls="filter-sheet">Filters<span class="count" id="filters-count"></span></button>
         </div>
       </form>
       <div class="active-filters" id="active-filters" role="group" aria-label="Active filters"></div>

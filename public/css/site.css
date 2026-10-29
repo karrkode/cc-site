@@ -268,9 +268,8 @@ a { color: inherit; }
 .card[class*="cat-"] { box-shadow: inset 0 4px 0 var(--cat); padding-top: 20px; }
 .chip[class*="cat-"]::before, .cat-legend span::before { content: ""; display: inline-block; width: 12px; height: 12px;
   background: var(--cat); margin-right: 7px; vertical-align: 0.02em; }
-.chip[class*="cat-"]:hover { border-color: var(--cat); }
-.chip[class*="cat-"][aria-pressed="true"] { background: var(--cat); color: var(--on-cat); border-color: var(--cat); }
-.chip[class*="cat-"][aria-pressed="true"]::before { background: currentColor; }
+.chip[class*="cat-"]::before { margin-right: 0; vertical-align: 0; }
+.chip[class*="cat-"][aria-pressed="true"]::before { box-shadow: 0 0 0 1.5px var(--page); } /* the swatch keeps its colour on the ink */
 .cat-legend { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; font-size: 1rem; color: var(--muted); }
 .cat-legend:empty { display: none; }
 .cat-legend span { color: var(--text); font-weight: 600; }
@@ -281,12 +280,6 @@ a { color: inherit; }
 .view-head p { color: var(--muted); max-width: 60ch; }
 .filters { display: grid; gap: 14px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
-/* CC-66: the dolphin filters sit after the type chips, set off by a hairline */
-.mine-chips { padding-left: 8px; border-left: 1px solid var(--line); }
-.chip.mine { display: inline-grid; place-items: center; padding: 2px 10px; min-height: 36px; }
-.chip.mine .mark { display: block; }
-.chip.mine[aria-pressed="true"] { background: var(--info-soft); border-color: var(--lead); box-shadow: inset 0 0 0 1px var(--lead); } /* a soft fill: the dolphins clash with the solid accent */
 .chip {
   border: 1px solid var(--line); background: transparent; padding: 6px 14px; cursor: pointer;
   font-family: var(--sign); font-weight: 700; font-size: 1.0625rem;
@@ -302,6 +295,33 @@ a { color: inherit; }
 .field input, .field select {
   width: 100%; min-width: 0; background: var(--page); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 9px 10px;
 }
+/* CC-141: the catalog's filters, Lakefront style (brief section 5). No box: they sit between two rules. Type, the
+   dolphins and Your Crews are segmented controls, square buttons joined by a shared 1.5px ink border. Pressed is the ink
+   fill with page-colour type, a solid block rather than a change of hue. The fields are 44px boxes, labels above. */
+#filters { gap: 16px; padding: 18px 0; background: none; border: 0; border-block: 1px solid var(--rule); }
+.chip-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
+.segs { gap: 0; padding: 1.5px 0 0 1.5px; } /* each button overlaps the one before (and the row above, when it wraps) */
+.segs .chip {
+  position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin: -1.5px 0 0 -1.5px; padding: 0 16px;
+  border: 1.5px solid var(--text); color: var(--text); font-size: 1.125rem; line-height: 1.2;
+}
+.segs .chip:hover { border-color: var(--text); background: var(--info-soft); }
+.segs .chip[aria-pressed="true"] { background: var(--text); color: var(--page); }
+.segs .chip:focus-visible { z-index: 1; } /* the ring sits over the neighbours */
+.segs .chip .mark { margin-inline: -2px 0; }
+.segs .chip[aria-pressed="true"] .mark-int { --dol-edge: var(--page); }
+.segs .chip[aria-pressed="true"] .mark-going { --dol-body: var(--page); --dol-mouth: var(--text); }
+#filters .fields { gap: 12px 14px; }
+@media (min-width: 900px) { #filters .fields { grid-template-columns: minmax(0, 1.5fr) repeat(4, minmax(0, 1fr)); } } /* search, then the four boxes */
+#view-catalog .field input[type="search"], #view-catalog .field select, .where-btn {
+  min-height: 44px; padding: 8px 12px; border: 1.5px solid var(--field-line); font-size: 1.125rem; line-height: 1.2;
+}
+#view-catalog .field select, .where-btn {
+  appearance: none; padding-right: 30px; font-family: var(--sign); font-weight: 600; cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%; background-size: 5px 5px; background-repeat: no-repeat;
+}
+#view-catalog .textbtn { min-height: 44px; }
 .tally { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; padding-block: 18px 12px; }
 .tally strong { font-variant-numeric: tabular-nums; }
 .more-row { display: flex; justify-content: center; margin-top: 18px; }
@@ -742,18 +762,17 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 /* CC-85: Where: several places at once */
 .where-field { position: relative; }
 .where-field .field-label { font-size: 1rem; font-weight: 700; font-family: var(--sign); color: var(--muted); }
-.where-btn { width: 100%; min-width: 0; text-align: left; background: var(--page); color: var(--text); border: 1px solid var(--field-line); border-radius: var(--r-ctl);
-  padding: 9px 30px 9px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
-  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
-  background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
+.where-btn { width: 100%; min-width: 0; text-align: left; background-color: var(--page); color: var(--text); border-radius: var(--r-ctl);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } /* its size, border and caret: CC-141, with the selects */
 .where-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .where-panel { position: absolute; z-index: 6; top: calc(100% + 6px); left: 0; width: min(560px, calc(100vw - 32px)); max-height: min(60vh, 520px); overflow-y: auto;
   display: grid; gap: 12px; padding: 14px; background: var(--surface); border: 1.5px solid var(--text); border-radius: var(--r-ctl); }
 .where-panel[hidden] { display: none; }
 .where-group { display: grid; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
 .where-side { font-weight: 700; }
-.where-hoods { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 12px; padding-left: 4px; }
+.where-hoods { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0 12px; padding-left: 4px; }
 .where-hoods .radio { font-weight: 400; }
+.where-panel .radio { min-height: 44px; } /* CC-141: every tap target is 44px */
 .where-foot { position: sticky; bottom: -14px; justify-content: flex-end; padding: 10px 0 0; background: var(--surface); }
 /* The dolphin filter buttons' hover text ("Events yours truly is interested in"), like the cards' dolphins */
 .chip.mine { position: relative; }
@@ -941,11 +960,12 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
    removable chips above the results. Wider screens keep the one row of fields. */
 .more-fields { display: contents; }
 .filters-btn, .active-filters { display: none; }
-.active-filters .chip { display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px 5px 14px; background: var(--info-soft); border-color: transparent; }
+.active-filters .chip { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px 0 14px; border: 1.5px solid var(--text); }
+.active-filters .chip:hover { border-color: var(--text); background: var(--info-soft); }
 .active-filters .chip span { font-size: 1.125rem; line-height: 1; color: var(--muted); }
 .active-filters .chip:hover span { color: var(--text); }
-.filter-sheet { margin: auto 0 0; width: 100%; max-width: 100%; max-height: 88dvh; padding: 0; border: 0; border-top: 1px solid var(--line);
-  background: var(--surface); color: var(--text); }
+.filter-sheet { margin: auto 0 0; width: 100%; max-width: 100%; max-height: 88dvh; padding: 0; border: 0; border-top: 1.5px solid var(--rule);
+  background: var(--page); color: var(--text); }
 .filter-sheet::backdrop { background: rgb(0 0 0 / 0.55); }
 .sheet-in { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; max-height: 88dvh; }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
@@ -958,9 +978,9 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .sheet-foot .btn { flex: 1; max-width: 260px; }
 @media (max-width: 640px) {
   .filters { padding: 12px; gap: 10px; }
-  .filters .chip-row { flex-wrap: nowrap; overflow-x: auto; margin-inline: -12px; padding: 2px 12px; scrollbar-width: none; } /* one row that scrolls sideways */
-  .filters .chip-row .chips { flex-wrap: nowrap; }
-  .filters .chip-row .chip { flex: none; white-space: nowrap; }
+  #filters { padding: 14px 0; gap: 12px; }
+  .chip-row { gap: 10px 16px; } /* CC-141: the groups wrap, never scroll sideways */
+  .segs .chip { padding: 0 12px; gap: 6px; font-size: 1.0625rem; white-space: nowrap; }
   .fields { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
   .search-field label { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .fields > .more-fields { display: none; }
