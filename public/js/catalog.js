@@ -148,7 +148,7 @@ function buildWherePanel() {
     .concat(byRegion.other ? [{ key: "", name: "Other neighborhoods", hoods: byRegion.other.sort() }] : [])
     .filter(function (g) { return g.hoods.length; });
   var n = 0;
-  $("f-where-panel").innerHTML = '<div class="row where-quick"><button type="button" class="chip" data-where="any">Anywhere</button>' +
+  $("f-where-panel").innerHTML = '<div class="chips segs where-quick" role="group" aria-label="Anywhere or city and suburbs"><button type="button" class="chip" data-where="any">Anywhere</button>' +
     '<button type="button" class="chip" data-where="local">City and suburbs</button></div>' +
     WHERE_GROUPS.map(function (g, gi) {
       var head = g.key ? '<label class="radio where-side"><input type="checkbox" data-where-region="' + esc(g.key) + '"> ' + esc(g.name) +
