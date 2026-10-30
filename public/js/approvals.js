@@ -20,7 +20,7 @@ document.addEventListener("click", function (ev) {
   var yes = b.getAttribute("data-approver-answer") === "yes";
   b.disabled = true;
   api("/me/approver", { method: "POST", body: { accept: yes } }).then(readJSON).then(function (res) {
-    if (!res.ok) { b.disabled = false; $("crews-status").textContent = errorText(res); return; }
+    if (!res.ok) { b.disabled = false; $("crews-status").textContent = checkThis(errorText(res)); return; }
     AUTH.user = res.body; paintPending(); paintApproverRow();
     $("edit-live").textContent = yes ? "You're an approver now. Photo approvals is on your account page." : "Declined. Thanks for letting us know.";
     (yes && $("approver-row").querySelector("button").offsetParent ? $("approver-row").querySelector("button") : document.querySelector("main h1:not([hidden])") || $("brand")).focus();

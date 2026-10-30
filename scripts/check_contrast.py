@@ -56,6 +56,11 @@ PAIRS = [  # (foreground, background, minimum, where it's used)
     ("gold", "cat-theater", NON_TEXT, "the host's ring on a theater field"),
     ("gold", "cat-music", NON_TEXT, "the host's ring on a music field"),
     ("gold", "cat-art", NON_TEXT, "the host's ring on an art field"),
+    # CC-145: the crews page. Invites waiting on the pale blue band; a "yes?" on the pale red band, with its buttons
+    ("focus", "info-soft", NON_TEXT, "focus ring on the invites band"),
+    ("text", "danger-soft", TEXT, "a button's label and outline on the confirm band"),
+    ("focus", "danger-soft", NON_TEXT, "focus ring on the confirm band"),
+    ("text", "page", NON_TEXT, "the 2.5px border on a field at fault"),
 ] + [("dot-ink", f"dot-{i}", TEXT, "initials on a crew dot") for i in range(6)]
 
 
