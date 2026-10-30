@@ -784,36 +784,9 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
   .editor fieldset.hours { padding: 10px 8px 12px; }
   .hours-row .times input { padding: 7px 6px; }
 }
-/* CC-74: culture crews */
-.crews { display: grid; gap: 14px; margin-bottom: 14px; }
-.crews:empty { display: none; }
-.crew .crew-edit { display: grid; gap: 14px; }
-.crew h3, #crew-new h3 { font-family: var(--display); font-weight: 600; font-size: var(--step-1); }
-.crew .crew-about { color: var(--muted); }
-.crew ul.members { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.crew ul.members li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; padding: 6px 0; border-top: 1px solid var(--line); }
-.crew ul.members li:first-child { border-top: 0; }
-.crew .who { font-weight: 600; }
-.crew .who .state { margin-left: 6px; font-size: 1rem; vertical-align: middle; }
-.crew .link-box { display: grid; gap: 8px; padding: 12px; border-radius: var(--r-ctl); background: var(--info-soft); color: var(--on-info-soft); }
-.crew .link-box input { width: 100%; background: var(--page); color: var(--text); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 8px 10px; }
-.crew .invites { margin: 0; padding-left: 18px; color: var(--muted); font-size: 1rem; }
-.crew .confirm { padding: 10px 12px; border-radius: var(--r-ctl); background: var(--danger-soft); color: var(--on-danger-soft); }
-.crew .confirm .btn.ghost { color: inherit; box-shadow: inset 0 0 0 1.5px currentColor; }
+/* CC-74: culture crews. The crews page itself is Lakefront (CC-145), further down; these are shared with the cards,
+   the event page and Home. */
 .join h2 { font-family: var(--display); font-weight: 600; font-size: var(--step-2); }
-
-/* CC-75: a crew box is two halves, members and shared plans. The plans half stops at five members' height
-   (crews.js measures a row) and scrolls on its own past that; CC-120 lets the members half run its full length. */
-.crew-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 24px; }
-.crew-col { display: grid; gap: 6px; align-content: start; min-width: 0; }
-.crew-col-h { font-size: 1rem; font-weight: 700; font-family: var(--sign); color: var(--muted); }
-.crew ul.members:focus-visible, .crew ul.crew-plans:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-.crew ul.crew-plans { overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; } /* max-height: crews.js */
-.crew ul.crew-plans { list-style: none; margin: 0; padding-left: 0; display: grid; gap: 0; align-content: start; }
-.crew ul.crew-plans li { display: grid; gap: 2px; padding: 8px 0; border-top: 1px solid var(--line); }
-.crew ul.crew-plans li:first-child { border-top: 0; padding-top: 0; }
-.crew ul.crew-plans a { font-weight: 600; text-decoration-thickness: 1px; text-underline-offset: 3px; }
-@media (max-width: 700px) { .crew-cols { grid-template-columns: minmax(0, 1fr); } }
 .card .crew-note { margin-top: 6px; font-size: 1rem; color: var(--muted); }
 .crewshare .crewshare-h { font-weight: 600; margin-bottom: 2px; }
 .crewshare .radio { margin: 4px 0; }
@@ -828,21 +801,13 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .crew-tip, .crew-count-names { white-space: pre-line; } /* CC-93: one line per person who's been */
 .crew-count-names { display: block; margin-top: 4px; padding: 6px 10px; border-radius: var(--r-ctl); background: var(--info-soft); color: var(--on-info-soft); font-size: 1rem; font-weight: 600; }
 .crew-count-names[hidden] { display: none; }
-/* CC-59: crew invites by email */
-.crew .crew-email { display: grid; gap: 6px; }
-.crew .crew-email label { font-weight: 600; }
-.crew .crew-email .row { flex-wrap: nowrap; }
-.crew .crew-email input { flex: 1 1 auto; min-width: 0; background: var(--page); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 9px 10px; }
-.crew .crew-email .hint.bad { color: var(--on-danger-soft); }
-.pending-invites { display: grid; gap: 10px; margin-bottom: 14px; padding: 14px 16px; border-radius: var(--r-card); background: var(--info-soft); color: var(--on-info-soft); }
-.pending-invites h3 { font-family: var(--display); font-weight: 600; font-size: var(--step-1); }
+/* CC-59, CC-106: invites waiting, on Home */
 .pending { display: grid; gap: 8px; }
 .pending + .pending { padding-top: 10px; border-top: 1px solid currentColor; border-top-color: color-mix(in srgb, currentColor 25%, transparent); }
 .invite-banner { display: grid; gap: 10px; margin: 0 0 18px; padding: 12px 16px; border-radius: var(--r-card); background: var(--info-soft); color: var(--on-info-soft); }
 .invite-banner[hidden] { display: none; }
-.invite-banner .btn.ghost, .pending-invites .btn.ghost { color: inherit; box-shadow: inset 0 0 0 1.5px currentColor; }
-.invite-banner .textbtn, .pending-invites .textbtn { color: inherit; }
-@media (max-width: 520px) { .crew .crew-email .row { flex-wrap: wrap; } }
+.invite-banner .btn.ghost { color: inherit; box-shadow: inset 0 0 0 1.5px currentColor; }
+.invite-banner .textbtn { color: inherit; }
 /* CC-84: Report an issue */
 .report-row { margin-top: 6px; font-size: 1rem; display: flex; flex-wrap: wrap; gap: 4px 20px; }
 .report-row [hidden] { display: none; }
@@ -968,62 +933,141 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .run-date input[type="time"] { background: var(--page); color: var(--text); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 5px 8px; }
 .run-date .textbtn { margin-left: auto; }
 
-/* CC-104: the crews page: "Start a crew" between the Chicago flag's two light-blue bars, in ink since CC-136 (red is
-   kept for the star, the host's dolphin and closing); the star makes a quarter turn on hover. Each crew's card opens
-   with its faces and what's next. */
-.crew-start { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 16px; margin-bottom: 18px; padding-block: 8px; }
-.crew-start-btn { --flag-ink: var(--text); --flag-blue: var(--stripe); position: relative; display: inline-flex; align-items: center; gap: 10px;
-  font-size: 1.05rem; padding: 12px 22px; background: var(--surface); color: var(--flag-ink);
-  box-shadow: inset 0 0 0 1.5px var(--flag-ink); transition: transform 0.15s ease; }
-.crew-start-btn::before, .crew-start-btn::after { content: ""; position: absolute; left: 22px; right: 22px; height: 3px; background: var(--flag-blue); }
-.crew-start-btn::before { top: -8px; } .crew-start-btn::after { bottom: -8px; }
-.crew-start-btn .star { fill: var(--flag-ink); width: 1.15em; height: 1.15em; transition: transform 0.3s ease; }
-.crew-start-btn:hover:not(:disabled), .crew-start-btn:focus-visible { filter: none; background: var(--surface); transform: translateY(-1px); }
-.crew-start-btn:hover .star, .crew-start-btn:focus-visible .star { transform: rotate(30deg); } /* a six-point star: 30° is a quarter of the way round */
-.crew-start-btn.first { font-size: 1.2rem; padding: 16px 28px; }
-.crew-start-btn.first::before, .crew-start-btn.first::after { left: 28px; right: 28px; }
-.crews-empty { text-align: center; display: grid; gap: 6px; justify-items: center; padding-block: 28px; }
-.crews-empty h2 { font-family: var(--display); font-size: var(--step-1); }
-.crews-empty p { color: var(--muted); max-width: 46ch; }
-.faces { padding-left: 8px; display: flex; flex: none; }
-.face { width: 38px; height: 38px; margin-left: -8px; border-radius: 50%; display: grid; place-items: center; font-family: var(--sign); font-weight: 800; font-size: 1rem;
-  border: 2px solid var(--surface); color: var(--dot-ink); }
+/* People are pale-tint dots with ink initials (circles are people, CC-136): on the listings, the event page and Crews. */
+.face { width: 30px; height: 30px; margin-left: -6px; border-radius: 50%; display: grid; place-items: center; flex: none; font-family: var(--sign); font-weight: 800;
+  font-size: 13px; line-height: 1; border: 2px solid var(--page); color: var(--dot-ink); }
 .face.tone-0 { background: var(--dot-0); } .face.tone-1 { background: var(--dot-1); } .face.tone-2 { background: var(--dot-2); }
 .face.tone-3 { background: var(--dot-3); } .face.tone-4 { background: var(--dot-4); } .face.tone-5 { background: var(--dot-5); }
 .face.more { background: var(--line); color: var(--text); }
-.crew-next { min-width: 0; flex: 1 1 14rem; }
-.crew-next-title { font-weight: 600; }
-.crew-next-label { font-size: 1rem; font-weight: 800; font-family: var(--sign); color: var(--muted); margin-right: 4px; }
-/* CC-120: a crew is a summary that opens into its plans and members, one crew at a time. The whole summary is one
-   button; the open crew gets a bar in the lead colour down its left edge. Setup sits under Manage crew. */
-.crew { gap: 0; padding: 0; overflow: hidden; }
-.crew.open { box-shadow: inset 4px 0 0 var(--lead); }
-.crew .crew-h { font: inherit; }
-.crew-sum { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; width: 100%; padding: 14px 16px 14px 20px; text-align: left;
-  background: none; border: 0; color: inherit; font: inherit; text-wrap: wrap; cursor: pointer; }
-@media (hover: hover) { .crew-sum:hover { background: color-mix(in srgb, var(--text) 4%, transparent); } } /* no tint left behind by a tap */
-.crew-sum:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
-.crew-sum > * { grid-column: 1; }
-.crew-name { font-family: var(--display); font-weight: 600; font-size: var(--step-1); line-height: 1.2; }
-.crew-name .state { white-space: nowrap; margin-left: 6px; font-family: var(--body); font-size: 1rem; vertical-align: middle; }
-.crew-sum .crew-about { color: var(--muted); }
-.crew-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 6px; }
-.crew-caret { grid-column: 2; grid-row: 1 / -1; align-self: center; width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 1.8;
-  stroke-linecap: round; stroke-linejoin: round; transition: transform 0.15s ease; }
-.crew-sum[aria-expanded="true"] .crew-caret { transform: rotate(180deg); }
-.crew-detail { display: grid; gap: 16px; padding: 4px 16px 16px 20px; }
-.crew-detail > .crew-cols { padding-top: 14px; border-top: 1px solid var(--line); }
-.crew-manage-wrap { display: grid; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
-.crew-manage-btn { justify-self: start; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0; background: none; border: 0;
-  color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
-.crew-manage-btn::after { content: ""; width: 7px; height: 7px; margin-top: -3px; border: solid var(--muted); border-width: 0 1.8px 1.8px 0; transform: rotate(45deg);
-  transition: transform 0.15s ease; }
-.crew-manage-btn[aria-expanded="true"]::after { margin-top: 3px; transform: rotate(-135deg); }
+.face-s { width: 22px; height: 22px; margin-left: 0; font-size: 11px; }
+.face-l { width: 40px; height: 40px; margin-left: 0; font-size: 15px; }
+.dots { display: inline-flex; flex: none; padding-left: 6px; }
+
+/* CC-145: the crews page in Lakefront (design/lakefront-brief.md section 10). A Newsreader title and an italic deck;
+   invites waiting on the pale blue band; the count and a secondary Start a crew on the section rule; then a row per
+   crew. An open crew is 7/5, plans as event rows and members, with Manage crew under them, closed by default. */
+.crews-head { padding-block: 40px 0; }
+.crews-head h1 { font-family: var(--display); font-weight: 500; font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1; letter-spacing: -0.025em; }
+.crews-deck { margin-top: 10px; max-width: 60ch; font-style: italic; font-size: 1.3125rem; line-height: 1.4; color: var(--muted); }
+#crews-signin { margin-top: 28px; border: 0; }
+#crews-status { margin-top: 28px; }
+#view-crews .btn { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 20px; white-space: nowrap; }
+#view-crews .btn.ink { background: var(--text); color: var(--page); box-shadow: none; }
+#view-crews .form-error { margin: 0; }
+#view-crews .field input { min-height: 48px; padding: 0 12px; border: 1.5px solid var(--field-line); background: var(--page); color: var(--text); font-size: 1.125rem; }
+#view-crews .field input[aria-invalid="true"] { border: 2.5px solid var(--text); padding: 0 11px; } /* the field at fault: never red */
+#view-crews .field label { font-size: 1.0625rem; }
+
+/* invites waiting: on the band, first */
+.pending-invites { display: grid; gap: 4px; margin-top: 28px; padding: 16px 20px; background: var(--info-soft); color: var(--on-info-soft); }
+.pending-invites h2 { font-family: var(--sign); font-weight: 700; font-size: 1.25rem; }
+.pending-invites .pending { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; padding-block: 8px; }
+.pending-invites .pending p { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 20rem; }
+.pending-invites .pending .face { margin-left: 0; border-color: var(--info-soft); }
+.pending-invites .hint { color: var(--muted); }
+.pending-invites .row { gap: 12px; }
+.pending-invites .btn { min-height: 44px; padding: 0 14px; font-size: 1.0625rem; }
+.pending-invites .btn.ghost { color: inherit; box-shadow: inset 0 0 0 1.5px currentColor; }
+.pending-invites .textbtn { color: inherit; }
+.pending-invites :focus-visible { outline-color: var(--focus); }
+
+/* the count and Start a crew, on the rule */
+.crews-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px 16px; margin-top: 48px; padding-bottom: 10px; border-bottom: 1px solid var(--rule); }
+.crews-n { font-family: var(--sign); font-weight: 700; font-size: 1.25rem; }
+.crew-new { display: grid; gap: 14px; padding: 24px 0; border-bottom: 1px solid var(--line); }
+.crew-new h3 { font-family: var(--display); font-weight: 600; font-size: 1.75rem; line-height: 1.1; }
+.crew-new .fields, .crew-edit .fields { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; max-width: 760px; }
+.crews:empty { display: none; }
+.crews-empty { padding: 24px 0; color: var(--muted); max-width: 60ch; }
+
+/* one row per crew: name, You started it, about, the members' dots, Next up, the caret. The whole row is the button. */
+.crew { border-bottom: 1px solid var(--line); }
+.crew-h { font: inherit; }
+.crew-sum { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px) 28px; gap: 8px 20px; align-items: center; width: 100%; min-height: 44px;
+  padding: 18px 0; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.crew-sum:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.crew-id { display: block; min-width: 0; }
+.crew-name { font-family: var(--display); font-weight: 500; font-size: 1.875rem; line-height: 1.1; letter-spacing: -0.01em; overflow-wrap: anywhere;
+  text-decoration: underline transparent; text-decoration-thickness: 1px; text-underline-offset: 5px; transition: text-decoration-color 0.15s ease; }
+.crew-sum:hover .crew-name { text-decoration-color: currentColor; }
+.crew-you { margin-left: 8px; font-family: var(--sign); font-weight: 700; font-size: 1.0625rem; color: var(--muted); white-space: nowrap; vertical-align: 4px; }
+.crew-about { display: block; margin-top: 4px; font-size: 1rem; color: var(--muted); }
+.crew-banner { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.crew-next { min-width: 0; font-family: var(--sign); font-weight: 700; font-size: 1.0625rem; line-height: 1.25; }
+.crew-next-label { color: var(--muted); }
+.crew-caret { justify-self: end; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.crew-sum[aria-expanded="true"] .crew-caret, .crew-manage-btn[aria-expanded="true"] .crew-caret { transform: rotate(180deg); }
+
+/* the open crew, 7/5. Opening is instant. */
+.crew-detail { padding-bottom: 24px; }
+.crew-cols { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 32px 48px; align-items: start; }
+.crew-col { min-width: 0; }
+.crew-sub { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--rule);
+  font-family: var(--sign); font-weight: 700; font-size: 1.25rem; }
+.crew-sub-n { color: var(--muted); font-size: 1.0625rem; text-align: right; }
+.crew-none { padding: 14px 0; color: var(--muted); font-size: 1rem; border-bottom: 1px solid var(--line); }
+.crew-members, .crew-plans, .crew-invites { list-style: none; margin: 0; padding: 0; }
+.crew-members li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-height: 56px; padding-block: 8px; border-bottom: 1px solid var(--line); }
+.crew-members .who { font-size: 1.1875rem; min-width: 0; overflow-wrap: anywhere; }
+.crew-role { margin-left: auto; font-family: var(--sign); font-weight: 700; font-size: 1rem; color: var(--muted); }
+
+/* a plan is an event row (CC-140): the tile, name, venue and dates are the link; who's in follows, beside the tile */
+.crew-plan { position: relative; min-height: 101px; padding: 12px 0 12px 92px; border-bottom: 1px solid var(--line); }
+.crew-plan-a { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 16px; align-items: baseline; color: var(--text); text-decoration: none; }
+.crew-plan-a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+@supports selector(:has(a)) { /* the whole row shows the ring (brief section 5) */
+  .crew-plan-a:focus-visible { outline: none; }
+  .crew-plan:has(> .crew-plan-a:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+}
+.crew-plan .tile { position: absolute; left: 0; top: 12px; width: 76px; height: 76px; }
+.crew-plan .listing-t { grid-column: 1; font-size: 1.5rem; }
+.crew-plan-a:hover .listing-t { text-decoration-color: currentColor; }
+.crew-plan-where { grid-column: 1; font-size: 1rem; color: var(--muted); }
+.crew-plan-when { grid-column: 2; grid-row: 1; font-family: var(--sign); font-weight: 700; font-size: 1.0625rem; text-align: right; font-variant-numeric: tabular-nums; }
+.crew-line { margin-top: 6px; font-size: 1.0625rem; line-height: 1.5; } /* dots, dolphin, words: one run of text that wraps */
+.crew-line .dots { padding-left: 5px; margin-right: 8px; vertical-align: -5px; }
+.crew-line .face { width: 22px; height: 22px; margin-left: -5px; font-size: 11px; }
+.crew-line .mark { margin-right: 8px; vertical-align: -4px; }
+.crew-been { color: var(--muted); }
+
+/* Manage crew, closed by default */
+.crew-manage-wrap { margin-top: 24px; padding-top: 8px; border-top: 1px solid var(--line); }
+.crew-manage-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0; background: none; border: 0; cursor: pointer; color: var(--text);
+  font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px; }
+.crew-manage-btn .crew-caret { width: 12px; height: 12px; }
 .crew-manage-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-.crew-manage { display: grid; gap: 18px; }
-.crew-mg-part { display: grid; gap: 10px; }
-@media (prefers-reduced-motion: reduce) { .crew-caret, .crew-manage-btn::after { transition: none; } }
-@media (prefers-reduced-motion: reduce) { .crew-start-btn, .crew-start-btn .star { transition: none; } .crew-start-btn:hover, .crew-start-btn:focus-visible, .crew-start-btn:hover .star, .crew-start-btn:focus-visible .star { transform: none; } }
+.crew-mg-part { display: grid; gap: 12px; max-width: 760px; margin-top: 24px; }
+.crew-mg-part .row { gap: 12px; }
+.crew-link { display: grid; gap: 12px; }
+.crew-link input { width: 100%; }
+.crew-invites li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 16px; min-height: 44px; border-bottom: 1px solid var(--line);
+  font-size: 1rem; color: var(--muted); }
+.crew-tbtn { display: inline-flex; align-items: center; min-height: 44px; color: var(--text); font-size: 1.0625rem; text-decoration-thickness: 1px; text-underline-offset: 5px; }
+.crew-tacts { display: flex; flex-wrap: wrap; gap: 0 20px; margin-left: auto; }
+.crew-members-mg li { min-height: 52px; padding-block: 4px; }
+.crew-members-mg .who { font-size: 1.125rem; }
+.crew-email-row { display: flex; gap: 12px; }
+.crew-email-row input { flex: 1 1 auto; min-width: 0; }
+.crew-email .form-error { margin-top: 6px; }
+.crew .confirm { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: var(--danger-soft); color: var(--on-danger-soft); }
+.crew .confirm b { font-family: var(--sign); font-weight: 700; font-size: 1.125rem; }
+.crew .confirm .btn { min-height: 44px; padding: 0 14px; }
+.crew .confirm .btn.ghost { color: inherit; box-shadow: inset 0 0 0 1.5px currentColor; }
+
+@media (max-width: 700px) {
+  .crews-head { padding-top: 24px; }
+  .crew-sum { grid-template-columns: minmax(0, 1fr) 28px; gap: 8px 12px; }
+  .crew-banner { grid-column: 1 / -1; grid-row: 2; flex-wrap: wrap; }
+  .crew-caret { grid-column: 2; grid-row: 1; }
+  .crew-name { font-size: 1.5625rem; }
+  .crew-cols { grid-template-columns: minmax(0, 1fr); } /* plans, then members */
+  .crew-plan-a { grid-template-columns: minmax(0, 1fr); }
+  .crew-plan .listing-t { font-size: 1.3125rem; }
+  .crew-plan-when { grid-column: 1; grid-row: auto; text-align: left; font-size: 1rem; }
+  .crew-email-row { flex-wrap: wrap; }
+  .crew-tacts { margin-left: 34px; } /* under the name, past the dot */
+}
+@media (prefers-reduced-motion: reduce) { .crew-name { transition: none; } }
 
 /* CC-105: your name in the header, and its menu. CC-137: the you menu is a square panel (1.5px ink border, no
    shadow) with the current page in bold; in the phone sheet it sits open under your name. */
