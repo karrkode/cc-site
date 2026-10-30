@@ -565,6 +565,14 @@ var INVITE_TAGS = "?utm_source=invite&utm_medium=referral&utm_campaign=friend";
 var INVITE_TEXT = "I use Culture Crew to find Chicago theater, music and art, and to go out with friends. Come see what's on:";
 // CC-126: an admin's invite opens the invite page (/invite), tagged invite / link, or invite / qr for the code
 function adminInviteUrl(medium) { return location.origin + "/invite?utm_source=invite&utm_medium=" + medium + "&utm_campaign=friend"; }
+// CC-147: closing the dialog (or the QR screen after it) returns focus to what opened it. The you menu has closed by
+// then, so that's your name, or the menu button on a phone, where the sheet has closed too.
+var INVITE_FROM = null;
+function inviteReturnFocus() {
+  var el = INVITE_FROM; INVITE_FROM = null;
+  if (!el || !el.isConnected || !el.getClientRects().length) el = meInSheet() ? $("mast-burger") : $("nav-account");
+  if (el && el.getClientRects().length) el.focus();
+}
 function inviteFriend() {
   var admin = isAdmin(), url = admin ? adminInviteUrl("link") : location.origin + "/" + INVITE_TAGS;
   if (navigator.share && !admin) { navigator.share({ title: "Culture Crew", text: INVITE_TEXT, url: url }).catch(function () {}); return; }
@@ -574,26 +582,28 @@ function inviteFriend() {
   $("invite-hint").textContent = admin ? "This link opens a page that tells them why to join, with a sign-up box. On your phone, show them the QR code to scan." :
     "Send them this link. They can look around without an account, and sign up when they want to go out with you.";
   $("invite-url").value = url; $("invite-msg").textContent = "";
+  INVITE_FROM = document.activeElement;
   $("invite-dialog").showModal();
-  if (share) { $("invite-url").scrollLeft = 0; $("invite-share").focus(); } else { $("invite-url").focus(); $("invite-url").select(); }
+  if (share) { $("invite-url").scrollLeft = 0; $("invite-share").focus(); } else { $("invite-url").focus(); $("invite-url").select(); $("invite-url").scrollLeft = 0; } // CC-147: selected, showing its start
 }
 $("invite-share").addEventListener("click", function () {
   navigator.share({ title: "Culture Crew", text: INVITE_TEXT, url: $("invite-url").value }).catch(function () {});
 });
 // CC-126: the code fills the screen, made here in the browser (qrSvgText, admin.js), never by an outside service.
-// The screen is kept awake while it shows, where the browser allows.
+// The screen is kept awake while it shows, where the browser allows. CC-147: the code is deep lake ink on white.
 var QR_WAKE = null;
+$("invite-dialog").addEventListener("close", function () { if (!$("qr-full").open) inviteReturnFocus(); });
 $("invite-qr").addEventListener("click", function () {
-  $("invite-dialog").close();
-  $("qr-full-code").innerHTML = qrSvgText(adminInviteUrl("qr"));
+  $("qr-full-code").innerHTML = qrSvgText(adminInviteUrl("qr"), "#0E2A40");
   $("qr-full").querySelector(".qr-full-url").textContent = location.host + "/invite";
-  $("qr-full").showModal(); $("qr-full-title").focus();
+  $("qr-full").showModal(); $("invite-dialog").close(); $("qr-full-title").focus();
   try { if (navigator.wakeLock) navigator.wakeLock.request("screen").then(function (l) { QR_WAKE = l; }, function () {}); } catch (e) {}
 });
 $("qr-full-done").addEventListener("click", function () { $("qr-full").close(); });
 $("qr-full").addEventListener("close", function () {
   if (QR_WAKE) { QR_WAKE.release().catch(function () {}); QR_WAKE = null; }
   $("qr-full-code").innerHTML = "";
+  inviteReturnFocus();
 });
 $("invite-copy").addEventListener("click", function () {
   var field = $("invite-url"), msg = $("invite-msg");
@@ -878,15 +888,17 @@ function paintJoinPage(justJoined) {
 $("jp-form").addEventListener("submit", function (ev) {
   ev.preventDefault();
   var form = this, email = $("jp-email").value.trim(), pw = $("jp-password").value, err = $("jp-error");
-  if (!looksLikeEmail(email)) { err.textContent = "Enter a valid email address."; $("jp-email").focus(); return; }
-  if (pw.length < 8) { err.textContent = "Use a password of at least 8 characters."; $("jp-password").focus(); return; }
+  // CC-147: an error is the pale red band, starting "Check this:", and the field at fault gets the ink border
+  var bad = function (input, text) { crewMarkInvalid(input, true); err.textContent = checkThis(text); input.focus(); };
+  if (!looksLikeEmail(email)) { bad($("jp-email"), "Enter a valid email address."); return; }
+  if (pw.length < 8) { bad($("jp-password"), "Use a password of at least 8 characters."); return; }
   err.textContent = ""; $("jp-go").disabled = true;
   api("/auth/register", { method: "POST", body: registerBody(email, pw, $("jp-name").value.trim()), cookies: true })
     .then(readJSON, function () { return null; }).then(function (res) {
       $("jp-go").disabled = false;
-      if (!res || !res.ok) { err.textContent = errorText(res); return; }
+      if (!res || !res.ok) { err.textContent = checkThis(errorText(res)); return; }
       form.reset(); setSession(res.body); paintJoinPage(true); $("jp-in-title").focus();
     });
 });
-$("jp-form").addEventListener("input", function () { $("jp-error").textContent = ""; });
+$("jp-form").addEventListener("input", function (ev) { $("jp-error").textContent = ""; crewMarkInvalid(ev.target, false); });
 $("jp-signin").addEventListener("click", function () { openAccount(); $("login-email").focus(); });

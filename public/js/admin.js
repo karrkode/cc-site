@@ -812,12 +812,12 @@ var CARD_URLS = [];
 // CC-121: the campaign ends with the date the card is made, so each printed batch is its own row on Site stats
 function cardCampaign() { return ($("card-campaign").value.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "card") + "-" + isoDate(today()); }
 function cardUrl() { return "https://chiculturecrew.com/join?utm_source=qr&utm_medium=print&utm_campaign=" + cardCampaign(); }
-function qrSvgText(text) { // the code as an SVG: one path of dark squares on white, with the standard 4-module quiet zone
+function qrSvgText(text, ink) { // the code as an SVG: one path of dark squares on white, with the standard 4-module quiet zone
   var qr = qrcode(0, "M"); qr.addData(text); qr.make();
   var n = qr.getModuleCount(), q = 4, size = n + q * 2, d = [];
   for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (qr.isDark(r, c)) d.push("M" + (c + q) + " " + (r + q) + "h1v1h-1z");
   return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + " " + size + '" shape-rendering="crispEdges">' +
-    '<rect width="' + size + '" height="' + size + '" fill="#ffffff"/><path fill="#111111" d="' + d.join("") + '"/></svg>';
+    '<rect width="' + size + '" height="' + size + '" fill="#ffffff"/><path fill="' + (ink || "#111111") + '" d="' + d.join("") + '"/></svg>';
 }
 function qrPngUrl(svg) { // 1024px, for printing or a print shop
   return new Promise(function (resolve, reject) {
