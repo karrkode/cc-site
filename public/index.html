@@ -485,31 +485,44 @@
 
     <!-- My week (CC-105, renamed from Culture Planner in CC-118): the week ahead and the Cultural Journal, at #planner -->
     <section class="view" id="view-planner" hidden>
-      <div class="view-head">
-        <p class="eyebrow">Your calendar</p>
+      <!-- CC-146: Lakefront. A title and an italic deck; the week bar; the week (7) beside Still deciding (5); the journal below at reading width -->
+      <div class="week-head">
         <h1 id="planner-title" tabindex="-1">My week</h1>
-        <p>Where you're going this week, and notes on where you've been.</p>
+        <p class="week-deck">Where you're going this week, and notes on where you've been.</p>
       </div>
       <div class="panel" id="planner-signin" hidden>
         <p>Mark events you're interested in or committed to, and they're laid out by the day here, with a journal of where you've been.</p>
-        <div class="row"><button class="btn" type="button" id="planner-signin-btn">Sign in or create an account</button></div>
+        <div class="row"><button class="btn" type="button" id="planner-signin-btn">Sign in or make an account</button></div>
       </div>
       <div id="planner-main" hidden>
-          <div class="section planner-section"><h2 id="myplans-title" tabindex="-1">Your week ahead</h2>
-            <p class="hint">Commit to a day on any event and it shows up here.</p>
-            <div class="row week-nav" role="group" aria-label="Weeks">
-              <button type="button" class="btn ghost" id="week-prev">← Previous week</button>
-              <p class="week-range" id="week-range" aria-live="polite"></p>
-              <button type="button" class="btn ghost" id="week-next">Next week →</button>
-              <button type="button" class="btn neutral" id="week-skip" hidden></button>
-              <button type="button" class="textbtn" id="week-now" hidden>Back to this week</button>
-            </div>
-            <div class="week" id="planner-week"></div>
-            <div class="planner-more" id="deciding-wrap" hidden><h3>Still deciding</h3><div class="grid" id="myplans-grid"></div></div>
+        <div class="week-bar">
+          <p class="week-range" id="week-range" aria-live="polite"></p>
+          <div class="week-steps" role="group" aria-label="Weeks">
+            <button type="button" class="week-step" id="week-prev">← Previous</button>
+            <button type="button" class="week-step" id="week-next">Next →</button>
           </div>
-          <div class="section"><h2 id="journal-title" tabindex="-1">Cultural Journal</h2>
-            <p class="hint">The last five events you've been to. Sum each up in three words; a review is up to you. Only you can see it.</p>
-            <div class="journal" id="went-grid"></div></div>
+          <div class="week-jumps">
+            <button type="button" class="week-tbtn" id="week-skip" hidden></button>
+            <button type="button" class="week-tbtn" id="week-now" hidden>Back to this week</button>
+          </div>
+        </div>
+        <div class="week-cols">
+          <section class="week-col" aria-labelledby="myplans-title">
+            <h2 class="week-sub"><span id="myplans-title" tabindex="-1">The week ahead</span><span class="week-sub-n" id="week-n"></span></h2>
+            <div class="week-state" id="week-state" hidden></div>
+            <div class="week-days" id="planner-week"></div>
+          </section>
+          <section class="week-col" aria-labelledby="deciding-title">
+            <h2 class="week-sub"><span id="deciding-title">Still deciding</span><span class="week-sub-n" id="deciding-n"></span></h2>
+            <ul class="week-rows" id="myplans-grid"></ul>
+            <p class="week-hint" id="deciding-hint"></p>
+          </section>
+        </div>
+        <section class="journal-sec" aria-labelledby="journal-title">
+          <h2 class="journal-h"><span id="journal-title" tabindex="-1">Cultural journal</span><span class="journal-only">Only you can see it</span></h2>
+          <p class="week-hint">The last five events you've been to. Sum each one up in three words. A review is up to you.</p>
+          <div class="journal" id="went-grid"></div>
+        </section>
       </div>
     </section>
 

@@ -18,6 +18,7 @@ function onAuthChange() {
   paintMeMenu(); // your name and its menu, or Sign in (CC-105)
   $("nav-review").hidden = !isAdmin();
   WENT = {}; WENT_LIST = []; WENT_PHOTO = {}; WENT_JOURNAL = {}; JOURNAL_DRAFT = {}; WENT_SHARE = {}; MYPLANS = {}; MYPLAN_LIST = [];
+  PLANS_STATE = "loading"; WENT_STATE = "loading"; JOURNAL_OPEN = null; // CC-146: My week waits for them
   if (!AUTH.user) {
     NOTICE_SET = false; $("account-notice").textContent = "";
     if (visible("review") || visible("venues") || visible("stats") || visible("sources") || visible("found") || visible("issues")) show("home");
@@ -49,7 +50,8 @@ function onAuthChange() {
 }
 function loadWent() {
   return api("/me/attended").then(readJSON).then(function (res) {
-    if (!res.ok) return;
+    if (!res.ok) { if (WENT_STATE !== "ready") WENT_STATE = "error"; if (visible("planner")) renderPlannerPage(); return; }
+    WENT_STATE = "ready";
     WENT = {}; WENT_PHOTO = {}; WENT_JOURNAL = {}; WENT_SHARE = {}; WENT_LIST = res.body.map(function (row) {
       var e = toEvent(row.event); if (row.photo) WENT_PHOTO[e.id] = row.photo; // your photos (CC-76)
       WENT_JOURNAL[e.id] = { words: row.words || "", review: row.review || "", recommend: !!row.recommend }; // CC-98
@@ -58,7 +60,7 @@ function loadWent() {
     });
     WENT_LIST.forEach(function (e) { WENT[e.id] = true; });
     rerenderLists();
-  }, function () {});
+  }, function () { if (WENT_STATE !== "ready") WENT_STATE = "error"; if (visible("planner")) renderPlannerPage(); });
 }
 function reloadEvents() { // something was published: fresh counts, home list and catalog page
   PLAN_RANGE = null;
@@ -84,18 +86,20 @@ document.addEventListener("click", function (ev) {
     }
     // Redraw every copy of the card (home, catalog and account can all show it): marking it also takes
     // away the plan button, and un-marking brings it back.
-    return redrawCards(id, b.closest("[data-card],[data-journal]"), "[data-went]");
+    if (on) JOURNAL_OPEN = id; // CC-146: the entry to write now is the one that's open
+    return redrawCards(id, b.closest("[data-card],[data-day-item],[data-journal]"), "[data-went]");
   }).catch(function () { b.disabled = false; });
 });
 
 // ---------- your plans (CC-55) ----------
 function loadMyPlans() {
   return api("/me/plans").then(readJSON).then(function (res) {
-    if (!res.ok) return;
+    if (!res.ok) { if (PLANS_STATE !== "ready") PLANS_STATE = "error"; return; }
+    PLANS_STATE = "ready";
     MYPLANS = {}; MYPLAN_LIST = res.body.map(function (row) {
       var e = toEvent(row.event); MYPLANS[e.id] = { status: row.status, date: row.date, crews: row.crews || [] }; return e;
     });
-  }, function () {});
+  }, function () { if (PLANS_STATE !== "ready") PLANS_STATE = "error"; });
 }
 function myplanSaid(mine) {
   return !mine ? "Plan cleared" : mine.status === "going" ? "Going on " + dayName(parseISO(mine.date)) : "Marked interested";
@@ -125,7 +129,7 @@ function redrawCardsNow(id, from, focusOn) {
     if (visible("planner")) renderPlannerPage();
     var item = '[data-card="' + id + '"],[data-day-item="' + id + '"],[data-journal="' + id + '"]', planner = PLANNER_LISTS.indexOf(listId) >= 0;
     var card = listId && $(listId) ? $(listId).querySelector(item) : null;
-    if (!card && planner) card = $("myplans-title").parentElement.querySelector(item) || (WENT[id] ? $("went-grid").querySelector(item) : null); // moved within the planner, or to "I've been"
+    if (!card && planner) card = $("planner-main").querySelector(item) || (WENT[id] ? $("went-grid").querySelector(item) : null); // moved within the planner, or to "I've been"
     var target = card ? card.querySelector(focusOn || "[data-myplan-toggle]") : planner ? $("myplans-title") : listId === "went-grid" ? $("journal-title") : null;
     if (target) target.focus();
   });
@@ -186,23 +190,49 @@ document.addEventListener("keydown", function (ev) { // Escape closes the picker
   if (toggle) { closeMyPlan(toggle); toggle.focus(); }
 });
 
-// ---------- Cultural Planner (CC-97) ----------
-// The account page's week ahead, from today: each day lists the events you're going to that day, compactly;
-// an empty day offers the catalog for just that day. Previous and Next step a week at a time (never before this
-// week; at most two years out, as far as a plan can go), and "Skip to" jumps to the week of your next plan after
-// the one showing. Interested plans, with no day yet, sit under Still deciding as full cards; so does a going plan
-// for a day that's passed, where "I've been" is.
+// ---------- My week: the week ahead (CC-97; Lakefront since CC-146) ----------
+// A week at a time from today, one line per day in listings style (design brief, section 10): the events you're going
+// to that day as event rows (CC-140) with Change plan and Tell a crew, or, on an empty day, one "Find something →"
+// line (CC-131). Previous and Next step a week at a time (never before this week; at most two years out, as far as a
+// plan can go), and "Skip to" jumps to the week of your next plan after the one showing. Beside it, Still deciding:
+// interested plans, with no day yet, and going plans for a day that's passed, where "I've been" is.
 var PLANNER_LISTS = ["planner-week", "myplans-grid"], PLANNER_WEEK = 0, PLANNER_MAX = 104;
+var PLANS_STATE = "loading", WENT_STATE = "loading"; // until /me/plans and /me/attended first answer: then "ready", or "error"
 function dayTimesText(e, d) { // "7:30 PM", "Open 10 AM to 5 PM", or "" (planner.js knows the schedules)
   if (isExhibit(e)) { var h = hoursOn(e, d); return h && h[2] ? "Open " + clockText(h[0]) + " to " + clockText(h[1]) : ""; }
   return (timesOn(e, d) || []).filter(Boolean).map(clockText).join(" and ");
 }
-function dayItemHTML(e, d) {
-  var times = dayTimesText(e, d);
-  return '<li class="day-item" data-day-item="' + esc(e.id) + '">' +
-    '<a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" +
-    '<span class="day-where">' + esc(placeText(e)) + "</span>" + (times ? '<span class="day-time">' + esc(times) + "</span>" : "") +
-    '<div class="card-actions">' + myplanToggleHTML(e) + "</div>" + myplanHTML(e) + "</li>";
+// Who from your crews is in, as their dots and the line in words ("Maya C. and Jordan R. from Thursday Theater are going.")
+function weekCrewHTML(e) {
+  var names = crewNames(e), note = crewNoteText(e);
+  if (!names.length || !note) return "";
+  return '<p class="crew-line"><span class="dots" aria-hidden="true">' + names.slice(0, LISTING_DOTS).map(function (n) { return crewDotHTML(n); }).join("") +
+    "</span><span>" + esc(note) + "</span></p>";
+}
+// An event row: the tile, name, venue and time (with your dolphin) are one link to the event page; the buttons follow,
+// since they can't sit inside a link. d is the day it's planned for; without one it's a Still deciding row.
+function weekRowHTML(e, d) {
+  var mine = MYPLANS[e.id] || {}, going = mine.status === "going", id = esc(e.id);
+  var when = d ? dayTimesText(e, d) : going ? "Going " + goingDay(mine.date) : dateText(e);
+  var own = AUTH.user.dolphins ? "" : markHTML(going ? "going" : "interested", going ? "You're going" : "You're interested"); // an owner's own plan is their ring (CC-139)
+  var acts = d ? myplanToggleHTML(e) + crewShareToggleHTML(e, "Tell a crew") : // the toggles first: their pickers take the same number
+    myplanToggleHTML(e, goingRange(e) ? "Pick a day" : "Change plan") + wentHTML(e) + crewShareToggleHTML(e, "Tell a crew"); // closed: no day left to pick
+  return '<li class="wk-row" data-day-item="' + id + '"><a class="wk-row-a" href="#e/' + id + '" data-ev-open="' + id + '">' +
+    '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + '<span class="tile-k">' + esc(e.label) + "</span></span>" +
+    '<span class="listing-t">' + esc(e.title) + (e.pick ? markHTML("host", pickText(e.pick)) : "") + "</span>" +
+    '<span class="wk-where">' + esc(placeText(e)) + "</span>" +
+    '<span class="wk-when">' + (when ? "<span>" + esc(when) + "</span>" : "") + own + "</span></a>" +
+    weekCrewHTML(e) + '<div class="card-actions wk-acts">' + acts + "</div>" + myplanHTML(e) + crewShareHTML(e) + "</li>";
+}
+// One day: its name, then its plans as rows, or "Nothing yet…" and Find something (the list opens under it).
+function weekDayHTML(day) {
+  var now = same(day.d, T), whole = (now ? "Today, " : "") + dayName(day.d), iso = isoDate(day.d);
+  return '<section class="wk-day' + (now ? " today" : "") + '" aria-label="' + esc(whole) + '">' +
+    '<div class="wk-day-h"><h3 class="wk-day-t">' + esc((now ? "Today, " : "") + listingDay(day.d)) + "</h3>" +
+    (day.items.length ? "" : '<span class="wk-none">Nothing yet\u2026</span>' + dayFindHTML(iso, dayName(day.d))) + "</div>" +
+    (day.items.length ? '<ul class="wk-rows">' + day.items.map(function (e) { return weekRowHTML(e, day.d); }).join("") + "</ul>" :
+      '<div class="day-found" id="find-' + iso + '" aria-live="polite"' + (FIND_DAY_OPEN[iso] ? "" : " hidden") + ">" + (FIND_DAY_OPEN[iso] ? dayFoundHTML(iso) : "") + "</div>") +
+    "</section>";
 }
 function goingAhead() { // your going plans from today on, soonest first: [{ e, n }] with n days from today
   return MYPLAN_LIST.map(function (e) {
@@ -210,27 +240,34 @@ function goingAhead() { // your going plans from today on, soonest first: [{ e, 
     return { e: e, n: d ? diff(d, T) : -1 };
   }).filter(function (x) { return x.n >= 0; }).sort(function (a, b) { return a.n - b.n; });
 }
+function weekRangeText(ws, we) { // "Oct 30 – Nov 5", "Nov 6 – 12", and the year when it isn't this one
+  var md = function (d) { return F.md.format(d) + (d.getFullYear() === T.getFullYear() ? "" : ", " + d.getFullYear()); };
+  return md(ws) + " \u2013 " + (ws.getMonth() === we.getMonth() && ws.getFullYear() === we.getFullYear() ? we.getDate() + (we.getFullYear() === T.getFullYear() ? "" : ", " + we.getFullYear()) : md(we));
+}
 function renderPlanner() {
-  var start = PLANNER_WEEK * 7, days = [], ahead = goingAhead();
+  var start = PLANNER_WEEK * 7, days = [], ahead = goingAhead(), ready = PLANS_STATE === "ready";
   for (var i = 0; i < 7; i++) days.push({ d: add(T, start + i), items: [] });
   ahead.forEach(function (x) { if (x.n >= start && x.n < start + 7) days[x.n - start].items.push(x.e); });
   var deciding = MYPLAN_LIST.filter(function (e) { var mine = MYPLANS[e.id]; return !(mine && mine.status === "going" && parseISO(mine.date) >= T); });
-  var next = ahead.filter(function (x) { return x.n >= start + 7; })[0];
-  $("week-range").textContent = (PLANNER_WEEK === 0 ? "This week: " : "") + windowText(days[0].d, days[6].d);
+  var next = ahead.filter(function (x) { return x.n >= start + 7; })[0], planned = ahead.filter(function (x) { return x.n >= start && x.n < start + 7; }).length;
+  $("week-range").textContent = (PLANNER_WEEK === 0 ? "This week · " : "") + weekRangeText(days[0].d, days[6].d);
   $("week-prev").disabled = PLANNER_WEEK === 0; $("week-next").disabled = PLANNER_WEEK >= PLANNER_MAX;
   $("week-now").hidden = PLANNER_WEEK === 0;
   $("week-skip").hidden = !next;
   if (next) $("week-skip").textContent = "Skip to your next plan: " + goingDay(MYPLANS[next.e.id].date);
-  $("planner-week").innerHTML = days.map(function (day, i) {
-    var now = same(day.d, T), label = (now ? "Today, " : "") + F.wmd.format(day.d), whole = dayName(day.d);
-    return '<section class="day' + (now ? " today" : "") + '" aria-label="' + esc((now ? "Today, " : "") + whole) + '">' +
-      '<h3 class="day-head">' + esc(label) + "</h3>" +
-      (day.items.length ? '<ul class="day-items">' + day.items.map(function (e) { return dayItemHTML(e, day.d); }).join("") + "</ul>" :
-        dayFindHTML(day.d, whole)) +
-      "</section>";
-  }).join("");
+  // loading and errors: the days wait, rather than saying "Nothing yet…" before the plans are in
+  $("week-state").hidden = ready;
+  $("week-state").innerHTML = ready ? "" : PLANS_STATE === "error" ? '<p class="week-error" role="alert">' + esc(checkThis("your plans couldn\u2019t be loaded. Reload the page to try again.")) + "</p>" :
+    '<p class="week-hint" role="status">Finding your plans\u2026</p>';
+  $("week-n").textContent = ready ? plural(planned, "plan", "plans") : "";
+  $("deciding-n").textContent = ready ? String(deciding.length) : "";
+  $("planner-week").innerHTML = !ready ? "" : days.map(weekDayHTML).join("") +
+    (ahead.length ? "" : '<p class="week-hint">Commit to a day on any event and it shows up here.</p>');
   days.forEach(function (day) { paintFindDay(isoDate(day.d)); });
-  $("deciding-wrap").hidden = !deciding.length; $("myplans-grid").innerHTML = deciding.map(function (e) { return cardHTML(e); }).join("");
+  $("myplans-grid").innerHTML = ready ? deciding.map(function (e) { return weekRowHTML(e); }).join("") : "";
+  $("deciding-hint").textContent = !ready ? "" : deciding.some(goingRange) ? "Pick a day for one, and it moves into your week." : deciding.length ? "" :
+    "Nothing waiting. Mark an event Interested, and it waits here until you pick a day.";
+  paintWater($("planner-main"));
 }
 function showWeek(n, focusId) {
   PLANNER_WEEK = Math.max(0, Math.min(PLANNER_MAX, n)); renderPlanner();
@@ -244,9 +281,9 @@ $("week-skip").addEventListener("click", function () {
   var next = goingAhead().filter(function (x) { return x.n >= PLANNER_WEEK * 7 + 7; })[0];
   if (next) showWeek(Math.floor(next.n / 7), "week-skip");
 });
-// CC-131: "Find something for that day!" opens a list under the day, in place, of only what's on that day (the
-// planner's rule, CC-79: a show with a time that day, an exhibition on a day it's open; on today, only what's still
-// to come). Each links to its event; the button closes it again. An empty day says so and offers the catalog.
+// CC-131: "Find something →" opens a list under the day, in place, of only what's on that day (the planner's rule,
+// CC-79: a show with a time that day, an exhibition on a day it's open; on today, only what's still to come). Each
+// links to its event; the button closes it again. An empty day says so and offers the catalog.
 // FIND_DAY_OPEN and FIND_DAY keep, by day, which lists are open and what came back, so redrawing the week keeps them.
 // A busy day lists the first FIND_DAY_SHOWN (shows by start time, then exhibitions), then a link to the catalog
 // for just that day (When is a one-day range, and the other filters start fresh). The list is FIND_DAY_TALL items
@@ -254,25 +291,23 @@ $("week-skip").addEventListener("click", function () {
 var FIND_DAY = {}, FIND_DAY_OPEN = {}, FIND_DAY_SHOWN = 5, FIND_DAY_TALL = 3;
 function dayFoundHTML(iso) { // what's in the open list: loading, an error, nothing, or that day's events
   var d = parseISO(iso), got = FIND_DAY[iso];
-  if (!got || got.loading) return '<p class="hint small">Finding events\u2026</p>';
-  if (got.error) return '<p class="form-error">The events couldn\u2019t be loaded. Check your connection and try again.</p>';
-  if (!got.items.length) return '<p class="hint small">Nothing on the list for that day.</p><p class="small"><a href="#catalog" data-find-catalog>Browse the catalog</a></p>';
+  if (!got || got.loading) return '<p class="week-hint">Finding events\u2026</p>';
+  if (got.error) return '<p class="week-error">' + esc(checkThis("the events couldn\u2019t be loaded. Check your connection and try again.")) + "</p>";
+  if (!got.items.length) return '<p class="week-hint">Nothing on the list for that day.</p><p class="week-hint"><a href="#catalog" data-find-catalog>Browse the catalog</a></p>';
   return '<div class="day-scroll"><ul class="day-items">' + got.items.slice(0, FIND_DAY_SHOWN).map(function (e) {
     var times = dayTimesText(e, d), id = esc(e.id);
     return '<li class="day-item"><a href="#e/' + id + '" data-ev-open="' + id + '">' + esc(e.title) + "</a>" +
       '<span class="day-where">' + esc(placeText(e)) + "</span>" + (times ? '<span class="day-time">' + esc(times) + "</span>" : "") + "</li>";
-  }).join("") + "</ul>" + (got.items.length > FIND_DAY_SHOWN ? '<p class="small"><a href="#catalog" data-find-catalog="' + iso + '">See more for that day in the catalog</a></p>' : "") + "</div>";
+  }).join("") + "</ul>" + (got.items.length > FIND_DAY_SHOWN ? '<p class="week-hint"><a href="#catalog" data-find-catalog="' + iso + '">See more for that day in the catalog</a></p>' : "") + "</div>";
 }
-function dayFindHTML(d, whole) {
-  var iso = isoDate(d), open = !!FIND_DAY_OPEN[iso];
-  return '<button type="button" class="btn ghost day-find" data-find-day="' + iso + '" data-whole="' + esc(whole) + '" aria-controls="find-' + iso + '"></button>' +
-    '<div class="day-found" id="find-' + iso + '" aria-live="polite"' + (open ? "" : " hidden") + ">" + (open ? dayFoundHTML(iso) : "") + "</div>";
+function dayFindHTML(iso, whole) { // the button on the day's line; weekDayHTML puts its list under the line
+  return '<button type="button" class="week-tbtn day-find" data-find-day="' + iso + '" data-whole="' + esc(whole) + '" aria-controls="find-' + iso + '"></button>';
 }
 function paintFindDay(iso) { // the button says what it does next; the list shows when it's open
   var b = document.querySelector('[data-find-day="' + iso + '"]'), box = $("find-" + iso); if (!b || !box) return;
   var open = !!FIND_DAY_OPEN[iso];
   b.setAttribute("aria-expanded", String(open));
-  b.textContent = open ? "Hide that day\u2019s events" : "Find something for that day!";
+  b.textContent = open ? "Hide that day\u2019s events" : "Find something \u2192";
   b.setAttribute("aria-label", (open ? "Hide the events for " : "Find something for ") + b.getAttribute("data-whole"));
   box.hidden = !open; box.innerHTML = open ? dayFoundHTML(iso) : "";
   fitFindDay(box);
@@ -315,23 +350,42 @@ var JOURNAL_SHOWN = 5, REVIEW_MAX = 1000, REVIEW_COUNT_FROM = 800, WORD_MAX = 20
 function journalOf(id) { return JOURNAL_DRAFT[id] || WENT_JOURNAL[id] || { words: "", review: "", recommend: false }; }
 function journalHasText(id) { var j = journalOf(id), s = WENT_JOURNAL[id] || {}; return !!(j.words || j.review || j.recommend || s.words || s.review || s.recommend); }
 function reviewCountText(n) { return n >= REVIEW_COUNT_FROM ? (REVIEW_MAX - n) + " characters left" : ""; }
-function journalEntryHTML(e) {
-  var id = esc(e.id), j = journalOf(e.id), p = WENT_PHOTO[e.id], k = "j-" + id, words = j.words ? j.words.split(" ") : [];
-  var photo = p && p.status !== "rejected" && p.url ? '<figure class="journal-photo"><img src="' + esc(API + p.url) + '" alt="Your photo from ' + esc(e.title) + '">' +
-    (p.status === "approved" ? "" : '<figcaption class="pill">' + esc(PHOTO_STATES[p.status] || p.status) + "</figcaption>") + "</figure>" : "";
-  return '<article class="journal-entry" data-journal="' + id + '" aria-labelledby="' + k + '-h">' + photo +
-    '<div class="journal-body"><h3 id="' + k + '-h"><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a></h3>" +
-    '<p class="where">' + placeHTML(e) + "</p>" +
+// CC-146: only the entry being written is open. A finished one folds to its row: the tile, its name and venue, and its
+// three words as an italic deck, with Edit. JOURNAL_OPEN is the open entry's id; null opens the newest without words,
+// and "" (Close) leaves them all folded. Your photo shows on the tile, and in full when the entry is open.
+var JOURNAL_OPEN = null;
+function journalOpenId(shown) {
+  if (JOURNAL_OPEN !== null && (JOURNAL_OPEN === "" || shown.some(function (e) { return e.id === JOURNAL_OPEN; }))) return JOURNAL_OPEN;
+  var first = shown.filter(function (e) { return !(WENT_JOURNAL[e.id] || {}).words; })[0];
+  return first ? first.id : "";
+}
+function journalEntryHTML(e, open) {
+  var id = esc(e.id), j = journalOf(e.id), saved = WENT_JOURNAL[e.id] || {}, p = WENT_PHOTO[e.id], k = "j-" + id, words = j.words ? j.words.split(" ") : [];
+  var hasPhoto = p && p.status !== "rejected" && p.url, photoState = hasPhoto && p.status !== "approved" ? PHOTO_STATES[p.status] || p.status : "";
+  var thumb = hasPhoto ? '<img class="journal-thumb" src="' + esc(API + p.url) + '" alt="">' : ""; // the tile shows if it won't load
+  var notes = [saved.recommend ? "Recommended" : "", (WENT_SHARE[e.id] || {}).shared ? "Shared" : ""].filter(Boolean);
+  var head = '<div class="journal-row"><a class="journal-a" href="#e/' + id + '" data-ev-open="' + id + '">' +
+    '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + '<span class="tile-k">' + esc(e.label) + "</span>" + thumb + "</span>" +
+    '<span class="listing-t" id="' + k + '-h">' + esc(e.title) + "</span>" + '<span class="wk-where">' + esc(placeText(e)) + "</span></a>" +
+    (open ? "" : saved.words ? '<p class="journal-words">' + esc(saved.words.split(" ").map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(". ")) + ".</p>" : '<p class="week-hint journal-nowords">No three words yet.</p>') +
+    '<div class="journal-meta">' + notes.map(function (n) { return "<span>" + n + "</span>"; }).join("") + (photoState ? "<span>Photo " + esc(photoState.toLowerCase()) + "</span>" : "") +
+    '<button type="button" class="week-tbtn" data-journal-open="' + id + '" aria-expanded="' + open + '" aria-label="' +
+    esc((open ? "Close your entry for " : saved.words ? "Edit your entry for " : "Write your entry for ") + e.title) + '">' + (open ? "Close" : saved.words ? "Edit" : "Write") + "</button></div></div>";
+  if (!open) return '<article class="journal-entry" data-journal="' + id + '" aria-labelledby="' + k + '-h">' + head + "</article>";
+  var photo = hasPhoto ? '<figure class="journal-photo"><img src="' + esc(API + p.url) + '" alt="Your photo from ' + esc(e.title) + '">' +
+    (photoState ? "<figcaption>" + esc(photoState) + "</figcaption>" : "") + "</figure>" : "";
+  return '<article class="journal-entry open" data-journal="' + id + '" aria-labelledby="' + k + '-h">' + head +
+    '<div class="journal-body">' +
     '<form class="journal-form" data-journal-form="' + id + '" novalidate>' +
     '<fieldset class="field three-words"><legend>Three words</legend><div class="row">' + [0, 1, 2].map(function (i) {
       return '<input name="word" type="text" maxlength="' + WORD_MAX + '" autocomplete="off" spellcheck="true" required aria-label="Word ' + (i + 1) + '" value="' + esc(words[i] || "") + '">';
     }).join("") + "</div></fieldset>" +
-    '<div class="field"><label for="' + k + '-review">Your review</label><textarea id="' + k + '-review" name="review" rows="3" maxlength="' + REVIEW_MAX + '" aria-describedby="' + k + '-count">' + esc(j.review) + "</textarea>" +
+    '<div class="field"><label for="' + k + '-review">Your review (optional)</label><textarea id="' + k + '-review" name="review" rows="3" maxlength="' + REVIEW_MAX + '" aria-describedby="' + k + '-count">' + esc(j.review) + "</textarea>" +
     '<span class="hint small" id="' + k + '-count" aria-live="polite">' + esc(reviewCountText(j.review.length)) + "</span></div>" +
-    '<label class="radio"><input type="checkbox" name="recommend"' + (j.recommend ? " checked" : "") + "> Would you recommend?</label>" +
-    '<div class="row"><button class="btn" type="submit">Save</button><span class="hint small" data-journal-said role="status"></span></div>' +
-    '<p class="form-error" role="alert"></p></form>' + journalShareHTML(e) +
-    '<div class="card-actions">' + wentHTML(e) + photoButtonHTML(e) + "</div></div></article>";
+    '<label class="radio"><input type="checkbox" name="recommend"' + (j.recommend ? " checked" : "") + "> Would you recommend it?</label>" +
+    '<div class="row"><button class="btn" type="submit">Save</button><span class="week-said" data-journal-said role="status"></span></div>' +
+    '<p class="week-error" role="alert" data-journal-error></p></form>' + journalShareHTML(e) +
+    '<div class="card-actions wk-acts">' + photoButtonHTML(e) + wentHTML(e) + "</div>" + photo + "</div></article>";
 }
 // CC-112: "Share publicly", off by default and saved the moment it's ticked or unticked (so unsharing can't be
 // forgotten). Once on, how it's signed: your first name and initial, or "A Culture Crew member". It needs the three
@@ -369,13 +423,25 @@ document.addEventListener("change", function (ev) {
   }, function () { redrawShare(id, focusName); document.querySelector('[data-share="' + id + '"] [data-share-error]').textContent = errorText(null); });
 });
 function renderJournal() {
-  var shown = WENT_LIST.slice(0, JOURNAL_SHOWN);
-  $("went-grid").innerHTML = shown.length ? shown.map(journalEntryHTML).join("") :
-    '<p class="hint">Mark events with "I\'ve been" and they\'ll show up here, ready for your notes.</p>';
+  var shown = WENT_LIST.slice(0, JOURNAL_SHOWN), open = journalOpenId(shown);
+  $("went-grid").innerHTML = shown.length ? shown.map(function (e) { return journalEntryHTML(e, e.id === open); }).join("") :
+    WENT_STATE === "loading" ? '<p class="week-hint" role="status">Finding your journal\u2026</p>' :
+    WENT_STATE === "error" ? '<p class="week-error" role="alert">' + esc(checkThis("your journal couldn\u2019t be loaded. Reload the page to try again.")) + "</p>" :
+    '<p class="week-hint">Mark events with \u201cI\u2019ve been\u201d and they\u2019ll show up here, ready for your notes.</p>';
+  paintWater($("went-grid"));
 }
+// Edit (or Write) opens an entry and folds the one that was open; Close folds it. What you'd typed stays as a draft.
+document.addEventListener("click", function (ev) {
+  var b = ev.target.closest && ev.target.closest("[data-journal-open]"); if (!b) return;
+  var id = b.getAttribute("data-journal-open"), opening = b.getAttribute("aria-expanded") !== "true";
+  JOURNAL_OPEN = opening ? id : ""; renderJournal();
+  var entry = document.querySelector('[data-journal="' + id + '"]');
+  var to = entry && (opening ? entry.querySelector('input[name="word"]') : entry.querySelector("[data-journal-open]")); if (to) to.focus();
+});
 // A photo that won't load (its 15-minute link ran out, or the file's gone) leaves no broken image: the entry just
 // shows without it until the next reload.
 document.addEventListener("error", function (ev) {
+  if (ev.target.classList && ev.target.classList.contains("journal-thumb")) { ev.target.remove(); return; } // CC-146: the tile shows instead
   var fig = ev.target.closest && ev.target.tagName === "IMG" && ev.target.closest(".journal-photo"); if (!fig) return;
   var entry = fig.closest(".journal-entry"); fig.remove(); if (entry) entry.classList.add("no-photo");
 }, true);
@@ -391,6 +457,7 @@ document.addEventListener("input", function (ev) {
     ev.target.value = ev.target.value.replace(/\s+/g, ""); ev.target.setSelectionRange(at, at); j = readJournal(form);
   }
   JOURNAL_DRAFT[id] = j; form.querySelector("[data-journal-said]").textContent = "";
+  if (ev.target.name === "word" && ev.target.value.trim()) crewMarkInvalid(ev.target, false);
   if (ev.target.name === "review") $("j-" + id + "-count").textContent = reviewCountText(j.review.length);
 });
 document.addEventListener("change", function (ev) { // the checkbox: a draft too
@@ -399,21 +466,22 @@ document.addEventListener("change", function (ev) { // the checkbox: a draft too
 document.addEventListener("submit", function (ev) {
   var form = ev.target.closest && ev.target.closest("[data-journal-form]"); if (!form) return;
   ev.preventDefault();
-  var id = form.getAttribute("data-journal-form"), body = readJournal(form), err = form.querySelector(".form-error"), said = form.querySelector("[data-journal-said]");
-  var btn = form.querySelector('button[type="submit"]');
+  var id = form.getAttribute("data-journal-form"), body = readJournal(form), err = form.querySelector("[data-journal-error]"), said = form.querySelector("[data-journal-said]");
+  var btn = form.querySelector('button[type="submit"]'), boxes = form.querySelectorAll('input[name="word"]');
   err.textContent = ""; said.textContent = "";
-  var empty = Array.prototype.filter.call(form.querySelectorAll('input[name="word"]'), function (w) { return !w.value.trim(); })[0];
-  if (empty) { err.textContent = "Three words: give all three to save your entry."; empty.focus(); return; } // CC-98: the words are required
+  Array.prototype.forEach.call(boxes, function (w) { crewMarkInvalid(w, !w.value.trim()); }); // CC-146: the empty boxes get the ink border
+  var empty = Array.prototype.filter.call(boxes, function (w) { return !w.value.trim(); })[0];
+  if (empty) { err.textContent = checkThis("give all three words to save your entry."); empty.focus(); return; } // CC-98: the words are required
   btn.disabled = true;
   api("/me/attended/" + encodeURIComponent(id) + "/journal", { method: "PUT", body: body }).then(readJSON).then(function (res) {
     btn.disabled = false;
-    if (!res.ok) { err.textContent = errorText(res); return; }
+    if (!res.ok) { err.textContent = checkThis(errorText(res)); return; }
     var first = !(WENT_JOURNAL[id] || {}).words;
     WENT_JOURNAL[id] = res.body; delete JOURNAL_DRAFT[id];
     form.elements.review.value = res.body.review; // as saved (trimmed)
     said.textContent = WENT_SHARE[id] && WENT_SHARE[id].shared ? "Saved, and updated on the event\u2019s page." : "Saved.";
     if (first) redrawShare(id); // CC-112: now it can be shared
-  }, function () { btn.disabled = false; err.textContent = errorText(null); });
+  }, function () { btn.disabled = false; err.textContent = checkThis(errorText(null)); });
 });
 
 // ---------- My week page (CC-105; renamed in CC-118) ----------
