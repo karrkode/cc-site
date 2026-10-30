@@ -2,24 +2,85 @@
 // Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
-// ---------- home ----------
-var SOON = [];
-function loadHome() { // events running today, soonest to close (open runs come last, then fall back to anything)
-  return fetchEvents([["from", isoDate(T)], ["to", isoDate(T)], ["sort", "closing"], ["limit", 12]]).then(function (page) {
+// ---------- home: the front page (CC-143) ----------
+// Three lists, each asked for on its own so one slow or failed request doesn't hold up the others: the lead pick,
+// Last chance (events running today, soonest to close; open runs come last, then fall back to anything) and the
+// first rows of the listings, opening soonest, as the catalog opens.
+var SOON = [], LEAD = null, HOME_LIST = [], HOME_ROWS = 8;
+function loadHome() {
+  var t = isoDate(T);
+  fetchEvents([["from", t], ["to", t], ["sort", "closing"], ["limit", 12]]).then(function (page) {
     var soon = page.items.filter(function (e) { return e.n && (!e.b || e.b <= T) && !e.openRun; }).slice(0, 4);
     if (soon.length) return soon;
-    return fetchEvents([["from", isoDate(T)], ["sort", "closing"], ["limit", 4]]).then(function (p) { return p.items; });
+    return fetchEvents([["from", t], ["sort", "closing"], ["limit", 4]]).then(function (p) { return p.items; });
   }).then(function (soon) { SOON = soon; renderHome(); }, function () {});
+  Promise.all([fetchEvents([["from", t], ["picks", "going"], ["limit", 100]]), fetchEvents([["from", t], ["picks", "interested"], ["limit", 100]])])
+    .then(function (r) { LEAD = leadPick(r[0].items, r[1].items); renderHome(); }, function () {});
+  fetchEvents([["from", t], ["sort", "opening"], ["limit", HOME_ROWS]]).then(function (p) { HOME_LIST = p.items; renderHome(); }, function () {});
+}
+
+// The lead pick: the host's soonest upcoming "going" event (by the day they're going), otherwise their soonest
+// "interested" one (by the day it's next on), otherwise none, and the column goes.
+function leadNext(e) { return e.b && e.b > T ? e.b : T; }
+function leadPick(going, interested) {
+  var g = going.filter(function (e) { return e.pick && e.pick.status === "going" && !isPast(e) && (!e.pick.date || parseISO(e.pick.date) >= T); })
+    .map(function (e) { return { e: e, d: e.pick.date ? parseISO(e.pick.date) : leadNext(e) }; });
+  var i = interested.filter(function (e) { return e.pick && e.pick.status === "interested" && !isPast(e); })
+    .map(function (e) { return { e: e, d: leadNext(e) }; });
+  var first = function (list) { return list.sort(function (a, b) { return a.d - b.d || byClosing(a.e, b.e); })[0]; };
+  var best = first(g) || first(i);
+  return best ? best.e : null;
+}
+// Its deck, built from data (a note from the host is a later idea): where it is, then, signed in, who from your crews
+// is in on it. With no crew-mates in, the run says when.
+function leadDeck(e) {
+  var where = "At " + e.venue + (e.hood ? " in " + e.hood : ""), going = {}, interested = {};
+  if (AUTH.user) e.crewPlans.forEach(function (c) {
+    c.going.forEach(function (n) { going[n] = true; });
+    c.interested.forEach(function (n) { if (!going[n]) interested[n] = true; });
+  });
+  var g = Object.keys(going).length, i = Object.keys(interested).filter(function (n) { return !going[n]; }).length, crew = [];
+  if (g) crew.push(g + " from your crew " + (g === 1 ? "is" : "are") + " going");
+  if (i) crew.push((g ? i + " " : i + " from your crew ") + (i === 1 ? "is" : "are") + " interested");
+  if (crew.length) return where + ". " + crew.join(", and ") + ".";
+  if (oneNight(e)) return where + " on " + dateText(e) + ".";
+  return where + (e.openRun || !e.b || !e.n ? "." : ", " + dateText(e).replace(" – ", " to ") + ".");
+}
+// The whole field is one link to the event. CC-144: .lead-pick is the element to give the poster's view-transition-name.
+function leadHTML(e) {
+  var p = e.pick, going = p.status === "going";
+  var by = [going ? "Going" + (p.date ? " " + goingDay(p.date) : "") : "Interested", dateText(e), costText(e)].join(" · ");
+  return '<a class="lead-pick water-field' + catClass(e.type) + '" href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '" data-lead="' + esc(e.id) + '">' +
+    '<span class="lead-sea">' + waterHTML(e, "poster") + "</span>" +
+    '<span class="lead-in"><span class="lead-k">The crew’s pick · ' + esc(e.label) + "</span>" +
+    '<h2 class="lead-t">' + esc(e.title) + "</h2>" +
+    '<span class="lead-deck">' + esc(leadDeck(e)) + "</span>" +
+    '<span class="lead-by">' + markHTML("host", pickText(p)) + "<span>" + esc(by) + "</span></span></span></a>";
+}
+// A Last chance item: "Closes today" or "Closes Friday" in red, then the name, then venue · price.
+function lastWhen(e) {
+  if (!e.n || e.openRun) return "Open run";
+  var left = diff(e.n, T);
+  return left <= 0 ? "Closes today" : left <= 6 ? "Closes " + F.wd.format(e.n) : "Closes " + short(e.n);
+}
+function lastHTML(e) {
+  return '<li><a class="last" href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '"><span class="last-w">' + esc(lastWhen(e)) + "</span>" +
+    '<span class="last-t">' + esc(e.title) + "</span>" + '<span class="last-where">' + esc(placeText(e) + " · " + costText(e)) + "</span></a></li>";
 }
 function renderHome() {
-  $("door-catalog-count").textContent = plural(FACETS.current, "event", "events") + " on the list";
-  $("door-crews-desc").textContent = AUTH.user ? "See what your crews are planning, and who's been where." : // CC-103
-    "Crews are the friends you go out with. Sign in to start one or join one.";
-  $("soon-list").innerHTML = listingsHTML(SOON, "closing"); paintWater($("soon-list")); // CC-140: rows, soonest to close
+  var slot = $("lead-slot"), html = LEAD ? leadHTML(LEAD) : "";
+  if (slot.getAttribute("data-html") !== html) { slot.innerHTML = html; slot.setAttribute("data-html", html); paintWater(slot); } // the water redraws only when it changes
+  slot.hidden = !LEAD; $("front").classList.toggle("no-lead", !LEAD); // with no lead pick, the other two share the width
+  $("way-catalog-d").textContent = plural(FACETS.current, "event", "events") + ", opening soonest first.";
+  $("way-crews-d").textContent = AUTH.user ? "Who’s going, and to what." : "The friends you go out with. Sign in to start one or join one."; // CC-103
+  $("soon-list").innerHTML = SOON.map(lastHTML).join("");
+  $("front-all").textContent = "All " + FACETS.current + " →";
+  $("home-list").innerHTML = listingsHTML(HOME_LIST, "opening"); paintWater($("home-list")); // CC-140: rows under day heads
   $("foot").textContent = plural(FACETS.total, "event", "events") +
     " on the list, past and present. Dates and prices change, so check the event's page before you go.";
 }
 $("soon-more").addEventListener("click", function () { resetCatalog(); cat.sort = "closing"; cat.when = "week"; loadCatalog(); show("catalog"); });
+$("front-all").addEventListener("click", function () { resetCatalog(); loadCatalog(); show("catalog"); });
 
 // ---------- catalog ----------
 // CC-132: the catalog opens on "Opening soonest"; the home page's Last chance list and its button keep closing order

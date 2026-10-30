@@ -249,35 +249,28 @@
   <main>
     <!-- Welcome -->
     <section class="view" id="view-home">
-      <div class="cover">
-        <h1 id="home-title" tabindex="-1">What's the crew <em>seeing</em> next?</h1>
-        <p class="lede" id="home-line">Chicago theater, music, and art curated by you and your crew.</p><!-- CC-119: says what the site is for first-time visitors -->
-        <p class="lede" id="home-lede" role="status" hidden></p><!-- only "couldn't be loaded" shows here (CC-107) -->
-        <div class="doors rise" id="doors">
-          <button class="door door-a" type="button" data-go="plan" id="door-plan">
-            <span class="eyebrow">Four questions</span>
-            <span class="door-title">Find an outing</span>
-            <span class="door-go"><span class="door-desc">Tell us when, how much, what kind and where. Get one pick and a few backups.</span><span aria-hidden="true">→</span></span>
-          </button>
-          <button class="door door-c" type="button" data-go="crews" id="door-crews">
-            <span class="eyebrow">Your people</span>
-            <span class="door-title">Check in on your Crew</span>
-            <span class="door-go"><span class="door-desc" id="door-crews-desc">Crews are the friends you go out with. Sign in to start one or join one.</span><span aria-hidden="true">→</span></span>
-          </button>
-          <button class="door door-b" type="button" data-go="catalog" id="door-catalog">
-            <span class="eyebrow" id="door-catalog-count">The whole list</span>
-            <span class="door-title">Browse the Catalog</span>
-            <span class="door-go"><span class="door-desc">Every event, with filters for dates, cost and neighborhood.</span><span aria-hidden="true">→</span></span>
-          </button>
-        </div>
+      <!-- CC-143: the front page (brief section 5). The masthead's tagline says what the site is (it took over CC-119's
+           line), so the page's h1 is for screen readers. Then three columns: the lead pick, three ways in, last chance. -->
+      <h1 class="sr-only" id="home-title" tabindex="-1">Culture Crew: Chicago theater, music and visual art</h1>
+      <p class="lede" id="home-lede" role="status" hidden></p><!-- only "couldn't be loaded" shows here (CC-107) -->
+      <div class="front no-lead" id="front">
+        <div class="lead-slot" id="lead-slot" hidden></div>
+        <nav class="ways rise" id="ways" aria-labelledby="ways-h">
+          <h2 class="front-h" id="ways-h">Three ways in</h2>
+          <button class="way" type="button" data-go="plan"><span class="way-t">Find an outing&nbsp;→</span><span class="way-d">Four questions. One pick and a few backups.</span></button>
+          <button class="way" type="button" data-go="crews"><span class="way-t">Check in on the crew&nbsp;→</span><span class="way-d" id="way-crews-d">The friends you go out with. Sign in to start one or join one.</span></button>
+          <button class="way" type="button" data-go="catalog"><span class="way-t">Read the listings&nbsp;→</span><span class="way-d" id="way-catalog-d">Every event, opening soonest first.</span></button>
+        </nav>
+        <section class="last-col" aria-labelledby="last-h">
+          <h2 class="front-h" id="last-h">Last chance</h2>
+          <ul class="lasts" id="soon-list"></ul>
+          <button class="textbtn last-more" type="button" id="soon-more">See everything closing soon</button>
+        </section>
       </div>
-      <div class="soon">
-        <div class="soon-head">
-          <h2>Last chance</h2>
-          <button class="textbtn" type="button" id="soon-more">See everything closing soon</button>
-        </div>
-        <div class="listing-days" id="soon-list"></div>
-      </div>
+      <section class="front-list" aria-labelledby="front-list-h">
+        <div class="front-list-head"><h2 id="front-list-h">The listings</h2><button class="textbtn" type="button" id="front-all">All events&nbsp;→</button></div>
+        <div class="listing-days" id="home-list"></div>
+      </section>
     </section>
 
     <!-- CC-121: the join page, at chiculturecrew.com/join (tagged links tell places apart). The catalog shows under it. -->
