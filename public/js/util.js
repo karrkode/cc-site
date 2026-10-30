@@ -256,12 +256,12 @@ function goingRange(e) {
   var lo = e.b && e.b > T ? e.b : T, far = add(T, 730), hi = e.n && e.n < far ? e.n : far;
   return lo <= hi ? [lo, hi] : null;
 }
-function myplanToggleHTML(e) {
+function myplanToggleHTML(e, label) { // label: what it says once you have a plan (My week's Still deciding: "Pick a day", CC-146)
   var mine = MYPLANS[e.id];
   if (!mine && !goingRange(e)) return ""; // closed: nothing left to plan
   MYPLAN_SEQ += 1;
   return '<button type="button" class="went" data-myplan-toggle="' + esc(e.id) + '" aria-expanded="false" aria-controls="myplan-' + MYPLAN_SEQ + '">' +
-    (mine ? "Change plan" : "Interested?") + "</button>";
+    (mine ? label || "Change plan" : "Interested?") + "</button>";
 }
 // The picker under a card: Interested, Going on a date (one-night events need no date field), or Clear.
 function myplanHTML(e) {

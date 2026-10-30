@@ -863,62 +863,141 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .approval-photo button { position: absolute; }
 .approval-decide { display: grid; gap: 8px; margin-top: 8px; }
 
-/* CC-97: the Cultural Planner on the account page. A week at a time, its days side by side on desktop and one
-   under another on tablets and phones; each day lists your going plans compactly, or offers the catalog for that day. */
-.week-nav { gap: 8px 12px; align-items: center; }
-.week-range { font-weight: 700; min-width: 12ch; }
-.week-nav .btn { padding-block: 6px; }
-.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
-.day { min-width: 0; display: grid; align-content: start; gap: 10px; padding: 12px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
-.day.today { border-color: var(--lead); box-shadow: inset 0 0 0 1px var(--lead); }
-.day-head { font-size: 1rem; font-weight: 700; }
-.day.today .day-head { color: var(--lead); }
-.day-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.day-item { position: relative; display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
-.day-item > a { font-weight: 700; line-height: 1.25; }
-.day-where, .day-time { font-size: 1rem; color: var(--muted); }
-.day-time { color: var(--text); font-family: var(--sign); font-weight: 700; }
-.day-item .card-actions { margin-top: 6px; }
-.day-item .myplan { top: 100%; left: 0; right: auto; width: max(100%, 260px); }
-.day:nth-child(n+5) .day-item .myplan { left: auto; right: 0; } /* the right-hand days open leftward, never past the page */
-.day-find { justify-self: stretch; white-space: normal; padding-inline: 8px; font-size: 1rem; }
-.day-found { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); } /* CC-131: that day's events, under its button */
-.day-found .hint, .day-found p { margin: 0; }
-.day-scroll { display: grid; gap: 10px; overflow-y: auto; overscroll-behavior: contain; position: relative; } /* three to see, scroll for the rest */
-.planner-more { display: grid; gap: 12px; margin-top: 8px; }
-.planner-more h3 { font-size: var(--step-1, 1.125rem); font-weight: 700; }
-@media (max-width: 960px) {
-  .week { grid-template-columns: minmax(0, 1fr); }
-  .day { grid-template-columns: minmax(0, 1fr); }
-  .day-find { justify-self: start; }
-  .day:nth-child(n+5) .day-item .myplan { left: 0; right: auto; }
-  .day-item .myplan { width: min(100%, 360px); }
-}
+/* CC-146: My week in Lakefront (design/lakefront-brief.md section 10). A Newsreader title and an italic deck; the week
+   bar with joined Previous and Next; the week (7) as one line a day in listings style beside Still deciding (5); the
+   Cultural journal below at reading width, with only the entry being written open. On a phone: the week, Still
+   deciding, then the journal. (CC-97's boxed days and CC-98's journal cards are gone.) */
+.week-head { padding-block: 40px 0; }
+.week-head h1 { font-family: var(--display); font-weight: 500; font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1; letter-spacing: -0.025em; }
+.week-deck { margin-top: 10px; max-width: 60ch; font-style: italic; font-size: 1.3125rem; line-height: 1.4; color: var(--muted); }
+#planner-signin { margin-top: 28px; border: 0; }
+#view-planner .btn { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 20px; white-space: nowrap; }
+#view-planner .radio { min-height: 44px; }
 
-/* CC-98: the Cultural Journal: the last five events you've been to, each with your notes and your photo. */
-.journal { display: grid; gap: 12px; }
-.journal-entry { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 16px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
-.journal-entry:not(:has(.journal-photo)), .journal-entry.no-photo { grid-template-columns: minmax(0, 1fr); }
-.journal-photo { position: relative; margin: 0; align-self: center; } /* in the middle of the entry, beside the fields (desktop) */
-.journal-photo img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--r-ctl); }
-.journal-photo figcaption { position: absolute; left: 8px; bottom: 8px; }
-.journal-body { display: grid; gap: 10px; min-width: 0; }
-.journal-body h3 { font-size: var(--step-1); line-height: 1.2; }
-.journal-body .where { color: var(--muted); }
-.journal-form { display: grid; gap: 10px; }
-.journal-form textarea { display: block; width: 100%; background: var(--page); color: var(--text); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 9px 10px; font: inherit; resize: vertical; }
-.journal-form .row { gap: 12px; align-items: center; }
+/* the week bar: the range (read out when it changes), and Previous and Next joined */
+.week-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px 16px; margin-top: 28px; }
+.week-range { font-family: var(--sign); font-weight: 700; font-size: 1.5rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.week-steps { display: inline-flex; }
+.week-step { min-height: 44px; padding: 0 16px; background: transparent; color: var(--text); border: 1.5px solid var(--text); border-radius: 0; cursor: pointer;
+  font-family: var(--sign); font-weight: 700; font-size: 1.125rem; white-space: nowrap; }
+.week-step + .week-step { margin-left: -1.5px; } /* one shared edge */
+.week-step:hover:not(:disabled) { background: var(--info-soft); }
+.week-step:disabled { color: var(--muted); border-color: var(--field-line); cursor: default; }
+.week-step:focus-visible { position: relative; z-index: 1; }
+.week-jumps { display: flex; flex-wrap: wrap; gap: 0 24px; flex-basis: 100%; }
+.week-jumps:not(:has(> :not([hidden]))) { display: none; }
+.week-tbtn { display: inline-flex; align-items: center; min-height: 44px; padding: 0; background: none; border: 0; color: var(--text); cursor: pointer; text-align: left;
+  font-family: var(--sign); font-weight: 700; font-size: 1.0625rem; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px; }
+.week-hint { color: var(--muted); font-size: 1rem; }
+.week-error { padding: 10px 14px; background: var(--danger-soft); color: var(--on-danger-soft); font-size: 1rem; } /* never red text */
+.week-error:empty { display: none; }
+.week-said { font-family: var(--sign); font-weight: 700; font-size: 1.0625rem; }
+
+/* 7/5: the week ahead and Still deciding, each opening on a rule with its count */
+.week-cols { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 40px 48px; align-items: start; margin-top: 20px; }
+.week-col { min-width: 0; }
+.week-sub { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--rule);
+  font-family: var(--sign); font-weight: 700; font-size: 1.25rem; line-height: 1.2; }
+.week-sub-n { color: var(--muted); font-size: 1.0625rem; }
+.week-state { padding: 14px 0; }
+#planner-week > .week-hint, #deciding-hint { margin-top: 10px; }
+#deciding-hint:empty { display: none; }
+
+/* a day: its name, then its plans, or "Nothing planned." and Find something → on the same line */
+.wk-day { border-bottom: 1px solid var(--line); }
+.wk-day-h { display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; min-height: 48px; padding-block: 2px; }
+.wk-day-t { font-family: var(--sign); font-weight: 700; font-size: 1.25rem; line-height: 1.2; }
+.wk-day.today .wk-day-t { font-weight: 800; }
+.wk-none { flex: 1; color: var(--muted); font-size: 1.0625rem; }
+.wk-day-h .day-find { margin-left: auto; }
+.wk-rows { list-style: none; margin: 0; padding: 0; }
+.wk-rows .wk-row { border-top: 1px solid var(--line); }
+#myplans-grid { list-style: none; margin: 0; padding: 0; }
+#myplans-grid .wk-row { border-bottom: 1px solid var(--line); }
+
+/* an event row (CC-140): the tile, name, venue and time are the link; who's in and the buttons follow, beside the tile */
+.wk-row { position: relative; min-height: 101px; padding: 12px 0 12px 92px; }
+.wk-row-a { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 16px; align-items: baseline; color: var(--text); text-decoration: none; }
+.wk-row-a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+@supports selector(:has(a)) { /* the whole row shows the ring (brief section 5) */
+  .wk-row-a:focus-visible { outline: none; }
+  .wk-row:has(> .wk-row-a:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+}
+.wk-row .tile, .journal-a .tile { position: absolute; left: 0; top: 12px; width: 76px; height: 76px; }
+.wk-row .listing-t { grid-column: 1; font-size: 1.5rem; }
+.wk-row .listing-t .mark { margin-left: 8px; vertical-align: -3px; }
+.wk-row-a:hover .listing-t, .journal-a:hover .listing-t { text-decoration-color: currentColor; }
+.wk-where { grid-column: 1; font-size: 1rem; color: var(--muted); }
+.wk-when { grid-column: 2; grid-row: 1 / span 2; display: grid; justify-items: end; gap: 6px; font-family: var(--sign); font-weight: 700; font-size: 1.0625rem;
+  line-height: 1.2; text-align: right; font-variant-numeric: tabular-nums; }
+.wk-acts { display: flex; flex-wrap: wrap; gap: 0 20px; margin-top: 4px; }
+.wk-acts .went { display: inline-flex; align-items: center; gap: 0.3em; min-height: 44px; padding: 0; background: none; border: 0; color: var(--text);
+  font-size: 1.0625rem; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px; }
+.wk-acts .went[aria-pressed="true"] { background: none; color: var(--text); }
+.wk-row .myplan { top: calc(100% - 8px); left: 92px; right: auto; width: min(380px, calc(100% - 92px)); }
+#view-planner .myplan .went, #view-planner .myplan .textbtn, #view-planner .myplan input[type="date"], #view-planner .crewshare .went { min-height: 44px; }
+
+/* Find something: only that day's events, in place, under its line (CC-131) */
+.day-found { display: grid; gap: 8px; padding: 2px 0 14px; }
+.day-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.day-item { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.day-item > a { font-family: var(--display); font-weight: 500; font-size: 1.1875rem; line-height: 1.25; }
+.day-where { font-size: 1rem; color: var(--muted); }
+.day-time { font-family: var(--sign); font-weight: 700; font-size: 1rem; }
+.day-scroll { display: grid; gap: 10px; overflow-y: auto; overscroll-behavior: contain; position: relative; } /* three to see, scroll for the rest */
+
+/* the Cultural journal (CC-98), at reading width. A folded entry is its row and its three words as an italic deck. */
+.journal-sec { max-width: 820px; margin-top: 56px; }
+.journal-h { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; padding-bottom: 8px; border-bottom: 1px solid var(--rule);
+  font-family: var(--display); font-weight: 500; font-size: clamp(1.75rem, 4vw, 2.25rem); line-height: 1.1; letter-spacing: -0.015em; }
+.journal-only { font-size: 1rem; font-weight: 400; letter-spacing: 0; color: var(--muted); }
+.journal-sec > .week-hint { margin-top: 10px; }
+.journal { display: grid; }
+.journal > .week-hint, .journal > .week-error { margin-top: 14px; }
+.journal-entry { padding: 20px 0; border-bottom: 1px solid var(--line); }
+.journal-row { position: relative; min-height: 76px; padding-left: 92px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: start; }
+.journal-a { grid-column: 1; display: grid; gap: 3px; color: var(--text); text-decoration: none; }
+.journal-a .tile { top: 0; }
+.journal-a .listing-t { font-size: 1.5rem; }
+.journal-thumb { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: cover; }
+.journal-words { grid-column: 1; font-style: italic; font-size: 1.625rem; line-height: 1.2; overflow-wrap: anywhere; }
+.journal-nowords { grid-column: 1; }
+.journal-meta { grid-column: 2; grid-row: 1 / span 2; display: grid; justify-items: end; align-content: start; font-family: var(--sign); font-weight: 700;
+  font-size: 1.0625rem; line-height: 1.2; text-align: right; }
+.journal-meta > span { padding-top: 4px; }
+.journal-body { display: grid; gap: 16px; margin-top: 16px; }
+.journal-form { display: grid; gap: 14px; }
+.journal-form input[type="text"], .journal-form textarea { display: block; width: 100%; min-height: 48px; padding: 0 12px; border: 1.5px solid var(--field-line); border-radius: 0;
+  background: var(--page); color: var(--text); font: inherit; font-size: 1.125rem; }
+.journal-form textarea { padding-block: 10px; resize: vertical; }
+.journal-form input[aria-invalid="true"] { border: 2.5px solid var(--text); padding: 0 11px; } /* the box at fault: never red */
+.journal-form .row { gap: 12px 16px; align-items: center; }
 .three-words { border: 0; margin: 0; padding: 0; }
 .three-words legend { padding: 0; margin-bottom: 4px; font-size: 1rem; font-weight: 700; font-family: var(--sign); color: var(--muted); }
-.three-words .row { flex-wrap: nowrap; gap: 8px; }
+.three-words .row { flex-wrap: nowrap; gap: 12px; }
 .three-words input { flex: 1 1 0; min-width: 0; }
+.journal-photo { margin: 0; }
+.journal-photo img { display: block; width: min(100%, 360px); aspect-ratio: 4 / 3; object-fit: cover; }
+.journal-photo figcaption { margin-top: 4px; font-family: var(--sign); font-weight: 700; font-size: 1rem; color: var(--muted); }
 /* CC-112: "Share publicly", under the entry's form; once on, how it's signed */
-.journal-share { display: grid; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+.journal-share { display: grid; gap: 6px; padding-top: 14px; border-top: 1px solid var(--line); }
 .journal-share .radio:has(input:disabled) { cursor: default; color: var(--muted); }
-.share-as { display: flex; flex-wrap: wrap; gap: 6px 18px; border: 0; margin: 0; padding: 0; }
+.share-as { display: flex; flex-wrap: wrap; gap: 0 18px; border: 0; margin: 0; padding: 0; }
 .share-as legend { padding: 0; margin-bottom: 4px; font-size: 1rem; font-weight: 700; font-family: var(--sign); color: var(--muted); }
 .share-as .radio { font-weight: 400; }
-@media (max-width: 640px) { .journal-entry { grid-template-columns: minmax(0, 1fr); } }
+
+@media (max-width: 700px) {
+  .week-head { padding-top: 24px; }
+  .week-cols { grid-template-columns: minmax(0, 1fr); } /* the week, then Still deciding */
+  .wk-none { display: none; } /* the day's name and Find something say it */
+  .wk-row-a, .journal-row { grid-template-columns: minmax(0, 1fr); }
+  .wk-row .listing-t, .journal-a .listing-t { font-size: 1.3125rem; }
+  .wk-when { grid-column: 1; grid-row: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; text-align: left; font-size: 1rem; }
+  .wk-row .myplan { left: 0; width: 100%; }
+  .journal-words { font-size: 1.375rem; }
+  .journal-meta { grid-column: 1; grid-row: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; text-align: left; }
+  .journal-meta > span { padding-top: 0; }
+}
 
 /* CC-96: a fixed run's dates, each with its start and (optional) end time */
 .fixed-run { display: grid; gap: 10px; }

@@ -37,6 +37,8 @@ jobs:
         run: node scripts/test_motion.js
       - name: The crews page keeps every crew action, with plans as event rows
         run: node scripts/test_crews.js
+      - name: My week keeps its plans, Find something and the journal, with plans as event rows
+        run: node scripts/test_week.js
       - name: Asset links can be stamped for deploy
         run: python3 scripts/stamp_assets.py
       - name: JavaScript syntax
