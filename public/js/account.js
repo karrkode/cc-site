@@ -224,12 +224,12 @@ function weekRowHTML(e, d) {
     '<span class="wk-when">' + (when ? "<span>" + esc(when) + "</span>" : "") + own + "</span></a>" +
     weekCrewHTML(e) + '<div class="card-actions wk-acts">' + acts + "</div>" + myplanHTML(e) + crewShareHTML(e) + "</li>";
 }
-// One day: its name, then its plans as rows, or "Nothing planned." and Find something (the list opens under it).
+// One day: its name, then its plans as rows, or "Nothing yet…" and Find something (the list opens under it).
 function weekDayHTML(day) {
   var now = same(day.d, T), whole = (now ? "Today, " : "") + dayName(day.d), iso = isoDate(day.d);
   return '<section class="wk-day' + (now ? " today" : "") + '" aria-label="' + esc(whole) + '">' +
     '<div class="wk-day-h"><h3 class="wk-day-t">' + esc((now ? "Today, " : "") + listingDay(day.d)) + "</h3>" +
-    (day.items.length ? "" : '<span class="wk-none">Nothing planned.</span>' + dayFindHTML(iso, dayName(day.d))) + "</div>" +
+    (day.items.length ? "" : '<span class="wk-none">Nothing yet\u2026</span>' + dayFindHTML(iso, dayName(day.d))) + "</div>" +
     (day.items.length ? '<ul class="wk-rows">' + day.items.map(function (e) { return weekRowHTML(e, day.d); }).join("") + "</ul>" :
       '<div class="day-found" id="find-' + iso + '" aria-live="polite"' + (FIND_DAY_OPEN[iso] ? "" : " hidden") + ">" + (FIND_DAY_OPEN[iso] ? dayFoundHTML(iso) : "") + "</div>") +
     "</section>";
@@ -255,7 +255,7 @@ function renderPlanner() {
   $("week-now").hidden = PLANNER_WEEK === 0;
   $("week-skip").hidden = !next;
   if (next) $("week-skip").textContent = "Skip to your next plan: " + goingDay(MYPLANS[next.e.id].date);
-  // loading and errors: the days wait, rather than saying "Nothing planned." before the plans are in
+  // loading and errors: the days wait, rather than saying "Nothing yet…" before the plans are in
   $("week-state").hidden = ready;
   $("week-state").innerHTML = ready ? "" : PLANS_STATE === "error" ? '<p class="week-error" role="alert">' + esc(checkThis("your plans couldn\u2019t be loaded. Reload the page to try again.")) + "</p>" :
     '<p class="week-hint" role="status">Finding your plans\u2026</p>';

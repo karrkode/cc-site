@@ -47,10 +47,10 @@ const has = (html, s, msg) => assert.ok(html.includes(s), msg || "has " + s);
 const lacks = (html, s, msg) => assert.ok(!html.includes(s), msg || "lacks " + s);
 const plan = (e, status, date) => set("MYPLANS[" + JSON.stringify(e.id) + "] = " + JSON.stringify({ status: status, date: date || null, crews: [] }) + ";");
 
-// --- a day: its name, then "Nothing planned." and Find something on the same line, its list under it (CC-131) ---
+// --- a day: its name, then "Nothing yet…" and Find something on the same line, its list under it (CC-131) ---
 let html = g.weekDayHTML({ d: g.T, items: [] });
 has(html, '<h3 class="wk-day-t">Today, ' + g.listingDay(g.T) + "</h3>", "today says so, in listings style");
-has(html, '<span class="wk-none">Nothing planned.</span>');
+has(html, '<span class="wk-none">Nothing yet…</span>');
 has(html, 'class="week-tbtn day-find" data-find-day="' + iso(g.T) + '"', "one Find something line");
 has(html, 'class="day-found" id="find-' + iso(g.T) + '" aria-live="polite" hidden>', "its list waits, closed, under the line");
 lacks(html, "wk-rows");
@@ -63,7 +63,7 @@ has(g.weekDayHTML({ d: g.T, items: [] }), '<p class="week-error">Check this: the
 const going = ev({ title: "Heroes of the Fourth Turning" }), day = g.add(g.T, 2);
 plan(going, "going", iso(day));
 html = g.weekDayHTML({ d: day, items: [going] });
-lacks(html, "Nothing planned."); lacks(html, "data-find-day");
+lacks(html, "Nothing yet"); lacks(html, "data-find-day");
 has(html, '<h3 class="wk-day-t">' + g.listingDay(day) + "</h3>");
 const row = html.match(/<li class="wk-row"[\s\S]*<\/li>/)[0];
 const link = row.match(/<a class="wk-row-a"[\s\S]*?<\/a>/)[0];

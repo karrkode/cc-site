@@ -903,13 +903,14 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 #planner-week > .week-hint, #deciding-hint { margin-top: 10px; }
 #deciding-hint:empty { display: none; }
 
-/* a day: its name, then its plans, or "Nothing planned." and Find something → on the same line */
+/* a day: its name, then its plans, or "Nothing yet…" under the name (so it lines up whatever the date) and
+   Find something → on the right */
 .wk-day { border-bottom: 1px solid var(--line); }
-.wk-day-h { display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; min-height: 48px; padding-block: 2px; }
-.wk-day-t { font-family: var(--sign); font-weight: 700; font-size: 1.25rem; line-height: 1.2; }
+.wk-day-h { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 16px; min-height: 48px; padding-block: 8px; }
+.wk-day-t { grid-column: 1; grid-row: 1; font-family: var(--sign); font-weight: 700; font-size: 1.25rem; line-height: 1.2; }
 .wk-day.today .wk-day-t { font-weight: 800; }
-.wk-none { flex: 1; color: var(--muted); font-size: 1.0625rem; }
-.wk-day-h .day-find { margin-left: auto; }
+.wk-none { grid-column: 1; grid-row: 2; color: var(--muted); font-size: 1rem; font-style: italic; line-height: 1.3; }
+.wk-day-h .day-find { grid-column: 2; grid-row: 1 / span 2; }
 .wk-rows { list-style: none; margin: 0; padding: 0; }
 .wk-rows .wk-row { border-top: 1px solid var(--line); }
 #myplans-grid { list-style: none; margin: 0; padding: 0; }
@@ -997,7 +998,6 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 @media (max-width: 700px) {
   .week-head { padding-top: 24px; }
   .week-cols { grid-template-columns: minmax(0, 1fr); } /* the week, then Still deciding */
-  .wk-none { display: none; } /* the day's name and Find something say it */
   .journal-row { grid-template-columns: minmax(0, 1fr); }
   .journal-a .listing-t { font-size: 1.3125rem; }
   .journal-words { font-size: 1.375rem; }
