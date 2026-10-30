@@ -613,7 +613,10 @@ $("invite-copy").addEventListener("click", function () {
 });
 document.addEventListener("click", function (ev) { if (!$("me-wrap").contains(ev.target)) closeMeMenu(false); });
 
-// ---------- account ----------
+// ---------- account (CC-148: Lakefront, design/lakefront-brief.md section 10) ----------
+// Signed out: Sign in beside "New here? Make an account". Signed in: "Hi, name" and Sign out, then 7/5: your profile
+// and password, beside the events you've sent us, your reports and photo approvals. Statuses are words, never pills.
+// Errors are the pale red band starting "Check this:" (checkThis, crews.js), with the ink border on the field at fault.
 var NOTICE_SET = false; // a one-off message (e.g. "email confirmed") showing instead of the usual notice
 function openAccount(notice) {
   NOTICE_SET = !!notice; $("account-notice").textContent = notice || "";
@@ -622,13 +625,11 @@ function openAccount(notice) {
 function renderAccount(withSubmissions) {
   var u = AUTH.user;
   $("signed-out").hidden = !!u; $("signed-in").hidden = !u;
-  $("account-eyebrow").textContent = u ? "Account settings" : "Your account";
   $("account-title").textContent = u ? (u.display_name ? "Hi, " + u.display_name : "Your account") : "Sign in";
-  $("account-sub").textContent = u ? "Your profile and password, the events you've sent us, and your reports." :
-    "Keep a list of what you've seen, and send us events we're missing.";
+  $("account-sub").hidden = !!u; $("account-who-row").hidden = !u; // signed in, who you are and Sign out take the deck's place
   paintJoin(); // an invite link's "Join <crew>" panel (crews.js), signed in or not
   if (!u) {
-    PLANNER_WEEK = 0; $("planner-week").innerHTML = ""; $("myplans-grid").innerHTML = ""; $("went-grid").innerHTML = ""; $("my-submissions").innerHTML = "";
+    PLANNER_WEEK = 0; $("planner-week").innerHTML = ""; $("myplans-grid").innerHTML = ""; $("went-grid").innerHTML = ""; $("my-submissions").innerHTML = ""; $("my-submissions-n").textContent = "";
     CREWS = []; CREW_LINKS = {}; CREW_ASK = null; CREW_EDIT = null; $("crew-list").innerHTML = "";
     return;
   }
@@ -642,23 +643,54 @@ function renderAccount(withSubmissions) {
   if (!withSubmissions) return;
   fillProfile();
   loadMyIssues(); // CC-84
+  var list = $("my-submissions"), more = $("my-submissions-more");
+  var failed = function (res) { list.innerHTML = '<li class="acct-none week-error">' + esc(checkThis(errorText(res))) + "</li>"; more.hidden = true; };
+  if (!list.children.length) list.innerHTML = '<li class="acct-none" role="status">Finding the events you\u2019ve sent us\u2026</li>';
   api("/me/submissions").then(readJSON).then(function (res) {
-    if (!res.ok) return;
+    if (!res.ok) { failed(res); return; }
     var rows = res.body.map(fromApi);
-    $("my-submissions").innerHTML = rows.length ? rows.map(function (e) { return queueItemHTML(e, stateHTML(e)); }).join("") :
-      '<p class="hint">Nothing yet. <button class="textbtn" type="button" data-go="submit">Submit an event</button></p>';
-    capList($("my-submissions"), 5, plural(rows.length, "event you've sent us", "events you've sent us") + ", newest first. Scroll for more."); // CC-87
-  }, function () {});
+    $("my-submissions-n").textContent = rows.length ? String(rows.length) : "";
+    list.innerHTML = rows.length ? rows.map(sentRowHTML).join("") : '<li class="acct-none">Nothing yet. Tell us about something we\u2019re missing.</li>';
+    more.hidden = false; more.textContent = rows.length ? "Send us another \u2192" : "Send us an event \u2192";
+    capList(list, 5, plural(rows.length, "event you've sent us", "events you've sent us") + ", newest first. Scroll for more."); // CC-87
+  }, function () { failed(null); });
+}
+// An event you've sent us, as a row: its type, name (linked to its own site) and where and when, with its status in
+// words: Approved, "Goes up Nov 15, 7:00 PM" when it's scheduled, Waiting for review, Not accepted or Withdrawn.
+function sentStateText(e) {
+  if (e.status === "approved" && e.publishAt && e.publishAt > new Date()) return "Goes up " + WHEN.format(e.publishAt);
+  return { approved: "Approved", pending: "Waiting for review", rejected: "Not accepted", withdrawn: "Withdrawn" }[e.status] || e.status;
+}
+function sentRowHTML(e) {
+  var when = datesToLookUp(e) ? "Dates to look up" : e.b || e.n ? dateText(e) : "Dates not given";
+  return acctRowHTML(e.label, e.url ? '<a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" : esc(e.title),
+    placeText(e) + " \u00b7 " + when, sentStateText(e), e.status === "withdrawn" || e.status === "rejected");
+}
+// One row on the account page's right-hand side: a small line above (k), the name (t, as HTML), a line under (m),
+// and the status word (st), muted when it's finished with. extra: HTML under the row, such as our note on a report.
+function acctRowHTML(k, t, m, st, quiet, extra) {
+  return '<li class="acct-row"><span class="acct-row-main">' + (k ? '<span class="acct-row-k">' + esc(k) + "</span>" : "") +
+    '<span class="acct-row-t">' + t + "</span>" + (m ? '<span class="acct-row-m">' + esc(m) + "</span>" : "") + "</span>" +
+    '<span class="acct-row-s' + (quiet ? " quiet" : "") + '">' + esc(st) + "</span>" + (extra || "") + "</li>";
+}
+// A form's error: the band starting "Check this:", and the ink border on the field at fault (focused), if there is one
+function acctBad(errEl, input, text) {
+  errEl.textContent = checkThis(text);
+  if (input) { crewMarkInvalid(input, true); input.focus(); }
+}
+function acctClear(form, errEl) { // typing in a form clears its error and the fields' borders
+  errEl.textContent = "";
+  Array.prototype.forEach.call(form.querySelectorAll('[aria-invalid="true"]'), function (i) { crewMarkInvalid(i, false); });
 }
 // ---------- profile (CC-40) ----------
 function fillProfile() {
-  $("p-name").value = AUTH.user.display_name || ""; $("p-email").value = AUTH.user.email;
-  $("p-password").value = ""; $("p-password-field").hidden = true; $("profile-error").textContent = ""; $("profile-msg").textContent = "";
-  clearPasswordForm(); $("password-error").textContent = ""; $("password-msg").textContent = "";
+  $("p-name").value = AUTH.user.display_name || ""; $("p-email").value = AUTH.user.email; $("pw-user").value = AUTH.user.email; // pw-user: password managers know whose password it is
+  $("p-password").value = ""; $("p-password-field").hidden = true; acctClear($("profile-form"), $("profile-error")); $("profile-msg").textContent = "";
+  clearPasswordForm(); acctClear($("password-form"), $("password-error")); $("password-msg").textContent = "";
 }
 function emailChanged() { return $("p-email").value.trim().toLowerCase() !== AUTH.user.email; }
 $("profile-form").addEventListener("input", function () {
-  $("profile-error").textContent = ""; $("profile-msg").textContent = "";
+  acctClear(this, $("profile-error")); $("profile-msg").textContent = "";
   $("p-password-field").hidden = !emailChanged();
 });
 $("profile-form").addEventListener("submit", function (ev) {
@@ -666,17 +698,17 @@ $("profile-form").addEventListener("submit", function (ev) {
   var err = $("profile-error"), msg = $("profile-msg"), email = $("p-email").value.trim();
   var body = { display_name: $("p-name").value.trim() };
   if (emailChanged()) {
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = "Enter a full email address."; $("p-email").focus(); return; }
-    if (!$("p-password").value) { err.textContent = "Enter your current password to change your email."; $("p-password").focus(); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { acctBad(err, $("p-email"), "Enter a full email address."); return; }
+    if (!$("p-password").value) { acctBad(err, $("p-password"), "Enter your current password to change your email."); return; }
     body.email = email; body.current_password = $("p-password").value;
   }
   var btn = $("profile-btn"); btn.disabled = true; err.textContent = ""; msg.textContent = "Saving…";
   api("/auth/me", { method: "PATCH", body: body }).then(readJSON, function () { return null; }).then(function (res) {
     btn.disabled = false;
     if (!res || !res.ok) {
-      msg.textContent = ""; err.textContent = errorText(res);
-      if (res && res.status === 403) { $("p-password").value = ""; $("p-password").focus(); }
-      else if (res && res.status === 409) $("p-email").focus();
+      msg.textContent = "";
+      if (res && res.status === 403) { $("p-password").value = ""; acctBad(err, $("p-password"), errorText(res)); }
+      else acctBad(err, res && res.status === 409 ? $("p-email") : null, errorText(res));
       return;
     }
     AUTH.user = res.body;
@@ -719,23 +751,23 @@ function confirmEmail(token) {
 var RESET_TOKEN = null;
 function openReset(token) {
   RESET_TOKEN = token;
-  $("reset-form").reset(); $("reset-error").textContent = "";
+  $("reset-form").reset(); acctClear($("reset-form"), $("reset-error"));
   show("reset", "reset-new");
 }
-$("reset-form").addEventListener("input", function () { $("reset-error").textContent = ""; });
+$("reset-form").addEventListener("input", function () { acctClear(this, $("reset-error")); });
 $("reset-form").addEventListener("submit", function (ev) {
   ev.preventDefault();
   var err = $("reset-error"), next = $("reset-new").value, again = $("reset-confirm").value;
   var bad = next.length < 8 ? ["reset-new", "Use a password of at least 8 characters."] :
     next !== again ? ["reset-confirm", "The two passwords don't match."] : null;
-  if (bad) { err.textContent = bad[1]; $(bad[0]).focus(); return; }
+  if (bad) { acctBad(err, $(bad[0]), bad[1]); return; }
   var btn = $("reset-btn"); btn.disabled = true;
   api("/auth/reset-password", { method: "POST", body: { token: RESET_TOKEN, new_password: next }, cookies: true })
     .then(readJSON, function () { return null; }).then(function (res) {
       btn.disabled = false;
       if (!res || !res.ok) {
-        err.textContent = res && res.status === 400 ?
-          "That reset link has expired or was already used. Ask for a new one from the sign-in page." : errorText(res);
+        err.textContent = checkThis(res && res.status === 400 ?
+          "That reset link has expired or was already used. Ask for a new one from the sign-in page." : errorText(res));
         return;
       }
       RESET_TOKEN = null; $("reset-form").reset();
@@ -748,15 +780,15 @@ $("forgot-open").addEventListener("click", function () {
   form.hidden = !open; this.setAttribute("aria-expanded", String(open));
   if (open) { $("forgot-email").value = $("login-email").value.trim(); $("forgot-msg").textContent = ""; $("forgot-email").focus(); }
 });
-$("forgot-form").addEventListener("input", function () { $("forgot-error").textContent = ""; });
+$("forgot-form").addEventListener("input", function () { acctClear(this, $("forgot-error")); });
 $("forgot-form").addEventListener("submit", function (ev) {
   ev.preventDefault();
   var email = $("forgot-email").value.trim(), err = $("forgot-error"), msg = $("forgot-msg");
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = "Enter the email address you signed up with."; $("forgot-email").focus(); return; }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { acctBad(err, $("forgot-email"), "Enter the email address you signed up with."); return; }
   var btn = $("forgot-btn"); btn.disabled = true; msg.textContent = "Sending…";
   api("/auth/forgot-password", { method: "POST", body: { email: email } }).then(readJSON, function () { return null; }).then(function (res) {
     btn.disabled = false;
-    if (!res || !res.ok) { msg.textContent = ""; err.textContent = errorText(res); return; }
+    if (!res || !res.ok) { msg.textContent = ""; err.textContent = checkThis(errorText(res)); return; }
     msg.textContent = res.body.detail + " It expires in an hour.";
   });
 });
@@ -793,7 +825,7 @@ $("account-notice").addEventListener("click", function (ev) {
 
 // ---------- change password (CC-42) ----------
 function clearPasswordForm() { ["pw-current", "pw-new", "pw-confirm"].forEach(function (id) { $(id).value = ""; }); }
-$("password-form").addEventListener("input", function () { $("password-error").textContent = ""; $("password-msg").textContent = ""; });
+$("password-form").addEventListener("input", function () { acctClear(this, $("password-error")); $("password-msg").textContent = ""; });
 $("password-form").addEventListener("submit", function (ev) {
   ev.preventDefault();
   var err = $("password-error"), msg = $("password-msg");
@@ -802,14 +834,14 @@ $("password-form").addEventListener("submit", function (ev) {
     next.length < 8 ? ["pw-new", "Use a new password of at least 8 characters."] :
     next !== again ? ["pw-confirm", "The two new passwords don't match."] :
     next === current ? ["pw-new", "The new password is the same as the current one."] : null;
-  if (bad) { err.textContent = bad[1]; $(bad[0]).focus(); return; }
+  if (bad) { acctBad(err, $(bad[0]), bad[1]); return; }
   var btn = $("password-btn"); btn.disabled = true; err.textContent = ""; msg.textContent = "Changing…";
   api("/auth/password", { method: "POST", body: { current_password: current, new_password: next }, cookies: true, refreshable: true })
     .then(readJSON, function () { return null; }).then(function (res) {
       btn.disabled = false;
       if (!res || !res.ok) {
-        msg.textContent = ""; err.textContent = errorText(res);
-        if (res && res.status === 403) { $("pw-current").value = ""; $("pw-current").focus(); }
+        msg.textContent = "";
+        if (res && res.status === 403) { $("pw-current").value = ""; acctBad(err, $("pw-current"), errorText(res)); } else err.textContent = checkThis(errorText(res));
         return;
       }
       setSession(res.body); // this tab's new session; every other one has been signed out
@@ -822,8 +854,9 @@ function authForm(form, path, body, errEl) {
   errEl.textContent = ""; btn.disabled = true;
   api(path, { method: "POST", body: body, cookies: true }).then(readJSON, function () { return null; }).then(function (res) {
     btn.disabled = false;
-    if (!res || !res.ok) { errEl.textContent = errorText(res); return; }
+    if (!res || !res.ok) { errEl.textContent = checkThis(errorText(res)); return; }
     form.reset();
+    ["login", "register", "forgot"].forEach(function (f) { acctClear($(f + "-form"), $(f + "-error")); }); // nothing left over for next time
     setSession(res.body);
     renderAccount();
     $("account-title").focus();
@@ -842,19 +875,19 @@ function looksLikeEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
 $("login-form").addEventListener("submit", function (ev) {
   ev.preventDefault();
   var email = $("login-email").value.trim(), pw = $("login-password").value;
-  if (!looksLikeEmail(email)) { $("login-error").textContent = "Enter the email you signed up with."; $("login-email").focus(); return; }
-  if (!pw) { $("login-error").textContent = "Enter your password."; $("login-password").focus(); return; }
+  if (!looksLikeEmail(email)) { acctBad($("login-error"), $("login-email"), "Enter the email you signed up with."); return; }
+  if (!pw) { acctBad($("login-error"), $("login-password"), "Enter your password."); return; }
   authForm(this, "/auth/login", { email: email, password: pw }, $("login-error"));
 });
 $("register-form").addEventListener("submit", function (ev) {
   ev.preventDefault();
   var email = $("reg-email").value.trim(), pw = $("reg-password").value;
-  if (!looksLikeEmail(email)) { $("register-error").textContent = "Enter a valid email address."; $("reg-email").focus(); return; }
-  if (pw.length < 8) { $("register-error").textContent = "Use a password of at least 8 characters."; $("reg-password").focus(); return; }
+  if (!looksLikeEmail(email)) { acctBad($("register-error"), $("reg-email"), "Enter a valid email address."); return; }
+  if (pw.length < 8) { acctBad($("register-error"), $("reg-password"), "Use a password of at least 8 characters."); return; }
   authForm(this, "/auth/register", registerBody(email, pw, $("reg-name").value.trim()), $("register-error"));
 });
 ["login", "register"].forEach(function (f) {
-  $(f + "-form").addEventListener("input", function () { $(f + "-error").textContent = ""; });
+  $(f + "-form").addEventListener("input", function () { acctClear(this, $(f + "-error")); });
 });
 // Signing out (the account page's button, or the name menu): back to Sign in.
 function signOut() {

@@ -417,72 +417,91 @@
     </section>
 
     <!-- Account: sign in / create account, or your lists once signed in -->
-    <section class="view" id="view-account" hidden>
-      <div class="view-head">
-        <p class="eyebrow" id="account-eyebrow">Your account</p>
+    <section class="view acct-view" id="view-account" hidden>
+      <!-- CC-148: Lakefront (design/lakefront-brief.md section 10). Signed out: a title and an italic deck, then Sign in
+           beside "New here? Make an account". Signed in: "Hi, name" and Sign out, then 7/5: your profile and password on
+           the left, the events you've sent us, your reports and photo approvals on the right. -->
+      <div class="acct-head">
         <h1 id="account-title" tabindex="-1">Sign in</h1>
-        <p id="account-sub">Keep a list of what you've seen, and send us events we're missing.</p>
+        <p class="acct-deck" id="account-sub">Keep a list of what you've seen, go out with your crews, and send us events we're missing.</p>
+        <div class="acct-who" id="account-who-row" hidden><p id="account-who"></p><button class="btn ghost" type="button" id="sign-out">Sign out</button></div>
       </div>
-      <p class="notice" id="account-notice" role="status"></p>
-      <section class="panel join" id="join-panel" hidden aria-labelledby="join-title">
+      <p class="acct-notice" id="account-notice" role="status"></p>
+      <section class="acct-join" id="join-panel" hidden aria-labelledby="join-title">
         <h2 id="join-title" tabindex="-1">Join a crew</h2>
         <p id="join-text"></p>
         <p class="form-error" id="join-error" role="alert"></p>
         <div class="row" id="join-actions"><button class="btn" type="button" id="join-yes">Join the crew</button><button class="btn ghost" type="button" id="join-no">Not now</button></div>
       </section>
-      <div class="forms" id="signed-out">
-        <form class="panel" id="login-form" novalidate>
-          <h2>Sign in</h2>
-          <div class="field"><label for="login-email">Email</label><input id="login-email" type="email" autocomplete="username" required></div>
-          <div class="field"><label for="login-password">Password</label><input id="login-password" type="password" autocomplete="current-password" required></div>
-          <p class="form-error" id="login-error" role="alert"></p>
-          <div class="row"><button class="btn" type="submit">Sign in</button><button class="textbtn" type="button" id="forgot-open" aria-expanded="false" aria-controls="forgot-form">Forgot password?</button></div>
-        </form>
-        <form class="panel" id="forgot-form" novalidate hidden>
-          <h2>Reset your password</h2>
-          <p class="hint">We'll email you a link to choose a new one.</p>
-          <div class="field"><label for="forgot-email">Email</label><input id="forgot-email" type="email" autocomplete="email" required></div>
-          <p class="form-error" id="forgot-error" role="alert"></p>
-          <div class="row"><button class="btn" type="submit" id="forgot-btn">Email me a link</button><span class="hint" id="forgot-msg" role="status"></span></div>
-        </form>
-        <form class="panel" id="register-form" novalidate>
-          <h2>Create an account</h2>
-          <div class="field"><label for="reg-name">Name <span class="opt-label">(optional)</span></label><input id="reg-name" type="text" autocomplete="name" maxlength="80"></div>
-          <div class="field"><label for="reg-email">Email</label><input id="reg-email" type="email" autocomplete="email" required></div>
-          <div class="field"><label for="reg-password">Password</label><input id="reg-password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required aria-describedby="reg-password-hint"><span class="hint small" id="reg-password-hint">At least 8 characters.</span></div>
-          <p class="form-error" id="register-error" role="alert"></p>
-          <button class="btn" type="submit">Create account</button>
-        </form>
+      <div class="acct-cols acct-halves" id="signed-out">
+        <div class="acct-col">
+          <form class="acct-form" id="login-form" novalidate aria-labelledby="login-h">
+            <h2 class="acct-sub" id="login-h">Sign in</h2>
+            <div class="field"><label for="login-email">Email</label><input id="login-email" type="email" autocomplete="username" spellcheck="false" required></div>
+            <div class="field"><label for="login-password">Password</label><input id="login-password" type="password" autocomplete="current-password" required></div>
+            <p class="form-error" id="login-error" role="alert"></p>
+            <div class="acct-acts"><button class="btn" type="submit">Sign in</button><button class="acct-tbtn" type="button" id="forgot-open" aria-expanded="false" aria-controls="forgot-form">Forgot password?</button></div>
+          </form>
+          <form class="acct-form acct-forgot" id="forgot-form" novalidate hidden aria-labelledby="forgot-h">
+            <h3 id="forgot-h">Reset your password</h3>
+            <p class="hint">We'll email you a link to choose a new one.</p>
+            <div class="field"><label for="forgot-email">Email</label><input id="forgot-email" type="email" autocomplete="email" spellcheck="false" required></div>
+            <p class="form-error" id="forgot-error" role="alert"></p>
+            <div class="acct-acts"><button class="btn ghost" type="submit" id="forgot-btn">Email me a link</button><span class="acct-said" id="forgot-msg" role="status"></span></div>
+          </form>
+        </div>
+        <div class="acct-col">
+          <form class="acct-form" id="register-form" novalidate aria-labelledby="register-h">
+            <h2 class="acct-sub" id="register-h">New here? Make an account</h2>
+            <div class="field"><label for="reg-name">Name <span class="opt-label">(optional)</span></label><input id="reg-name" type="text" autocomplete="name" maxlength="80"></div>
+            <div class="field"><label for="reg-email">Email</label><input id="reg-email" type="email" autocomplete="email" spellcheck="false" required></div>
+            <div class="field"><label for="reg-password">Password</label><input id="reg-password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required aria-describedby="reg-password-hint"><span class="hint" id="reg-password-hint">At least 8 characters.</span></div>
+            <p class="form-error" id="register-error" role="alert"></p>
+            <div class="acct-acts"><button class="btn ghost" type="submit">Make my account</button></div>
+          </form>
+        </div>
       </div>
-      <div id="signed-in" hidden>
-        <div class="row"><p id="account-who"></p><button class="btn ghost" type="button" id="sign-out">Sign out</button></div>
-        <div class="row" id="approver-row" hidden><button class="btn neutral" type="button" data-go="approvals">Photo approvals<span class="count" id="approver-count"></span></button></div>
-        <div class="section"><h2 id="my-submissions-title" tabindex="-1">Events you've sent us</h2><div class="queue" id="my-submissions"></div></div>
-        <div class="section" id="my-issues-section" hidden><h2 id="my-issues-title" tabindex="-1">Your reports</h2>
-          <p class="hint">Problems you've told us about, and where each one stands.</p>
-          <div class="queue" id="my-issues"></div></div>
-        <div class="section"><h2>Your profile</h2>
-          <form class="panel" id="profile-form" novalidate>
+      <div class="acct-cols" id="signed-in" hidden>
+        <div class="acct-col">
+          <form class="acct-form" id="profile-form" novalidate aria-labelledby="profile-h">
+            <h2 class="acct-sub" id="profile-h">Your profile</h2>
             <div class="fields">
               <div class="field"><label for="p-name">Name</label><input id="p-name" type="text" maxlength="80" autocomplete="name" aria-describedby="p-name-hint"></div>
-              <div class="field"><label for="p-email">Email</label><input id="p-email" type="email" maxlength="320" autocomplete="email"></div>
+              <div class="field"><label for="p-email">Email</label><input id="p-email" type="email" maxlength="320" autocomplete="email" spellcheck="false"></div>
             </div>
-            <span class="hint small" id="p-name-hint">Your name is shown on events you choose to be credited for.</span>
-            <div class="field" id="p-password-field" hidden><label for="p-password">Current password</label><input id="p-password" type="password" autocomplete="current-password" aria-describedby="p-password-hint"><span class="hint small" id="p-password-hint">Needed to change your email.</span></div>
+            <span class="hint" id="p-name-hint">Your name shows on events you choose to be credited for, and to your crews.</span>
+            <div class="field" id="p-password-field" hidden><label for="p-password">Current password</label><input id="p-password" type="password" autocomplete="current-password" aria-describedby="p-password-hint"><span class="hint" id="p-password-hint">Needed to change your email.</span></div>
             <p class="form-error" id="profile-error" role="alert"></p>
-            <div class="row"><button class="btn" type="submit" id="profile-btn">Save changes</button><span class="hint" id="profile-msg" role="status"></span></div>
+            <div class="acct-acts"><button class="btn" type="submit" id="profile-btn">Save changes</button><span class="acct-said" id="profile-msg" role="status"></span></div>
           </form>
-          <form class="panel" id="password-form" novalidate>
-            <h3 class="panel-title">Change password</h3>
+          <form class="acct-form" id="password-form" novalidate aria-labelledby="password-h">
+            <h2 class="acct-sub" id="password-h">Change password</h2>
+            <input id="pw-user" type="email" autocomplete="username" hidden readonly tabindex="-1" aria-hidden="true">
             <div class="field"><label for="pw-current">Current password</label><input id="pw-current" type="password" autocomplete="current-password" maxlength="200" required></div>
             <div class="fields">
-              <div class="field"><label for="pw-new">New password</label><input id="pw-new" type="password" autocomplete="new-password" minlength="8" maxlength="72" required></div>
+              <div class="field"><label for="pw-new">New password</label><input id="pw-new" type="password" autocomplete="new-password" minlength="8" maxlength="72" required aria-describedby="pw-hint"></div>
               <div class="field"><label for="pw-confirm">New password again</label><input id="pw-confirm" type="password" autocomplete="new-password" maxlength="72" required></div>
             </div>
-            <span class="hint small" id="pw-hint">At least 8 characters. Changing it signs you out on your other devices.</span>
+            <span class="hint" id="pw-hint">At least 8 characters. Changing it signs you out on your other devices.</span>
             <p class="form-error" id="password-error" role="alert"></p>
-            <div class="row"><button class="btn" type="submit" id="password-btn">Change password</button><span class="hint" id="password-msg" role="status"></span></div>
+            <div class="acct-acts"><button class="btn ghost" type="submit" id="password-btn">Change password</button><span class="acct-said" id="password-msg" role="status"></span></div>
           </form>
+        </div>
+        <div class="acct-col">
+          <section aria-labelledby="my-submissions-title">
+            <h2 class="acct-sub"><span id="my-submissions-title" tabindex="-1">Events you've sent us</span><span class="acct-sub-n" id="my-submissions-n"></span></h2>
+            <ul class="acct-rows" id="my-submissions"></ul>
+            <p class="acct-more"><button class="acct-tbtn" type="button" data-go="submit" id="my-submissions-more" hidden>Send us another &rarr;</button></p>
+          </section>
+          <section id="my-issues-section" hidden aria-labelledby="my-issues-title">
+            <h2 class="acct-sub"><span id="my-issues-title" tabindex="-1">Your reports</span><span class="acct-sub-n" id="my-issues-n"></span></h2>
+            <ul class="acct-rows" id="my-issues"></ul>
+            <p class="hint acct-more">Problems you've told us about, and where each one stands.</p>
+          </section>
+          <section id="approver-row" hidden aria-labelledby="approver-title">
+            <h2 class="acct-sub"><span id="approver-title">Photo approvals</span><span class="acct-sub-n" id="approver-count"></span></h2>
+            <p class="acct-more"><button class="acct-tbtn" type="button" data-go="approvals">Look at the photos waiting &rarr;</button></p>
+          </section>
         </div>
       </div>
     </section>
@@ -646,32 +665,30 @@
     </section>
 
     <!-- Review queue (admins) -->
-    <section class="view" id="view-verify" hidden>
-      <div class="view-head">
-        <p class="eyebrow">Your account</p>
+    <section class="view acct-view" id="view-verify" hidden>
+      <div class="acct-head">
         <h1 id="verify-title" tabindex="-1">Confirm your email address</h1>
-        <p>One click and you're done.</p>
+        <p class="acct-deck">One click and you're done.</p>
       </div>
-      <div class="panel">
-        <div class="row"><button class="btn" type="button" id="verify-btn">Confirm my email address</button></div>
+      <div class="acct-form acct-narrow">
+        <div class="acct-acts"><button class="btn" type="button" id="verify-btn">Confirm my email address</button></div>
         <p class="form-error" id="verify-error" role="alert"></p>
       </div>
     </section>
 
-    <section class="view" id="view-reset" hidden>
-      <div class="view-head">
-        <p class="eyebrow">Your account</p>
+    <section class="view acct-view" id="view-reset" hidden>
+      <div class="acct-head">
         <h1 id="reset-title" tabindex="-1">Choose a new password</h1>
-        <p>Once it's changed you'll be signed in here, and signed out everywhere else.</p>
+        <p class="acct-deck">Once it's changed you'll be signed in here, and signed out everywhere else.</p>
       </div>
-      <form class="panel" id="reset-form" novalidate>
+      <form class="acct-form acct-narrow" id="reset-form" novalidate aria-labelledby="reset-title">
         <div class="fields">
           <div class="field"><label for="reset-new">New password</label><input id="reset-new" type="password" autocomplete="new-password" minlength="8" maxlength="72" required aria-describedby="reset-hint"></div>
           <div class="field"><label for="reset-confirm">New password again</label><input id="reset-confirm" type="password" autocomplete="new-password" maxlength="72" required></div>
         </div>
-        <span class="hint small" id="reset-hint">At least 8 characters.</span>
+        <span class="hint" id="reset-hint">At least 8 characters.</span>
         <p class="form-error" id="reset-error" role="alert"></p>
-        <div class="row"><button class="btn" type="submit" id="reset-btn">Set new password</button></div>
+        <div class="acct-acts"><button class="btn" type="submit" id="reset-btn">Set new password</button></div>
       </form>
     </section>
 

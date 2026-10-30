@@ -448,10 +448,10 @@ $("join-yes").addEventListener("click", function () {
   if (!JOIN) return;
   var b = this; b.disabled = true;
   api("/crews/join", { method: "POST", body: { token: JOIN.token } }).then(readJSON).then(function (res) {
-    if (!res.ok) { b.disabled = false; $("join-error").textContent = errorText(res); return; }
+    if (!res.ok) { b.disabled = false; $("join-error").textContent = checkThis(errorText(res)); return; }
     var name = res.body.name; JOIN = null; paintJoin(); setCrewOpen(res.body.id); CREW_JOINED = String(res.body.id); // CC-120; CC-145: your dot slides in
     openCrews(); loadCrews('#crew-h-' + res.body.id).then(function () { $("edit-live").textContent = "You joined " + name + "."; }); // CC-104
-  }, function () { b.disabled = false; $("join-error").textContent = errorText(null); });
+  }, function () { b.disabled = false; $("join-error").textContent = checkThis(errorText(null)); });
 });
 $("join-no").addEventListener("click", function () { JOIN = null; paintJoin(); $("account-title").focus(); });
 
