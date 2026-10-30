@@ -360,7 +360,7 @@ PHONE.addEventListener("change", function () { if (!PHONE.matches && $("filter-s
 // A card opens its event here, at #e/<id>: the details, your plans and your crews', and Tickets as the way out
 // to the venue. Back returns to where you came from (the catalog keeps its filters, pages and place). Share gives
 // the event's public page (/e/<id>-<title>, CC-108), which anyone can open and which links back here.
-var EV = { id: null, e: null, from: null, y: 0, pushed: false, req: 0 }; // e: the event as GET /events/<id> gave it, with your crews' plans
+var EV = { id: null, e: null, from: null, y: 0, pushed: false, req: 0, link: null }; // e: the event as GET /events/<id> gave it, with your crews' plans; link: the row that opened it
 function evSlug(title) { // as the API makes it (app/seo.py slug): "Dead Girl's Quinceañera" -> "dead-girls-quinceanera"
   var s = title.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/['’]/g, "")
     .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -440,7 +440,10 @@ function eventViewHTML(e) {
     "</div>" +
     '<input class="share-url" id="ev-share-url" type="text" readonly aria-label="Link to this event" hidden>' +
     '<p class="hint small" id="ev-share-msg" role="status"></p>';
-  var side = '<aside class="ev-side" aria-labelledby="ev-crews-h"><h2 id="ev-crews-h">Your crews</h2>' +
+  // CC-144: once you're going, you head Your crews (turning Going on slides it in)
+  var you = AUTH.user && MYPLANS[e.id] && MYPLANS[e.id].status === "going" ? '<div class="ev-you"><p class="ev-who"><span class="dots" aria-hidden="true">' +
+    '<span class="face face-you">You</span></span><span>You’re going</span></p></div>' : "";
+  var side = '<aside class="ev-side" aria-labelledby="ev-crews-h"><h2 id="ev-crews-h">Your crews</h2>' + you +
     (e.pick ? '<div class="ev-crew"><p class="ev-who">' + markHTML("host") + "<span>" + esc(pickText(e.pick)) + "</span></p></div>" : "");
   if (!AUTH.user) {
     main += "</div>";
@@ -459,10 +462,12 @@ function eventViewHTML(e) {
 function renderEventView() {
   var e = EV.e && EV.e.id === EV.id ? EV.e : KNOWN[EV.id]; // a list fetched before sign-in may have replaced KNOWN's copy
   if (!e) return;
+  if (POSTER.moving) { POSTER.redraw = true; return; } // CC-144: replacing the poster mid-move would cut it short; after
   var a = document.activeElement, first = !$("event-title"); // the details weren't there yet: focus waited on Back
   var keep = !a || a === document.body || a.id === "event-title" || (first && a.id === "ev-back");
   $("ev-body").innerHTML = eventViewHTML(e);
   paintWater($("ev-body"));
+  evMotionCarry(e.id);
   if (keep && visible("event")) $("event-title").focus({ preventScroll: true });
 }
 // The event from the API: its details, and (signed in) your crews' plans, which depend on who's signed in.
@@ -490,7 +495,7 @@ function openEvent(id, push) {
     EV.from = from && from !== "event" ? from : EV.from; EV.y = window.scrollY;
     try { history.pushState(null, "", "#e/" + id); EV.pushed = true; } catch (err) { EV.pushed = false; }
   } else {
-    EV.pushed = false; if (!visible("event")) EV.from = null;
+    EV.pushed = false; EV.link = null; if (!visible("event")) EV.from = null;
     if (location.hash !== "#e/" + id) { try { history.replaceState(null, "", "#e/" + id); } catch (err) {} } // back from signing in: a reload stays here
   }
   EV.id = id; EV.e = null;
@@ -501,22 +506,108 @@ function openEvent(id, push) {
   show("event", KNOWN[id] ? "event-title" : "ev-back");
   loadEventView();
 }
-// Back to the view the event was opened from, at the same place, with focus on the card that opened it.
+// Back to the view the event was opened from, at the same place, with focus on the card that opened it (the poster
+// shrinks back into its tile, CC-144).
 function closeEvent() {
-  var from = EV.from || "catalog", id = EV.id;
-  EV.from = null; EV.pushed = false;
+  var from = EV.from || "catalog", id = EV.id, link = EV.link;
+  EV.from = null; EV.pushed = false; EV.link = null;
   if (from === "catalog" && !CAT_ITEMS.length) renderCatalog();
-  show(from);
-  window.scrollTo(0, EV.y);
-  var link = document.querySelector('#view-' + from + ' [data-ev-open="' + id + '"]');
-  if (link) link.focus({ preventScroll: true });
+  // the row that opened it, unless a redraw replaced it since (a plan changed): then the same event's in that view
+  if (!link || !link.isConnected || !$("view-" + from).contains(link)) link = document.querySelector('#view-' + from + ' [data-ev-open="' + id + '"]');
+  posterMove(posterSource(link), true, function () {
+    show(from);
+    window.scrollTo(0, EV.y);
+    if (link) link.focus({ preventScroll: true });
+  });
 }
 document.addEventListener("click", function (ev) {
   var a = ev.target.closest("a[data-ev-open]");
   if (!a || ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return; // a new tab: the href does it
   ev.preventDefault();
-  openEvent(a.getAttribute("data-ev-open"), true);
+  var id = a.getAttribute("data-ev-open");
+  posterMove(posterSource(a), false, function () { openEvent(id, true); EV.link = a; });
 });
+
+// ---------- tile becomes poster (CC-144) ----------
+// Opening an event from a row's tile or the home lead, the tile grows into the poster and its title into the page's;
+// Back shrinks them again. A same-document View Transition (brief, section 6): the two share the names "poster" and
+// "ev-title" only for the swap, and only one of each is on the screen at a time (the other view is hidden). 440ms
+// there, 340ms back, in site.css. Without the API, with reduced motion, or from anything without a tile (Last chance,
+// a card, a reload or a deep link to #e/<id>), the view just changes.
+var POSTER = { seq: 0, moving: false, redraw: false }; // redraw: the event page changed during the move
+function posterSource(a) { // the tile and title that become the poster's, or null
+  if (!a) return null;
+  var tile = a.classList.contains("lead-pick") ? a : a.querySelector(".tile"), title = a.querySelector(".listing-t, .lead-t");
+  return tile && title ? { tile: tile, title: title } : null;
+}
+function posterMove(src, back, swap) {
+  if (!src || !document.startViewTransition || !motionOK()) { swap(); return; }
+  var root = document.documentElement, seq = ++POSTER.seq;
+  var name = function (on) { src.tile.style.viewTransitionName = on ? "poster" : ""; src.title.style.viewTransitionName = on ? "ev-title" : ""; };
+  // a newer move skips this one; its names and classes are the newer one's to clear
+  var done = function () {
+    if (seq !== POSTER.seq) return;
+    name(false); root.classList.remove("vt-poster", "vt-back"); POSTER.moving = false;
+    if (POSTER.redraw) { POSTER.redraw = false; renderEventView(); } // the event's details came back while it moved
+  };
+  name(true); root.classList.add("vt-poster"); root.classList.toggle("vt-back", back); // .vt-poster names the poster (site.css)
+  document.startViewTransition(function () { swap(); POSTER.moving = true; }).finished.then(done, done);
+}
+
+// ---------- the dolphins (CC-144) ----------
+// Turning Going on, a dolphin leaps out of the button, over it and back in, and two star-red rings ripple where it
+// lands; then "You're going" slides into Your crews. Turning Interested on, its lake dolphin nods. Turning either off
+// just changes state, and so does everything with reduced motion. Saving redraws the page under them, so the leap and
+// rings are fixed to the screen above it, and the nod carries on in the redrawn button (evMotionCarry).
+var EV_MOTION = { nod: null, you: null }; // nod: { id, at } while it's playing; you: the event whose "You're going" slides in
+var NOD = { keys: [{ transform: "translateY(0) rotate(0)" }, { transform: "translateY(-5px) rotate(-12deg)" }, { transform: "translateY(0) rotate(0)" }],
+  opts: { duration: 360, easing: "cubic-bezier(.3,.7,.4,1)" } };
+function evLeap(btn, id) {
+  if (!motionOK() || !btn.animate) return;
+  EV_MOTION.you = id;
+  var icon = (btn.querySelector(".mark") || btn).getBoundingClientRect(), x = icon.left + icon.width / 2, y = icon.top + icon.height / 2;
+  document.body.insertAdjacentHTML("beforeend", markHTML("going"));
+  var d = document.body.lastElementChild; d.classList.add("leaper");
+  // from 64px left of the button's dolphin, up 86px, and nose-down back into it (#dolphin already leans −21°)
+  var sx = x - 64, sy = y + 6, at = function (dx, dy, rot) { return "translate(" + (sx + dx - 22) + "px," + (sy + dy - 14) + "px) rotate(" + (rot + 21) + "deg)"; };
+  d.animate([
+    { transform: at(0, 0, -40), opacity: 0 },
+    { transform: at(14, -40, -32), opacity: 1, offset: 0.2 },
+    { transform: at(40, -86, -8), offset: 0.5 },
+    { transform: at(62, -50, 34), offset: 0.78 },
+    { transform: at(64, -6, 62), opacity: 1, offset: 0.94 },
+    { transform: at(64, 4, 70), opacity: 0 }
+  ], { duration: 760, easing: "cubic-bezier(.33,0,.4,1)" }).onfinish = function () { d.remove(); evRipples(x, y + 4); };
+}
+function evRipples(x, y) {
+  [0, 130].forEach(function (delay) {
+    var r = document.createElement("span"); r.className = "ripple"; r.setAttribute("aria-hidden", "true");
+    document.body.appendChild(r);
+    var at = "translate(" + x + "px," + y + "px) ";
+    r.animate([{ transform: at + "scale(.2)", opacity: 0.9 }, { transform: at + "scale(1.6)", opacity: 0 }],
+      { duration: 620, delay: delay, easing: "cubic-bezier(.2,.8,.2,1)", fill: "backwards" }).onfinish = function () { r.remove(); };
+  });
+}
+function evNod(btn, id) {
+  var m = btn.querySelector(".mark");
+  if (!motionOK() || !m || !m.animate) return;
+  EV_MOTION.nod = { id: id, at: performance.now() };
+  m.animate(NOD.keys, NOD.opts);
+}
+// After the page is redrawn: a nod still playing goes on in the new button from where it was; "You're going" slides in.
+function evMotionCarry(id) {
+  var n = EV_MOTION.nod, b = $("ev-body");
+  if (n && n.id === id) {
+    var left = performance.now() - n.at, m = b.querySelector("[data-myplan-set] .mark");
+    if (left >= NOD.opts.duration) EV_MOTION.nod = null;
+    else if (m && m.animate) m.animate(NOD.keys, NOD.opts).currentTime = left;
+  }
+  var you = b.querySelector(".ev-you");
+  if (EV_MOTION.you === id && you) {
+    EV_MOTION.you = null;
+    if (motionOK() && you.animate) you.animate([{ opacity: 0, height: "0px" }, { opacity: 1, height: you.offsetHeight + "px" }], { duration: 320, easing: "cubic-bezier(.2,.8,.2,1)" });
+  }
+}
 $("ev-back").addEventListener("click", function () {
   if (EV.pushed) { history.back(); return; } // the hashchange comes back to closeEvent()
   try { history.replaceState(null, "", location.pathname + location.search); } catch (err) {}

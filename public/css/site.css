@@ -542,6 +542,24 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 @keyframes rise { from { transform: translateY(8px); } to { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .view, .ways.rise .way { animation: none; } .card { transition: none; } }
 
+/* CC-144: motion (brief, section 6). Tile becomes poster: catalog.js posterMove names the row's tile "poster" and its
+   title "ev-title" for the swap, and .vt-poster names the event page's; the view's own rise waits. */
+.vt-poster #ev-body .poster { view-transition-name: poster; }
+.vt-poster #event-title { view-transition-name: ev-title; }
+.vt-poster .view { animation: none; }
+::view-transition-group(poster), ::view-transition-group(ev-title) { animation-duration: 440ms; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
+.vt-back::view-transition-group(poster), .vt-back::view-transition-group(ev-title) { animation-duration: 340ms; }
+::view-transition-group(poster) { overflow: clip; }
+::view-transition-old(poster), ::view-transition-new(poster) { width: 100%; height: 100%; object-fit: cover; } /* cropped to the moving box, never stretched */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 220ms; }
+/* the Going leap and its rings, fixed over the page while it redraws (catalog.js evLeap) */
+.mark.leaper { position: fixed; left: 0; top: 0; width: 44px; height: 29px; pointer-events: none; z-index: 60; --dol-body: var(--star); --dol-belly: #fff; --dol-mouth: #fff; }
+.ripple { position: fixed; left: 0; top: 0; width: 64px; height: 18px; margin: -9px 0 0 -32px; border: 2px solid var(--star); border-radius: 50%; pointer-events: none; z-index: 59; }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+  .leaper, .ripple { display: none; }
+}
+
 /* site stats (admins, CC-67) */
 .stat-summary { display: flex; flex-wrap: wrap; gap: 12px 32px; margin-bottom: 18px; font-variant-numeric: tabular-nums; }
 .stat-summary > div { display: grid; }
@@ -667,6 +685,9 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .ev-who .dots { display: inline-flex; flex: none; padding-left: 5px; }
 .ev-who .face { width: 26px; height: 26px; margin-left: -5px; font-size: 12px; border-color: var(--page); }
 .ev-who .mark-host { width: 30px; height: 29px; }
+.ev-you { overflow: hidden; } /* CC-144: you, once you're going; it slides in (catalog.js evMotionCarry) */
+.ev-you .ev-who { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.ev-who .face-you { width: 30px; height: 30px; margin-left: -5px; background: var(--text); color: var(--page); font-size: 11px; }
 .ev-side .hint { margin-top: 12px; }
 .ev-side .btn { margin-top: 12px; display: inline-flex; align-items: center; min-height: 48px; padding: 0 20px; }
 
