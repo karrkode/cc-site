@@ -33,6 +33,8 @@ jobs:
         run: node scripts/test_event.js
       - name: The home front page picks its lead and lists last chances
         run: node scripts/test_home.js
+      - name: The motion keeps the brief's timings, 30fps drift and reduced-motion fallbacks
+        run: node scripts/test_motion.js
       - name: Asset links can be stamped for deploy
         run: python3 scripts/stamp_assets.py
       - name: JavaScript syntax

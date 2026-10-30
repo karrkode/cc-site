@@ -2,8 +2,8 @@
 // Events have no photos. Each gets its own patch of lake instead: a pattern drawn on a <canvas> from the event's id, so
 // the same event always gets the same water. Theater is choppy, music a steady wave, visual art flattened ripples
 // round a point the seed places. White strokes: 42% on row tiles, 24% on the event poster, 13% on the masthead.
-// water() is the Lakefront mockup's, ported as it is (design brief, section 4). Static for now; the drift
-// (CC-144) calls drawWater(canvas, t) with the time in seconds.
+// water() is the Lakefront mockup's, ported as it is (design brief, section 4). The masthead and the poster drift
+// (CC-144, at the end): drawWater(canvas, t) with the time in seconds.
 //
 // To use it: put waterHTML(e, "tile" | "poster") inside a .water-field that also carries catClass(e.type), then call
 // paintWater(thatElement). The canvas redraws itself when its size or the screen's pixel density changes.
@@ -50,9 +50,11 @@ function water(canvas, seed, kind, t, place) {
   }
 }
 
-// Draws a canvas from its data-water (the place), data-seed and data-kind
+// Draws a canvas from its data-water (the place), data-seed and data-kind. Without a time, a drifting canvas is drawn
+// where the drift has got to (a resize mustn't jump it back), and the others at 0.
 function drawWater(canvas, t) {
   var kind = canvas.getAttribute("data-kind");
+  if (t === undefined) t = waterDrifts(canvas) ? WATER_T : 0;
   water(canvas, Number(canvas.getAttribute("data-seed")) || 0, WATER_KINDS[kind] ? kind : "theater", t || 0, canvas.getAttribute("data-water"));
 }
 
@@ -68,7 +70,10 @@ var WATER_SIZES = typeof ResizeObserver === "function" ? new ResizeObserver(func
   entries.forEach(function (en) { if (en.target.isConnected) drawWater(en.target); else WATER_SIZES.unobserve(en.target); });
 }) : null;
 function paintWater(root) {
-  (root || document).querySelectorAll("canvas.water").forEach(function (c) { if (WATER_SIZES) WATER_SIZES.observe(c); else drawWater(c); });
+  (root || document).querySelectorAll("canvas.water").forEach(function (c) {
+    if (WATER_SIZES) WATER_SIZES.observe(c); else drawWater(c);
+    if (waterDrifts(c)) driftWatch(c); // CC-144
+  });
 }
 // Moving the window to a screen with another pixel density redraws at the new density
 (function watchDensity() {
@@ -77,4 +82,51 @@ function paintWater(root) {
   if (!m.addEventListener) return;
   m.addEventListener("change", function () { document.querySelectorAll("canvas.water").forEach(function (c) { drawWater(c); }); watchDensity(); }, { once: true });
 })();
+
+// ---------- drift (CC-144) ----------
+// The water on the masthead and the event poster drifts: the phase moves 0.25 rad/s and art's ripples grow 6px/s
+// (water() above, at t seconds). At most 30 frames a second, and only while the tab shows and the canvas is on the
+// screen. Row tiles and the home lead never move. With reduced motion the water is drawn once and stays still.
+// motionOK() is the site's one test for reduced motion; catalog.js and account.js use it for the other moments.
+var REDUCED_MOTION = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+function motionOK() { return !(REDUCED_MOTION && REDUCED_MOTION.matches); }
+var WATER_T = 0; // seconds of drift so far
+var DRIFT = { watched: [], shown: [], raf: 0, last: 0, step: 1000 / 30 - 1 }; // step: a frame or two of slack under 33.3ms
+function waterDrifts(c) { return !!(c.closest && c.closest("#mast, .poster")); }
+var DRIFT_SEEN = typeof IntersectionObserver === "function" && typeof requestAnimationFrame === "function" ? new IntersectionObserver(function (entries) {
+  entries.forEach(function (en) {
+    var i = DRIFT.shown.indexOf(en.target);
+    if (en.isIntersecting && i < 0) DRIFT.shown.push(en.target);
+    else if (!en.isIntersecting && i >= 0) DRIFT.shown.splice(i, 1);
+  });
+  driftWake();
+}) : null;
+// Watch a drifting canvas for coming on and off the screen; let go of ones a redraw took off the page (the poster's).
+function driftWatch(c) {
+  if (!DRIFT_SEEN || DRIFT.watched.indexOf(c) >= 0) return;
+  DRIFT.watched = DRIFT.watched.filter(function (w) { if (w.isConnected) return true; DRIFT_SEEN.unobserve(w); return false; });
+  DRIFT.watched.push(c); DRIFT_SEEN.observe(c);
+}
+function driftLive() {
+  DRIFT.shown = DRIFT.shown.filter(function (c) { return c.isConnected; });
+  return motionOK() && !document.hidden && DRIFT.shown.length > 0;
+}
+// Start the frames if anything should move. The first frame only sets the clock, so a pause never jumps the water.
+function driftWake() {
+  if (DRIFT.raf || !DRIFT_SEEN || !driftLive()) return;
+  DRIFT.last = 0; DRIFT.raf = requestAnimationFrame(driftFrame);
+}
+function driftFrame(ts) {
+  DRIFT.raf = 0;
+  if (!driftLive()) return; // paused: driftWake() starts it again
+  if (!DRIFT.last) DRIFT.last = ts;
+  else if (ts - DRIFT.last >= DRIFT.step) {
+    WATER_T += Math.min(ts - DRIFT.last, 100) / 1000; DRIFT.last = ts; // a stalled frame doesn't lurch it forward
+    DRIFT.shown.forEach(function (c) { drawWater(c, WATER_T); });
+  }
+  DRIFT.raf = requestAnimationFrame(driftFrame);
+}
+if (document.addEventListener) document.addEventListener("visibilitychange", driftWake);
+if (REDUCED_MOTION && REDUCED_MOTION.addEventListener) REDUCED_MOTION.addEventListener("change", driftWake);
+
 paintWater($("mast"));

@@ -167,7 +167,8 @@ document.addEventListener("click", function (ev) {
   var box = t.closest(".myplan");
   // CC-142: on the event page the buttons stay out, so focus comes back to the one you pressed (Clear: Interested)
   var back = box.classList.contains("ev-plan") ? (t.hasAttribute("data-myplan-going") ? "[data-myplan-going]" : "[data-myplan-set]") : undefined;
-  if (t.hasAttribute("data-myplan-set")) return saveMyPlan(t.getAttribute("data-myplan-set"), { status: "interested" }, box, back);
+  var on = back && t.getAttribute("aria-pressed") !== "true"; // CC-144: turning one on, on the event page, moves its dolphin
+  if (t.hasAttribute("data-myplan-set")) { if (on) evNod(t, t.getAttribute("data-myplan-set")); return saveMyPlan(t.getAttribute("data-myplan-set"), { status: "interested" }, box, back); }
   if (t.hasAttribute("data-myplan-clear")) return saveMyPlan(t.getAttribute("data-myplan-clear"), null, box, back);
   var input = box.querySelector('input[type="date"]'), day = t.getAttribute("data-date") || (input && input.value);
   if (input && (!day || day < input.min || day > input.max)) {
@@ -175,6 +176,7 @@ document.addEventListener("click", function (ev) {
       "Choose a date from " + goingDay(input.min) + " to " + goingDay(input.max) + ".";
     input.focus(); return;
   }
+  if (on) evLeap(t, t.getAttribute("data-myplan-going"));
   saveMyPlan(t.getAttribute("data-myplan-going"), { status: "going", date: day }, box, back);
 });
 document.addEventListener("keydown", function (ev) { // Escape closes the picker and returns to its button

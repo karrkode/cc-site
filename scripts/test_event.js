@@ -98,6 +98,7 @@ has(html, 'class="ev-main ev-panel" data-card="' + e.id + '"', "the card buttons
 lacks(html, "data-myplan-clear", "nothing to clear yet"); lacks(html, "data-myplan-toggle", "no pop-up on the page");
 g.MYPLANS[e.id] = { status: "interested", date: null, crews: [] };
 html = g.eventViewHTML(e);
+lacks(html, "ev-you", "interested isn’t going");
 assert.strictEqual(pressed(html, "data-myplan-set"), "true"); assert.strictEqual(pressed(html, "data-myplan-going"), "false");
 has(html, "Marked interested. "); has(html, "data-myplan-clear");
 const day = iso(g.add(g.T, 4));
@@ -105,6 +106,8 @@ g.MYPLANS[e.id] = { status: "going", date: day, crews: [] };
 html = g.eventViewHTML(e);
 assert.strictEqual(pressed(html, "data-myplan-going"), "true"); assert.strictEqual(pressed(html, "data-myplan-set"), "false");
 has(html, 'value="' + day + '"', "the date field shows your day");
+has(html, '<div class="ev-you"><p class="ev-who">', "CC-144: once you're going, you head Your crews"); has(html, "<span>You’re going</span>");
+assert.ok(html.indexOf("ev-you") < html.indexOf("ev-crews-h") + 200 && html.indexOf("ev-you") > html.indexOf("ev-crews-h"), "right under the heading");
 lacks(html, "data-went", "going later: no I've been yet");
 has(html, "data-crewshare-toggle", "sharing with your crews");
 
