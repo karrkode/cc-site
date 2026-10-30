@@ -77,11 +77,11 @@ function loadMyIssues() {
   if (!AUTH.user) { $("my-issues-section").hidden = true; return; }
   api("/me/issues").then(readJSON).then(function (res) {
     if (!res.ok) return;
-    $("my-issues-section").hidden = !res.body.length;
-    $("my-issues").innerHTML = res.body.map(function (i) {
-      return '<div class="queue-item issue"><div class="alt-text"><p class="kind"><span class="ticket">' + esc(i.key) + "</span> · " + esc(kindWord(i)) + " · " + esc(i.page || "The site") + " · " + esc(short(new Date(i.created_at))) +
-        " " + issueStateHTML(i) + '</p><p class="alt-title">' + esc(i.what_happened) + "</p>" +
-        (i.admin_note ? '<p class="issue-note"><span class="sr-only">Our note: </span>' + esc(i.admin_note) + "</p>" : "") + "</div></div>";
+    $("my-issues-section").hidden = !res.body.length; $("my-issues-n").textContent = res.body.length ? String(res.body.length) : "";
+    $("my-issues").innerHTML = res.body.map(function (i) { // CC-148: a row, with its status as a word (acctRowHTML, account.js)
+      return acctRowHTML(i.key + " · " + kindWord(i) + " · " + (i.page || "The site") + " · " + short(new Date(i.created_at)), esc(i.what_happened), "",
+        statusWord(i.kind, i.status), i.status === "fixed" || i.status === "wont_fix",
+        i.admin_note ? '<p class="acct-row-note"><span class="sr-only">Our note: </span>' + esc(i.admin_note) + "</p>" : "");
     }).join("");
   }, function () {});
 }
