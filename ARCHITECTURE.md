@@ -34,11 +34,14 @@ Each part has its own repository on GitHub.
 The site has these files:
 - `public/index.html`: the HTML.
 - `public/css/site.css`: the styles.
-- `public/js/`: the scripts, one file for each area of the site.
+- `public/js/`: the scripts, one file for each area of the site. `water.js` draws the water patterns (see "The look" below).
+- `public/img/`: the link-preview image. The dolphins are SVG symbols in `index.html`, not image files (CC-139).
+- `scripts/`: the checks and tests that GitHub Actions runs (section 9), and the script that stamps the asset links.
 
 The page loads the scripts in a fixed order. All the scripts share one global scope.
 The site does not have a build step. At deploy, a script adds a content hash to each link to a style or script file.
 Thus, browsers can keep these files for one year and still get each new version.
+The fonts come from Google Fonts. The page links them in `index.html`.
 
 Amazon S3 keeps the files.
 Amazon CloudFront sends the files to the user's browser. Some paths come from the API instead: `/e/*` (CC-108: a plain HTML page per event, for search engines and link previews), `/chicago/*` (CC-109: roundup pages such as this weekend, free and $25 and under, closing soon, each kind and each side of town, linked from the footer), `/sitemap.xml` and `/robots.txt`. CloudFront caches them for up to 10 minutes. Inside the site, a listing row (CC-140) opens the event view at `#e/<id>` (CC-117), set as a poster (CC-142): the category field with its water, then the facts, Tickets, Interested and Going beside your crews'. Its Share button gives the `/e/` page, whose main button opens the view. Both show public takes (CC-112): Cultural Journal entries their members chose to share from #planner ("Share publicly" saves at once), which admins can hide from the event view.
@@ -48,7 +51,7 @@ The browser runs the JavaScript.
 The JavaScript gets the data from the API.
 
 The site has these views:
-- Home
+- Home: a front page (CC-143). It has the full masthead, then three columns: the lead pick, three ways in, and Last chance (sorted by closing date). "The listings" follow as rows. On a phone, the columns stack.
 - Join page (`/join`), and the invite page (`/invite`)
 - Catalog
 - Find an outing
@@ -63,6 +66,16 @@ The site has these views:
 
 The site has two themes: light, which is the default, and dark, called "Lights down".
 The user can change the theme with the Lights down button. Each device remembers the choice.
+
+### The look (Lakefront)
+
+The design brief is "Lakefront" (epic CC-135). The brief is not in this repository.
+- **Tokens and type (CC-136):** the colours, the type and the corners are tokens at the top of `public/css/site.css`, one block for each theme. Newsreader is the reading type. Big Shoulders Text is the signage type. Corners are square. Only people get circles.
+- **Masthead (CC-137):** the Chicago flag on the lake. Home and the join page show the full masthead: the date, the wordmark between two stripes, and the tagline. The other views show a compact masthead. On a phone, the nav is a sheet.
+- **Water (CC-138):** each event has its own pattern of water, because events do not have photos. `water.js` draws the pattern on a canvas from the event's id. Thus, the same event always gets the same water. The pattern shows on the listing rows, the event poster, the home lead pick and the masthead.
+- **Dolphins (CC-139):** one SVG drawing in `index.html`, in three looks: the host's pick (the dolphin through a gold ring, with a gold star), Interested (the lake dolphin) and Going (the ink dolphin).
+- **Filters (CC-141):** the catalog filters sit between two rules, with no box. Each tap target is 44 pixels or more.
+- **Motion (CC-144):** a listing tile grows into the event poster (a view transition). Turning Going on makes a dolphin leap. Turning Interested on makes the dolphin nod. The water on the masthead and on the poster drifts slowly, at 30 frames a second or less, and only while it is on the screen. If the device asks for reduced motion, nothing moves: `motionOK()` in `water.js` is the one test for this.
 
 ## 3. The API
 
@@ -181,7 +194,14 @@ Members must confirm their email address before they can send in events or see c
 ## 9. Deployment
 
 GitHub Actions tests each pull request.
+For the site, the "Page checks" job does these checks:
+- The pages parse, and each element that the scripts use is in the page.
+- Each colour pair meets WCAG AA in both themes (`scripts/check_contrast.py`, CC-136). The check reads the tokens from `site.css`. If you change a token, the check examines the new value.
+- The Node tests in `scripts/`: the water, the listing rows, the event poster, the home page and the motion.
+- The asset links can be stamped, and each script has correct JavaScript syntax.
+
 When you merge a pull request into `main`, GitHub Actions deploys the change.
+The site deploy uploads the files to S3, then removes each file that the site does not have now (CC-150). It does not remove style or script files that a cached page still links to, because their names do not change.
 GitHub Actions uses OIDC to get access to AWS. It does not keep AWS keys.
 
 Terraform defines the AWS resources: S3 (the site and the photos), CloudFront, EC2, ECR, RDS, SES, Rekognition permissions, Route 53, IAM, EventBridge Scheduler, SSM Parameter Store and CloudWatch.
