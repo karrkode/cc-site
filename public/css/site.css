@@ -1214,40 +1214,72 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
   .active-filters:empty { display: none; }
   .tally { padding-block: 12px 10px; }
 }
-/* CC-121: the join page (/join). The pitch and the sign-up box side by side, stacked on phones; the catalog
-   follows with its own heading hidden, under "Look around first". */
-.jp-cover { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: clamp(20px, 5vw, 64px); align-items: start;
-  padding-block: clamp(28px, 6vw, 72px) clamp(24px, 4vw, 40px); }
-.jp-pitch { display: grid; gap: 16px; }
-.jp-pitch h1 { font-family: var(--display); font-weight: 600; font-size: clamp(2.3rem, 6vw, 4.2rem); line-height: 1; letter-spacing: -0.025em; }
-.jp-pitch h1 em { font-style: normal; }
-.jp-line { font-size: clamp(1.2rem, 2.2vw, 1.4rem); font-weight: 600; line-height: 1.35; max-width: 34ch; }
-.jp-points { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 10px; max-width: 46ch; color: var(--muted); }
-.jp-points li { padding-left: 14px; border-left: 3px solid var(--star); line-height: 1.4; }
-.jp-form h2 { font-size: var(--step-1); }
-.jp-form .btn { justify-self: stretch; padding-block: 13px; }
-.jp-member { font-size: 1rem; padding-top: 12px; border-top: 1px solid var(--line); }
-.jp-look { font-family: var(--display); font-weight: 600; font-size: var(--step-2); letter-spacing: -0.015em; padding-top: 24px; border-top: 1px solid var(--line); }
+/* CC-121: the join page (/join), and CC-126 the invite page (/invite). CC-147: Lakefront (brief section 10). Under the
+   full masthead, the pitch (7) and the "Join in one step" panel (5), stacked on phones; then "Look around first" over
+   the catalog, whose filters' top rule is the section rule. The headline is one colour, with no eyebrow. */
+.jp-cover { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 48px; align-items: start; padding-block: 48px 8px; }
+.jp-pitch { display: grid; gap: 18px; align-content: start; }
+.jp-pitch h1 { font-family: var(--display); font-weight: 500; font-size: clamp(2.5rem, 5.2vw, 3.75rem); line-height: 1.02; letter-spacing: -0.025em; }
+.jp-line { max-width: 40ch; font-style: italic; font-size: 1.3125rem; line-height: 1.4; color: var(--muted); }
+.jp-points { list-style: none; margin: 6px 0 0; padding: 0; max-width: 46ch; }
+.jp-points li { padding-block: 10px; border-top: 1px solid var(--line); line-height: 1.4; }
+.jp-points li:last-child { border-bottom: 1px solid var(--line); }
+.jp-form { gap: 14px; padding: 24px; border: 0; }
+.jp-form h2 { font-family: var(--display); font-weight: 600; font-size: 1.875rem; line-height: 1.1; letter-spacing: -0.015em; }
+.jp-form .field label { font-size: 1.0625rem; }
+.jp-form .field input { min-height: 48px; padding: 0 12px; border: 1.5px solid var(--field-line); background: var(--page); color: var(--text); font-size: 1.125rem; }
+.jp-form .field input[aria-invalid="true"] { border: 2.5px solid var(--text); padding: 0 11px; } /* the field at fault: never red */
+.jp-form .form-error { margin: 0; }
+.jp-form .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 0 20px; }
+#jp-go { justify-self: stretch; }
+.jp-member { display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.jp-member .textbtn { display: inline-flex; align-items: center; min-height: 44px; font-size: 1.0625rem; color: var(--text); text-decoration-thickness: 1px; text-underline-offset: 5px; }
+.jp-look { margin-top: 48px; padding-bottom: 12px; font-family: var(--display); font-weight: 600; font-size: clamp(2rem, 4vw, 2.5rem); line-height: 1.1; letter-spacing: -0.015em; }
 #view-join:not([hidden]) + #view-catalog .view-head { display: none; }
 @media (max-width: 760px) {
-  .jp-cover { grid-template-columns: minmax(0, 1fr); }
+  .jp-cover { grid-template-columns: minmax(0, 1fr); gap: 32px; padding-top: 32px; }
   .jp-points { display: none; } /* on phones the box comes right after the line */
+  .jp-form { padding: 20px 16px; }
+  .jp-look { margin-top: 40px; }
 }
-/* CC-126: the invite page (/invite): the join page with the admins' pitch. Each "Why, you ask?" leads its paragraph in
-   the display face, so the page reads as two questions answered; both stay on phones (it's the reason to join). */
-.ip-pitch h1 { font-size: clamp(2.1rem, 5.4vw, 3.8rem); }
-.ip-why { max-width: 44ch; font-size: clamp(1.05rem, 1.8vw, 1.2rem); line-height: 1.45; }
-.ip-ask { display: block; margin-bottom: 2px; font-family: var(--display); font-weight: 600; letter-spacing: -0.01em; }
-.ip-why + .ip-why { padding-top: 14px; border-top: 1px solid var(--line); }
-/* CC-126: the invite QR code fills the screen to be scanned from the admin's phone. Black on white in both themes:
-   a bright screen and full contrast scan best. */
-.qr-full { width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: #ffffff; color: #0E2A40; }
-.qr-full::backdrop { background: #ffffff; }
-.qr-full-in { min-height: 100%; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 24px 16px calc(24px + env(safe-area-inset-bottom)); text-align: center; }
-.qr-full-brand { display: flex; align-items: center; gap: 6px; font-family: var(--display); font-weight: 600; font-size: 1rem; }
-.qr-full-brand .star { fill: #C8102E; }
-.qr-full h2 { font-family: var(--display); font-weight: 600; font-size: clamp(1.6rem, 7vw, 2.4rem); line-height: 1.05; letter-spacing: -0.02em; }
-.qr-full-code { width: min(86vw, 60vh, 520px); line-height: 0; }
+/* CC-126: the invite page's pitch. Each question leads its answer in the signage voice, so it reads as two questions
+   answered; both stay on phones (they're the reason to join). */
+.ip-pitch { gap: 22px; }
+.ip-why { max-width: 56ch; line-height: 1.5; }
+.ip-ask { display: block; margin-bottom: 4px; font-family: var(--sign); font-weight: 700; font-size: 1.25rem; line-height: 1.25; }
+
+/* CC-147: Invite a friend, a square dialog on the lake scrim: the link in a labelled box, Copy link (Share the link on
+   a phone) and, for admins, Show a QR code; Done is a text button at the end. */
+.invite-dlg { width: min(620px, calc(100% - 32px)); padding: 32px; background: var(--page); border: 1.5px solid var(--rule); }
+.invite-dlg::backdrop { background: rgb(14 42 64 / 0.55); } /* the backdrop doesn't see the theme's tokens everywhere */
+:root[data-theme="dark"] .invite-dlg::backdrop { background: rgb(3 10 16 / 0.7); }
+.invite-dlg form { gap: 16px; }
+.invite-dlg h2 { font-family: var(--display); font-weight: 600; font-size: clamp(2rem, 5vw, 2.5rem); line-height: 1.1; letter-spacing: -0.015em; }
+.invite-dlg .field label { font-size: 1.0625rem; }
+.invite-dlg .field input { min-height: 48px; padding: 0 12px; border: 1.5px solid var(--field-line); background: var(--page); color: var(--text); font-size: 1.125rem; text-overflow: ellipsis; }
+.invite-dlg #invite-msg:empty { display: none; }
+.invite-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.invite-acts .btn { display: inline-flex; align-items: center; min-height: 48px; padding: 0 20px; white-space: nowrap; }
+.invite-done { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; margin-left: auto; padding: 0; background: none; border: 0; color: var(--text); cursor: pointer;
+  font-family: var(--sign); font-weight: 700; font-size: 1.0625rem; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px; }
+.invite-foot { margin-top: 8px; padding-top: 16px; border-top: 1px solid var(--rule); }
+@media (max-width: 760px) { .invite-dlg { padding: 24px 20px; } }
+
+/* CC-126: the invite QR code fills the screen to be scanned from the admin's phone. CC-147: always paper-white, in
+   both themes, under a small flag band: the code is deep lake ink on white, which any phone can scan. The colours are
+   fixed here, not tokens, so "Lights down" doesn't reach them. */
+.qr-full { width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: #FFFFFF; color: #0E2A40; color-scheme: light; }
+.qr-full::backdrop { background: #FFFFFF; }
+.qr-full :focus-visible { outline-color: #0F5E8C; }
+.qr-full-in { min-height: 100%; display: flex; flex-direction: column; }
+.qr-flag { flex: none; padding-block: 10px; background: #0E3A5B; color: #FFFFFF; }
+.qr-flag i { display: block; height: 6px; background: #9CD3EF; }
+.qr-flag-word { display: flex; justify-content: center; align-items: center; gap: 10px; padding-block: 10px;
+  font-family: var(--display); font-weight: 600; font-size: 1.75rem; line-height: 1; letter-spacing: -0.02em; }
+.qr-flag-word .star { width: 0.56em; height: 0.56em; fill: #C8102E; }
+.qr-full-body { flex: 1; display: grid; place-content: center; justify-items: center; gap: 18px; padding: 24px 16px calc(24px + env(safe-area-inset-bottom)); text-align: center; }
+.qr-full h2 { font-family: var(--display); font-weight: 500; font-size: clamp(2.25rem, 7vw, 3.5rem); line-height: 1; letter-spacing: -0.025em; }
+.qr-full-code { width: min(80vw, 50vh, 400px); line-height: 0; }
 .qr-full-code svg { width: 100%; height: auto; display: block; }
-.qr-full-url { font-size: 1rem; color: #4A6275; font-variant-numeric: tabular-nums; }
-.qr-full .btn { min-width: 160px; background: #0E2A40; color: #ffffff; box-shadow: none; }
+.qr-full-url { font-family: var(--sign); font-weight: 700; font-size: 1.375rem; color: #0E2A40; font-variant-numeric: tabular-nums; }
+.qr-full .btn { display: inline-flex; align-items: center; justify-content: center; min-width: 200px; min-height: 48px; background: #0E3A5B; color: #FFFFFF; box-shadow: none; }
