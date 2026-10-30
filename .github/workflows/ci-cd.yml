@@ -31,6 +31,8 @@ jobs:
         run: node scripts/test_listings.js
       - name: The event page is a poster, with its plan buttons and crews
         run: node scripts/test_event.js
+      - name: The home front page picks its lead and lists last chances
+        run: node scripts/test_home.js
       - name: Asset links can be stamped for deploy
         run: python3 scripts/stamp_assets.py
       - name: JavaScript syntax

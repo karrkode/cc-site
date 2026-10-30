@@ -41,6 +41,7 @@ function onAuthChange() {
   if (visible("submit")) renderSubmit();
   if (visible("review")) renderReview();
   rerenderLists();
+  loadHome(); // CC-143: the lead pick's deck and the rows' crew lines need your crews' plans
   loadWent(); loadMyPlans().then(rerenderLists);
   loadCrews().then(function () { buildCrewFilter(); rerenderLists(); }); // crews to share plans with (CC-75)
   loadPending(true); // crew invites waiting for you (CC-59): the notice on sign-in

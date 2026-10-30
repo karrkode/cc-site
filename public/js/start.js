@@ -65,7 +65,7 @@ function boot(FACETS_IN) {
   // signed in on an earlier visit? the refresh cookie brings the session back (counting waits for it)
   COUNT_READY = maybeSignedIn() ? refreshSession() : Promise.resolve();
   renderPrivacyNote();
-  setTimeout(function () { $("doors").classList.remove("rise"); }, 1200); // CC-103: the doors rise in once, on the first visit to the page
+  setTimeout(function () { $("ways").classList.remove("rise"); }, 1200); // CC-103: the three ways in rise once, on the first visit to the page
 }
 // The footer's note on counting visits (CC-68), with the switch to turn it off or on again.
 function renderPrivacyNote() {

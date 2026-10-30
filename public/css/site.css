@@ -1,4 +1,4 @@
-/* Layout: a season program. A cover with two doors, a wall of listings, and a four-question box office. */
+/* Layout: a front page (CC-143), rows of listings, and a four-question box office. */
 /* Colours by purpose (CC-136, Lakefront; design/lakefront-brief.md section 3). Light, "Paper and lake", leads; dark is
    "Lights down", the lake at night. Every pair used below meets WCAG AA: scripts/check_contrast.py checks them in CI.
    page/surface/line/rule: backgrounds, hairlines and structural rules · text/muted: type (deep lake, never black)
@@ -137,47 +137,75 @@ a { color: inherit; }
   .mast.open .theme-toggle[aria-pressed="true"]::after { content: "On" / ""; }
 }
 
-/* cover */
-.cover {
-  padding-block: clamp(32px, 6vw, 72px) 8px;
-  display: grid; gap: clamp(18px, 3vw, 28px);
-}
-.cover h1 { font-family: var(--display); font-weight: 600; font-size: clamp(2.3rem, 7vw, 4.6rem); line-height: 1; letter-spacing: -0.025em; } /* CC-119: a step under --step-4, so the line below gets room */
-.cover h1 em { font-style: normal; } /* one colour: emphasis comes from the sentence */
 .lede { max-width: 54ch; font-size: 1.125rem; color: var(--muted); }
-#home-line { font-size: clamp(1.25rem, 2.4vw, 1.5rem); font-weight: 600; line-height: 1.35; color: var(--text); } /* CC-119 */
-.doors { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; }
-.door {
-  display: grid; grid-template-rows: auto 1fr auto; gap: 10px; text-align: left; cursor: pointer;
-  background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-card);
-  padding: clamp(20px, 3vw, 28px); min-height: 12rem;
-  transition: transform 0.18s ease, border-color 0.15s ease;
-}
-/* CC-103 (the product owner's pick, "curtain rise"): the three doors rise in one after another when the page first
-   opens, once; on hover or focus the arrow slides forward and a red line draws along the bottom. */
-.door { position: relative; overflow: hidden; }
-.door::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--lead); transition: width 0.35s ease; }
-.door:hover, .door:focus-visible { border-color: var(--lead); }
-.door:hover::after, .door:focus-visible::after { width: 100%; }
-.door-go span:last-child { transition: transform 0.3s ease; }
-.door:hover .door-go span:last-child, .door:focus-visible .door-go span:last-child { transform: translateX(6px); }
-.doors.rise .door { animation: door-rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-.doors.rise .door:nth-child(2) { animation-delay: 0.12s; }
-.doors.rise .door:nth-child(3) { animation-delay: 0.24s; }
-@keyframes door-rise { from { opacity: 0; transform: translateY(24px); } }
-.door .eyebrow { color: var(--muted); }
-.door-title { font-family: var(--display); font-weight: 600; font-size: var(--step-3); line-height: 1.08; letter-spacing: -0.02em; }
-.door-desc { max-width: 34ch; align-self: start; color: var(--muted); }
-.door-go { display: flex; justify-content: space-between; align-items: center; gap: 16px; font-weight: 500; }
-.door-go span:last-child {
-  flex: none; display: grid; place-items: center; width: 2.5rem; height: 2.5rem;
-  font-size: 1.25rem; line-height: 1; border: 1.5px solid var(--lead); color: var(--lead);
-}
-.door-a .door-go span:last-child { background: var(--lead); color: var(--on-lead); }
 
-.soon { padding-block: clamp(32px, 5vw, 56px); display: grid; gap: 18px; }
-.soon-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; }
-.soon-head h2 { font-family: var(--display); font-weight: 600; font-size: var(--step-2); letter-spacing: -0.015em; }
+/* CC-143: the home page as a front page (brief section 5). Under the full masthead, a 12-column grid split 6/3/3:
+   the lead pick, three ways in, last chance. With no lead pick the other two share the width. Then the 3px double
+   rule (the only one on the site) and "The listings" as rows. The columns stack on a phone. */
+.front { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 3fr) minmax(0, 3fr); padding-top: 32px; }
+.front.no-lead { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.front-h { font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; line-height: 1.2; color: var(--muted); }
+
+/* The lead pick: one of colour's four places. Its water fills the top of the field; the words sit on the solid field
+   below it, because white 21px italic across a 24% line is under 4.5:1. The whole field is one link to the event, and
+   it's the element CC-144 gives the poster's view-transition-name. */
+.lead-slot { display: flex; margin-right: 28px; }
+.lead-pick { flex: 1; display: flex; flex-direction: column; min-height: 430px; text-decoration: none; }
+.lead-sea { position: relative; flex: 1 1 120px; min-height: 120px; }
+.lead-in { display: grid; gap: 14px; padding: 0 28px 28px; }
+.lead-k { font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; line-height: 1.2; }
+.lead-t { font-family: var(--display); font-weight: 500; font-size: 58px; line-height: 1; letter-spacing: -0.02em; overflow-wrap: anywhere; margin-top: -6px; }
+.lead-deck { font-size: 21px; font-style: italic; line-height: 1.4; max-width: 34ch; }
+.lead-by { display: flex; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid currentColor; font-family: var(--sign); font-weight: 700; font-size: 1.125rem; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.lead-pick:hover .lead-t { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 8px; }
+.lead-pick .mark-host { width: 34px; height: 33px; --mark-bg: var(--cat); --dol-body: #fff; --dol-belly: #fff; --dol-mouth: var(--cat); } /* on a field the dolphin is white and the gold carries it */
+
+/* Three ways in: stacked links, hairlines between. CC-103's rise stays: 600ms, 120ms apart, first load only. */
+.ways { padding-right: 24px; border-right: 1px solid var(--rule); }
+.way { display: grid; gap: 4px; width: 100%; min-height: 44px; padding: 16px 0; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--text); text-align: left; cursor: pointer; font: inherit; }
+.way:last-child { border-bottom: 0; }
+.way-t { font-family: var(--display); font-weight: 600; font-size: 30px; line-height: 1.05; letter-spacing: -0.01em; }
+.way-d { font-size: 1rem; color: var(--muted); }
+.way:hover .way-t, .way:focus-visible .way-t { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px; }
+.ways.rise .way { animation: door-rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.ways.rise .way:nth-of-type(2) { animation-delay: 0.12s; }
+.ways.rise .way:nth-of-type(3) { animation-delay: 0.24s; }
+@keyframes door-rise { from { opacity: 0; transform: translateY(24px); } }
+
+/* Last chance: soonest to close. "Closes today" is one of red's two jobs (the other is the star). */
+.last-col { padding-left: 24px; }
+.no-lead .ways { padding-right: 32px; }
+.no-lead .last-col { padding-left: 32px; }
+.lasts { list-style: none; margin: 0; padding: 0; }
+.last { display: grid; gap: 2px; padding: 14px 0; border-bottom: 1px solid var(--line); color: var(--text); text-decoration: none; }
+.last-w { font-family: var(--sign); font-weight: 700; font-size: 1.0625rem; color: var(--star); font-variant-numeric: tabular-nums; }
+.last-t { font-family: var(--display); font-weight: 600; font-size: 22px; line-height: 1.15; overflow-wrap: anywhere; }
+.last-where { font-size: 1rem; color: var(--muted); }
+.last:hover .last-t, .last:focus-visible .last-t { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+.last-more { min-height: 44px; margin-top: 4px; font-size: 1.0625rem; }
+
+/* The listings: the double rule, the head, then rows (listings.js) */
+.front-list { margin-top: 48px; padding-top: 12px; border-top: 3px double var(--rule); }
+.front-list-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 20px; }
+.front-list-head h2 { font-family: var(--display); font-weight: 600; font-size: 40px; letter-spacing: -0.015em; }
+.front-list-head .textbtn { min-height: 44px; font-size: 1.125rem; }
+
+/* A tablet: the lead pick across the top, the other two side by side. A phone: one column, in that order. */
+@media (max-width: 1100px) {
+  .front, .front.no-lead { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); row-gap: 32px; }
+  .lead-slot { grid-column: 1 / -1; margin-right: 0; }
+  .lead-pick { min-height: 380px; }
+}
+@media (max-width: 700px) {
+  .front, .front.no-lead { grid-template-columns: minmax(0, 1fr); padding-top: 20px; }
+  .lead-pick { min-height: 340px; }
+  .lead-in { padding: 0 20px 20px; }
+  .lead-t { font-size: 40px; }
+  .ways, .no-lead .ways { padding-right: 0; border-right: 0; }
+  .last-col, .no-lead .last-col { padding-left: 0; }
+  .front-list-head h2 { font-size: 32px; }
+}
+
 .textbtn { background: none; border: 0; padding: 0; cursor: pointer; font-family: var(--sign); font-weight: 700; color: var(--lead); text-decoration: underline; text-underline-offset: 3px; }
 
 /* CC-140: listings as rows, under day heads (brief section 5). The rows follow the width of their own column, not the
@@ -512,7 +540,7 @@ footer .roundup-links a { display: inline-flex; align-items: center; min-height:
 footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are counted */
 .view { animation: rise 0.28s ease both; }
 @keyframes rise { from { transform: translateY(8px); } to { transform: none; } }
-@media (prefers-reduced-motion: reduce) { .view, .doors.rise .door { animation: none; } .door, .card, .door::after, .door-go span:last-child { transition: none; } .door:hover .door-go span:last-child, .door:focus-visible .door-go span:last-child { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .view, .ways.rise .way { animation: none; } .card { transition: none; } }
 
 /* site stats (admins, CC-67) */
 .stat-summary { display: flex; flex-wrap: wrap; gap: 12px 32px; margin-bottom: 18px; font-variant-numeric: tabular-nums; }
