@@ -43,6 +43,8 @@ jobs:
         run: node scripts/test_invite.js
       - name: Account settings and sign-in keep their labels, autocomplete, statuses and errors
         run: node scripts/test_account.js
+      - name: Find an outing, Submit an event, the admin pages and the 404 are in Lakefront, with no eyebrows or pills
+        run: node scripts/test_rest.js
       - name: Asset links can be stamped for deploy
         run: python3 scripts/stamp_assets.py
       - name: JavaScript syntax

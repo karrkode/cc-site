@@ -319,9 +319,8 @@
     <!-- Catalog -->
     <section class="view" id="view-catalog" hidden>
       <div class="view-head">
-        <p class="eyebrow">The catalog</p>
         <h1 id="catalog-title" tabindex="-1">Everything on the list</h1>
-        <p>Each listing opens the event's own page for tickets and showtimes.</p>
+        <p class="lf-deck">Each listing opens the event's own page for tickets and showtimes.</p>
       </div>
       <form class="filters" id="filters" autocomplete="off">
         <div class="chip-row">
@@ -389,15 +388,15 @@
       <p class="hint" id="ev-status" role="status"></p>
       <div id="ev-body"></div>
     </section>
-    <section class="view plan" id="view-plan" hidden>
+    <section class="view plan lf-page" id="view-plan" hidden>
       <div id="plan-questions">
         <div class="view-head">
+          <h1 id="plan-title" tabindex="-1"></h1>
+          <p class="lf-deck" id="plan-help"></p>
           <div class="progress">
-            <p class="eyebrow" id="plan-count">Question 1 of 4</p>
+            <p class="plan-step" id="plan-count">Question 1 of 4</p>
             <div class="ticks" aria-hidden="true"><i id="tick-0"></i><i id="tick-1"></i><i id="tick-2"></i><i id="tick-3"></i></div>
           </div>
-          <h1 id="plan-title" tabindex="-1"></h1>
-          <p id="plan-help"></p>
         </div>
         <div class="opts" id="plan-opts"></div>
         <div class="row" style="margin-top:18px">
@@ -408,9 +407,8 @@
 
       <div id="plan-result" hidden>
         <div class="view-head">
-          <p class="eyebrow" id="res-eyebrow">Your outing</p>
           <h1 id="res-title" tabindex="-1"></h1>
-          <p id="res-sub"></p>
+          <p class="lf-deck" id="res-sub"></p>
         </div>
         <div id="res-body"></div>
       </div>
@@ -582,18 +580,17 @@
     </section>
 
     <!-- Submit an event -->
-    <section class="view plan" id="view-submit" hidden>
+    <section class="view plan lf-page" id="view-submit" hidden>
       <div class="view-head">
-        <p class="eyebrow">Submit an event</p>
         <h1 id="submit-title" tabindex="-1">Know something we're missing?</h1>
-        <p id="submit-sub">Tell us about it. Someone from the crew checks each one before it goes on the list.</p>
+        <p class="lf-deck" id="submit-sub">Tell us about it. Someone from the crew checks each one before it goes on the list.</p>
       </div>
       <div class="panel" id="submit-signin" hidden>
         <p>You need an account to send us events, so we can follow up if anything's unclear.</p>
         <div class="row"><button class="btn" type="button" data-go="account">Sign in or create an account</button></div>
       </div>
       <!-- CC-124: paste a link and the server fills in the form, or enter it by hand -->
-      <div class="panel" id="submit-how" hidden>
+      <div class="lf-form" id="submit-how" hidden>
         <fieldset class="publish how-choice" id="s-how"><legend>How do you want to add it?</legend>
           <label class="radio"><input type="radio" name="s-how" value="link" checked> Paste a link</label>
           <label class="radio"><input type="radio" name="s-how" value="manual"> Enter it myself</label>
@@ -604,7 +601,7 @@
           <p class="form-error" id="s-link-error" role="alert"></p>
         </form>
       </div>
-      <form class="panel" id="submit-form" novalidate hidden>
+      <form class="lf-form" id="submit-form" novalidate hidden>
         <p class="notice" id="s-filled" role="status"></p>
         <div class="field"><label for="s-title">Event name</label><input id="s-title" type="text" maxlength="300" required></div>
         <div class="field"><label for="s-category">Type</label>
@@ -617,7 +614,7 @@
         <fieldset class="publish run-kind" id="s-runkind"><legend>When is it on?</legend>
           <label class="radio"><input type="radio" name="s-runkind" value="range" checked> Between an opening and a closing date</label>
           <label class="radio"><input type="radio" name="s-runkind" value="fixed"> Only on chosen dates (a fixed run)</label>
-          <label class="radio"><input type="radio" name="s-runkind" value="unknown"> Don't know! (Don't worry--we'll look into it for you <span aria-hidden="true">🙂</span>)</label>
+          <label class="radio"><input type="radio" name="s-runkind" value="unknown"> Don't know. Don't worry, we'll look into it for you.</label>
         </fieldset>
         <div class="fields" id="s-range">
           <div class="field"><label for="s-begin">Opens</label><input id="s-begin" type="date"></div>
@@ -652,7 +649,7 @@
         <div class="row"><button class="btn" type="submit" id="submit-btn">Send it in</button><span class="hint" id="submit-msg" role="status"></span></div>
       </form>
       <!-- CC-127: after a successful submit, this takes the form's place -->
-      <div class="panel submit-done" id="submit-done" hidden>
+      <div class="lf-form submit-done" id="submit-done" hidden>
         <h2 id="sd-title" tabindex="-1"></h2>
         <p id="sd-msg"></p>
         <dl class="sent-facts">
@@ -692,16 +689,25 @@
       </form>
     </section>
 
-    <section class="view" id="view-review" hidden>
+    <section class="view lf-page" id="view-review" hidden>
       <div class="view-head">
-        <p class="eyebrow">Review</p>
         <h1 id="review-title" tabindex="-1">Waiting for review</h1>
-        <p>Approve to put an event on the list. Rejected events stay out of sight.</p>
-        <div class="row"><button class="btn neutral" type="button" data-go="found">Found events<span class="count" id="found-count"></span></button><button class="btn neutral" type="button" data-go="venues">Manage venues</button><button class="btn neutral" type="button" data-go="stats">Site stats</button><button class="btn neutral" type="button" data-go="sources">Event sources</button><button class="btn neutral" type="button" data-go="issues">Issues<span class="count" id="issues-count"></span></button><button class="btn neutral" type="button" data-go="approvals">Photo approvals<span class="count" id="approvals-count"></span></button><button class="btn neutral" type="button" data-go="members">Members</button><button class="btn neutral" type="button" data-go="card">QR card</button></div>
+        <p class="lf-deck">Approve to put an event on the list. Rejected events stay out of sight.</p>
       </div>
+      <!-- CC-149: the admin pages as an index, a link a line, with what's waiting as a plain number (no pills) -->
+      <nav class="admin-nav" aria-label="Admin pages"><ul>
+        <li><button class="admin-link" type="button" data-go="found">Found events<span class="count" id="found-count"></span></button></li>
+        <li><button class="admin-link" type="button" data-go="venues">Venues and hours</button></li>
+        <li><button class="admin-link" type="button" data-go="stats">Site stats</button></li>
+        <li><button class="admin-link" type="button" data-go="sources">Event sources</button></li>
+        <li><button class="admin-link" type="button" data-go="issues">Issues<span class="count" id="issues-count"></span></button></li>
+        <li><button class="admin-link" type="button" data-go="approvals">Photo approvals<span class="count" id="approvals-count"></span></button></li>
+        <li><button class="admin-link" type="button" data-go="members">Members</button></li>
+        <li><button class="admin-link" type="button" data-go="card">QR card</button></li>
+      </ul></nav>
       <div class="section" id="removed" hidden><h2 id="removed-title" tabindex="-1">Comedy and Educational, withdrawn</h2><p class="hint" id="removed-note"></p><div class="queue" id="removed-list"></div></div><!-- CC-133 -->
       <div class="section" id="othertypes" hidden><h2>Need a new type</h2><p class="notice" id="othertypes-note"></p><div class="queue" id="othertypes-list"></div></div>
-      <div class="queue" id="review-list"></div>
+      <div class="section"><h2 id="waiting-title">Waiting <span class="lf-n" id="review-n"></span></h2><div class="queue" id="review-list"></div></div>
       <div class="section"><h2>Scheduled</h2><p class="hint">Approved, and waiting for their publish time.</p><div class="queue" id="scheduled-list"></div></div>
       <div class="section"><h2>Withdrawn</h2><p class="hint">Hidden from the site, with everyone's marks and plans kept.</p><div class="queue" id="withdrawn-list"></div></div>
       <!-- CC-100: auto-reject rules for members' submissions -->
@@ -720,12 +726,12 @@
     </section>
 
     <!-- Found events (admins, CC-71) -->
-    <section class="view" id="view-found" hidden>
+    <section class="view lf-page" id="view-found" hidden>
       <div class="view-head">
-        <p class="eyebrow">Review</p>
+        <p class="lf-back"><button class="textbtn" type="button" data-go="review"><span aria-hidden="true">←</span>Review</button></p>
         <h1 id="found-title" tabindex="-1">Found events</h1>
-        <p>Events the checker found on venues' own pages, and changes to events already listed. Approve to add one to the catalog; nothing goes live by itself.</p>
-        <div class="row"><button class="textbtn" type="button" data-go="review">Back to review</button><button class="textbtn" type="button" data-go="sources">Event sources</button></div>
+        <p class="lf-deck">Events the checker found on venues' own pages, and changes to events already listed. Approve to add one to the catalog; nothing goes live by itself.</p>
+        <div class="row"><button class="textbtn" type="button" data-go="sources">Event sources →</button></div>
       </div>
       <p class="notice" id="found-unreadable"></p>
       <form class="found-filters" id="found-filters">
@@ -742,12 +748,11 @@
     </section>
 
     <!-- Event sources (admins, CC-70) -->
-    <section class="view" id="view-sources" hidden>
+    <section class="view lf-page" id="view-sources" hidden>
       <div class="view-head">
-        <p class="eyebrow">Review</p>
+        <p class="lf-back"><button class="textbtn" type="button" data-go="review"><span aria-hidden="true">←</span>Review</button></p>
         <h1 id="sources-title" tabindex="-1">Event sources</h1>
-        <p>Venues and companies whose own pages are checked now and then for new events. What's found waits for your review; nothing goes live by itself. A page is only read again when it has changed.</p>
-        <div class="row"><button class="textbtn" type="button" data-go="review">Back to review</button></div>
+        <p class="lf-deck">Venues and companies whose own pages are checked now and then for new events. What's found waits for your review; nothing goes live by itself. A page is only read again when it has changed.</p>
       </div>
       <p class="hint" id="sources-status" role="status"></p>
       <div class="stat-summary" id="sources-summary"></div>
@@ -764,24 +769,22 @@
 
     <!-- Site stats (admins, CC-67) -->
     <!-- Issues members reported (admins, CC-84) -->
-    <section class="view" id="view-approvals" hidden>
+    <section class="view lf-page" id="view-approvals" hidden>
       <div class="view-head">
-        <p class="eyebrow">Approvals</p>
+        <p class="lf-back"><button class="textbtn" type="button" id="approvals-back"><span aria-hidden="true">←</span>Back</button></p>
         <h1 id="approvals-title" tabindex="-1">Photo approvals</h1>
-        <p>Photos members added to "I've been". Approve the ones that show they were there; reject the rest, with a reason they'll see if you like. Amazon Rekognition has already turned away anything explicit; what it wasn't sure about is blurred until you choose to look.</p>
-        <div class="row"><button class="textbtn" type="button" id="approvals-back">Back</button></div>
+        <p class="lf-deck">Photos members added to "I've been". Approve the ones that show they were there; reject the rest, with a reason they'll see if you like. Amazon Rekognition has already turned away anything explicit; what it wasn't sure about is blurred until you choose to look.</p>
       </div>
       <form class="found-filters" id="approvals-filters"><div class="field"><label for="approvals-show">Show</label><select id="approvals-show"></select></div></form>
       <p class="hint" id="approvals-status" role="status"></p>
       <div class="queue" id="approvals-list"></div>
     </section>
 
-    <section class="view" id="view-members" hidden>
+    <section class="view lf-page" id="view-members" hidden>
       <div class="view-head">
-        <p class="eyebrow">Review</p>
+        <p class="lf-back"><button class="textbtn" type="button" data-go="review"><span aria-hidden="true">←</span>Review</button></p>
         <h1 id="members-title" tabindex="-1">Members</h1>
-        <p>Offer a member the approver permission: they can then approve "I've been" photos. They see the offer when they sign in, and it applies once they accept. Admins can always approve.</p>
-        <div class="row"><button class="textbtn" type="button" data-go="review">Back to review</button></div>
+        <p class="lf-deck">Offer a member the approver permission: they can then approve "I've been" photos. They see the offer when they sign in, and it applies once they accept. Admins can always approve.</p>
       </div>
       <form class="found-filters" id="members-filters" role="search">
         <div class="field"><label for="members-q">Find a member</label><input id="members-q" type="search" maxlength="100" placeholder="Name or email" autocomplete="off"></div>
@@ -791,12 +794,11 @@
       <div class="queue" id="members-list"></div>
     </section>
 
-    <section class="view" id="view-issues" hidden>
+    <section class="view lf-page" id="view-issues" hidden>
       <div class="view-head">
-        <p class="eyebrow">Review</p>
+        <p class="lf-back"><button class="textbtn" type="button" data-go="review"><span aria-hidden="true">←</span>Review</button></p>
         <h1 id="issues-title" tabindex="-1">Issues and feature requests</h1>
-        <p>Problems members reported with the site (ISS-), and features they asked for (FR-). Set where each one stands; a note you add shows beside it on the member's account page.</p>
-        <div class="row"><button class="textbtn" type="button" data-go="review">Back to review</button></div>
+        <p class="lf-deck">Problems members reported with the site (ISS-), and features they asked for (FR-). Set where each one stands; a note you add shows beside it on the member's account page.</p>
       </div>
       <form class="found-filters" id="issues-filters" role="search">
         <div class="field"><label for="issues-q">Find a ticket</label><input id="issues-q" type="search" maxlength="100" placeholder="ISS-0007, FR-0002, or words in a report" autocomplete="off"></div>
@@ -808,12 +810,11 @@
     </section>
 
     <!-- CC-115: a QR card to hand out at shows, made here in the browser (no outside QR service) -->
-    <section class="view" id="view-card" hidden>
+    <section class="view lf-page" id="view-card" hidden>
       <div class="view-head">
-        <p class="eyebrow">Review</p>
+        <p class="lf-back"><button class="textbtn" type="button" data-go="review"><span aria-hidden="true">←</span>Review</button></p>
         <h1 id="card-title" tabindex="-1">QR card</h1>
-        <p>A card to hand out at shows. Its QR code opens the join page, chiculturecrew.com/join, with tags, so these visits and sign-ups show up under “qr” on Site stats.</p>
-        <div class="row"><button class="textbtn" type="button" data-go="review">Back to review</button></div>
+        <p class="lf-deck">A card to hand out at shows. Its QR code opens the join page, chiculturecrew.com/join, with tags, so these visits and sign-ups show up under “qr” on Site stats.</p>
       </div>
       <div class="card-maker">
         <div class="field"><label for="card-campaign">Campaign</label>
@@ -833,12 +834,11 @@
         <p class="hint small">Prints one card at business-card size (3.5 × 2 inches). For a stack of cards, give a print shop the SVG, which stays sharp at any size.</p>
       </div>
     </section>
-    <section class="view" id="view-stats" hidden>
+    <section class="view lf-page" id="view-stats" hidden>
       <div class="view-head">
-        <p class="eyebrow">Review</p>
+        <p class="lf-back"><button class="textbtn" type="button" data-go="review"><span aria-hidden="true">←</span>Review</button></p>
         <h1 id="stats-title" tabindex="-1">Site stats</h1>
-        <p>Members' sign-ups and activity, week by week. Weeks start on Monday, Chicago time. Admin accounts aren't counted.</p>
-        <div class="row"><button class="textbtn" type="button" data-go="review">Back to review</button></div>
+        <p class="lf-deck">Members' sign-ups and activity, week by week. Weeks start on Monday, Chicago time. Admin accounts aren't counted.</p>
       </div>
       <p class="hint" id="stats-status" role="status"></p>
       <div class="stat-summary" id="stats-summary"></div>
@@ -882,18 +882,17 @@
     </section>
 
     <!-- Venues (admins, CC-57) -->
-    <section class="view" id="view-venues" hidden>
+    <section class="view lf-page" id="view-venues" hidden>
       <div class="view-head">
-        <p class="eyebrow">Review</p>
+        <p class="lf-back"><button class="textbtn" type="button" data-go="review"><span aria-hidden="true">←</span>Review</button></p>
         <h1 id="venues-title" tabindex="-1">Venues</h1>
-        <p>Rename a venue or fix its neighborhood, merge a duplicate into the right one, or delete one nothing uses.</p>
-        <div class="row"><button class="textbtn" type="button" data-go="review">Back to review</button></div>
+        <p class="lf-deck">Rename a venue or fix its neighborhood, merge a duplicate into the right one, or delete one nothing uses.</p>
       </div>
       <div class="filters"><div class="field"><label for="v-q">Find a venue</label><input id="v-q" type="search" maxlength="100" placeholder="Name or neighborhood" autocomplete="off"></div>
         <div class="field"><label for="v-hours">Opening hours</label><select id="v-hours"><option value="">Any</option><option value="full">Every day filled in</option><option value="gaps">Some days missing</option></select></div>
         <label class="radio"><input type="checkbox" id="v-noregion"> Only venues without a side of town</label></div>
-      <p class="hint" id="v-count" role="status" style="margin-top:14px"></p>
-      <div class="queue" id="venue-list" style="margin-top:10px"></div>
+      <p class="hint lf-count" id="v-count" role="status"></p>
+      <div class="queue" id="venue-list"></div>
     </section>
   </main>
 
