@@ -24,7 +24,7 @@ function queueItemHTML(e, actions, note) { // note: an extra line, such as which
 }
 function openReview() { if (!isAdmin()) { openAccount(); return; } renderReview(); updateFoundCount(); show("review"); }
 function updateReviewCount(n) {
-  if (n !== undefined) { $("review-count").textContent = n ? String(n) : ""; return; }
+  if (n !== undefined) { $("review-count").textContent = $("review-n").textContent = n ? String(n) : ""; return; } // CC-149: also on the Waiting rule
   api("/admin/events?limit=1").then(readJSON).then(function (res) { if (res.ok) updateReviewCount(res.body.total); }, function () {});
 }
 var EMPTY = { "review-list": "Nothing waiting for review.", "scheduled-list": "Nothing scheduled.", "withdrawn-list": "Nothing withdrawn.",
@@ -558,7 +558,7 @@ function paintStats(s) {
       (s.photo_checks_usd || 0).toFixed(2) + "</span></div>";
   $("stats-grid").innerHTML = STAT_METRICS.map(function (m) {
     var key = m[0];
-    return '<section class="stat-card"><h2 class="eyebrow">' + esc(m[1]) + "</h2>" +
+    return '<section class="stat-card"><h2 class="stat-h">' + esc(m[1]) + "</h2>" +
       '<p class="stat-now"><strong>' + now[key] + "</strong> this week" + (last ? '<span class="stat-last">last week ' + last[key] + "</span>" : "") + "</p>" +
       '<p class="hint small">' + esc(m[2](now)) + "</p>" + statBars(weeks, key) + "</section>";
   }).join("");

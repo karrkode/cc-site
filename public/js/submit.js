@@ -85,11 +85,11 @@ function fillFromDraft(d) {
     "We filled this in from the page. Check it, then send it in.") +
     (d.other_events ? " The page lists more than one event, so make sure this is the one you meant." : "");
 }
-$("s-link-form").addEventListener("input", function () { $("s-link-error").textContent = ""; $("s-link-msg").textContent = ""; });
+$("s-link-form").addEventListener("input", function () { $("s-link-error").textContent = ""; $("s-link-msg").textContent = ""; crewMarkInvalid($("s-link"), false); });
 $("s-link-form").addEventListener("submit", function (ev) {
   ev.preventDefault();
   var url = $("s-link").value.trim(), err = $("s-link-error"), msg = $("s-link-msg"), btn = $("s-link-btn");
-  if (!/^https?:\/\/\S+\.\S+/i.test(url)) { err.textContent = "Paste the event's web address, starting with https://"; $("s-link").focus(); return; }
+  if (!/^https?:\/\/\S+\.\S+/i.test(url)) { err.textContent = "Paste the event's web address, starting with https://"; crewMarkInvalid($("s-link"), true); $("s-link").focus(); return; }
   btn.disabled = true; err.textContent = ""; msg.textContent = "Reading the page…";
   api("/events/from-link", { method: "POST", body: { url: url } }).then(readJSON, function () { return null; }).then(function (res) {
     btn.disabled = false; msg.textContent = "";
@@ -142,10 +142,11 @@ $("s-publish").addEventListener("change", function () {
   if (later) { $("s-publish-at").min = localInputValue(new Date()); $("s-publish-at").focus(); }
 });
 var WHEN = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+var STATE_WORDS = { approved: "Live", pending: "Waiting", rejected: "Rejected", withdrawn: "Withdrawn" }; // CC-149: sentence case
 function stateHTML(e) {
   if (e.status === "approved" && e.publishAt && e.publishAt > new Date())
     return '<span class="state scheduled">Scheduled · ' + esc(WHEN.format(e.publishAt)) + "</span>";
-  return '<span class="state ' + esc(e.status) + '">' + esc(e.status) + "</span>";
+  return '<span class="state ' + esc(e.status) + '">' + esc(STATE_WORDS[e.status] || e.status) + "</span>";
 }
 function minPrice(cost) { // same rule the sheet used: first dollar amount, or 0 for free
   var c = cost.trim().toLowerCase();
@@ -153,7 +154,12 @@ function minPrice(cost) { // same rule the sheet used: first dollar amount, or 0
   var m = /\$\s*([0-9]+(?:\.[0-9]+)?)/.exec(cost);
   return m ? parseFloat(m[1]) : null;
 }
-$("submit-form").addEventListener("input", function () { $("submit-error").textContent = ""; $("submit-msg").textContent = ""; });
+// CC-149: the field at fault gets the 2.5px ink border (aria-invalid) beside the "Check this:" band; typing clears both
+function submitBad(id, text) { var f = $(id); $("submit-error").textContent = text; if (f.matches("input, select")) crewMarkInvalid(f, true); f.focus(); }
+$("submit-form").addEventListener("input", function () {
+  $("submit-error").textContent = ""; $("submit-msg").textContent = "";
+  Array.prototype.forEach.call(this.querySelectorAll('[aria-invalid="true"]'), function (f) { crewMarkInvalid(f, false); });
+});
 $("submit-form").addEventListener("submit", function (ev) {
   ev.preventDefault();
   var err = $("submit-error"), msg = $("submit-msg");
@@ -164,11 +170,11 @@ $("submit-form").addEventListener("submit", function (ev) {
     !venue ? ["s-venue", "Say where it's happening."] :
     (begin && end && end < begin) ? ["s-end", "The closing date is before the opening date."] :
     (url && !/^https?:\/\//i.test(url)) ? ["s-url", "The link should start with https://"] : null;
-  if (bad) { err.textContent = bad[1]; $(bad[0]).focus(); return; }
+  if (bad) { submitBad(bad[0], bad[1]); return; }
   var days = $("s-sched").hidden ? { weekly: {}, weeks: {} } : readShowDays("s"); // CC-88: optional, but each day chosen needs a time
-  if (days.error) { err.textContent = days.error; $(days.id).focus(); return; }
+  if (days.error) { submitBad(days.id, days.error); return; }
   var run = fixed ? readRun("s") : { run_dates: [] }; // CC-96: a fixed run: its dates set when it opens and closes
-  if (run.error) { err.textContent = run.error; $(run.id).focus(); return; }
+  if (run.error) { submitBad(run.id, run.error); return; }
   var body = {
     title: title, category: $("s-category").value, venue: { name: venue, neighborhood: $("s-hood").value.trim() },
     begin_date: begin, end_date: end, cost_text: cost, min_price: minPrice(cost), url: url,
@@ -179,8 +185,8 @@ $("submit-form").addEventListener("submit", function (ev) {
     if (!body.publish) { err.textContent = "Choose when it should go live."; document.querySelector('input[name="s-publish"]').focus(); return; }
     if (body.publish === "later") {
       var at = $("s-publish-at").value ? new Date($("s-publish-at").value) : null; // read as local time
-      if (!at || isNaN(at)) { err.textContent = "Pick the date and time it should go live."; $("s-publish-at").focus(); return; }
-      if (at <= new Date()) { err.textContent = "Pick a time in the future."; $("s-publish-at").focus(); return; }
+      if (!at || isNaN(at)) { submitBad("s-publish-at", "Pick the date and time it should go live."); return; }
+      if (at <= new Date()) { submitBad("s-publish-at", "Pick a time in the future."); return; }
       body.publish_at = at.toISOString();
     }
   }

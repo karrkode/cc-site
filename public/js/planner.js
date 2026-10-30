@@ -168,7 +168,7 @@ function renderStep() {
         '<span class="n">' + n + "</span></button>";
     };
     var allN = pool(plan.ws, plan.we, plan.budget, plan.types).length;
-    html = '<div class="hoods"><div class="chips">' + chip('data-pregion=""', "Anywhere nearby", allN, false, String(Object.keys(plan.regions).length === 0)) +
+    html = '<div class="hoods"><div class="chips segs">' + chip('data-pregion=""', "Anywhere nearby", allN, false, String(Object.keys(plan.regions).length === 0)) +
       REGIONS.map(function (r) {
         var one = {}; one[r[0]] = 1; var n = pool(plan.ws, plan.we, plan.budget, plan.types, one).length;
         return chip('data-pregion="' + r[0] + '"', r[1], n, n === 0, String(!!plan.regions[r[0]]));
@@ -272,13 +272,17 @@ function whyText(e, ws, we) {
   return e.n ? "Running through " + short(e.n) + "." : "";
 }
 function stopHTML(e, slot, ws, we) {
-  return '<div class="stop"><p class="stop-slot">' + esc(slot) + '</p><div class="stop-body">' +
-    '<p class="kind">' + esc(e.label) + "</p><h2>" + esc(e.title) + "</h2>" +
+  return '<div class="stop"><p class="stop-slot">' + esc(slot) + "</p>" + outingTileHTML(e) + '<div class="stop-body">' +
+    "<h2>" + esc(e.title) + "</h2>" +
     '<p class="where">' + placeHTML(e) + "</p>" +
     '<p class="facts">' + esc(dateText(e)) + " · " + esc(costText(e)) + "</p>" +
     "<p>" + esc([showTimesText(e, ws, we, plan.slot), whyText(e, ws, we)].filter(Boolean).join(" ")) + "</p>" +
     '<a class="btn cta" href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + (isArt(e) ? "Exhibition details" : "Tickets and showtimes") + " ↗</a>" +
     "</div></div>";
+}
+// CC-149: an event's tile (the category field, its water and the category's name), as on the listings (CC-140)
+function outingTileHTML(e) {
+  return '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + '<span class="tile-k">' + esc(e.label) + "</span></span>";
 }
 function shareUrl() {
   var base = PAGE_URL && PAGE_URL.indexOf("http") === 0 ? PAGE_URL : location.href.split("#")[0];
@@ -286,7 +290,6 @@ function shareUrl() {
 }
 function renderOuting() {
   $("plan-questions").hidden = true; $("plan-result").hidden = false;
-  $("res-eyebrow").textContent = pick.shared ? "An outing picked for you" : "Your outing";
   $("res-title").textContent = windowText(pick.ws, pick.we);
   var body = "";
   if (!pick.stops.length) {
@@ -295,8 +298,8 @@ function renderOuting() {
     body += '<div class="row" style="margin-top:18px"><button class="btn" type="button" data-go="plan">Start over</button><button class="btn ghost" type="button" data-go="catalog">Browse the catalog</button></div>';
     $("res-body").innerHTML = body; show("plan", "res-title"); return;
   }
-  $("res-sub").textContent = pick.shared ? "Someone sent you this outing. Showtimes are on the event's page." :
-    "Picked from " + plural(pick.total, "event that fits", "events that fit") + ". Showtimes are on the event's page.";
+  $("res-sub").textContent = pick.shared ? "An outing someone picked for you. Showtimes are on the event's page." :
+    "Your outing, picked from " + plural(pick.total, "event that fits", "events that fit") + ". Showtimes are on the event's page.";
   var two = pick.stops.length > 1;
   body += '<div class="outing">' + pick.stops.map(function (s, i) {
     return stopHTML(s, two ? (i === 0 ? "Afternoon" : "Evening") : (isArt(s) ? "The visit" : "The show"), pick.ws, pick.we);
@@ -305,7 +308,7 @@ function renderOuting() {
     '<span class="hint" id="share-msg" role="status"></span></div><input type="text" id="share-url" readonly hidden aria-label="Link to this outing"></div>';
   if (!pick.shared && pick.alts.length) {
     body += '<div class="section"><h2>Or swap in one of these</h2><div class="alts">' + pick.alts.slice(0, 4).map(function (e) {
-      return '<div class="alt"><div class="alt-text"><p class="alt-title">' + esc(e.title) + '</p><p class="alt-meta">' + esc(placeText(e)) + " · " + esc(dateText(e)) + " · " + esc(costText(e)) + "</p></div>" +
+      return '<div class="alt">' + outingTileHTML(e) + '<div class="alt-text"><p class="alt-title">' + esc(e.title) + '</p><p class="alt-meta">' + esc(placeText(e)) + " · " + esc(dateText(e)) + " · " + esc(costText(e)) + "</p></div>" +
         '<button class="btn ghost" type="button" data-swap="' + e.id + '">Swap in</button></div>';
     }).join("") + "</div></div>";
   }
@@ -314,6 +317,7 @@ function renderOuting() {
       (pick.total > 1 ? '<button class="btn ghost" type="button" id="see-all">See all ' + pick.total + " in the catalog</button>" : "") +
       '<button class="textbtn" type="button" data-go="plan">Start over</button>') + "</div>";
   $("res-body").innerHTML = body;
+  paintWater($("res-body"));
   show("plan", "res-title");
 }
 function relaxHTML() {

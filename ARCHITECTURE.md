@@ -59,12 +59,14 @@ The site has these views:
 - Find an outing
 - Submit an event: paste the event's link and the API fills in the form from the page (CC-124), or enter it by hand
 - Your account
-- Review (admins only)
+- Review (admins only): the queue, with an index of the other admin pages above it (CC-149)
 - Venues, with each venue's hours (admins only)
 - Site stats (admins only)
 - Event sources (admins only)
 - Found events (admins only)
 - Issues (admins only)
+- Members and Photo approvals (admins; approvers see Photo approvals too)
+- QR card (admins only)
 
 The site has two themes: light, which is the default, and dark, called "Lights down".
 The user can change the theme with the Lights down button. Each device remembers the choice.
@@ -77,6 +79,7 @@ The design brief is "Lakefront" (epic CC-135). The brief is not in this reposito
 - **Water (CC-138):** each event has its own pattern of water, because events do not have photos. `water.js` draws the pattern on a canvas from the event's id. Thus, the same event always gets the same water. The pattern shows on the listing rows, the event poster, the home lead pick and the masthead.
 - **Dolphins (CC-139):** one SVG drawing in `index.html`, in three looks: the host's pick (the dolphin through a gold ring, with a gold star), Interested (the lake dolphin) and Going (the ink dolphin).
 - **Filters (CC-141):** the catalog filters sit between two rules, with no box. Each tap target is 44 pixels or more.
+- **The rest of the site (CC-149):** Find an outing, Submit an event, the admin pages, their dialogs and the 404 page. Each page opens with a Newsreader title and an italic deck, with no eyebrow; each admin page leads back with "← Review". Lists are rows between hairlines, statuses are words, and errors start "Check this:" on the pale red band. Find an outing shows each stop and swap with its tile. The shared rules are the CC-149 block in `site.css`, scoped to `.lf-page` and `.editor`, and `scripts/test_rest.js` checks them in CI. The API's plain HTML pages (`/e/`, `/chicago/`) still have the old look.
 - **Motion (CC-144):** a listing tile grows into the event poster (a view transition). Turning Going on makes a dolphin leap. Turning Interested on makes the dolphin nod. The water on the masthead and on the poster drifts slowly, at 30 frames a second or less, and only while it is on the screen. If the device asks for reduced motion, nothing moves: `motionOK()` in `water.js` is the one test for this.
 
 ## 3. The API
