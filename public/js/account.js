@@ -33,7 +33,9 @@ function onAuthChange() {
   }
   if (isAdmin()) updateReviewCount();
   var back = AFTER_SIGN_IN; AFTER_SIGN_IN = null; // signed in from the crews or planner page: back to it (CC-104, CC-105)
-  if (back === "crews") openCrews(); else if (back === "planner") openPlanner();
+  // CC-157: the sign-in page was pushed on the way: going back takes it off the history, and the popstate reopens that page
+  if (back && location.hash === "#account" && history.state && history.state.view === "account") history.back();
+  else if (back === "crews") openCrews(); else if (back === "planner") openPlanner();
   else if (back && back.indexOf("e/") === 0) openEvent(back.slice(2), false); // signed in from an event (CC-117)
   else if (visible("account")) renderAccount(true);
   if (visible("join") && $("jp-in").hidden) paintJoinPage(); // CC-121 (just joined: the welcome stays)
