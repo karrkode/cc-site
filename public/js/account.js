@@ -372,16 +372,31 @@ $("week-skip").addEventListener("click", function () {
 // for just that day (When is a one-day range, and the other filters start fresh). The list is FIND_DAY_TALL items
 // high, with the next one peeking out; the rest and the link are a scroll away.
 var FIND_DAY = {}, FIND_DAY_OPEN = {}, FIND_DAY_SHOWN = 5, FIND_DAY_TALL = 3;
+// CC-156: an open day with events has three buttons, the three kinds (TYPE_ORDER), to show only one; pressing it
+// again shows them all. One day holds the choice at a time: opening or filtering another day clears it.
+var FIND_DAY_KIND = { iso: "", type: "" };
+function dayKindOf(iso) { return FIND_DAY_KIND.iso === iso ? FIND_DAY_KIND.type : ""; }
+function dayKindsHTML(iso) {
+  var on = dayKindOf(iso);
+  return '<div class="week-steps day-kinds" role="group" aria-label="Show only">' + TYPE_ORDER.map(function (t) {
+    return '<button type="button" class="week-step day-kind' + catClass(t) + '" data-day-kind="' + esc(t) + '" data-day="' + iso + '" aria-pressed="' + (on === t) + '">' + esc(t) + "</button>";
+  }).join("") + "</div>";
+}
 function dayFoundHTML(iso) { // what's in the open list: loading, an error, nothing, or that day's events
-  var d = parseISO(iso), got = FIND_DAY[iso];
+  var d = parseISO(iso), got = FIND_DAY[iso], kind = dayKindOf(iso), types = {};
   if (!got || got.loading) return '<p class="week-hint">Finding events\u2026</p>';
   if (got.error) return '<p class="week-error">' + esc(checkThis("the events couldn\u2019t be loaded. Check your connection and try again.")) + "</p>";
   if (!got.items.length) return '<p class="week-hint">Nothing on the list for that day.</p><p class="week-hint"><a href="#catalog" data-find-catalog>Browse the catalog</a></p>';
-  return '<div class="day-scroll"><ul class="day-items">' + got.items.slice(0, FIND_DAY_SHOWN).map(function (e) {
+  types[kind] = true;
+  var items = kind ? got.items.filter(function (e) { return inType(e, types); }) : got.items;
+  if (!items.length) return dayKindsHTML(iso) + '<p class="week-hint day-kind-none">No ' + esc(kind) + ' on the list for that day. ' +
+    '<button type="button" class="week-tbtn" data-day-kind="" data-day="' + iso + '">Show all ' + got.items.length + "</button></p>";
+  return dayKindsHTML(iso) + '<div class="day-scroll"><ul class="day-items">' + items.slice(0, FIND_DAY_SHOWN).map(function (e) {
     var times = dayTimesText(e, d), id = esc(e.id);
     return '<li class="day-item"><a href="#e/' + id + '" data-ev-open="' + id + '">' + esc(e.title) + "</a>" +
       '<span class="day-where">' + esc(placeText(e)) + "</span>" + (times ? '<span class="day-time">' + esc(times) + "</span>" : "") + "</li>";
-  }).join("") + "</ul>" + (got.items.length > FIND_DAY_SHOWN ? '<p class="week-hint"><a href="#catalog" data-find-catalog="' + iso + '">See more for that day in the catalog</a></p>' : "") + "</div>";
+  }).join("") + "</ul>" + (items.length > FIND_DAY_SHOWN ? '<p class="week-hint"><a href="#catalog" data-find-catalog="' + iso + '"' +
+    (kind ? ' data-find-kind="' + esc(kind) + '"' : "") + ">See more for that day in the catalog</a></p>" : "") + "</div>";
 }
 function dayFindHTML(iso, whole) { // the button on the day's line; weekDayHTML puts its list under the line
   return '<button type="button" class="week-tbtn day-find" data-find-day="' + iso + '" data-whole="' + esc(whole) + '" aria-controls="find-' + iso + '"></button>';
@@ -394,6 +409,11 @@ function paintFindDay(iso) { // the button says what it does next; the list show
   b.setAttribute("aria-label", (open ? "Hide the events for " : "Find something for ") + b.getAttribute("data-whole"));
   box.hidden = !open; box.innerHTML = open ? dayFoundHTML(iso) : "";
   fitFindDay(box);
+}
+function setDayKind(iso, type) { // the one day's choice; the day that had it before shows them all again
+  var was = FIND_DAY_KIND.iso; FIND_DAY_KIND = { iso: type ? iso : "", type: type };
+  if (was && was !== iso) paintFindDay(was);
+  paintFindDay(iso);
 }
 function fitFindDay(box) { // FIND_DAY_TALL items high (the day-scroll is their offsetParent), measured, since titles wrap more in a narrow column
   var sc = box.querySelector(".day-scroll"); if (!sc) return;
@@ -415,12 +435,20 @@ document.addEventListener("click", function (ev) {
   if (c) { // the catalog: for just that day from a busy day, or all of it from an empty one
     ev.preventDefault(); resetCatalog();
     var on = c.getAttribute("data-find-catalog"); if (on) { cat.when = "custom"; cat.custom = { ws: parseISO(on), we: parseISO(on) }; }
+    var kind = c.getAttribute("data-find-kind"); if (kind) cat.types[kind] = true; // CC-156: and the kind pressed
     loadCatalog(); show("catalog"); return;
+  }
+  var k = ev.target.closest("[data-day-kind]");
+  if (k) { // CC-156: a kind, again for all of them; focus goes back to the pressed one (or the first, after Show all)
+    var day = k.getAttribute("data-day"), t = k.getAttribute("data-day-kind");
+    setDayKind(day, dayKindOf(day) === t ? "" : t);
+    var back = document.querySelector('[data-day="' + day + '"][data-day-kind="' + (t || TYPE_ORDER[0]) + '"]'); if (back) back.focus();
+    return;
   }
   var b = ev.target.closest("[data-find-day]"); if (!b) return;
   var iso = b.getAttribute("data-find-day");
-  if (FIND_DAY_OPEN[iso]) { delete FIND_DAY_OPEN[iso]; paintFindDay(iso); return; }
-  FIND_DAY_OPEN[iso] = true;
+  if (FIND_DAY_OPEN[iso]) { delete FIND_DAY_OPEN[iso]; if (FIND_DAY_KIND.iso === iso) FIND_DAY_KIND = { iso: "", type: "" }; paintFindDay(iso); return; }
+  FIND_DAY_OPEN[iso] = true; setDayKind(iso, ""); // another day: its list starts with them all, and the last day's choice clears
   if (!FIND_DAY[iso] || FIND_DAY[iso].error) findDay(iso).then(function () { paintFindDay(iso); });
   paintFindDay(iso);
 });

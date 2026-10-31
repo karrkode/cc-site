@@ -59,6 +59,39 @@ has(g.weekDayHTML({ d: g.T, items: [] }), "Nothing on the list for that day.", "
 set("FIND_DAY[" + JSON.stringify(iso(g.T)) + "] = { loading: false, error: true, items: [] };");
 has(g.weekDayHTML({ d: g.T, items: [] }), '<p class="week-error">Check this: the events couldn’t be loaded.', "errors are a band that says Check this:");
 
+// --- CC-156: an open day's three kinds; pressing one shows only it, one day at a time ---
+const fd = iso(g.add(g.T, 1)), other = iso(g.add(g.T, 3)), K = (t) => "data-day-kind=\"" + t + "\" data-day=\"" + fd + "\" aria-pressed=\"";
+const play = ev({ title: "Play One" }), tune = ev({ title: "Tune One", category: "Music" });
+set("FIND_DAY_OPEN[" + JSON.stringify(fd) + "] = true; FIND_DAY[" + JSON.stringify(fd) + "] = { loading: false, items: [] };");
+g.FIND_DAY[fd].items = [play, tune];
+html = g.dayFoundHTML(fd);
+has(html, 'class="week-steps day-kinds" role="group" aria-label="Show only"', "the buttons are a labelled group");
+["Theater", "Music", "Visual Art"].forEach((t) => has(html, K(t) + 'false">' + t + "</button>", t + " is there, not pressed"));
+has(html, 'class="week-step day-kind cat-music"', "in the kind's colour");
+has(html, "Play One"); has(html, "Tune One");
+g.setDayKind(fd, "Music");
+html = g.dayFoundHTML(fd);
+has(html, K("Music") + 'true">', "Music is pressed"); has(html, K("Theater") + 'false">');
+has(html, "Tune One"); lacks(html, "Play One", "only Music");
+g.setDayKind(fd, "Visual Art");
+html = g.dayFoundHTML(fd);
+has(html, "No Visual Art on the list for that day.", "an empty kind says so");
+has(html, 'data-day-kind="" data-day="' + fd + '">Show all 2</button>', "and offers them all");
+has(html, K("Visual Art") + 'true">', "the buttons stay, to pick another");
+assert.strictEqual(g.dayKindOf(other), "", "another day isn't filtered");
+g.setDayKind(other, "");
+assert.strictEqual(g.dayKindOf(fd), "", "opening another day clears the choice");
+has(g.dayFoundHTML(fd), "Play One");
+g.FIND_DAY[fd].items = [play].concat([1, 2, 3, 4, 5, 6].map((i) => ev({ title: "Tune " + i, category: "Music" })));
+g.setDayKind(fd, "Music");
+html = g.dayFoundHTML(fd);
+has(html, 'data-find-catalog="' + fd + '" data-find-kind="Music"', "more for the day in the catalog, with that kind");
+lacks(html, "Play One");
+g.setDayKind(fd, "");
+g.FIND_DAY[fd].items = [];
+lacks(g.dayFoundHTML(fd), "day-kinds", "no buttons on a day with nothing");
+set("delete FIND_DAY_OPEN[" + JSON.stringify(fd) + "];");
+
 // --- a planned day: event rows with Change plan and Tell a crew ---
 const going = ev({ title: "Heroes of the Fourth Turning" }), day = g.add(g.T, 2);
 plan(going, "going", iso(day));
@@ -151,4 +184,4 @@ html = g.journalEntryHTML(fresh, true);
 has(html, '<img class="journal-thumb" src="/p/1.jpg" alt="">', "your photo on the tile");
 has(html, "<figcaption>Waiting for approval</figcaption>", "its state in words");
 
-console.log("ok: My week (CC-146, CC-160)");
+console.log("ok: My week (CC-146, CC-156, CC-160)");
