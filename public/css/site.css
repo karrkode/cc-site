@@ -213,12 +213,22 @@ a { color: inherit; }
 .listing-day-head { font-family: var(--sign); font-weight: 700; font-size: 20px; line-height: 1.2; padding-bottom: 6px; border-bottom: 1px solid var(--rule); }
 .listing-day > .listings:first-child { border-top: 1px solid var(--rule); } /* a sort with no heads (A to Z, price) */
 .listings { list-style: none; margin: 0; padding: 0; }
-.listing { display: grid; grid-template-columns: 112px 150px minmax(0, 1fr) 110px; gap: 20px; align-items: center; min-height: 44px;
+.listing { position: relative; display: grid; grid-template-columns: 112px 150px minmax(0, 1fr) 110px; gap: 20px; align-items: center; min-height: 44px;
   padding: 12px 0; border-bottom: 1px solid var(--line); color: var(--text); text-decoration: none; }
+/* CC-155: the name's link covers the row, so the whole row still opens the event; the dolphin's button sits above it */
+.listing-a { text-decoration: none; }
+.listing-a::after { content: ""; position: absolute; inset: 0; }
+.listing:has(.listing-a:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+.listing-a:focus-visible { outline: none; } /* the whole row shows the focus ring */
 .listing-t { font-family: var(--display); font-size: 26px; font-weight: 500; line-height: 1.12; overflow-wrap: anywhere;
   text-decoration: underline transparent; text-decoration-thickness: 1px; text-underline-offset: 5px; transition: text-decoration-color 0.15s ease; }
-.listing:hover .listing-t, .listing:focus-visible .listing-t { text-decoration-color: currentColor; }
+.listing:hover .listing-t, .listing:has(.listing-a:focus-visible) .listing-t { text-decoration-color: currentColor; }
 .listing-t .mark { margin-left: 8px; vertical-align: -3px; }
+/* the dolphin's button: a 44px target around the mark, pulled in so the name's line keeps its height */
+.row-pick { position: relative; z-index: 1; display: inline-grid; place-items: center; min-width: 44px; height: 44px; margin: -12px -8px -12px 0;
+  padding: 0; border: 0; background: none; color: inherit; cursor: help; vertical-align: middle; }
+.row-pick .mark { margin-left: 0; }
+.row-pick:focus-visible { outline: 3px solid var(--focus); outline-offset: -2px; border-radius: var(--r-ctl); }
 .listing-main { display: grid; gap: 3px; min-width: 0; }
 .listing-where { font-size: 1rem; color: var(--muted); }
 .listing-when, .listing-cost { font-family: var(--sign); font-weight: 700; font-size: 19px; line-height: 1.2; font-variant-numeric: tabular-nums; }

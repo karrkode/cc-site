@@ -186,7 +186,7 @@ function paintCatalog(focusFrom) {
   paintWater($("grid"));
   $("more-row").hidden = CAT_ITEMS.length >= CAT_TOTAL; $("more-btn").disabled = false;
   $("sheet-show").textContent = CAT_TOTAL ? "Show " + plural(CAT_TOTAL, "event", "events") : "No events match";
-  if (focusFrom) { var first = $("grid").querySelectorAll(".listing")[focusFrom]; if (first) first.focus(); } // the first new row
+  if (focusFrom) { var first = $("grid").querySelectorAll(".listing-a")[focusFrom]; if (first) first.focus(); } // the first new row
 }
 function renderCatalog() { loadCatalog(false); }
 $("filters").addEventListener("submit", function (ev) { ev.preventDefault(); });
@@ -545,7 +545,8 @@ document.addEventListener("click", function (ev) {
 var POSTER = { seq: 0, moving: false, redraw: false }; // redraw: the event page changed during the move
 function posterSource(a) { // the tile and title that become the poster's, or null
   if (!a) return null;
-  var tile = a.classList.contains("lead-pick") ? a : a.querySelector(".tile"), title = a.querySelector(".listing-t, .lead-t");
+  var row = (a.closest && a.closest(".listing")) || a; // CC-155: a row's link is its name; the tile is beside it
+  var tile = a.classList.contains("lead-pick") ? a : row.querySelector(".tile"), title = row.querySelector(".listing-t, .lead-t");
   return tile && title ? { tile: tile, title: title } : null;
 }
 function posterMove(src, back, swap) {

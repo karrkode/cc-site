@@ -1,6 +1,6 @@
 // Checks run in CI before the site deploys (CC-140): listing rows in public/js/listings.js.
-// Rows sit under the right day head for each sort; the whole row is one link with no buttons in it; the tile carries
-// the event's water; the host's ring, your own dolphin and the crew line show only when they should.
+// Rows sit under the right day head for each sort; the name is the row's one link, and the admin's dolphin beside it its
+// one button (CC-155); the tile carries the event's water; the admin's marks and the crew line show only when they should.
 //
 //     node scripts/test_listings.js
 "use strict";
@@ -86,18 +86,25 @@ const art = ev({ title: "Dawoud Bey <Street>", category: "Visual Art", min_price
   crew_plans: [{ crew_id: 1, crew_name: "Thursday Theater", going: ["Maya Chen"], interested: [], been: [] }] });
 let row = g.listingHTML(art);
 assert.strictEqual((row.match(/<a /g) || []).length, 1, "one link");
-assert.ok(row.startsWith('<a class="listing" href="#e/' + art.id + '" data-ev-open="' + art.id + '"'), "the whole row is the link to the event");
-assert.ok(!/<button|<input|<select/.test(row), "no controls inside a link");
+assert.ok(row.startsWith('<div class="listing" data-listing="' + art.id + '">'), "the row holds the link and the button side by side");
+assert.match(row, new RegExp('<span class="listing-t"><a class="listing-a" href="#e/' + art.id + '" data-ev-open="' + art.id + '">Dawoud Bey &lt;Street&gt;</a><button '),
+  "the name is the link, and the admin's mark comes right after it (CC-155)");
+assert.ok(!/<a [^>]*>(?:(?!<\/a>)[\s\S])*<button/.test(row), "no button inside the link");
+assert.strictEqual((row.match(/<button/g) || []).length, 1, "the dolphin is the row's one button");
+assert.ok(!/<input|<select/.test(row), "no other controls");
+// CC-155: the button's name is the event page's sentence, which the tip shows; the mark inside is hidden, so it's said once
+assert.match(row, /<button type="button" class="row-pick" data-row-pick aria-label="Andrew is committed to seeing this\."><svg class="mark mark-host" aria-hidden="true">/,
+  "the admin going: the gold ring, in a button that says what it means");
+assert.ok(row.includes('aria-label="' + g.pickText(art.pick) + '"'), "the same words as the event page's line");
 assert.match(row, /class="tile water-field cat-art"><canvas class="water" aria-hidden="true" data-water="tile"/);
 assert.match(row, /<span class="tile-k">Visual Art<\/span>/);
 assert.match(row, /Dawoud Bey &lt;Street&gt;/, "titles are escaped");
-assert.match(row, /class="mark mark-host" role="img" aria-label="Andrew is committed to seeing this\."/, "the admin going: the gold ring, which says what it means");
 assert.match(row, /Steppenwolf · Lincoln Park/);
 assert.match(row, /<span class="listing-cost">Free<\/span>/);
 assert.ok(!/crewline|mark-int|mark-going/.test(row), "signed out: no crew line and no plans of your own");
 // CC-162: the admin interested: the ink dolphin, not the ring
 row = g.listingHTML(ev({ pick: { status: "interested", date: null, by: "Andrew" } }));
-assert.match(row, /class="mark mark-host-int" role="img" aria-label="Andrew is interested in this one\."><use href="#dolphin">/, "the ink dolphin says what it means");
+assert.match(row, /data-row-pick aria-label="Andrew is interested in this one\."><svg class="mark mark-host-int" aria-hidden="true"><use href="#dolphin">/, "the ink dolphin says what it means");
 assert.ok(!/mark-host"|dolphin-ring/.test(row), "no ring for interest");
 
 // --- a row, signed in ---
@@ -112,6 +119,7 @@ assert.match(row, />3 from your crew<\/span>/, "names count once across crews; b
 assert.strictEqual((row.match(/class="face tone-\d"/g) || []).length, 3);
 assert.match(row, /<span class="dots" aria-hidden="true"><span class="face tone-\d">MC<\/span>/);
 assert.ok(!/class="mark /.test(row), "CC-162: no dolphin for your own interest");
+assert.ok(!/<button/.test(row), "CC-155: no pick, no button");
 const going = ev({});
 g.MYPLANS[going.id] = { status: "going", date: iso(fri) };
 row = g.listingHTML(going);
