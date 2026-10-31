@@ -49,7 +49,7 @@ function tab(url, opt) {
   vm.runInContext("var ROUTE = null; function show(name) { views.push(name); syncAddress(name); }" +
     helper("util.js", "onJoinPage") + helper("util.js", "viewOf") + helper("util.js", "syncAddress") +
     helper("start.js", "openFromHash") + helper("start.js", "route"), g);
-  ["account", "planner", "crews", "submit", "join"].forEach((v) => { g["open" + v[0].toUpperCase() + v.slice(1)] = () => g.show(v); });
+  ["account", "planner", "journal", "crews", "submit", "join"].forEach((v) => { g["open" + v[0].toUpperCase() + v.slice(1)] = () => g.show(v); });
   g.openJoinPage = () => g.show("join"); g.startPlan = () => g.show("plan");
   ["review", "venues", "stats", "sources", "found", "issues", "approvals", "members", "card"].forEach((v) => {
     g["open" + v[0].toUpperCase() + v.slice(1)] = () => (admin ? g.show(v) : g.openAccount());
@@ -90,7 +90,7 @@ async function check(name, fn) { await fn(); n++; console.log("ok  " + name); }
     assert.strictEqual(t.history.length, 1);
   });
 
-  const reloads = { account: "account", planner: "planner", crews: "crews", submit: "submit", plan: "plan", catalog: "catalog",
+  const reloads = { account: "account", planner: "planner", journal: "journal", crews: "crews", submit: "submit", plan: "plan", catalog: "catalog",
     review: "review", venues: "venues", stats: "stats", sources: "sources", found: "found", issues: "issues", approvals: "approvals",
     members: "members", card: "card", "e/5": "event", "found/skipped": "found", "issues/ISS-0007": "issues", "source-3": "sources" };
   await check("a reload opens the view in the address and leaves the address as it is", async () => {
@@ -111,6 +111,21 @@ async function check(name, fn) { await fn(); n++; console.log("ok  " + name); }
       assert.ok(t.g.openFromHash(), "#" + v + " isn't routed"); await tick();
       assert.strictEqual(view(t), v);
     }
+  });
+
+  await check("the journal (CC-159): its own address from the you menu and My week, and Back returns to My week", async () => {
+    const html = fs.readFileSync(path.join(__dirname, "..", "public", "index.html"), "utf8");
+    assert.match(html, /data-me="journal"/, "the you menu (and the phone sheet, the same list) opens it");
+    assert.match(html, /id="planner-tojournal" data-go="journal"/, "My week keeps a line to it, so old #planner links reach it");
+    assert.doesNotMatch(html.match(/id="view-planner"[\s\S]*?<\/section>\s*<!-- Cultural journal/)[0], /went-grid/, "My week no longer holds the journal");
+    assert.match(html, /id="view-journal"[\s\S]*id="went-grid"/);
+    const t = tab("/");
+    t.g.show("planner"); t.g.openJournal();
+    assert.strictEqual(addr(t), "/#journal");
+    t.history.back(); await tick();
+    assert.strictEqual(view(t), "planner"); assert.strictEqual(addr(t), "/#planner");
+    t.history.forward(); await tick();
+    assert.strictEqual(view(t), "journal"); assert.strictEqual(t.history.length, 3);
   });
 
   await check("an admin page for someone who isn't one: Your account replaces it, so Back isn't stuck", async () => {

@@ -238,6 +238,7 @@
         <span class="me-menu" id="me-menu" role="menu" aria-labelledby="nav-account" hidden>
           <button type="button" role="menuitem" tabindex="-1" data-me="crews">Crews<span class="count" id="crews-count"></span></button>
           <button type="button" role="menuitem" tabindex="-1" data-me="planner">My week</button>
+          <button type="button" role="menuitem" tabindex="-1" data-me="journal">Cultural journal</button>
           <button type="button" role="menuitem" tabindex="-1" data-me="invite">Invite a friend</button>
           <button type="button" role="menuitem" tabindex="-1" data-me="account">Account settings</button>
           <button type="button" role="menuitem" tabindex="-1" data-me="signout">Sign out</button>
@@ -504,15 +505,15 @@
       </div>
     </section>
 
-    <!-- My week (CC-105, renamed from Culture Planner in CC-118): the week ahead and the Cultural Journal, at #planner -->
+    <!-- My week (CC-105, renamed from Culture Planner in CC-118): the week ahead, at #planner (the journal moved to #journal in CC-159) -->
     <section class="view" id="view-planner" hidden>
-      <!-- CC-146: Lakefront. A title and an italic deck; the week bar; the week (7) beside Still deciding (5); the journal below at reading width -->
+      <!-- CC-146: Lakefront. A title and an italic deck; the week bar; the week (7) beside Still deciding (5); a line to the journal below -->
       <div class="week-head">
         <h1 id="planner-title" tabindex="-1">My week</h1>
-        <p class="week-deck">Where you're going this week, and notes on where you've been.</p>
+        <p class="week-deck">Where you're going this week, and what you're still deciding.</p>
       </div>
       <div class="panel" id="planner-signin" hidden>
-        <p>Mark events you're interested in or committed to, and they're laid out by the day here, with a journal of where you've been.</p>
+        <p>Mark events you're interested in or committed to, and they're laid out by the day here.</p>
         <div class="row"><button class="btn" type="button" id="planner-signin-btn">Sign in or make an account</button></div>
       </div>
       <div id="planner-main" hidden>
@@ -539,12 +540,25 @@
             <p class="week-hint" id="deciding-hint"></p>
           </section>
         </div>
-        <section class="journal-sec" aria-labelledby="journal-title">
-          <h2 class="journal-h"><span id="journal-title" tabindex="-1">Cultural journal</span><span class="journal-only">Only you can see it</span></h2>
-          <p class="week-hint">The last five events you've been to. Sum each one up in three words. A review is up to you.</p>
-          <div class="journal" id="went-grid"></div>
-        </section>
+        <!-- CC-159: the journal has its own page now; a line here takes old #planner links on to it -->
+        <p class="week-tojournal">Notes on where you've been are in your <button type="button" class="week-tbtn" id="planner-tojournal" data-go="journal">Cultural journal &rarr;</button></p>
       </div>
+    </section>
+
+    <!-- Cultural journal (CC-98): its own page at #journal since CC-159, opened from the you menu; it was the foot of My week -->
+    <section class="view" id="view-journal" hidden>
+      <div class="week-head">
+        <h1 id="journal-title" tabindex="-1">Cultural journal</h1>
+        <p class="week-deck">Where you've been, in three words each. Only you can see it, unless you share an entry.</p>
+      </div>
+      <div class="panel" id="journal-signin" hidden>
+        <p>Mark events with &ldquo;I've been&rdquo; and they wait here for your notes: three words each, and a review if you like.</p>
+        <div class="row"><button class="btn" type="button" id="journal-signin-btn">Sign in or make an account</button></div>
+      </div>
+      <section class="journal-sec" id="journal-main" aria-labelledby="journal-title" hidden>
+        <p class="week-hint">The last five events you've been to. Sum each one up in three words. A review is up to you.</p>
+        <div class="journal" id="went-grid"></div>
+      </section>
     </section>
 
     <!-- Your crews (CC-104): their own page, at #crews -->
