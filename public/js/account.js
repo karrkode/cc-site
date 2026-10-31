@@ -113,7 +113,12 @@ function myplanSaid(mine) {
 function refreshPick(id) {
   if (!AUTH.user || !AUTH.user.dolphins || !KNOWN[id]) return Promise.resolve();
   return api("/events/lookup?ids=" + encodeURIComponent(id)).then(readJSON).then(function (res) {
-    if (res.ok && res.body[0]) KNOWN[id].pick = fromApi(res.body[0]).pick; // the same object every list holds
+    if (!res.ok || !res.body[0]) return;
+    var pick = fromApi(res.body[0]).pick;
+    KNOWN[id].pick = pick; // the same object every list holds
+    // CC-152: the event view draws its own copy (EV.e, with your crews' plans), which a list fetched since can have
+    // taken KNOWN's place from: without this, Clear plan left the old pick on the page until a reload
+    if (EV.e && EV.e.id === id) EV.e.pick = pick;
   }, function () {});
 }
 function redrawCards(id, from, focusOn) {

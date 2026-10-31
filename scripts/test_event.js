@@ -137,6 +137,34 @@ g.CREWS.push({ id: 1 });
 html = g.eventViewHTML(ev({}));
 has(html, "Nobody from your crews has this on their list yet.");
 
+// --- CC-152: an owner's own plan is their pick; on the page it shows as their plan, not in the host's voice ---
+g.AUTH.user = { id: 2, display_name: "Yours truly", role: "admin", dolphins: true };
+g.CREWS.length = 0;
+e = ev({ pick: { status: "interested", date: null, by: "Yours truly" } });
+g.MYPLANS[e.id] = { status: "interested", date: null, crews: [] };
+html = g.eventViewHTML(e);
+lacks(html, "Yours truly is interested", "your own pick isn't a line under Your crews");
+lacks(html, "mark-host", "nor the host's ring"); has(html, "Marked interested. ", "it shows as your plan");
+has(html, "Start a crew to see who's going with you.", "in no crew: the hint, as for anyone");
+e.pick.by = "Another Owner";
+has(g.eventViewHTML(e), "Another Owner is interested in this one.", "another owner's pick still shows");
+// Clear plan: the pick comes back null, and the page (drawn from its own copy, EV.e) loses the line without a reload,
+// even when a list fetched since has put another copy of the event in KNOWN
+e = ev({ pick: { status: "interested", date: null, by: "Yours truly" } });
+g.EV.id = e.id; g.EV.e = e; g.KNOWN[e.id] = Object.assign({}, e); // the plans list's copy
+delete g.MYPLANS[e.id];
+vm.runInContext(helper("account.js", "refreshPick") + "function readJSON(r) { return r; }" +
+  "function api() { return Promise.resolve({ ok: true, body: [API_ROW] }); }", g);
+g.API_ROW = { id: Number(e.id), title: e.title, category: "Theater", begin_date: null, end_date: null, open_run: true, cost_text: null,
+  min_price: null, venue: { id: 1, name: "Steppenwolf", area: "city" }, pick: null };
+g.refreshPick(e.id).then(function () {
+  assert.strictEqual(g.EV.e.pick, null, "the event view's copy loses the pick");
+  assert.strictEqual(g.KNOWN[e.id].pick, null, "and so does KNOWN's");
+  html = g.eventViewHTML(g.EV.e);
+  lacks(html, "Yours truly is interested"); lacks(html, "data-myplan-clear", "no plan left to clear");
+  console.log("event page: own plan and Clear plan (CC-152): ok");
+}).catch(function (err) { console.error(err); process.exit(1); });
+
 // --- names and text are escaped ---
 html = g.eventViewHTML(ev({ title: "<b>Bold</b>" }));
 lacks(html, "<b>Bold</b>"); has(html, "&lt;b&gt;Bold&lt;/b&gt;");
