@@ -971,6 +971,14 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .day-where { font-size: 1rem; color: var(--muted); }
 .day-time { font-family: var(--sign); font-weight: 700; font-size: 1rem; }
 .day-scroll { display: grid; gap: 10px; overflow-y: auto; overscroll-behavior: contain; position: relative; } /* three to see, scroll for the rest */
+/* CC-156: the three kinds, joined like Previous and Next, sharing the width; pressed is the ink, its swatch kept */
+.day-kinds { display: flex; max-width: 460px; }
+.day-kinds .week-step { flex: 1 1 0; min-width: 0; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 1rem; }
+.day-kind::before { content: ""; flex: none; width: 10px; height: 10px; background: var(--cat); }
+.day-kind[aria-pressed="true"] { background: var(--text); color: var(--page); }
+.day-kind[aria-pressed="true"]:hover { background: var(--text); }
+.day-kind[aria-pressed="true"]::before { box-shadow: 0 0 0 1.5px var(--page); }
+.day-kind-none { display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; }
 
 /* CC-159: My week's line to the journal, on a rule under the week */
 .week-tojournal { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; margin-top: 48px; padding-top: 8px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 1rem; }
