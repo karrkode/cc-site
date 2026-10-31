@@ -6,7 +6,9 @@
 function openFromHash() {
   var verify = takeLinkToken("verify"); if (verify) { openVerify(verify); return true; }
   var reset = takeLinkToken("reset"); if (reset) { openReset(reset); return true; }
-  var join = takeLinkToken("join"); if (join) { // an invite to a crew (CC-74): wait for the sign-in to come back, then show it
+  var join = takeLinkToken("join");
+  ROUTE = location.hash; // CC-157: what opens from here replaces this entry in the history (syncAddress, util.js)
+  if (join) { // an invite to a crew (CC-74): wait for the sign-in to come back, then show it
     (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(function () { openJoin(join); });
     return true;
   }
@@ -42,14 +44,20 @@ function openFromHash() {
   // and #source-<id> (Event sources, at that source's "Check by hand only" button)
   var fm = /^found\/(waiting|needs|new|update|approved|rejected|skipped|listed|all)$/.exec(h), sm = /^source-(\d+)$/.exec(h);
   var im = /^issues\/(ISS-\d+)$/i.exec(h); // a ticket, from the recap (CC-84)
-  if (h === "review" || h === "found" || h === "sources" || h === "issues" || h === "approvals" || h === "members" || h === "card" || fm || sm || im) {
-    var open = h === "review" ? openReview : h === "approvals" ? openApprovals : h === "members" ? openMembers : h === "card" ? openCard : h === "issues" ? function () { openIssues(); } : im ? function () { openIssues(im[1].toUpperCase()); } : (h === "found" || fm) ? function () { if (fm) { FOUND.show = fm[1]; FOUND.source = ""; } openFound(); } :
+  if (h === "review" || h === "venues" || h === "stats" || h === "found" || h === "sources" || h === "issues" || h === "approvals" || h === "members" || h === "card" || fm || sm || im) {
+    var open = h === "review" ? openReview : h === "venues" ? openVenues : h === "stats" ? openStats : h === "approvals" ? openApprovals : h === "members" ? openMembers : h === "card" ? openCard : h === "issues" ? function () { openIssues(); } : im ? function () { openIssues(im[1].toUpperCase()); } : (h === "found" || fm) ? function () { if (fm) { FOUND.show = fm[1]; FOUND.source = ""; } openFound(); } :
       sm ? function () { openSources('[data-src-manual="' + sm[1] + '"]'); } : openSources;
     // On a fresh visit the sign-in comes back from the refresh cookie first; then open the page (or Sign in).
     (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(open);
     return true;
   }
+  ROUTE = null;
   return false;
+}
+// Back and Forward (CC-157), and a hash typed or followed: open that view. The bare address is Home; any other hash
+// that isn't a view (a "#" link not ready yet) leaves the page as it is.
+function route() {
+  if (!openFromHash() && !location.hash && !/#$/.test(location.href)) show("home");
 }
 
 // Everything above only defines things and wires up buttons. This runs once the filter options
@@ -60,7 +68,7 @@ function boot(FACETS_IN) {
   renderHome();
   loadHome();
   if (!openFromHash()) track("view", "home"); // the welcome screen is already showing
-  window.addEventListener("hashchange", openFromHash);
+  window.addEventListener("popstate", route); // the views push plain entries (syncAddress), which hashchange can miss
   AUTH.onChange = onAuthChange;
   // signed in on an earlier visit? the refresh cookie brings the session back (counting waits for it)
   COUNT_READY = maybeSignedIn() ? refreshSession() : Promise.resolve();

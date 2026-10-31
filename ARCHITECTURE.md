@@ -68,6 +68,8 @@ The site has these views:
 - Members and Photo approvals (admins; approvers see Photo approvals too)
 - QR card (admins only)
 
+Each view has its own address (CC-157): Home is the bare site, and the others are a hash, such as `#catalog`, `#account`, `#planner`, `#review` or `#stats`. An event is `#e/<id>`. Showing a view pushes its address onto the history (`syncAddress` in `util.js`). Back and Forward fire `popstate`, and `route()` in `start.js` opens the view in the address. A reload opens the view in the address, and so do links in emails. When an address redirects (an admin page for someone who isn't an admin opens Your account), the redirect replaces the history entry, so Back still works. `scripts/test_routing.js` checks this in CI.
+
 The site has two themes: light, which is the default, and dark, called "Lights down".
 The user can change the theme with the Lights down button. Each device remembers the choice.
 

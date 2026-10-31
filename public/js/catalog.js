@@ -609,8 +609,9 @@ function evMotionCarry(id) {
   }
 }
 $("ev-back").addEventListener("click", function () {
-  if (EV.pushed) { history.back(); return; } // the hashchange comes back to closeEvent()
-  try { history.replaceState(null, "", location.pathname + location.search); } catch (err) {}
+  if (EV.pushed) { history.back(); return; } // the popstate comes back to closeEvent()
+  var to = EV.from || "catalog"; // CC-157: a link or a reload: this entry becomes the view it goes back to
+  try { history.replaceState(null, "", to === "home" || to === "join" ? location.pathname + location.search : "/" + location.search + "#" + to); } catch (err) {}
   closeEvent();
 });
 $("ev-body").addEventListener("click", function (ev) {
