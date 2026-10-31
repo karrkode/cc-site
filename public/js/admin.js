@@ -44,7 +44,7 @@ function renderReview() {
   }, function () { $("review-list").innerHTML = '<p class="form-error">' + esc(errorText(null)) + "</p>"; });
 }
 // CC-133: what removing Comedy and Educational withdrew (and everything at The Second City and The Annoyance). Bring one
-// back with one of the three types, or Edit to delete it. Hidden when there are none.
+// back with one of the three types, or delete it (CC-153), one at a time or all at once. Hidden when there are none.
 function removedItemHTML(raw) {
   var e = toEvent(raw), id = esc(e.id), reason = raw.withdrawn_reason; // its old type, or its venue's name
   var why = (reason === "Comedy" || reason === "Educational" ? "Type was " : "At ") + reason;
@@ -52,33 +52,113 @@ function removedItemHTML(raw) {
   return queueItemHTML(e, '<label class="sr-only" for="rm-type-' + id + '">Type to bring ' + esc(e.title) + " back as</label>" +
     '<select id="rm-type-' + id + '" data-rm-type="' + id + '"><option value=""' + (pick ? "" : " selected") + ">Bring back as…</option>" +
       TYPE_ORDER.map(function (t) { return '<option value="' + esc(t) + '"' + (t === pick ? " selected" : "") + ">" + esc(t) + "</option>"; }).join("") + "</select>" +
-    '<button class="btn" type="button" data-rm-back="' + id + '" aria-label="Bring back ' + esc(e.title) + '">Bring back</button>' + editButtonHTML(e, "btn ghost"), why);
+    '<button class="btn" type="button" data-rm-back="' + id + '" aria-label="Bring back ' + esc(e.title) + '">Bring back</button>' + editButtonHTML(e, "btn ghost") +
+    '<button class="btn danger" type="button" data-rm-del="' + id + '" data-title="' + esc(e.title) + '" aria-label="Delete ' + esc(e.title) + '">Delete…</button>', why);
 }
+function rmAskHTML(id, title) { // CC-153: the same inline confirm as deleting a source
+  return '<div class="rm-confirm" role="group" aria-labelledby="rm-ask-' + id + '"><p id="rm-ask-' + id + '"><strong>Delete ' + esc(title) + "?</strong> " +
+    "Everyone's “I've been” marks, plans and photos for it go too. This can't be undone.</p>" +
+    '<div class="row"><button class="btn danger solid" type="button" data-rm-del-yes="' + id + '">Delete event</button>' +
+    '<button class="btn ghost" type="button" data-rm-del-no="' + id + '">Keep it</button></div></div>';
+}
+function removedLeft() { // CC-153: the count, and the section gone once it's empty
+  var n = $("removed-list").children.length;
+  $("removed").hidden = !n;
+  $("removed-note").textContent = plural(n, "event is", "events are") + " hidden from the site. Each stays that way unless you bring it back as Theater, Music or Visual Art, or delete it.";
+  $("removed-del-all").textContent = n > 1 ? "Delete all " + n + "…" : "Delete…";
+  $("removed-del-all").setAttribute("aria-label", n > 1 ? "Delete all " + n + " withdrawn Comedy and Educational events" : "Delete the withdrawn Comedy or Educational event");
+  return n;
+}
+function closeRemovedAsk() { $("removed-ask").innerHTML = ""; $("removed-del-all").setAttribute("aria-expanded", "false"); }
 function renderRemoved() {
   api("/admin/events/removed").then(readJSON).then(function (res) {
     var list = res.ok ? res.body : [];
-    $("removed").hidden = !list.length;
-    $("removed-note").textContent = plural(list.length, "event is", "events are") + " hidden from the site. Each stays that way unless you bring it back as Theater, Music or Visual Art.";
+    closeRemovedAsk(); $("removed-status").textContent = "";
     $("removed-list").innerHTML = list.map(removedItemHTML).join("");
+    removedLeft();
     refocusAfterEdit();
   }, function () {});
 }
+function removedFail(item, res) {
+  var old = item.querySelector(".form-error"); if (old) old.remove();
+  item.querySelector(".alt-text").insertAdjacentHTML("beforeend", '<p class="form-error">' + esc(errorText(res)) + "</p>");
+}
+function removeRemovedItem(item) { // focus the next one's first control, or the section title
+  var next = item.nextElementSibling || item.previousElementSibling;
+  item.remove();
+  var f = removedLeft() && next && next.querySelector("select"); (f || $("review-title")).focus();
+}
+function deleteRemoved(id) { // resolves true once it's gone (404 counts: someone else got there first)
+  return api("/events/" + encodeURIComponent(id), { method: "DELETE" }).then(function (r) {
+    if (r.ok || r.status === 404) { delete KNOWN[id]; delete WENT[id]; delete MYPLANS[id]; return true; }
+    return readJSON(r);
+  });
+}
 $("removed-list").addEventListener("click", function (ev) {
+  var ask = ev.target.closest("[data-rm-del],[data-rm-del-no]");
+  if (ask) { // CC-153: open or close the confirm under that event
+    var asking = ask.hasAttribute("data-rm-del"), aid = ask.getAttribute(asking ? "data-rm-del" : "data-rm-del-no");
+    var open = $("removed-list").querySelector(".rm-confirm"); if (open) open.remove();
+    if (asking) { closeRemovedAsk(); ask.closest(".queue-item").insertAdjacentHTML("beforeend", rmAskHTML(esc(aid), ask.getAttribute("data-title"))); }
+    $("removed-list").querySelector(asking ? '[data-rm-del-no="' + aid + '"]' : '[data-rm-del="' + aid + '"]').focus();
+    return;
+  }
+  var yes = ev.target.closest("[data-rm-del-yes]");
+  if (yes) {
+    var did = yes.getAttribute("data-rm-del-yes"), gone = yes.closest(".queue-item"), title = gone.querySelector('[data-rm-del]').getAttribute("data-title");
+    yes.disabled = true;
+    deleteRemoved(did).then(function (ok) {
+      if (ok !== true) { yes.disabled = false; removedFail(gone, ok); return; }
+      $("edit-live").textContent = "Deleted " + title + ".";
+      removeRemovedItem(gone); reloadEvents();
+    }, function () { yes.disabled = false; removedFail(gone, null); });
+    return;
+  }
   var b = ev.target.closest("[data-rm-back]"); if (!b) return;
   var id = b.getAttribute("data-rm-back"), item = b.closest(".queue-item"), sel = $("rm-type-" + id);
   var old = item.querySelector(".form-error"); if (old) old.remove();
   if (!sel.value) { item.querySelector(".alt-text").insertAdjacentHTML("beforeend", '<p class="form-error">Choose its type first.</p>'); sel.focus(); return; }
   b.disabled = sel.disabled = true;
   api("/events/" + encodeURIComponent(id), { method: "PATCH", body: { status: "approved", category: sel.value } }).then(readJSON).then(function (res) {
-    if (!res.ok) { b.disabled = sel.disabled = false; item.querySelector(".alt-text").insertAdjacentHTML("beforeend", '<p class="form-error">' + esc(errorText(res)) + "</p>"); return; }
+    if (!res.ok) { b.disabled = sel.disabled = false; removedFail(item, res); return; }
     $("edit-live").textContent = res.body.title + " is back on the site, as " + sel.value + ".";
-    var next = item.nextElementSibling || item.previousElementSibling;
-    item.remove();
-    if (!$("removed-list").children.length) $("removed").hidden = true;
-    else $("removed-note").textContent = plural($("removed-list").children.length, "event is", "events are") + " hidden from the site. Each stays that way unless you bring it back as Theater, Music or Visual Art.";
+    removeRemovedItem(item);
     reloadEvents();
-    var f = next && next.querySelector("select"); (f || $("review-title")).focus();
   }, function () { b.disabled = sel.disabled = false; });
+});
+// CC-153: Delete all, after a confirm that says how many go; one DELETE at a time, with the progress in a status line
+$("removed-del-all").addEventListener("click", function () {
+  var n = $("removed-list").children.length; if (!n) return;
+  var open = $("removed-list").querySelector(".rm-confirm"); if (open) open.remove();
+  $("removed-ask").innerHTML = '<div class="rm-confirm" role="group" aria-labelledby="rm-ask-all"><p id="rm-ask-all"><strong>Delete ' +
+    (n > 1 ? "all " + n + " events" : "this event") + "?</strong> Everyone's “I've been” marks, plans and photos for " + (n > 1 ? "them" : "it") +
+    " go too. This can't be undone.</p>" +
+    '<div class="row"><button class="btn danger solid" type="button" id="rm-all-yes">Delete ' + plural(n, "event", "events") + "</button>" +
+    '<button class="btn ghost" type="button" id="rm-all-no">Keep ' + (n > 1 ? "them" : "it") + "</button></div></div>";
+  $("removed-del-all").setAttribute("aria-expanded", "true"); $("rm-all-no").focus();
+});
+$("removed-ask").addEventListener("click", function (ev) {
+  if (ev.target.closest("#rm-all-no")) { closeRemovedAsk(); $("removed-del-all").focus(); return; }
+  var yes = ev.target.closest("#rm-all-yes"); if (!yes) return;
+  var items = Array.prototype.slice.call($("removed-list").children), total = items.length, done = 0, failed = 0;
+  yes.disabled = $("rm-all-no").disabled = $("removed-del-all").disabled = true;
+  function step(i) {
+    if (i >= items.length) {
+      closeRemovedAsk(); $("removed-del-all").disabled = false;
+      $("removed-status").textContent = $("edit-live").textContent = "Deleted " + plural(done, "event", "events") + "." +
+        (failed ? " " + plural(failed, "event", "events") + " couldn't be deleted; " + (failed > 1 ? "each says why" : "it says why") + "." : "");
+      var left = removedLeft(); reloadEvents();
+      (left ? $("removed-del-all") : $("review-title")).focus();
+      return;
+    }
+    $("removed-status").textContent = "Deleting " + (i + 1) + " of " + total + "…";
+    var item = items[i], id = item.querySelector("[data-rm-del]").getAttribute("data-rm-del");
+    deleteRemoved(id).then(function (ok) {
+      if (ok === true) { done++; item.remove(); removedLeft(); } else { failed++; removedFail(item, ok); }
+      step(i + 1);
+    }, function () { failed++; removedFail(item, null); step(i + 1); });
+  }
+  step(0);
 });
 // CC-125: events whose type isn't one of ours (the move to the five didn't guess); hidden when there are none
 function renderOtherTypes() {
