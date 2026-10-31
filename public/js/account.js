@@ -10,6 +10,7 @@ function rerenderLists() {
   if (visible("catalog")) paintCatalog();
   if (visible("account")) renderAccount();
   if (visible("planner")) renderPlannerPage(); // CC-105
+  if (visible("journal")) renderJournalPage(); // CC-159
   if (visible("event")) loadEventView(); // CC-117: signed in or out, the crews' plans change
 }
 function onAuthChange() {
@@ -28,19 +29,21 @@ function onAuthChange() {
     rerenderLists();
     if (visible("crews")) renderCrewsPage();
     if (visible("planner")) renderPlannerPage();
+    if (visible("journal")) renderJournalPage();
     if (visible("join")) paintJoinPage(); // CC-121
     return;
   }
   if (isAdmin()) updateReviewCount();
-  var back = AFTER_SIGN_IN; AFTER_SIGN_IN = null; // signed in from the crews or planner page: back to it (CC-104, CC-105)
+  var back = AFTER_SIGN_IN; AFTER_SIGN_IN = null; // signed in from the crews, planner or journal page: back to it (CC-104, CC-105, CC-159)
   // CC-157: the sign-in page was pushed on the way: going back takes it off the history, and the popstate reopens that page
   if (back && location.hash === "#account" && history.state && history.state.view === "account") history.back();
-  else if (back === "crews") openCrews(); else if (back === "planner") openPlanner();
+  else if (back === "crews") openCrews(); else if (back === "planner") openPlanner(); else if (back === "journal") openJournal();
   else if (back && back.indexOf("e/") === 0) openEvent(back.slice(2), false); // signed in from an event (CC-117)
   else if (visible("account")) renderAccount(true);
   if (visible("join") && $("jp-in").hidden) paintJoinPage(); // CC-121 (just joined: the welcome stays)
   if (visible("crews")) renderCrewsPage();
   if (visible("planner")) renderPlannerPage();
+  if (visible("journal")) renderJournalPage();
   if (visible("submit")) renderSubmit();
   if (visible("review")) renderReview();
   rerenderLists();
@@ -52,7 +55,7 @@ function onAuthChange() {
 }
 function loadWent() {
   return api("/me/attended").then(readJSON).then(function (res) {
-    if (!res.ok) { if (WENT_STATE !== "ready") WENT_STATE = "error"; if (visible("planner")) renderPlannerPage(); return; }
+    if (!res.ok) { if (WENT_STATE !== "ready") WENT_STATE = "error"; if (visible("journal")) renderJournalPage(); return; }
     WENT_STATE = "ready";
     WENT = {}; WENT_PHOTO = {}; WENT_JOURNAL = {}; WENT_SHARE = {}; WENT_LIST = res.body.map(function (row) {
       var e = toEvent(row.event); if (row.photo) WENT_PHOTO[e.id] = row.photo; // your photos (CC-76)
@@ -62,7 +65,7 @@ function loadWent() {
     });
     WENT_LIST.forEach(function (e) { WENT[e.id] = true; });
     rerenderLists();
-  }, function () { if (WENT_STATE !== "ready") WENT_STATE = "error"; if (visible("planner")) renderPlannerPage(); });
+  }, function () { if (WENT_STATE !== "ready") WENT_STATE = "error"; if (visible("journal")) renderJournalPage(); });
 }
 function reloadEvents() { // something was published: fresh counts, home list and catalog page
   PLAN_RANGE = null;
@@ -134,10 +137,12 @@ function redrawCardsNow(id, from, focusOn) {
     if (visible("event")) renderEventView(); // CC-117: the event view's buttons, redrawn as a view, not a card
     if (visible("account")) renderAccount();
     if (visible("planner")) renderPlannerPage();
+    if (visible("journal")) renderJournalPage(); // CC-159
     var item = '[data-card="' + id + '"],[data-day-item="' + id + '"],[data-journal="' + id + '"]', planner = PLANNER_LISTS.indexOf(listId) >= 0;
     var card = listId && $(listId) ? $(listId).querySelector(item) : null;
-    if (!card && planner) card = $("planner-main").querySelector(item) || (WENT[id] ? $("went-grid").querySelector(item) : null); // moved within the planner, or to "I've been"
-    var target = card ? card.querySelector(focusOn || "[data-myplan-toggle]") : planner ? $("myplans-title") : listId === "went-grid" ? $("journal-title") : null;
+    if (!card && planner) card = $("planner-main").querySelector(item); // moved within the planner
+    // CC-159: "I've been" moves it to the journal, now its own page: focus the line that goes there
+    var target = card ? card.querySelector(focusOn || "[data-myplan-toggle]") : planner ? (WENT[id] ? $("planner-tojournal") : $("myplans-title")) : listId === "went-grid" ? $("journal-title") : null;
     if (target) target.focus();
   });
 }
@@ -503,19 +508,27 @@ document.addEventListener("submit", function (ev) {
 });
 
 // ---------- My week page (CC-105; renamed in CC-118) ----------
-// The week ahead and the Cultural Journal, on their own page (#planner). Signed out, a word on what it's for and a
-// way to sign in that comes back here.
-var AFTER_SIGN_IN = null; // "crews" or "planner": where to go once signed in from there
+// The week ahead, on its own page (#planner). Signed out, a word on what it's for and a way to sign in that comes back here.
+var AFTER_SIGN_IN = null; // "crews", "planner" or "journal": where to go once signed in from there
 function openPlanner() { renderPlannerPage(); show("planner"); }
 function renderPlannerPage() {
   var u = AUTH.user;
   $("planner-signin").hidden = !!u; $("planner-main").hidden = !u;
-  if (u) { renderPlanner(); renderJournal(); }
+  if (u) renderPlanner();
 }
 $("planner-signin-btn").addEventListener("click", function () { AFTER_SIGN_IN = "planner"; openAccount(); });
+// CC-159: the Cultural Journal, on its own page (#journal), from the you menu and My week's line to it. Signed out,
+// the same: a word on what it's for and a sign-in that comes back here.
+function openJournal() { renderJournalPage(); show("journal"); }
+function renderJournalPage() {
+  var u = AUTH.user;
+  $("journal-signin").hidden = !!u; $("journal-main").hidden = !u;
+  if (u) renderJournal();
+}
+$("journal-signin-btn").addEventListener("click", function () { AFTER_SIGN_IN = "journal"; openAccount(); });
 
 // ---------- your name in the header, and its menu (CC-105) ----------
-// Signed in, the header shows your name (or "Your account"); it opens a menu: Crews, My week, Invite a friend, Account
+// Signed in, the header shows your name (or "Your account"); it opens a menu: Crews, My week, Cultural journal (CC-159), Invite a friend, Account
 // settings, Sign out. Arrow keys, Home and End move through it; Escape or Tab closes it and returns to your name.
 // CC-137: on a phone the menu sits open in the masthead's sheet instead, as a plain list under your name.
 function meName() { var n = AUTH.user && (AUTH.user.display_name || "").trim(); return n || "Your account"; }
@@ -574,7 +587,7 @@ $("me-menu").addEventListener("keydown", function (ev) {
 $("me-menu").addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-me]"); if (!b) return;
   var go = b.getAttribute("data-me"); closeMeMenu(false); closeMastSheet(false);
-  if (go === "account") openAccount(); else if (go === "crews") openCrews(); else if (go === "planner") openPlanner();
+  if (go === "account") openAccount(); else if (go === "crews") openCrews(); else if (go === "planner") openPlanner(); else if (go === "journal") openJournal();
   else if (go === "invite") inviteFriend(); else signOut();
 });
 // CC-115: invite a friend to the site: the phone's share sheet, or the link to copy. Tagged so these visits

@@ -1,7 +1,7 @@
 // Checks run in CI before the site deploys (CC-146): My week in Lakefront, in public/js/account.js.
 // One line a day in listings style: plans as event rows with Change plan and Tell a crew, an empty day as one
-// "Find something →" line; Still deciding beside it with Pick a day and I've been; the journal with only the entry
-// being written open, a finished one folded to its three words; errors say "Check this:".
+// "Find something →" line; Still deciding beside it with Pick a day and I've been; the journal (its own page at
+// #journal since CC-159) with only the entry being written open, a finished one folded to its three words; errors say "Check this:".
 //
 //     node scripts/test_week.js
 "use strict";

@@ -293,7 +293,7 @@ function wentHTML(e) {
 // ---------- views ----------
 // CC-121, CC-126: the join page is at chiculturecrew.com/join, and with the admins' invite pitch at /invite
 function onJoinPage() { return location.pathname === "/join" || location.pathname === "/invite"; }
-var VIEWS = { home: "home-title", join: "jp-title", catalog: "catalog-title", event: "event-title", plan: "plan-title", account: "account-title", crews: "crews-title", planner: "planner-title", submit: "submit-title", review: "review-title", venues: "venues-title", stats: "stats-title", sources: "sources-title", found: "found-title", issues: "issues-title", approvals: "approvals-title", members: "members-title", card: "card-title", reset: "reset-title", verify: "verify-title" };
+var VIEWS = { home: "home-title", join: "jp-title", catalog: "catalog-title", event: "event-title", plan: "plan-title", account: "account-title", crews: "crews-title", planner: "planner-title", journal: "journal-title", submit: "submit-title", review: "review-title", venues: "venues-title", stats: "stats-title", sources: "sources-title", found: "found-title", issues: "issues-title", approvals: "approvals-title", members: "members-title", card: "card-title", reset: "reset-title", verify: "verify-title" };
 // CC-157: each view has an address (#account, #catalog, ...; Home is the site's own, with no hash), and showing a view
 // pushes it, so Back and Forward move between views and a reload opens what's showing (start.js routes it back).
 // The event view keeps its own #e/<id> (openEvent); the join, reset and verify pages keep the address they came with.
@@ -314,7 +314,7 @@ function syncAddress(name) {
 function show(name, focusId) {
   Object.keys(VIEWS).forEach(function (v) { $("view-" + v).hidden = v !== name && !(v === "catalog" && name === "join"); }); // CC-121: the catalog shows under the join page
   ["catalog", "plan", "submit", "review", "account"].forEach(function (v) {
-    if (v === name || (v === "catalog" && name === "event") || (v === "account" && (name === "crews" || name === "planner")) || (v === "review" && (name === "venues" || name === "stats" || name === "sources" || name === "found" || name === "issues" || name === "members" || name === "card" || (name === "approvals" && isAdmin())))) $("nav-" + v).setAttribute("aria-current", "page"); else $("nav-" + v).removeAttribute("aria-current");
+    if (v === name || (v === "catalog" && name === "event") || (v === "account" && (name === "crews" || name === "planner" || name === "journal")) || (v === "review" && (name === "venues" || name === "stats" || name === "sources" || name === "found" || name === "issues" || name === "members" || name === "card" || (name === "approvals" && isAdmin())))) $("nav-" + v).setAttribute("aria-current", "page"); else $("nav-" + v).removeAttribute("aria-current");
   });
   paintMast(name);
   window.scrollTo(0, 0);
@@ -358,6 +358,6 @@ document.addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-go]"); if (!b || !FACETS) return; // the views need the filter options; they load first
   var go = b.getAttribute("data-go");
   if (go === "plan") startPlan(); else if (go === "catalog") { renderCatalog(); show("catalog"); }
-  else if (go === "account") openAccount(); else if (go === "crews") openCrews(); else if (go === "planner") openPlanner(); else if (go === "submit") openSubmit(); else if (go === "review") openReview(); else if (go === "venues") openVenues(); else if (go === "stats") openStats(); else if (go === "sources") openSources(); else if (go === "found") openFound(); else if (go === "issues") openIssues(); else if (go === "approvals") openApprovals(); else if (go === "members") openMembers(); else if (go === "card") openCard();
+  else if (go === "account") openAccount(); else if (go === "crews") openCrews(); else if (go === "planner") openPlanner(); else if (go === "journal") openJournal(); else if (go === "submit") openSubmit(); else if (go === "review") openReview(); else if (go === "venues") openVenues(); else if (go === "stats") openStats(); else if (go === "sources") openSources(); else if (go === "found") openFound(); else if (go === "issues") openIssues(); else if (go === "approvals") openApprovals(); else if (go === "members") openMembers(); else if (go === "card") openCard();
   else show("home");
 });

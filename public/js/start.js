@@ -38,6 +38,7 @@ function openFromHash() {
   if (h === "plan") { startPlan(); return true; }
   if (h === "account") { openAccount(); return true; }
   if (h === "planner") { (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(function () { openPlanner(); }); return true; } // CC-105
+  if (h === "journal") { (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(function () { openJournal(); }); return true; } // CC-159
   if (h === "crews") { (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(function () { openCrews(); }); return true; } // CC-104
   if (h === "submit") { openSubmit(); return true; }
   // admin pages (the recap email links here, CC-77/81/84): #approvals (approvers too, CC-91), #members, #issues, #issues/ISS-0007, #found, #found/<show> (e.g. #found/skipped), #sources,
