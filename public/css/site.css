@@ -896,6 +896,12 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .week-sub-n { color: var(--muted); font-size: 1.0625rem; }
 .week-state { padding: 14px 0; }
 #planner-week > .week-hint, #deciding-hint { margin-top: 10px; }
+/* CC-160: after Withdraw interest, a line with Undo at the top of Still deciding, ruled off like a row */
+.week-undo-box:empty { display: none; }
+.week-undo-box { display: grid; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.week-undo { font-size: 1.0625rem; }
+.week-undo-t { font-style: italic; }
+.week-undo .week-tbtn { margin-left: 4px; vertical-align: middle; font-weight: 700; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px; }
 #deciding-hint:empty { display: none; }
 
 /* a day: its name, then its plans, or "Nothing yet…" under the name (so it lines up whatever the date) and

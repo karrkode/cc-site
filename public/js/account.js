@@ -239,7 +239,8 @@ function weekRowHTML(e, d) {
   var when = d ? dayTimesText(e, d) : going ? "Going " + goingDay(mine.date) : dateText(e);
   var own = AUTH.user.dolphins ? "" : markHTML(going ? "going" : "interested", going ? "You're going" : "You're interested"); // an owner's own plan is their ring (CC-139)
   var acts = d ? myplanToggleHTML(e) + crewShareToggleHTML(e, "Tell a crew") : // the toggles first: their pickers take the same number
-    myplanToggleHTML(e, goingRange(e) ? "Pick a day" : "Change plan") + wentHTML(e) + crewShareToggleHTML(e, "Tell a crew"); // closed: no day left to pick
+    myplanToggleHTML(e, goingRange(e) ? "Pick a day" : "Change plan") + wentHTML(e) + crewShareToggleHTML(e, "Tell a crew") + // closed: no day left to pick
+    (going ? "" : '<button type="button" class="went" data-plan-withdraw="' + id + '">Withdraw interest</button>'); // CC-160: undone from the line above
   return '<li class="wk-row" data-day-item="' + id + '"><a class="wk-row-a" href="#e/' + id + '" data-ev-open="' + id + '">' +
     '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + '<span class="tile-k">' + esc(e.label) + "</span></span>" +
     '<span class="listing-t">' + esc(e.title) + (e.pick ? markHTML("host", pickText(e.pick)) : "") + "</span>" +
@@ -288,10 +289,70 @@ function renderPlanner() {
     (ahead.length ? "" : '<p class="week-hint">Commit to a day on any event and it shows up here.</p>');
   days.forEach(function (day) { paintFindDay(isoDate(day.d)); });
   $("myplans-grid").innerHTML = ready ? deciding.map(function (e) { return weekRowHTML(e); }).join("") : "";
+  $("deciding-undo").innerHTML = ready ? withdrawnHTML() : "";
   $("deciding-hint").textContent = !ready ? "" : deciding.some(goingRange) ? "Pick a day for one, and it moves into your week." : deciding.length ? "" :
     "Nothing waiting. Mark an event Interested, and it waits here until you pick a day.";
   paintWater($("planner-main"));
 }
+// CC-160: Withdraw interest clears the plan (and so its sharing with crews, server side) at once, and a line at the top
+// of Still deciding offers Undo, which puts back the plan and the crews it was shared with. Only an interested plan has
+// it: a going plan for a day that's passed couldn't be put back. WITHDRAWN keeps the last one until it's undone or
+// marked again some other way.
+var WITHDRAWN = null; // { id, title, mine, error }
+function withdrawnHTML() {
+  var w = WITHDRAWN; if (!w || MYPLANS[w.id]) return "";
+  return '<p class="week-undo">Withdrew your interest in <span class="week-undo-t">' + esc(w.title) + "</span>. " +
+    '<button type="button" class="week-tbtn" id="deciding-undo-btn" data-plan-undo="' + esc(w.id) + '">Undo</button></p>' +
+    (w.error ? '<p class="week-error" role="alert">' + esc(checkThis(w.error)) + "</p>" : "");
+}
+function withdrawPlan(id, b) {
+  var mine = MYPLANS[id]; if (!mine) return;
+  b.disabled = true;
+  api("/me/plans/" + encodeURIComponent(id), { method: "DELETE" }).then(readJSON).then(function (res) {
+    if (!res.ok) throw res;
+    WITHDRAWN = { id: id, title: KNOWN[id].title, mine: mine }; delete MYPLANS[id];
+    $("myplan-live").textContent = "Withdrew your interest: " + KNOWN[id].title + ". Undo is at the top of Still deciding.";
+    return redrawCards(id).then(function () { if ($("deciding-undo-btn")) $("deciding-undo-btn").focus(); });
+  }).catch(function (res) {
+    b.disabled = false;
+    $("deciding-undo").innerHTML = '<p class="week-error" role="alert">' + esc(checkThis(res && res.status ? errorText(res) :
+      "your interest couldn\u2019t be withdrawn. Check your connection and try again.")) + "</p>";
+  });
+}
+function undoWithdraw(b) {
+  var w = WITHDRAWN; if (!w) return;
+  b.disabled = true;
+  api("/me/plans/" + encodeURIComponent(w.id) + "?today=" + isoDate(T), { method: "PUT", body: { status: w.mine.status, date: w.mine.date } }).then(readJSON).then(function (res) {
+    if (!res.ok) throw res;
+    MYPLANS[w.id] = { status: w.mine.status, date: w.mine.date, crews: [] };
+    return !(w.mine.crews || []).length ? null : api("/me/plans/" + encodeURIComponent(w.id) + "/crews", { method: "PUT", body: { crews: w.mine.crews } }).then(readJSON).then(function (r) {
+      if (!r.ok) throw r;
+      MYPLANS[w.id].crews = r.body.crews;
+    });
+  }).then(function () {
+    WITHDRAWN = null;
+    $("myplan-live").textContent = "Back in Still deciding: " + w.title;
+    if (visible("crews")) loadCrews();
+    return redrawCards(w.id).then(function () {
+      var row = $("myplans-grid").querySelector('[data-day-item="' + w.id + '"] [data-plan-withdraw]');
+      (row || $("deciding-title")).focus();
+    });
+  }).catch(function (res) {
+    if (MYPLANS[w.id]) { // the plan came back but its crews didn't: say so, and Tell a crew is on its row again
+      WITHDRAWN = null;
+      return redrawCards(w.id).then(function () {
+        $("deciding-undo").innerHTML = '<p class="week-error" role="alert">' + esc(checkThis("your plan is back, but not shared with your crews. Use Tell a crew on it.")) + "</p>";
+      });
+    }
+    w.error = res && res.status ? errorText(res) : "your plan couldn\u2019t be put back. Check your connection and try again.";
+    renderPlanner(); if ($("deciding-undo-btn")) $("deciding-undo-btn").focus();
+  });
+}
+document.addEventListener("click", function (ev) {
+  if (!AUTH.user) return;
+  var t = ev.target.closest("[data-plan-withdraw],[data-plan-undo]"); if (!t) return;
+  if (t.hasAttribute("data-plan-withdraw")) withdrawPlan(t.getAttribute("data-plan-withdraw"), t); else undoWithdraw(t);
+});
 function showWeek(n, focusId) {
   PLANNER_WEEK = Math.max(0, Math.min(PLANNER_MAX, n)); renderPlanner();
   var b = $(focusId); // stay on the button pressed, or the nearest one still usable (Skip goes once it's used up)
