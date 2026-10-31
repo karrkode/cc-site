@@ -203,14 +203,17 @@ function cardActionsHTML(e) {
     (WENT[e.id] ? "" : crewShareToggleHTML(e)) + // "Invite your Crew?": a plan, and crews to share it with (CC-75; crews.js)
     (isAdmin() ? editButtonHTML(e, "went") : "") + "</div>" + (WENT[e.id] ? "" : myplanHTML(e) + crewShareHTML(e));
 }
-// CC-139: a dolphin mark (the symbols in index.html; brief section 4). "host" is the host's pick, the dolphin through
-// the gold ring; "interested" (lake) and "going" (ink) are your own. With a label it's an image; without one it's hidden,
-// for when the words next to it already say it.
+// CC-139: a dolphin mark (the symbols in index.html; brief section 4). "host" is the admin's pick when they're going,
+// the dolphin through the gold ring, and "host-int" when they're interested, the ink dolphin (CC-162); "interested"
+// (lake) and "going" (ink) are your own, on buttons and cards. With a label it's an image; without one it's hidden, for
+// when the words next to it already say it.
 function markHTML(kind, label) {
-  var cls = { host: "mark-host", interested: "mark-int", going: "mark-going" }[kind];
+  var cls = { host: "mark-host", "host-int": "mark-host-int", interested: "mark-int", going: "mark-going" }[kind];
   return '<svg class="mark ' + cls + '"' + (label ? ' role="img" aria-label="' + esc(label) + '"' : ' aria-hidden="true"') +
     '><use href="#' + (kind === "host" ? "dolphin-ring" : "dolphin") + '"></use></svg>';
 }
+// CC-162: the admin's pick as its mark: the gold ring when they're going, the ink dolphin when they're interested.
+function pickMarkHTML(p, label) { return markHTML(p.status === "going" ? "host" : "host-int", label); }
 // The owner's pick as a dolphin button: hovering shows what it means; tapping (phones) opens it in the card.
 var PICK_SEQ = 0;
 function pickText(p) {
@@ -221,9 +224,9 @@ function pickText(p) {
 function pickHTML(e) {
   if (!e.pick) return "";
   PICK_SEQ += 1;
-  var text = pickText(e.pick); // one mark for interested and going; the label says which (CC-139)
+  var text = pickText(e.pick);
   return '<button type="button" class="pick" data-pick aria-expanded="false" aria-controls="pick-note-' + PICK_SEQ + '" aria-label="' + esc(text) + '">' +
-    markHTML("host") +
+    pickMarkHTML(e.pick) +
     '<span class="tip" aria-hidden="true">' + esc(text) + "</span></button>";
 }
 document.addEventListener("click", function (ev) {

@@ -3,7 +3,7 @@
    "Lights down", the lake at night. Every pair used below meets WCAG AA: scripts/check_contrast.py checks them in CI.
    page/surface/line/rule: backgrounds, hairlines and structural rules · text/muted: type (deep lake, never black)
    field-line: form borders (3:1) · lead: primary buttons, links, active chips, "Free" · star: the star in the wordmark
-   and "Closes today", nothing else · gold-*: the host's ring and its star, nothing else (CC-139) · lake/on-lake/stripe: the masthead band and the flag's stripes
+   and "Closes today", nothing else · gold-*: the admin's ring and its star, nothing else (CC-139) · lake/on-lake/stripe: the masthead band and the flag's stripes
    info-soft: calm notes ("Opens…", notices, plain tags) · danger-soft: errors (a band, never red text)
    cat-*: the three category fields, with only white (--on-cat) on them */
 :root, :root[data-theme="light"] {
@@ -156,6 +156,7 @@ a { color: inherit; }
 .lead-by { display: flex; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid currentColor; font-family: var(--sign); font-weight: 700; font-size: 1.125rem; line-height: 1.25; font-variant-numeric: tabular-nums; }
 .lead-pick:hover .lead-t { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 8px; }
 .lead-pick .mark-host { width: 34px; height: 33px; --mark-bg: var(--cat); --dol-body: #fff; --dol-belly: #fff; --dol-mouth: var(--cat); } /* on a field the dolphin is white and the gold carries it */
+.lead-pick .mark-host-int { width: 39px; height: 26px; --dol-body: #fff; --dol-belly: #fff; --dol-mouth: var(--cat); } /* CC-162: interested, no ring */
 
 /* Three ways in: stacked links, hairlines between. CC-103's rise stays: 600ms, 120ms apart, first load only. */
 .ways { padding-right: 24px; border-right: 1px solid var(--rule); }
@@ -336,8 +337,9 @@ a { color: inherit; }
 .segs .chip[aria-pressed="true"] { background: var(--text); color: var(--page); }
 .segs .chip:focus-visible { z-index: 1; } /* the ring sits over the neighbours */
 .segs .chip .mark { margin-inline: -2px 0; }
-.segs .chip[aria-pressed="true"] .mark-int { --dol-edge: var(--page); }
-.segs .chip[aria-pressed="true"] .mark-going { --dol-body: var(--page); --dol-mouth: var(--text); }
+.segs .chip:hover .mark { --mark-bg: var(--info-soft); }
+/* CC-162: the admin's-picks chips wear the admin's marks, ink for Interested and the gold ring for Going */
+.segs .chip[aria-pressed="true"] .mark { --mark-bg: var(--text); --dol-body: var(--page); --dol-mouth: var(--text); }
 #filters .fields { gap: 12px 14px; }
 @media (min-width: 900px) { #filters .fields { grid-template-columns: minmax(0, 1.5fr) repeat(4, minmax(0, 1fr)); } } /* search, then the four boxes */
 #view-catalog .field input[type="search"], #view-catalog .field select, .where-btn {
@@ -460,15 +462,16 @@ a { color: inherit; }
 /* plans (CC-55) and the picker under each card */
 .card-foot .when { display: inline-flex; align-items: center; gap: 6px; }
 .own-plan, .card-foot .going-on { display: inline-flex; align-items: center; gap: 4px; }
-/* CC-139: the dolphin marks (the symbols in index.html; brief section 4). One drawing in three looks: the host's pick
-   (the ink dolphin through the gold ring, with the gold star), interested (lake, with an ink edge) and going (ink).
+/* CC-139: the dolphin marks (the symbols in index.html; brief section 4). One drawing in three looks: the gold ring (the
+   ink dolphin through it, with the gold star), lake (with an ink edge) and ink. On rows only the admin's picks show
+   (CC-162): the ring when they're going, ink (.mark-host-int) when they're interested. Lake and ink on buttons are yours.
    --mark-bg is whatever the mark sits on, for the gap around the star. */
 .mark { display: inline-block; flex: none; vertical-align: middle; overflow: visible; --mark-bg: var(--page); }
-.mark-int, .mark-going { width: 30px; height: 20px; }
+.mark-int, .mark-going, .mark-host-int { width: 30px; height: 20px; }
 .mark-host { width: 27px; height: 26px; } /* the ring itself is 24px */
 .card .mark, .myplan .mark { --mark-bg: var(--surface); }
 .mark-int { --dol-body: var(--stripe); --dol-belly: color-mix(in srgb, var(--stripe) 35%, #fff); --dol-edge: var(--text); --dol-mouth: #0E2A40; }
-.mark-going, .mark-host { --dol-body: var(--text); --dol-belly: var(--stripe); --dol-edge: none; --dol-mouth: var(--page); }
+.mark-going, .mark-host, .mark-host-int { --dol-body: var(--text); --dol-belly: var(--stripe); --dol-edge: none; --dol-mouth: var(--page); }
 .dol-edge { fill: none; stroke: var(--dol-edge, none); stroke-width: 1.8; stroke-linejoin: round; }
 .dol-body { fill: var(--dol-body); }
 .dol-belly { fill: var(--dol-belly); }

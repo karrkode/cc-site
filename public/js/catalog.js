@@ -55,7 +55,7 @@ function leadHTML(e) {
     '<span class="lead-in"><span class="lead-k">The crew’s pick · ' + esc(e.label) + "</span>" +
     '<h2 class="lead-t">' + esc(e.title) + "</h2>" +
     '<span class="lead-deck">' + esc(leadDeck(e)) + "</span>" +
-    '<span class="lead-by">' + markHTML("host", pickText(p)) + "<span>" + esc(by) + "</span></span></span></a>";
+    '<span class="lead-by">' + pickMarkHTML(p, pickText(p)) + "<span>" + esc(by) + "</span></span></span></a>";
 }
 // A Last chance item: "Closes today" or "Closes Friday" in red, then the name, then venue · price.
 function lastWhen(e) {
@@ -387,7 +387,7 @@ function evCrewHTML(c) {
 function evHostHTML(e) {
   var me = AUTH.user && AUTH.user.dolphins && MYPLANS[e.id] ? (AUTH.user.display_name || "").trim() : null;
   if (!e.pick || e.pick.by === me) return "";
-  return '<div class="ev-crew"><p class="ev-who">' + markHTML("host") + "<span>" + esc(pickText(e.pick)) + "</span></p></div>";
+  return '<div class="ev-crew"><p class="ev-who">' + pickMarkHTML(e.pick) + "<span>" + esc(pickText(e.pick)) + "</span></p></div>";
 }
 // CC-112: members' shared journal entries, newest first: three words, the review, who and whether they'd recommend
 // it. Admins also see hidden ones (marked) and can hide or unhide each; the member's entry isn't touched.

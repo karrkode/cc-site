@@ -88,6 +88,7 @@ assert.match(html, /<span>Going \w{3}, \w{3} \d+ · \w{3} \d+ – \w{3} \d+ · \
 const fallback = g.leadHTML(interested({ title: "A <b>" }));
 assert.match(fallback, /<h2 class="lead-t">A &lt;b&gt;<\/h2>/, "titles are escaped");
 assert.match(fallback, /<span>Interested · /);
+assert.match(fallback, /class="mark mark-host-int" role="img"/, "CC-162: interested: the dolphin without the ring");
 
 // --- Last chance ---
 assert.strictEqual(g.lastWhen(ev({ end_date: iso(g.T) })), "Closes today");

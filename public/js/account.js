@@ -232,20 +232,19 @@ function weekCrewHTML(e) {
   return '<p class="crew-line"><span class="dots" aria-hidden="true">' + names.slice(0, LISTING_DOTS).map(function (n) { return crewDotHTML(n); }).join("") +
     "</span><span>" + esc(note) + "</span></p>";
 }
-// An event row: the tile, name, venue and time (with your dolphin) are one link to the event page; the buttons follow,
+// An event row: the tile, name, venue and time are one link to the event page; the buttons follow,
 // since they can't sit inside a link. d is the day it's planned for; without one it's a Still deciding row.
 function weekRowHTML(e, d) {
   var mine = MYPLANS[e.id] || {}, going = mine.status === "going", id = esc(e.id);
   var when = d ? dayTimesText(e, d) : going ? "Going " + goingDay(mine.date) : dateText(e);
-  var own = AUTH.user.dolphins ? "" : markHTML(going ? "going" : "interested", going ? "You're going" : "You're interested"); // an owner's own plan is their ring (CC-139)
   var acts = d ? myplanToggleHTML(e) + crewShareToggleHTML(e, "Tell a crew") : // the toggles first: their pickers take the same number
     myplanToggleHTML(e, goingRange(e) ? "Pick a day" : "Change plan") + wentHTML(e) + crewShareToggleHTML(e, "Tell a crew") + // closed: no day left to pick
     (going ? "" : '<button type="button" class="went" data-plan-withdraw="' + id + '">Withdraw interest</button>'); // CC-160: undone from the line above
   return '<li class="wk-row" data-day-item="' + id + '"><a class="wk-row-a" href="#e/' + id + '" data-ev-open="' + id + '">' +
     '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + '<span class="tile-k">' + esc(e.label) + "</span></span>" +
-    '<span class="listing-t">' + esc(e.title) + (e.pick ? markHTML("host", pickText(e.pick)) : "") + "</span>" +
+    '<span class="listing-t">' + esc(e.title) + (e.pick ? pickMarkHTML(e.pick, pickText(e.pick)) : "") + "</span>" +
     '<span class="wk-where">' + esc(placeText(e)) + "</span>" +
-    '<span class="wk-when">' + (when ? "<span>" + esc(when) + "</span>" : "") + own + "</span></a>" +
+    '<span class="wk-when">' + (when ? "<span>" + esc(when) + "</span>" : "") + "</span></a>" +
     weekCrewHTML(e) + '<div class="card-actions wk-acts">' + acts + "</div>" + myplanHTML(e) + crewShareHTML(e) + "</li>";
 }
 // One day: its name, then its plans as rows, or "Nothing yet…" and Find something (the list opens under it).

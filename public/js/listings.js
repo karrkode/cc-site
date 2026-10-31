@@ -35,9 +35,8 @@ function listingCrewHTML(e) {
 
 function listingHTML(e) {
   var mine = AUTH.user ? MYPLANS[e.id] : null, going = !!mine && mine.status === "going";
-  // the host's gold ring, then your own lake or ink dolphin (an owner's own plan is already their ring, CC-139)
-  var marks = (e.pick ? markHTML("host", pickText(e.pick)) : "") +
-    (mine && !AUTH.user.dolphins ? markHTML(going ? "going" : "interested", going ? "You're going" : "You're interested") : "");
+  // CC-162: a dolphin on a row is only ever the admin's pick; your own plan shows as "Going Fri" under the date
+  var marks = e.pick ? pickMarkHTML(e.pick, pickText(e.pick)) : "";
   return '<a class="listing" href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '" data-listing="' + esc(e.id) + '">' +
     '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + '<span class="tile-k">' + esc(e.label) + "</span></span>" +
     '<span class="listing-main"><span class="listing-t">' + esc(e.title) + marks + "</span>" +
