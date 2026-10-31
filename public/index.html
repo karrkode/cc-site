@@ -244,7 +244,9 @@
           <button type="button" role="menuitem" tabindex="-1" data-me="signout">Sign out</button>
         </span>
       </span>
-      <button class="navlink theme-toggle" type="button" id="theme-toggle" aria-pressed="false">Lights down</button>
+      <!-- CC-161: the button names the change it will make. CSS shows the label for the theme the <head> script set,
+           so it's right on first paint; the hidden one is display:none, so it isn't part of the accessible name. -->
+      <button class="navlink theme-toggle" type="button" id="theme-toggle"><span class="to-dark">Lights down</span><span class="to-light">Lights up</span></button>
     </nav>
     <p class="mast-tag">Chicago theater, music and visual art, kept by the crew</p>
   </div>

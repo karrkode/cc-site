@@ -93,7 +93,9 @@ a { color: inherit; }
 }
 .navlink:hover { text-decoration: underline 1px; }
 .navlink[aria-current="page"] { text-decoration: underline 3px var(--stripe); }
-.theme-toggle { display: inline-flex; align-items: center; justify-content: space-between; gap: 12px; } /* "Lights down" (CC-136): pressed while it's dark */
+.theme-toggle { display: inline-flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* CC-161: "Lights down" in the light theme, "Lights up" in the dark one: the label names the change it will make */
+:root:not([data-theme="dark"]) .theme-toggle .to-light, :root[data-theme="dark"] .theme-toggle .to-dark { display: none; }
 .mast .count:not(:empty) { margin-left: 6px; color: var(--on-lake-muted); font-variant-numeric: tabular-nums; }
 .mast-full { border-bottom: 0; }
 .mast-full .mast-in { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "date nav" "brand brand" "tag tag"; gap: 0 24px; padding-block: 14px 22px; }
@@ -130,8 +132,6 @@ a { color: inherit; }
   }
   .mast.open .navlink[aria-current="page"], .mast.open .me-menu [aria-current="page"] { font-weight: 800; text-decoration: underline 3px var(--stripe); }
   .mast.open .count:not(:empty) { color: var(--muted); }
-  .mast.open .theme-toggle::after { content: "Off" / ""; color: var(--muted); }
-  .mast.open .theme-toggle[aria-pressed="true"]::after { content: "On" / ""; }
 }
 
 .lede { max-width: 54ch; font-size: 1.125rem; color: var(--muted); }

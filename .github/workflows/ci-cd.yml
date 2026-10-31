@@ -47,6 +47,8 @@ jobs:
         run: node scripts/test_rest.js
       - name: Back, Forward and a reload keep to the view in the address
         run: node scripts/test_routing.js
+      - name: The theme button says Lights down in the light theme and Lights up in the dark one, from the first paint
+        run: node scripts/test_theme.js
       - name: Asset links can be stamped for deploy
         run: python3 scripts/stamp_assets.py
       - name: JavaScript syntax
