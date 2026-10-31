@@ -3,19 +3,15 @@
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- light/dark switch (CC-49), "Lights down" since CC-136 ----------
-// The theme itself is set in <head> before the page paints; this is just the button. It's pressed while it's dark.
+// The theme itself is set in <head> before the page paints; this is just the button. CC-161: its label names the
+// change it will make ("Lights down" or "Lights up"), and site.css picks it from data-theme, so there's no
+// aria-pressed: a toggle whose name changes with its state would read as "Lights up, pressed".
 (function () {
-  var btn = document.getElementById("theme-toggle");
-  function label() {
-    btn.setAttribute("aria-pressed", String(document.documentElement.getAttribute("data-theme") === "dark"));
-  }
-  btn.addEventListener("click", function () {
-    var t = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+  document.getElementById("theme-toggle").addEventListener("click", function () {
+    var t = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", t);
     try { localStorage.setItem("cc_theme", t); } catch (e) {} // blocked storage: it works until the page is closed
-    label();
   });
-  label();
 })();
 
 // ---------- talking to the API ----------
