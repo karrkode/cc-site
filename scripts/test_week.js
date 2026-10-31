@@ -92,6 +92,26 @@ set("AUTH.user.dolphins = false; CREWS = [];");
 lacks(g.weekRowHTML(maybe), "Tell a crew", "no crews, nobody to tell");
 set("CREWS = [{ id: 7, name: 'Thursday Theater' }];");
 
+// --- CC-160: Withdraw interest on an interested plan, with Undo at the top of Still deciding ---
+has(g.weekRowHTML(maybe), 'class="went" data-plan-withdraw="' + maybe.id + '">Withdraw interest</button>', "a fourth option");
+const past = ev({ title: "Past going" });
+plan(past, "going", iso(g.add(g.T, -1)));
+lacks(g.weekRowHTML(past), "data-plan-withdraw", "a going plan for a day that's passed couldn't be put back");
+lacks(g.weekRowHTML(going, day), "data-plan-withdraw", "not in the week itself");
+assert.strictEqual(g.withdrawnHTML(), "", "nothing withdrawn, no line");
+set("WITHDRAWN = { id: " + JSON.stringify(maybe.id) + ", title: 'Matt & Ben', mine: { status: 'interested', date: null, crews: [7] } }; delete MYPLANS[" + JSON.stringify(maybe.id) + "];");
+html = g.withdrawnHTML();
+has(html, 'Withdrew your interest in <span class="week-undo-t">Matt &amp; Ben</span>.', "says what went, escaped");
+has(html, 'id="deciding-undo-btn" data-plan-undo="' + maybe.id + '">Undo</button>', "Undo, right away");
+lacks(html, "week-error");
+set("WITHDRAWN.error = 'that event is no longer listed.';");
+has(g.withdrawnHTML(), '<p class="week-error" role="alert">Check this: that event is no longer listed.</p>', "a failed Undo says Check this:");
+plan(maybe, "interested");
+assert.strictEqual(g.withdrawnHTML(), "", "marked again some other way: the line goes");
+const css = fs.readFileSync(path.join(__dirname, "..", "public", "css", "site.css"), "utf8");
+assert.ok(/\.wk-acts \.went \{[^}]*min-height: 44px/.test(css), "the option is at least 44px, like its row's other buttons");
+assert.ok(/\.week-tbtn \{[^}]*min-height: 44px/.test(css), "Undo is at least 44px");
+
 // --- the week range ---
 assert.strictEqual(g.weekRangeText(new Date(g.T.getFullYear(), 9, 30), new Date(g.T.getFullYear(), 10, 5)), "Oct 30 – Nov 5");
 assert.strictEqual(g.weekRangeText(new Date(g.T.getFullYear(), 10, 6), new Date(g.T.getFullYear(), 10, 12)), "Nov 6 – 12");
@@ -126,4 +146,4 @@ html = g.journalEntryHTML(fresh, true);
 has(html, '<img class="journal-thumb" src="/p/1.jpg" alt="">', "your photo on the tile");
 has(html, "<figcaption>Waiting for approval</figcaption>", "its state in words");
 
-console.log("ok: My week (CC-146)");
+console.log("ok: My week (CC-146, CC-160)");
