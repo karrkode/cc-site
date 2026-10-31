@@ -1,8 +1,9 @@
 // ---------- listings as rows (CC-140) ----------
 // The catalog and the home page list events the way a newspaper's listings page does (design brief, section 5): rows
 // under day heads ("Opening Friday, Oct 30"), each with its tile (the category field and the event's water), dates,
-// name, venue and crew line, and price. The whole row is one link to the event's page, so a row holds no buttons:
-// I've been, Interested/Going and sharing are on the event page (CC-117). Account's "Still deciding" keeps cardHTML.
+// name, venue and crew line, and price. The name is the link to the event's page, stretched over the whole row; the
+// admin's dolphin beside it is the row's one button (CC-155). I've been, Interested/Going and sharing are on the event
+// page (CC-117). Account's "Still deciding" keeps cardHTML.
 "use strict";
 var LISTING_DAY = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "short", day: "numeric" });
 function listingDay(d) { return LISTING_DAY.format(d) + (d.getFullYear() === T.getFullYear() ? "" : ", " + d.getFullYear()); }
@@ -36,16 +37,49 @@ function listingCrewHTML(e) {
 function listingHTML(e) {
   var mine = AUTH.user ? MYPLANS[e.id] : null, going = !!mine && mine.status === "going";
   // CC-162: a dolphin on a row is only ever the admin's pick; your own plan shows as "Going Fri" under the date
-  var marks = e.pick ? pickMarkHTML(e.pick, pickText(e.pick)) : "";
-  return '<a class="listing" href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '" data-listing="' + esc(e.id) + '">' +
+  return '<div class="listing" data-listing="' + esc(e.id) + '">' +
     '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + '<span class="tile-k">' + esc(e.label) + "</span></span>" +
-    '<span class="listing-main"><span class="listing-t">' + esc(e.title) + marks + "</span>" +
+    '<span class="listing-main"><span class="listing-t"><a class="listing-a" href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '">' +
+    esc(e.title) + "</a>" + listingPickHTML(e) + "</span>" +
     '<span class="listing-where">' + esc(placeText(e)) + "</span>" +
     (e.suggestedBy ? '<span class="listing-where">Suggested by ' + esc(e.suggestedBy) + "</span>" : "") + listingCrewHTML(e) + "</span>" +
     '<span class="listing-meta"><span class="listing-when">' + esc(dateText(e)) +
     (going ? '<span class="going-day">Going ' + esc(goingDay(mine.date)) + "</span>" : "") + "</span>" +
-    '<span class="listing-cost">' + esc(costText(e)) + "</span></span></a>";
+    '<span class="listing-cost">' + esc(costText(e)) + "</span></span></div>";
 }
+
+// CC-155: the admin's pick beside the name, as a button that says what it means: its name is the event page's
+// sentence ("Yours truly is committed to seeing this."), shown in a tip on hover, keyboard focus or a tap. The tip
+// lives on the page body, like the crew counts' (crews.js), so the row's edges and the views' transforms don't clip it.
+function listingPickHTML(e) {
+  if (!e.pick) return "";
+  return '<button type="button" class="row-pick" data-row-pick aria-label="' + esc(pickText(e.pick)) + '">' + pickMarkHTML(e.pick) + "</button>";
+}
+var ROW_TIP = { el: null, by: null, tapped: false }; // by: the button it's open for; tapped: opened by a click or tap
+function rowTip(b, tapped) {
+  if (!ROW_TIP.el) { ROW_TIP.el = document.createElement("div"); ROW_TIP.el.className = "crew-tip"; ROW_TIP.el.setAttribute("aria-hidden", "true"); document.body.appendChild(ROW_TIP.el); }
+  ROW_TIP.by = b; ROW_TIP.tapped = !!(b && tapped);
+  if (!b) { ROW_TIP.el.hidden = true; return; }
+  var r = b.getBoundingClientRect(), tip = ROW_TIP.el;
+  tip.textContent = b.getAttribute("aria-label"); tip.hidden = false;
+  tip.style.left = Math.max(8, Math.min(r.left, window.innerWidth - tip.offsetWidth - 8)) + "px";
+  tip.style.top = (r.top - tip.offsetHeight - 4 < 8 ? r.bottom + 4 : r.top - tip.offsetHeight - 4) + "px"; // below it at the top of the window
+}
+document.addEventListener("click", function (ev) {
+  var b = ev.target.closest && ev.target.closest("[data-row-pick]");
+  rowTip(b && !(ROW_TIP.by === b && ROW_TIP.tapped) ? b : null, true); // a tap opens it, a second tap or a tap elsewhere closes it
+});
+document.addEventListener("pointerover", function (ev) {
+  if (ev.pointerType !== "mouse") return;
+  var b = ev.target.closest && ev.target.closest("[data-row-pick]");
+  if (b) { if (ROW_TIP.by !== b) rowTip(b); } else if (ROW_TIP.by && !ROW_TIP.tapped && ROW_TIP.by !== document.activeElement) rowTip(null);
+});
+document.addEventListener("focusin", function (ev) {
+  var b = ev.target.closest && ev.target.closest("[data-row-pick]");
+  if (b && b.matches(":focus-visible")) rowTip(b); else if (!b) rowTip(null);
+});
+document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && ROW_TIP.by) rowTip(null); });
+document.addEventListener("scroll", function () { if (ROW_TIP.by) rowTip(null); }, true);
 
 // Rows under their heads. Events with the same head are next to each other in every sort that has heads, so a new
 // head starts whenever it changes.

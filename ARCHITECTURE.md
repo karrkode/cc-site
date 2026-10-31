@@ -223,4 +223,4 @@ CloudWatch keeps the logs. If a scheduled job or a deploy fails, CloudWatch send
 3. The API makes sure that the user is signed in.
 4. The API writes the plan to the `plans` table.
 5. The API sends the plan back to the browser.
-6. The site shows the lake dolphin after the event's name in its listing row.
+6. The event page shows the plan. A listing row shows "Going Fri" under the date for Going. Dolphins on rows are only the admin's picks (CC-162), as a button after the name that says what the mark means (CC-155).
