@@ -550,8 +550,9 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 ::view-transition-old(poster), ::view-transition-new(poster) { width: 100%; height: 100%; object-fit: cover; } /* cropped to the moving box, never stretched */
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 220ms; }
 /* the Going leap and its rings, fixed over the page while it redraws (catalog.js evLeap) */
-.mark.leaper { position: fixed; left: 0; top: 0; width: 44px; height: 29px; pointer-events: none; z-index: 60; --dol-body: var(--star); --dol-belly: #fff; --dol-mouth: #fff; }
-.ripple { position: fixed; left: 0; top: 0; width: 64px; height: 18px; margin: -9px 0 0 -32px; border: 2px solid var(--star); border-radius: 50%; pointer-events: none; z-index: 59; }
+/* CC-154: the lake dolphin (.mark-int's colours) and lake rings, no red */
+.mark.leaper { position: fixed; left: 0; top: 0; width: 44px; height: 29px; pointer-events: none; z-index: 60; }
+.ripple { position: fixed; left: 0; top: 0; width: 64px; height: 18px; margin: -9px 0 0 -32px; border: 2px solid var(--stripe); border-radius: 50%; pointer-events: none; z-index: 59; }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
   .leaper, .ripple { display: none; }

@@ -190,6 +190,17 @@ document.addEventListener("click", function (ev) {
   if (on) evLeap(t, t.getAttribute("data-myplan-going"));
   saveMyPlan(t.getAttribute("data-myplan-going"), { status: "going", date: day }, box, back);
 });
+// CC-154: on the event page the date field shows once you're going, so changing it saves the new day
+document.addEventListener("change", function (ev) {
+  var input = ev.target; if (input.id !== "ev-going-day" || !AUTH.user) return;
+  var box = input.closest(".myplan"), day = input.value, id = box.querySelector("[data-myplan-going]").getAttribute("data-myplan-going");
+  if (!day || day < input.min || day > input.max) {
+    box.querySelector(".form-error").textContent = !day ? "Choose a date." :
+      "Choose a date from " + goingDay(input.min) + " to " + goingDay(input.max) + ".";
+    return;
+  }
+  saveMyPlan(id, { status: "going", date: day }, box, "#ev-going-day");
+});
 document.addEventListener("keydown", function (ev) { // Escape closes the picker and returns to its button
   if (ev.key !== "Escape") return;
   var box = ev.target.closest && ev.target.closest(".myplan"); if (!box) return;

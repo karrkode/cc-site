@@ -172,11 +172,11 @@ assert.strictEqual(c.g.posterSource(null), null);
 
   // ---------- the dolphins ----------
   function dolphins(reduce) {
-    const anims = [], body = [];
+    const anims = [], body = [], marks = [];
     const mk = (cls) => ({ cls, animate(k, o) { const a = { k, o, currentTime: 0 }; anims.push([cls, a]); return a; }, remove() {}, classList: { add() {} },
       setAttribute() {}, getBoundingClientRect: () => ({ left: 100, top: 200, width: 30, height: 20 }), querySelector: () => null });
     const g = {
-      motionOK: () => !reduce, performance: { now: () => 0 }, markHTML: () => "<svg>",
+      motionOK: () => !reduce, performance: { now: () => 0 }, markHTML: (kind) => { marks.push(kind); return "<svg>"; },
       document: { body: { insertAdjacentHTML() { body.push(mk("leaper")); }, get lastElementChild() { return body[body.length - 1]; }, appendChild() {} },
         createElement: () => mk("ripple") },
       console,
@@ -184,7 +184,7 @@ assert.strictEqual(c.g.posterSource(null), null);
     vm.createContext(g);
     vm.runInContext(CATALOG.match(/var EV_MOTION[\s\S]*?\nvar NOD = [\s\S]*?};\n/)[0] + helper(CATALOG, "evLeap") + helper(CATALOG, "evRipples") + helper(CATALOG, "evNod"), g);
     const mark = mk("mark"), btn = Object.assign(mk("btn"), { querySelector: () => mark });
-    return { g, anims, btn };
+    return { g, anims, btn, marks };
   }
   let d = dolphins(false);
   d.g.evLeap(d.btn, "7");
@@ -192,6 +192,7 @@ assert.strictEqual(c.g.posterSource(null), null);
   assert.strictEqual(leap.o.duration, 760); assert.strictEqual(leap.o.easing, "cubic-bezier(.33,0,.4,1)");
   assert.strictEqual(leap.k[0].opacity, 0); assert.strictEqual(leap.k[leap.k.length - 1].opacity, 0, "out of the button and back in");
   assert.strictEqual(d.g.EV_MOTION.you, "7", "then You're going slides in");
+  assert.deepStrictEqual(d.marks, ["interested"], "CC-154: the lake dolphin leaps, not the ink one");
   leap.onfinish();
   const rings = d.anims.filter((x) => x[0] === "ripple").map((x) => x[1].o);
   assert.deepStrictEqual(rings.map((o) => [o.duration, o.delay]), [[620, 0], [620, 130]], "two rings on landing, 130ms apart");
@@ -202,11 +203,16 @@ assert.strictEqual(c.g.posterSource(null), null);
   d.g.evLeap(d.btn, "7"); d.g.evNod(d.btn, "7");
   assert.strictEqual(d.anims.length, 0, "reduced motion: no leap, nod or rings");
   assert.strictEqual(d.g.EV_MOTION.you, null, "and no slide");
+  assert.deepStrictEqual(d.marks, [], "and no dolphin is added");
   assert.ok(/if \(on\) evLeap\(/.test(read("js/account.js")) && /if \(on\) evNod\(/.test(read("js/account.js")), "only turning Going or Interested on moves a dolphin");
 
   // ---------- site.css: the brief's timings ----------
   const css = read("css/site.css");
   const rule = (sel) => { const m = css.match(new RegExp(sel.replace(/[()[\].]/g, "\\$&") + "[^{]*\\{([^}]*)\\}")); return m ? m[1] : ""; };
+  // CC-154: the leap and its rings are lake, with no red in either theme
+  assert.ok(!/--dol-|--star/.test(rule(".mark.leaper")), "the leaper keeps .mark-int's lake colours");
+  assert.ok(/border: 2px solid var\(--stripe\)/.test(rule(".ripple")) && !/--star/.test(rule(".ripple")), "lake rings");
+  assert.ok(/\.leaper, \.ripple \{ display: none; \}/.test(css), "reduced motion hides them");
   assert.ok(/animation-duration: 440ms/.test(rule("::view-transition-group(poster), ::view-transition-group(ev-title)")), "440ms forward");
   assert.ok(/cubic-bezier\(\.2, \.8, \.2, 1\)/.test(rule("::view-transition-group(poster), ::view-transition-group(ev-title)")));
   assert.ok(/animation-duration: 340ms/.test(rule(".vt-back::view-transition-group(poster)")), "340ms back");

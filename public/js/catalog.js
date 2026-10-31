@@ -407,17 +407,18 @@ function evTakesHTML(e) {
     }).join("") + "</ol></section>";
 }
 // CC-142: Interested and Going as buttons on the page (the cards' picker, laid out in it: the same data-myplan-*
-// buttons, so account.js saves them). A run picks its day in the date field; a one-night event needs none.
+// buttons, so account.js saves them). A one-night event needs no date. CC-154: a run shows its date field only once
+// you're going: turning Going on takes the first day still open, and changing the date saves it (account.js).
 function evPlanHTML(e) {
   var mine = MYPLANS[e.id], range = goingRange(e), id = esc(e.id);
   if (WENT[e.id] || (!mine && !range)) return ""; // been already, or closed with nothing planned
   var going = "";
   if (range) {
-    var one = same(range[0], range[1]), on = !!mine && mine.status === "going";
-    going = '<button class="btn ghost" type="button" data-myplan-going="' + id + '"' + (one ? ' data-date="' + isoDate(range[0]) + '"' : "") +
+    var one = same(range[0], range[1]), on = !!mine && mine.status === "going", field = on && !one;
+    going = '<button class="btn ghost" type="button" data-myplan-going="' + id + '"' + (field ? "" : ' data-date="' + isoDate(range[0]) + '"') +
       ' aria-pressed="' + on + '">' + markHTML("going") + "Going</button>" +
-      (one ? "" : '<input type="date" id="ev-going-day" aria-label="The day you’re going" min="' + isoDate(range[0]) + '" max="' + isoDate(range[1]) +
-        '" value="' + esc(on && mine.date ? mine.date : isoDate(range[0])) + '">');
+      (field ? '<input type="date" id="ev-going-day" aria-label="The day you’re going" min="' + isoDate(range[0]) + '" max="' + isoDate(range[1]) +
+        '" value="' + esc(mine.date || isoDate(range[0])) + '">' : "");
   }
   return '<div class="ev-plan myplan" role="group" aria-label="Your plan for ' + esc(e.title) + '"><div class="row">' +
     '<button class="btn ghost" type="button" data-myplan-set="' + id + '" aria-pressed="' + (!!mine && mine.status === "interested") + '">' +
@@ -562,7 +563,7 @@ function posterMove(src, back, swap) {
 }
 
 // ---------- the dolphins (CC-144) ----------
-// Turning Going on, a dolphin leaps out of the button, over it and back in, and two star-red rings ripple where it
+// Turning Going on, a dolphin leaps out of the button, over it and back in, and two lake rings ripple where it (CC-154: the lake dolphin, no red)
 // lands; then "You're going" slides into Your crews. Turning Interested on, its lake dolphin nods. Turning either off
 // just changes state, and so does everything with reduced motion. Saving redraws the page under them, so the leap and
 // rings are fixed to the screen above it, and the nod carries on in the redrawn button (evMotionCarry).
@@ -573,7 +574,7 @@ function evLeap(btn, id) {
   if (!motionOK() || !btn.animate) return;
   EV_MOTION.you = id;
   var icon = (btn.querySelector(".mark") || btn).getBoundingClientRect(), x = icon.left + icon.width / 2, y = icon.top + icon.height / 2;
-  document.body.insertAdjacentHTML("beforeend", markHTML("going"));
+  document.body.insertAdjacentHTML("beforeend", markHTML("interested")); // CC-154: the lake dolphin leaps
   var d = document.body.lastElementChild; d.classList.add("leaper");
   // from 64px left of the button's dolphin, up 86px, and nose-down back into it (#dolphin already leans −21°)
   var sx = x - 64, sy = y + 6, at = function (dx, dy, rot) { return "translate(" + (sx + dx - 22) + "px," + (sy + dy - 14) + "px) rotate(" + (rot + 21) + "deg)"; };
