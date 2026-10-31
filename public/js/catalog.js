@@ -382,6 +382,13 @@ function evCrewHTML(c) {
   var lines = line(c.going, " is going", " are going") + line(c.interested, " is interested", " are interested") + line(c.been, " has been", " have been");
   return lines ? '<div class="ev-crew"><h3>' + esc(c.crew_name) + "</h3><ul>" + lines + "</ul></div>" : "";
 }
+// The host's pick under Your crews, in the host's voice ("Yours truly is interested in this one."). CC-152: not when
+// it's your own plan (an owner with the dolphins setting): that shows as your plan, not as somebody else's line.
+function evHostHTML(e) {
+  var me = AUTH.user && AUTH.user.dolphins && MYPLANS[e.id] ? (AUTH.user.display_name || "").trim() : null;
+  if (!e.pick || e.pick.by === me) return "";
+  return '<div class="ev-crew"><p class="ev-who">' + markHTML("host") + "<span>" + esc(pickText(e.pick)) + "</span></p></div>";
+}
 // CC-112: members' shared journal entries, newest first: three words, the review, who and whether they'd recommend
 // it. Admins also see hidden ones (marked) and can hide or unhide each; the member's entry isn't touched.
 function evTakesHTML(e) {
@@ -444,7 +451,7 @@ function eventViewHTML(e) {
   var you = AUTH.user && MYPLANS[e.id] && MYPLANS[e.id].status === "going" ? '<div class="ev-you"><p class="ev-who"><span class="dots" aria-hidden="true">' +
     '<span class="face face-you">You</span></span><span>You’re going</span></p></div>' : "";
   var side = '<aside class="ev-side" aria-labelledby="ev-crews-h"><h2 id="ev-crews-h">Your crews</h2>' + you +
-    (e.pick ? '<div class="ev-crew"><p class="ev-who">' + markHTML("host") + "<span>" + esc(pickText(e.pick)) + "</span></p></div>" : "");
+    evHostHTML(e);
   if (!AUTH.user) {
     main += "</div>";
     side += '<p class="hint">Sign in to mark it interested or going, and to see who from your crews is going.</p>' +
