@@ -85,7 +85,7 @@ has(html, "· Closed</p>"); has(html, "This run has closed."); lacks(html, "Tick
 e = ev({ pick: { status: "interested", date: null, by: "The Culture Crew" } });
 html = g.eventViewHTML(e);
 lacks(html, "data-myplan-"); has(html, 'id="ev-signin-btn"');
-has(html, 'class="mark mark-host"', "the host's ring"); has(html, "The Culture Crew is interested in this one.");
+has(html, 'class="mark mark-host-int"', "the admin interested: the ink dolphin (CC-162)"); has(html, "The Culture Crew is interested in this one.");
 
 // --- signed in: Interested and Going on the page, pressed as your plan says ---
 g.AUTH.user = { id: 1, name: "Local User", role: "member" };

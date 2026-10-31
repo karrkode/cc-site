@@ -91,10 +91,14 @@ assert.ok(!/<button|<input|<select/.test(row), "no controls inside a link");
 assert.match(row, /class="tile water-field cat-art"><canvas class="water" aria-hidden="true" data-water="tile"/);
 assert.match(row, /<span class="tile-k">Visual Art<\/span>/);
 assert.match(row, /Dawoud Bey &lt;Street&gt;/, "titles are escaped");
-assert.match(row, /class="mark mark-host" role="img" aria-label="Andrew is committed to seeing this\."/, "the host's ring says what it means");
+assert.match(row, /class="mark mark-host" role="img" aria-label="Andrew is committed to seeing this\."/, "the admin going: the gold ring, which says what it means");
 assert.match(row, /Steppenwolf · Lincoln Park/);
 assert.match(row, /<span class="listing-cost">Free<\/span>/);
 assert.ok(!/crewline|mark-int|mark-going/.test(row), "signed out: no crew line and no plans of your own");
+// CC-162: the admin interested: the ink dolphin, not the ring
+row = g.listingHTML(ev({ pick: { status: "interested", date: null, by: "Andrew" } }));
+assert.match(row, /class="mark mark-host-int" role="img" aria-label="Andrew is interested in this one\."><use href="#dolphin">/, "the ink dolphin says what it means");
+assert.ok(!/mark-host"|dolphin-ring/.test(row), "no ring for interest");
 
 // --- a row, signed in ---
 g.AUTH.user = { id: 7, dolphins: false };
@@ -107,18 +111,19 @@ row = g.listingHTML(crewed);
 assert.match(row, />3 from your crew<\/span>/, "names count once across crews; been-only isn't counted");
 assert.strictEqual((row.match(/class="face tone-\d"/g) || []).length, 3);
 assert.match(row, /<span class="dots" aria-hidden="true"><span class="face tone-\d">MC<\/span>/);
-assert.match(row, /class="mark mark-int" role="img" aria-label="You&#39;re interested"/);
+assert.ok(!/class="mark /.test(row), "CC-162: no dolphin for your own interest");
 const going = ev({});
 g.MYPLANS[going.id] = { status: "going", date: iso(fri) };
 row = g.listingHTML(going);
-assert.match(row, /class="mark mark-going" role="img" aria-label="You&#39;re going"/);
+assert.ok(!/class="mark /.test(row), "CC-162: nor for your own going; the day says it");
 assert.match(row, /<span class="going-day">Going /);
+going.pick = { status: "going", date: null, by: "Andrew" };
+assert.strictEqual((g.listingHTML(going).match(/class="mark /g) || []).length, 1, "both going: only the admin's ring");
+delete going.pick;
 assert.ok(!/crewline/.test(row), "no crew-mates: no crew line");
 const many = ev({ crew_plans: [{ crew_id: 1, crew_name: "A", going: ["A A", "B B", "C C", "D D", "E E"], interested: [], been: [] }] });
 row = g.listingHTML(many);
 assert.strictEqual((row.match(/class="face /g) || []).length, 4, "at most four dots");
 assert.match(row, />5 from your crew</);
-g.AUTH.user.dolphins = true; // the owner: their plan is already the gold ring
-assert.ok(!/mark-going/.test(g.listingHTML(going)));
 
 console.log("listings: ok");

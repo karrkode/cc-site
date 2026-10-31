@@ -51,11 +51,11 @@ PAIRS = [  # (foreground, background, minimum, where it's used)
     ("on-cat", "cat-art+24%", LARGE, "poster kicker, title and venue (all large) across an art poster's water"),
     # CC-139: the host's gold ring. In light the pale gold is ~1.4:1 on the page, so its rim carries it; on a field
     # (the lead pick, the poster) the gold itself does. The lake dolphin's edge is --text, checked above.
-    ("gold-rim", "page", NON_TEXT, "the host's ring and star, their rim"),
-    ("gold-rim", "surface", NON_TEXT, "the host's ring on a card"),
-    ("gold", "cat-theater", NON_TEXT, "the host's ring on a theater field"),
-    ("gold", "cat-music", NON_TEXT, "the host's ring on a music field"),
-    ("gold", "cat-art", NON_TEXT, "the host's ring on an art field"),
+    ("gold-rim", "page", NON_TEXT, "the admin's ring and star, their rim"),
+    ("gold-rim", "surface", NON_TEXT, "the admin's ring on a card"),
+    ("gold", "cat-theater", NON_TEXT, "the admin's ring on a theater field"),
+    ("gold", "cat-music", NON_TEXT, "the admin's ring on a music field"),
+    ("gold", "cat-art", NON_TEXT, "the admin's ring on an art field"),
     # CC-145: the crews page. Invites waiting on the pale blue band; a "yes?" on the pale red band, with its buttons
     ("focus", "info-soft", NON_TEXT, "focus ring on the invites band"),
     ("text", "danger-soft", TEXT, "a button's label and outline on the confirm band"),

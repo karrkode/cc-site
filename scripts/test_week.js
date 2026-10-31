@@ -70,25 +70,30 @@ const link = row.match(/<a class="wk-row-a"[\s\S]*?<\/a>/)[0];
 has(link, 'href="#e/' + going.id + '" data-ev-open="' + going.id + '"', "the row opens the event page");
 has(link, '<span class="tile water-field cat-theater">', "with its tile");
 has(link, '<span class="listing-t">Heroes of the Fourth Turning</span>');
-has(link, 'class="mark mark-going" role="img" aria-label="You&#39;re going"', "the ink dolphin");
+lacks(link, "mark mark-", "CC-162: no dolphin for your own plan; the day says it");
 lacks(link, "<button", "no buttons inside a link");
 has(row, ">Change plan</button>"); has(row, ">Tell a crew</button>");
 lacks(row, "Pick a day"); lacks(row, "I've been", "not before the day");
 has(row, 'class="myplan"', "the picker is there to open");
 
-// --- Still deciding: Pick a day and I've been, the lake dolphin; a closed event can only change its plan ---
+// --- Still deciding: Pick a day and I've been; a closed event can only change its plan ---
 const maybe = ev({ title: "Matt & Ben" });
 plan(maybe, "interested");
 html = g.weekRowHTML(maybe);
 has(html, ">Pick a day</button>"); has(html, "I've been</button>"); has(html, ">Tell a crew</button>");
-has(html, 'class="mark mark-int" role="img" aria-label="You&#39;re interested"', "the lake dolphin");
+lacks(html.match(/<a class="wk-row-a"[\s\S]*?<\/a>/)[0], "mark mark-", "CC-162: no dolphin for your own interest");
+has(html, '<span class="wk-when"><span>', "the date in words");
 has(html, "Matt &amp; Ben", "escaped");
 const closed = ev({ begin_date: iso(g.add(g.T, -20)), end_date: iso(g.add(g.T, -2)) });
 plan(closed, "interested");
 has(g.weekRowHTML(closed), ">Change plan</button>", "no day left to pick");
-set("AUTH.user.dolphins = true;");
-lacks(g.weekRowHTML(maybe).match(/<a class="wk-row-a"[\s\S]*?<\/a>/)[0], "mark-int", "an owner's own plan is their ring");
-set("AUTH.user.dolphins = false; CREWS = [];");
+// CC-162: the admin's pick on a row: the ink dolphin when they're interested, the gold ring when they're going
+const picked = ev({ pick: { status: "interested", date: null, by: "Yours truly" } });
+plan(picked, "interested");
+has(g.weekRowHTML(picked), 'class="mark mark-host-int" role="img" aria-label="Yours truly is interested in this one."', "the ink dolphin");
+picked.pick = { status: "going", date: null, by: "Yours truly" };
+has(g.weekRowHTML(picked), 'class="mark mark-host" role="img" aria-label="Yours truly is committed to seeing this."', "the gold ring");
+set("CREWS = [];");
 lacks(g.weekRowHTML(maybe), "Tell a crew", "no crews, nobody to tell");
 set("CREWS = [{ id: 7, name: 'Thursday Theater' }];");
 
