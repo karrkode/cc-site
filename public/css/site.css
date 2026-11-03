@@ -460,7 +460,7 @@ a { color: inherit; }
 .form-error:empty { display: none; }
 .notice { background: var(--info-soft); color: var(--on-info-soft); padding: 10px 14px; border-radius: var(--r-ctl); font-weight: 500; font-size: 1rem; }
 .notice:empty { display: none; }
-.notice .textbtn { color: inherit; }
+.notice .textbtn, .form-error .textbtn { color: inherit; } /* CC-186: Send a new link, in a refusal */
 .form-error { color: var(--on-danger-soft); background: var(--danger-soft); padding: 8px 12px; border-radius: var(--r-ctl); font-weight: 500; font-size: 1rem; }
 .went {
   position: relative; z-index: 1; justify-self: start; cursor: pointer; border: 1px solid var(--field-line); background: transparent;

@@ -99,6 +99,7 @@ $("s-link-form").addEventListener("submit", function (ev) {
       (first || $("s-title")).focus();
       return;
     }
+    if (unconfirmed(res)) { confirmFirst(err); return; }
     if (!res || res.status === 429 || res.status === 401) { err.textContent = errorText(res); return; }
     // the page couldn't be read: say so, and open the form with the link kept
     resetSubmitForm(); $("s-url").value = url;
@@ -193,6 +194,7 @@ $("submit-form").addEventListener("submit", function (ev) {
   var btn = $("submit-btn"); btn.disabled = true; err.textContent = ""; msg.textContent = "Sending…";
   api("/events", { method: "POST", body: body }).then(readJSON, function () { return null; }).then(function (res) {
     btn.disabled = false;
+    if (unconfirmed(res)) { msg.textContent = ""; confirmFirst(err); return; }
     if (!res || !res.ok) { msg.textContent = ""; err.textContent = errorText(res); return; }
     resetSubmitForm(); $("s-link").value = ""; LINK_FILLED = false; msg.textContent = "";
     var made = fromApi(res.body), head, text;

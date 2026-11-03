@@ -58,6 +58,7 @@ $("issue-form").addEventListener("submit", function (ev) {
   var body = { kind: kind, what_happened: what, expected: $("is-expected").value.trim(), page: currentViewName(),
     browser: navigator.userAgent.slice(0, 300), screen: screen.width + "x" + screen.height, site_version: siteVersion() };
   api("/issues", { method: "POST", body: body }).then(readJSON).then(function (res) {
+    if (unconfirmed(res)) { $("is-send").disabled = false; confirmFirst($("is-error")); return; }
     if (!res.ok) { $("is-send").disabled = false; $("is-error").textContent = errorText(res); return; }
     $("is-fields").hidden = true; $("is-done").hidden = false; $("is-heading").textContent = k.noun + " " + res.body.key + " sent";
     $("is-thanks").innerHTML = "Thanks! Your ticket number is <strong>" + esc(res.body.key) + "</strong>. " +
