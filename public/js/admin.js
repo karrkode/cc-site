@@ -518,7 +518,7 @@ function venueIdFor(name, hood) {
 }
 $("edit-form").addEventListener("submit", function (ev) {
   ev.preventDefault();
-  if (EDITING && EDITING.found) { approveFromEditor(); return; } // "Edit then approve" a found event (found.js)
+  if (EDITING && EDITING.found) { approveFromEditor(); return; } // "Edit/Approve" a found event (found.js)
   var e = EDITING && EDITING.e; if (!e) return;
   var title = $("ed-title").value.trim(), venue = $("ed-venue").value.trim(), hood = $("ed-hood").value.trim();
   var fixed = isFixedRun("ed"), begin = $("ed-begin").value || null, end = $("ed-end").value || null, url = $("ed-url").value.trim(), cost = $("ed-cost").value.trim();
