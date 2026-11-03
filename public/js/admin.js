@@ -322,7 +322,7 @@ $("roundups-list").addEventListener("click", function (ev) {
 // The list comes from GET /venues/manage (every venue, with how many events use it) and is filtered here.
 // One dialog does rename, merge (with a preview of what moves) and delete (only for unused venues).
 var VLIST = [], VDLG = null; // VDLG: { mode: "edit" | "merge" | "delete", v, opener }
-function openVenues() { if (!isAdmin()) { openAccount(); return; } show("venues"); loadVenues(); }
+function openVenues() { if (!isAdmin()) { openAccount(); return; } show("venues"); loadVenues(); VSEDIT = null; $("vs-status").textContent = ""; loadSiteSuggestions(); }
 function loadVenues(focusId) {
   $("v-count").textContent = "Loading…";
   return api("/venues/manage").then(readJSON).then(function (res) {
@@ -350,7 +350,8 @@ function paintVenues() {
     return '<div class="queue-item"><div class="alt-text"><p class="alt-title">' + esc(v.name) + '</p><p class="alt-meta">' +
       esc(v.neighborhood || "No neighborhood") + " · " + esc(v.region ? REGION_NAMES[v.region] : "No side of town") + " · " + plural(v.events, "event", "events") +
       "</p>" + '<p class="alt-meta">' + (v.category ? "Default type: " + esc(typeLabel(v.category, v.opera)) : '<span class="state">No default type</span>') + "</p>" +
-      (v.standard_cost ? '<p class="alt-meta">Standard cost: ' + esc(v.standard_cost) + "</p>" : "") + hoursNote(v) + "</div>" +
+      (v.standard_cost ? '<p class="alt-meta">Standard cost: ' + esc(v.standard_cost) + "</p>" : "") +
+      (v.website ? '<p class="alt-meta">Website: ' + siteLink(v.website) + "</p>" : "") + hoursNote(v) + "</div>" +
       '<div class="row"><button class="btn ghost" type="button" data-venue-edit="' + id + '" aria-label="Edit ' + esc(venueLabel(v)) + '">Edit</button>' +
       '<button class="btn ghost" type="button" data-venue-hours="' + id + '" aria-label="Hours at ' + esc(venueLabel(v)) + '">Hours…</button>' +
       '<button class="btn ghost" type="button" data-venue-merge="' + id + '" aria-label="Merge ' + esc(venueLabel(v)) + ' into another venue">Merge…</button>' +
@@ -375,7 +376,7 @@ function openVenueDialog(mode, v, opener) {
   $("vd-go").className = mode === "delete" ? "btn danger solid" : "btn";
   $("vd-error").textContent = ""; setVenueBusy(false);
   if (mode === "edit") { $("vd-name").value = v.name; $("vd-hood").value = v.neighborhood; $("vd-area").value = v.area; $("vd-region").value = v.region || ""; $("vd-cost").value = v.standard_cost || "";
-    $("vd-category").value = v.category || ""; $("vd-opera").checked = !!v.opera; }
+    $("vd-category").value = v.category || ""; $("vd-opera").checked = !!v.opera; $("vd-website").value = v.website || ""; }
   if (mode === "merge") { $("vd-find").value = ""; fillMergeTargets(); }
   if (mode === "delete") $("vd-delete").textContent = "No events use " + venueLabel(v) + ", so it can go. This can't be undone.";
   $("venue-dialog").showModal();
@@ -421,6 +422,9 @@ $("venue-form").addEventListener("submit", function (ev) {
     // CC-125: the type new events here start with; its events keep theirs
     if ($("vd-category").value !== (v.category || "")) body.category = $("vd-category").value || null;
     if ($("vd-opera").checked !== !!v.opera) body.opera = $("vd-opera").checked;
+    var site = $("vd-website").value.trim(); // CC-213: the API checks and normalises it too
+    if (site && !/^https?:\/\/\S+$/i.test(site)) { $("vd-error").textContent = "A website starts with https:// or http://."; $("vd-website").focus(); return; }
+    if (site !== (v.website || "")) body.website = site;
     if (!Object.keys(body).length) { $("venue-dialog").close(); return; }
     req = api("/venues/" + v.id, { method: "PATCH", body: body }); said = "Saved " + name + "."; after = v.id;
   } else if (d.mode === "merge") {
@@ -438,8 +442,78 @@ $("venue-form").addEventListener("submit", function (ev) {
     VDLG = null; $("venue-dialog").close();
     VENUES = null; // the submit form's venue list is out of date now
     reloadEvents(); // cards show venue names
+    loadSiteSuggestions(); // a venue with a website (or merged away) has none
     loadVenues(after).then(function () { if (!after || !document.activeElement || document.activeElement === document.body) $("venues-title").focus(); });
   }, function () { setVenueBusy(false); $("vd-error").textContent = errorText(null); });
+});
+
+// ---------- suggested venue websites (admins, CC-213) ----------
+// GET /venues/website-suggestions works them out each time; only Confirm saves one (POST /venues/{id}/website,
+// which never replaces a website already set). Dismiss is remembered, so that address isn't suggested again.
+// Websites are untrusted text: shown escaped, and linked only when they're http(s) (safeUrl).
+var VSUGG = [], VSEDIT = null; // VSEDIT: the suggestion being edited, "venue_id url"
+function siteLink(u) {
+  return '<a href="' + esc(safeUrl(u)) + '" target="_blank" rel="noopener">' + esc(u.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/$/, "")) + "</a>";
+}
+function siteKey(s) { return s.venue_id + " " + s.url; }
+function loadSiteSuggestions() {
+  return api("/venues/website-suggestions").then(readJSON).then(function (res) {
+    if (!res.ok) { $("vs").hidden = false; $("vs-status").textContent = errorText(res); return; }
+    VSUGG = res.body; paintSiteSuggestions();
+  }, function () { $("vs").hidden = false; $("vs-status").textContent = errorText(null); });
+}
+function paintSiteSuggestions() {
+  $("vs").hidden = !VSUGG.length && !$("vs-status").textContent;
+  $("vs-n").textContent = VSUGG.length ? String(VSUGG.length) : "";
+  $("vs-list").innerHTML = VSUGG.map(function (s) {
+    var k = esc(siteKey(s)), label = esc(venueLabel({ name: s.venue_name, neighborhood: s.neighborhood }));
+    var from = s.source === "discovery" ? "From its event source" : "From the CC-205 venue research";
+    if (VSEDIT === siteKey(s)) {
+      return '<div class="queue-item vs-item"><div class="alt-text"><p class="alt-title">' + label + "</p>" +
+        '<div class="field"><label for="vs-edit">Website</label><input id="vs-edit" type="url" maxlength="500" autocomplete="off" spellcheck="false" value="' + esc(s.url) + '"></div></div>' +
+        '<div class="row"><button class="btn" type="button" data-vs-save="' + k + '">Save website</button>' +
+        '<button class="btn ghost" type="button" data-vs-cancel="' + k + '">Cancel</button></div></div>';
+    }
+    return '<div class="queue-item vs-item"><div class="alt-text"><p class="alt-title">' + label + "</p>" +
+      '<p class="alt-meta">' + siteLink(s.url) + "</p>" + '<p class="alt-meta">' + from + "</p></div>" +
+      '<div class="row"><button class="btn" type="button" data-vs-confirm="' + k + '" aria-label="Confirm ' + esc(s.url) + " for " + label + '">Confirm</button>' +
+      '<button class="btn ghost" type="button" data-vs-edit="' + k + '" aria-label="Edit the website for ' + label + '">Edit</button>' +
+      '<button class="btn ghost" type="button" data-vs-dismiss="' + k + '" aria-label="Dismiss ' + esc(s.url) + " for " + label + '">Dismiss</button></div></div>';
+  }).join("");
+}
+function siteBusy(on) { Array.prototype.forEach.call($("vs-list").querySelectorAll("button, input"), function (x) { x.disabled = on; }); }
+function siteDone(said) { // after a save or dismiss: refresh both lists, and keep focus in the suggestions
+  VSEDIT = null; $("vs-status").textContent = said;
+  return Promise.all([loadSiteSuggestions(), loadVenues()]).then(function () {
+    var next = $("vs-list").querySelector("[data-vs-confirm]");
+    (next || $("vs-h")).focus();
+  });
+}
+$("vs-list").addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-vs-confirm],[data-vs-edit],[data-vs-dismiss],[data-vs-save],[data-vs-cancel]"); if (!b) return;
+  var act = ["confirm", "edit", "dismiss", "save", "cancel"].filter(function (a) { return b.hasAttribute("data-vs-" + a); })[0];
+  var key = b.getAttribute("data-vs-" + act), s = VSUGG.filter(function (x) { return siteKey(x) === key; })[0];
+  if (!s) return;
+  var label = venueLabel({ name: s.venue_name, neighborhood: s.neighborhood });
+  if (act === "edit" || act === "cancel") {
+    VSEDIT = act === "edit" ? key : null; $("vs-status").textContent = ""; paintSiteSuggestions();
+    var f = act === "edit" ? $("vs-edit") : $("vs-list").querySelector('[data-vs-edit="' + CSS.escape(key) + '"]');
+    if (f) f.focus();
+    return;
+  }
+  var url = act === "save" ? $("vs-edit").value.trim() : s.url;
+  if (act === "save" && !/^https?:\/\/\S+$/i.test(url)) { $("vs-status").textContent = "A website starts with https:// or http://."; $("vs-edit").focus(); return; }
+  var path = "/venues/" + s.venue_id + "/website" + (act === "dismiss" ? "/dismiss" : "");
+  siteBusy(true);
+  api(path, { method: "POST", body: { url: url } }).then(readJSON).then(function (res) {
+    if (!res.ok) { siteBusy(false); $("vs-status").textContent = errorText(res); return; }
+    siteDone(act === "dismiss" ? "Dismissed " + url + " for " + label + "." : "Saved the website for " + label + ".");
+  }, function () { siteBusy(false); $("vs-status").textContent = errorText(null); });
+});
+$("vs-list").addEventListener("keydown", function (ev) { // Enter in the edit box saves, Escape cancels
+  if (ev.target.id !== "vs-edit" || (ev.key !== "Enter" && ev.key !== "Escape")) return;
+  var b = $("vs-list").querySelector(ev.key === "Enter" ? "[data-vs-save]" : "[data-vs-cancel]");
+  if (b) { ev.preventDefault(); b.click(); }
 });
 
 // ---------- edit, withdraw or delete an event (admins, CC-56) ----------
