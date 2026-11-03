@@ -60,7 +60,7 @@ The site has these views:
 - Submit an event: paste the event's link and the API fills in the form from the page (CC-124), or enter it by hand
 - Your account
 - Review (admins only): the queue, with an index of the other admin pages above it (CC-149)
-- Venues, with each venue's hours (admins only)
+- Venues, with each venue's hours and website (admins only). Above the list, "Suggested websites" offers a site for each venue that has none, from its event source or the CC-205 venue research. An admin confirms, edits or dismisses each one (CC-213).
 - Site stats (admins only)
 - Event sources (admins only)
 - Found events (admins only)
@@ -103,7 +103,7 @@ The API has these groups of routes:
 | `/admin/members` | Offer or remove the approver permission | Admins only |
 | `/admin` | Review queue, scheduled events, withdrawn events, auto-reject rules and what they caught, site stats | Admins only |
 | `/admin/discovery` | Event sources, found events, skip rules, the CSV download, the monthly budget | Admins only |
-| `/venues` | Show, rename, merge and delete venues. Set opening hours and show times. | All users can read. Admins can change. |
+| `/venues` | Show, rename, merge and delete venues. Set opening hours, show times and the website. Suggested websites to confirm or dismiss (CC-213). | All users can read (without the website). Admins can change. |
 | `/crews` | Start a crew, make invite links, invite by email, accept or decline an invite, join, leave. The owner renames, removes members, hands over or deletes. | Signed-in users. Only a crew's members can see it. |
 | `/issues` | Report a problem with the site. Admins see the reports at `/admin/issues`, set a status and add a note. | Signed-in users report. Admins review. |
 | `/e/{id}-{title}`, `/sitemap.xml`, `/robots.txt` | Plain HTML event pages with schema.org Event data, the sitemap of live events, and robots.txt (CC-108). Public details only. | Anyone, through chiculturecrew.com |
@@ -122,6 +122,7 @@ The database has these main tables:
 - `users`: the accounts, with each account's role (user or admin) and the approver permission. `refresh_tokens` and `email_tokens` keep the sign-ins and the email links.
 - `events`: the events. Each event also keeps its schedule: the dates and times that discovery found, and its usual show times.
 - `venues`: the places where the events occur. Each venue keeps its opening hours, its usual show times and its standard cost. If an event does not post a price, the catalog shows the venue's standard cost ("Usually free"), and the price filters and the price sort use it. An event's own price always comes first. The standard cost is not copied into the events.
+  A venue also has an optional `website` (CC-213). Only admins see it, and only the admin venue routes return it: never the event, `/e/` or public venue responses. It must be an http(s) address and is stored normalised. Nothing fills it in by itself: an admin types it, or confirms a suggestion, and a suggestion never replaces a website an admin set. `venue_website_dismissals` remembers the suggestions an admin dismissed, so they don't come back.
 - `attended`: the "I've been" marks.
 - `went_photos` and `photo_checks`: the photos that members add to "I've been" marks, and each Amazon Rekognition check (for the daily limit and the monthly cost).
 - `plans`: the "interested" and "going" plans.

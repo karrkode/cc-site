@@ -1552,3 +1552,9 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .qr-full-code svg { width: 100%; height: auto; display: block; }
 .qr-full-url { font-family: var(--sign); font-weight: 700; font-size: 1.375rem; color: #0E2A40; font-variant-numeric: tabular-nums; }
 .qr-full .btn { display: inline-flex; align-items: center; justify-content: center; min-width: 200px; min-height: 48px; background: #0E3A5B; color: #FFFFFF; box-shadow: none; }
+
+/* CC-213: suggested venue websites, above the venue list */
+.lf-page .vs { margin: 8px 0 40px; }
+.lf-page .vs-item .alt-text { flex: 1 1 280px; min-width: 0; }
+.lf-page .vs-item .alt-meta a { overflow-wrap: anywhere; }
+.lf-page .vs-item .field { margin-top: 8px; }

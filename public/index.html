@@ -53,6 +53,7 @@
           <label class="radio"><input type="checkbox" id="vd-opera"> Opera</label><span class="hint small" id="vd-category-hint">New events here start with this type. Its events keep the type they have.</span></div>
       </div>
       <div class="field" style="margin-top:14px"><label for="vd-cost">Standard cost <span class="opt-label">(optional)</span></label><input id="vd-cost" type="text" maxlength="120" placeholder="Free, or $25 general admission" aria-describedby="vd-cost-hint"><span class="hint small" id="vd-cost-hint">Shown as "Usually …" on its events that don't post a price, and used by the price filters. An event's own price always comes first.</span></div>
+      <div class="field" style="margin-top:14px"><label for="vd-website">Website <span class="opt-label">(optional)</span></label><input id="vd-website" type="url" maxlength="500" placeholder="https://" autocomplete="off" spellcheck="false" aria-describedby="vd-website-hint"><span class="hint small" id="vd-website-hint">The venue's own site, starting with https:// or http://. Only admins see it for now.</span></div>
     </div>
     <div id="vd-merge" hidden>
       <div class="field"><label for="vd-find">Merge into which venue?</label><input id="vd-find" type="search" maxlength="100" placeholder="Search venues" autocomplete="off" aria-controls="vd-into"></div>
@@ -905,6 +906,11 @@
         <h1 id="venues-title" tabindex="-1">Venues</h1>
         <p class="lf-deck">Rename a venue or fix its neighborhood, merge a duplicate into the right one, or delete one nothing uses.</p>
       </div>
+      <!-- CC-213: suggested websites for venues that have none; nothing is saved until an admin confirms one -->
+      <div class="section vs" id="vs" hidden><h2><span id="vs-h" tabindex="-1">Suggested websites</span> <span class="lf-n" id="vs-n"></span></h2>
+        <p class="hint">For venues with no website yet, from each venue's event source and the CC-205 venue research. Nothing is saved until you confirm it, and Dismiss stops suggesting that address.</p>
+        <p class="hint" id="vs-status" role="status"></p><div class="queue" id="vs-list"></div></div>
+      <h2 class="sr-only">All venues</h2>
       <div class="filters"><div class="field"><label for="v-q">Find a venue</label><input id="v-q" type="search" maxlength="100" placeholder="Name or neighborhood" autocomplete="off"></div>
         <div class="field"><label for="v-hours">Opening hours</label><select id="v-hours"><option value="">Any</option><option value="full">Every day filled in</option><option value="gaps">Some days missing</option></select></div>
         <label class="radio"><input type="checkbox" id="v-noregion"> Only venues without a side of town</label></div>
