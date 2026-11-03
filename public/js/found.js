@@ -3,7 +3,7 @@
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // GET /admin/discovery/items lists new events and proposed updates ("waiting"), or one status. New events are
-// approved (as found, or through the edit form), rejected, or rejected with a skip rule; updates are accepted
+// approved through the edit form (CC-212), rejected, or rejected with a skip rule; updates are accepted
 // or dismissed. Nothing reaches the catalog without one of these.
 var FOUND = { show: "waiting", source: "", price: "any", dates: "any", items: [], total: 0 }, FOUND_PAGE = 50, FOUND_REQ = 0;
 var FOUND_SHOWS = [["waiting", "Waiting for you"], ["needs", "Needs a date"], ["new", "New events"], ["update", "Proposed updates"], ["approved", "Approved"],
@@ -111,11 +111,8 @@ function foundActions(i, id, title) {
       '<button class="btn ghost" type="button" data-found-act="dismiss" aria-label="Dismiss the changes to ' + title + '">Dismiss</button>';
   }
   if (i.status === "new" || i.status === "skipped" || i.status === "rejected") {
-    a += i.needs && i.status === "new" ? // CC-88: the approve form, asking for what's missing
-      '<button class="btn" type="button" data-found-act="edit" aria-label="' + (i.needs === "date" ? "Add the date" : "Add show days") + " to " + title + ', then approve">' +
-        (i.needs === "date" ? "Add the date…" : "Add show days…") + "</button>" :
-      '<button class="btn" type="button" data-found-act="approve" aria-label="Approve ' + title + '">Approve</button>' +
-      '<button class="btn ghost" type="button" data-found-act="edit" aria-label="Edit then approve ' + title + '">Edit then approve</button>';
+    // CC-212: one button to the approve form, which asks for anything missing (CC-88); its row says what that is
+    a += '<button class="btn" type="button" data-found-act="edit" aria-label="Edit and approve ' + title + '">Edit/Approve</button>';
   }
   if (i.status === "new" || i.status === "skipped") {
     a += '<button class="btn ghost" type="button" data-found-act="reject" aria-label="Reject ' + title + '">Reject</button>' +
@@ -149,23 +146,15 @@ function foundType(i) {
   var category = i.venue_category || i.category, opera = (i.venue_category ? i.venue_opera : false) || !!i.opera;
   return { category: opera ? "Music" : category, opera: opera };
 }
-function approveBody(i) {
-  var t = foundType(i);
-  return { title: i.title, category: t.category, opera: t.opera, venue_id: i.venue_id, begin_date: i.begin_date, end_date: i.end_date,
-    open_run: i.open_run && !i.end_date, cost_text: i.cost_text, min_price: i.cost_text ? i.min_price : null, url: i.url, publish: "now",
-    weekly: i.weekly || {}, weeks: i.weeks || {} };
-}
 $("found-list").addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-found-act]"); if (!b) return;
   var row = b.closest("[data-found]"), i = foundById(row.getAttribute("data-found")), act = b.getAttribute("data-found-act");
   if (!i) return;
-  if (act === "edit" || (act === "approve" && (!i.venue_id || !foundType(i).category || i.needs))) { openFoundEditor(i, b); return; } // needs a type, venue, date or show days first
+  if (act === "edit") { openFoundEditor(i, b); return; } // CC-212: approving is always through the form
   if (act === "skip") { toggleSkipForm(row, i, b); return; }
-  var path = act === "reject" ? "reject" : act;
-  foundPost(row, path, act === "approve" ? approveBody(i) : {}).then(function (res) {
+  foundPost(row, act).then(function (res) {
     if (!res.ok) { foundFail(row, res); return; }
-    if (act === "approve") reloadEvents();
-    foundDone(row, act === "approve" ? "Added " + i.title + " to the catalog." : act === "reject" ? "Rejected " + i.title + "." :
+    foundDone(row, act === "reject" ? "Rejected " + i.title + "." :
       act === "accept" ? "Updated " + (i.event ? i.event.title : i.title) + "." : "Kept " + (i.event ? i.event.title : i.title) + " as it is.");
   }, function () { foundFail(row, null); });
 });
@@ -243,7 +232,7 @@ $("rules-list").addEventListener("click", function (ev) {
   }, function () { b.disabled = false; });
 });
 
-// ---------- "Edit then approve": the event edit form (CC-56), filled from the found item ----------
+// ---------- "Edit/Approve": the event edit form (CC-56), filled from the found item ----------
 function foundMode(i) { // i: the found item, or null for the ordinary edit form
   var on = !!i, sel = $("ed-category"), blank = sel.querySelector('option[value=""]');
   $("ed-found").hidden = !on; $("ed-remove").hidden = on;
@@ -253,15 +242,35 @@ function foundMode(i) { // i: the found item, or null for the ordinary edit form
   if (!start && !blank) sel.insertAdjacentHTML("afterbegin", '<option value="">Choose a type</option>');
   if (start && blank) blank.remove();
 }
+// CC-212: an event on for under a week, of any type, starts as a fixed run (CC-96) of its days, each with a time to give:
+// the dates its page listed, else every day it's on (only its show days, when it has them). Times come from its page,
+// else the venue's usual show times. Longer runs start as a date range, as before. [] when it isn't short.
+var SHORT_RUN_DAYS = 6; // the API's too (cc-backend routers/discovery.py)
+function shortRun(i) {
+  var b = parseISO(i.begin_date), n = parseISO(i.end_date);
+  if (!b || !n || n < b || diff(n, b) >= SHORT_RUN_DAYS) return [];
+  var listed = {}, weekly = i.weekly || {}, venue = i.venue_show_times || {}, own = Object.keys(weekly).length, days = [];
+  (i.short_dates || []).forEach(function (p) { // the API sends these for short runs only
+    if (p.date >= i.begin_date && p.date <= i.end_date && !listed[p.date]) listed[p.date] = p.time || "";
+  });
+  for (var d = b; d <= n; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
+    var iso = isoDate(d), dow = DOW[d.getDay()];
+    if (Object.keys(listed).length ? iso in listed : !own || weekly[dow]) // one time a day in a run: the first
+      days.push({ date: iso, time: listed[iso] || (weekly[dow] || venue[dow] || [])[0] || "", end_time: "" });
+  }
+  return days;
+}
 function openFoundEditor(i, opener) {
   EDITING = { e: { id: "found-" + i.id }, found: i, opener: opener };
   foundMode(i);
-  setRun("ed", []); $("ed-runkind").hidden = true; $("ed-dates-note").hidden = true; // found events come with their own dates; a fixed run is set after (CC-96)
+  var run = shortRun(i); // found events come with their own dates; a longer one's fixed run is set after (CC-96)
+  setRun("ed", run); $("ed-runkind").hidden = !run.length; $("ed-dates-note").hidden = true;
   $("ed-heading").textContent = "Approve " + i.title;
   $("ed-found").textContent = "Found on " + i.source_name + ". Check the details, then approve to add it to the catalog." +
     (!i.venue_id ? " The venue is new to us, so check its name and neighborhood; it's added when you approve." : "") +
     (!foundType(i).category ? " Choose a type first." : "") +
     (i.needs === "date" ? " Its page doesn't give a date yet: add when it opens." :
+      run.length ? " It's on for under a week, so it's set to those days: give a start time for each, or leave them all blank." :
       i.needs === "show_days" ? " Its page doesn't say when the shows are: choose the days, and give a start time for each." : "");
   $("ed-title").value = i.title; $("ed-category").value = foundType(i).category || ""; $("ed-status").value = "approved";
   $("ed-opera").checked = foundType(i).opera;
@@ -276,12 +285,13 @@ function openFoundEditor(i, opener) {
     "These are the venue's usual show times; change them if this show is different." : "Choose the days, and give a start time for each.";
   $("ed-error").textContent = ""; $("ed-confirm").hidden = true; setEditorBusy(false);
   $("edit-dialog").showModal();
-  (i.needs === "date" ? $("ed-begin") : i.needs === "show_days" ? $("ed-days").firstElementChild : $("ed-title")).focus(); // what's missing first
+  (i.needs === "date" ? $("ed-begin") : run.length && !run[0].time ? $("ed-run-list").querySelector("[data-run-time]") :
+    i.needs === "show_days" ? $("ed-days").firstElementChild : $("ed-title")).focus(); // what's missing first
 }
 // CC-88: what the event as approved would still be missing (the API checks this too)
-function stillNeeds(i, type, begin, end, openRun, weekly) {
+function stillNeeds(i, type, begin, end, openRun, weekly, runTimed) {
   if (i.kind === "permanent") return "";
-  var dated = !!(begin || end || i.dates_listed), timed = Object.keys(weekly).length || i.dates_timed || Object.keys(i.venue_show_times || {}).length;
+  var dated = !!(begin || end || i.dates_listed), timed = runTimed || Object.keys(weekly).length || i.dates_timed || Object.keys(i.venue_show_times || {}).length;
   if (!SHOW_TYPES[type]) return dated || openRun ? "" : "date";
   if (!dated && !(openRun && timed)) return "date";
   return timed ? "" : "show_days";
@@ -290,23 +300,29 @@ function approveFromEditor() {
   var i = EDITING.found;
   var title = $("ed-title").value.trim(), venue = $("ed-venue").value.trim(), hood = $("ed-hood").value.trim(), type = $("ed-category").value;
   var begin = $("ed-begin").value || null, end = $("ed-end").value || null, url = $("ed-url").value.trim(), cost = $("ed-cost").value.trim();
+  // CC-212: a short run's days; with no times at all it goes in as its first to last date, as before
+  var fixed = isFixedRun("ed"), untimed = fixed && RUN.ed.length && !RUN.ed.some(function (r) { return r.time || r.end_time; });
+  if (fixed && RUN.ed.length) { begin = RUN.ed[0].date; end = RUN.ed[RUN.ed.length - 1].date; }
   var at = $("ed-publish-at").value ? new Date($("ed-publish-at").value) : null, review = $("ed-status").value === "pending";
   var bad = !title ? ["ed-title", "Give the event's name."] : !type ? ["ed-category", "Choose a type."] : !venue ? ["ed-venue", "Say where it's happening."] :
     (begin && end && end < begin) ? ["ed-end", "The closing date is before the opening date."] :
     (url && !/^https?:\/\//i.test(url)) ? ["ed-url", "The link should start with https://"] :
     (at && isNaN(at)) ? ["ed-publish-at", "Pick a date and time, or leave it blank."] : null;
   if (bad) { editorFail(null, bad[0], bad[1]); return; }
+  var run = fixed && !untimed ? readRun("ed") : { run_dates: [] };
+  if (run.error) { editorFail(null, run.id, run.error); return; }
   var days = $("ed-sched").hidden ? { weekly: {}, weeks: {} } : readShowDays("ed");
   if (days.error) { editorFail(null, days.id, days.error); return; }
   var venueOwn = sameHours(days.weekly, i.venue_show_times || {}) && !Object.keys(days.weeks).length; // the venue's times stay the venue's
   var weekly = venueOwn ? {} : days.weekly;
-  var missing = stillNeeds(i, type, begin, end, $("ed-open-run").checked && !end, days.weekly);
+  var missing = stillNeeds(i, type, begin, end, $("ed-open-run").checked && !end, days.weekly, run.run_dates.length);
   if (missing) {
-    editorFail(null, missing === "date" ? "ed-begin" : null, missing === "date" ? "Add the date it opens." : "Choose the days it's on, with a start time for each.");
+    if (fixed && missing !== "date") { editorFail(null, null, "Give a start time for each date."); $("ed-run-list").querySelector("[data-run-time]").focus(); return; }
+    editorFail(null, missing === "date" ? (fixed ? "ed-run-day" : "ed-begin") : null, missing === "date" ? "Add the date it opens." : "Choose the days it's on, with a start time for each.");
     if (missing !== "date") $("ed-days").firstElementChild.focus();
     return;
   }
-  var body = { title: title, category: type, opera: $("ed-opera").checked, begin_date: begin, end_date: end, open_run: $("ed-open-run").checked && !end, weekly: weekly, weeks: venueOwn ? {} : days.weeks,
+  var body = { title: title, category: type, opera: $("ed-opera").checked, begin_date: begin, end_date: end, open_run: $("ed-open-run").checked && !end, weekly: weekly, weeks: venueOwn ? {} : days.weeks, run_dates: run.run_dates,
     cost_text: cost, min_price: cost === (i.cost_text || "") && cost ? i.min_price : minPrice(cost), url: url,
     publish: review ? "review" : at && at > new Date() ? "later" : "now" };
   if (body.publish === "later") body.publish_at = at.toISOString();
