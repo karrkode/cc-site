@@ -530,7 +530,8 @@ document.addEventListener("change", function (ev) {
   api("/me/attended/" + encodeURIComponent(id) + "/share", { method: "PUT", body: body }).then(readJSON).then(function (res) {
     if (res.ok) WENT_SHARE[id] = res.body;
     redrawShare(id, focusName);
-    if (!res.ok) document.querySelector('[data-share="' + id + '"] [data-share-error]').textContent = errorText(res);
+    var err = document.querySelector('[data-share="' + id + '"] [data-share-error]');
+    if (unconfirmed(res)) confirmFirst(err); else if (!res.ok) err.textContent = errorText(res);
   }, function () { redrawShare(id, focusName); document.querySelector('[data-share="' + id + '"] [data-share-error]').textContent = errorText(null); });
 });
 function renderJournal() {
@@ -939,6 +940,23 @@ $("account-notice").addEventListener("click", function (ev) {
     } else {
       $("account-notice").innerHTML = esc(errorText(res)) + resendButton("Try again");
     }
+  });
+});
+
+// CC-186: sharing, photos, reports, reading a link and suggesting an event need a confirmed address (in production).
+// The API answers 403; say so where it happened, with the account page's "send a new link" right there.
+function unconfirmed(res) { return !!(res && res.status === 403 && AUTH.user && !AUTH.user.email_verified); }
+function confirmFirst(el) {
+  el.innerHTML = "Confirm your email address first: open the link we sent to " + esc(AUTH.user.email) + "." +
+    ' <button class="textbtn" type="button" data-verify-send>Send a new link</button>';
+}
+document.addEventListener("click", function (ev) {
+  var b = ev.target.closest && ev.target.closest("[data-verify-send]"); if (!b) return;
+  var box = b.parentNode; b.disabled = true;
+  api("/auth/verify-email/send", { method: "POST" }).then(readJSON, function () { return null; }).then(function (res) {
+    if (res && res.ok) box.textContent = res.body.detail + " Open it, then try again. It can take a few minutes, so check your junk folder too.";
+    else if (res && res.status === 400) { box.textContent = errorText(res) + ". Try again now."; if (AUTH.user) AUTH.user.email_verified = true; }
+    else { box.textContent = errorText(res); }
   });
 });
 

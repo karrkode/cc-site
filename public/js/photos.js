@@ -81,6 +81,7 @@ $("photo-form").addEventListener("submit", function (ev) {
   var was = PHOTO; if (!was || !was.blob) return;
   $("ph-send").disabled = true; $("ph-error").textContent = ""; $("ph-state").textContent = "Sending…";
   api("/me/attended/" + encodeURIComponent(was.e.id) + "/photo", { method: "PUT", raw: was.blob }).then(readJSON).then(function (res) {
+    if (unconfirmed(res)) { $("ph-send").disabled = false; $("ph-state").textContent = ""; confirmFirst($("ph-error")); return; }
     if (!res.ok) { $("ph-send").disabled = res.status === 422; $("ph-state").textContent = ""; $("ph-error").textContent = errorText(res); return; }
     WENT_PHOTO[was.e.id] = res.body;
     $("edit-live").textContent = "Photo sent. It's waiting for approval.";

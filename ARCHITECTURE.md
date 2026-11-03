@@ -198,7 +198,8 @@ The API sends four types of email:
 The API uses short-lived credentials. These credentials can only send email.
 
 SES has production access, so it can send to any address.
-Members must confirm their email address before they can send in events or see crew invites sent by email.
+Members must confirm their email address before they can send in events, read an event from a link, share a
+take, send a photo, report an issue or see crew invites sent by email.
 
 ## 9. Deployment
 
