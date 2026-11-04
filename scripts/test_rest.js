@@ -34,11 +34,19 @@ pages.forEach((id) => {
   has(v, 'class="lf-deck"', id + " has a deck");
 });
 
-// --- the admin index on Review, and "← Review" on each admin page (Photo approvals goes back to where you came from) ---
-const nav = view("review").slice(view("review").indexOf('<nav class="admin-nav"'));
-["found", "venues", "stats", "sources", "issues", "approvals", "members", "card"].forEach((go) => has(nav, 'class="admin-link" type="button" data-go="' + go + '"', "the index links " + go));
-["found-count", "issues-count", "approvals-count"].forEach((id) => has(nav, 'id="' + id + '"', "the index keeps " + id));
-["found", "sources", "stats", "venues", "issues", "members", "card"].forEach((id) => has(view(id), 'data-go="review"><span aria-hidden="true">←</span>Review</button>', id + " leads back to Review"));
+// --- the Review menu and its group pages (CC-206), and "← group" on each admin page (Photo approvals goes back to where you came from) ---
+const menu = html.slice(html.indexOf('id="rv-wrap"'), html.indexOf('id="nav-account"'));
+["review", "sourcing", "engagement", "people"].forEach((go) => has(menu, 'data-go="' + go + '"', "the Review menu links " + go));
+["review-count", "rv-review-count", "found-count", "engagement-count"].forEach((id) => has(menu, 'id="' + id + '"', "the Review menu keeps " + id));
+lacks(html, "admin-nav", "the old index on Review is gone");
+["sourcing", "engagement", "people"].forEach((id) => { assert.ok(/class="view[^"]*\blf-page\b/.test(view(id)), id + " carries lf-page"); has(view(id), 'class="lf-deck"', id + " has a deck"); });
+const groups = { sourcing: ["found", "sources"], engagement: ["issues", "approvals", "stats", "card"], people: ["venues", "members"] };
+const label = { sourcing: "Event Sourcing", engagement: "Engagement", people: "Venues and Members" };
+Object.keys(groups).forEach((g) => groups[g].forEach((id) => {
+  has(view(g), 'data-go="' + id + '"', g + " links " + id);
+  if (id !== "approvals") has(view(id), 'data-go="' + g + '"><span aria-hidden="true">←</span>' + label[g] + "</button>", id + " leads back to " + g);
+}));
+["issues-count", "approvals-count"].forEach((id) => has(view("engagement"), 'id="' + id + '"', "Engagement keeps " + id));
 has(view("approvals"), 'id="approvals-back"', "Photo approvals keeps its own Back");
 lacks(html, "Back to review", "the old bottom links are gone");
 has(css, ".btn .count:not(:empty) { margin-left: 6px; font-variant-numeric: tabular-nums; }", "a count on a button is a plain number, no pill");
