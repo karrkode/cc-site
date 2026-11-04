@@ -17,12 +17,12 @@ function onAuthChange() {
   showReportLink(); // "Report an issue or request a feature" in the footer, signed in only (CC-84; issues.js)
   paintApproverRow(); // Photo approvals, for approvers and admins (CC-91; approvals.js)
   paintMeMenu(); // your name and its menu, or Sign in (CC-105)
-  $("nav-review").hidden = !isAdmin();
+  $("rv-wrap").hidden = !isAdmin();
   WENT = {}; WENT_LIST = []; WENT_PHOTO = {}; WENT_JOURNAL = {}; JOURNAL_DRAFT = {}; WENT_SHARE = {}; MYPLANS = {}; MYPLAN_LIST = [];
   PLANS_STATE = "loading"; WENT_STATE = "loading"; JOURNAL_OPEN = null; // CC-146: My week waits for them
   if (!AUTH.user) {
     NOTICE_SET = false; $("account-notice").textContent = "";
-    if (visible("review") || visible("venues") || visible("stats") || visible("sources") || visible("found") || visible("issues")) show("home");
+    if (visible("review") || visible("sourcing") || visible("engagement") || visible("people") || visible("venues") || visible("stats") || visible("sources") || visible("found") || visible("issues")) show("home");
     if (visible("submit")) renderSubmit();
     CREWS = []; buildCrewFilter(); PENDING = []; paintPending(); $("my-issues-section").hidden = true;
     if ($("issue-dialog").open) $("issue-dialog").close();
@@ -33,7 +33,7 @@ function onAuthChange() {
     if (visible("join")) paintJoinPage(); // CC-121
     return;
   }
-  if (isAdmin()) updateReviewCount();
+  if (isAdmin()) { updateReviewCount(); updateFoundCount(); } // CC-206: the Review menu shows them from the start
   var back = AFTER_SIGN_IN; AFTER_SIGN_IN = null; // signed in from the crews, planner or journal page: back to it (CC-104, CC-105, CC-159)
   // CC-157: the sign-in page was pushed on the way: going back takes it off the history, and the popstate reopens that page
   if (back && location.hash === "#account" && history.state && history.state.view === "account") history.back();

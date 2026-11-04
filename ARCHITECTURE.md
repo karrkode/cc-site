@@ -59,7 +59,10 @@ The site has these views:
 - Find an outing
 - Submit an event: paste the event's link and the API fills in the form from the page (CC-124), or enter it by hand
 - Your account
-- Review (admins only): the queue, with an index of the other admin pages above it (CC-149)
+- Review (admins only): a menu in the masthead (CC-206; `public/js/hubs.js`), a plain list under "Review" in the phone sheet. Its options are Waiting for review (the queue, `#review`) and three group pages of links with counts:
+  - Event Sourcing (`#sourcing`): what needs the admin, this week's numbers, the budget and the tools. The numbers come from `/admin/discovery/summary`, which uses the weekly recap's own `gather()`, so the page and the email agree. Each tool's back link returns to its group page.
+  - Engagement (`#engagement`): Issues, Photo approvals, Site stats and the QR card
+  - Venues and Members (`#people`): Venues and hours, and Members
 - Venues, with each venue's hours and website (admins only). Above the list, "Suggested websites" offers a site for each venue that has none, from its event source or the CC-205 venue research. An admin confirms, edits or dismisses each one (CC-213). The site covers Chicago and its suburbs, so a new or edited venue can only be City or Suburbs, and discovery leaves out events at an out-of-town venue (CC-217). Until an admin has run it, the "Out of town" clean-up above the list shows the venues still marked that way: Delete all out-of-town events, then Delete venue or Delete all empty out-of-town venues, each after an inline confirm. Their discovery sources are turned off first. The section hides once nothing is left. `scripts/test_out_of_town.js` checks this in CI.
 - Site stats (admins only)
 - Event sources (admins only)

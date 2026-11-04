@@ -15,7 +15,7 @@ var FOUND_STATES = { update: "Update", approved: "Approved", rejected: "Rejected
 var CHANGE_NAMES = { cost_text: "Price", min_price: "Lowest price", begin_date: "Opens", end_date: "Closes", weekly: "Show days", weeks: "Weeks of the month" };
 var FOUND_NEEDS = { date: "Needs a date", show_days: "Needs show days" }; // CC-88: approving asks for these
 
-function openFound() { if (!isAdmin()) { openAccount(); return; } show("found"); loadFoundSources(); loadFound(); loadRules(); }
+function openFound(focusSel) { if (!isAdmin()) { openAccount(); return; } show("found"); loadFoundSources(); loadFound(false, focusSel); loadRules(); }
 function updateFoundCount(counts) {
   if (counts) { var n = (counts["new"] || 0) + (counts.update || 0); $("found-count").textContent = n ? String(n) : ""; return; }
   api("/admin/discovery/items?limit=1").then(readJSON).then(function (res) { if (res.ok) updateFoundCount(res.body.counts); }, function () {});
@@ -48,7 +48,7 @@ function loadFound(more, focusSel) {
 }
 function paintFound(o, focusFrom) {
   var c = o.counts, waiting = (c["new"] || 0) + (c.update || 0);
-  if (foundFiltered()) updateFoundCount(); else updateFoundCount(c); // the Review badge counts everything waiting
+  if (foundFiltered()) updateFoundCount(); else updateFoundCount(c); // the Review menu's count is everything waiting
   $("found-show").innerHTML = FOUND_SHOWS.map(function (s) {
     var n = s[0] === "waiting" ? waiting : s[0] === "all" ? null : (c[s[0]] || 0);
     return '<option value="' + s[0] + '">' + esc(s[1]) + (n === null ? "" : " (" + n + ")") + "</option>"; }).join("");

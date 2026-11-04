@@ -29,11 +29,11 @@ document.addEventListener("click", function (ev) {
 
 // ---------- the way in: Review (admins) or the account page (approvers) ----------
 function paintApproverRow() {
-  $("approver-row").hidden = !canApprove() || isAdmin(); // admins have it on Review
+  $("approver-row").hidden = !canApprove() || isAdmin(); // admins have it on Engagement
   if (canApprove()) updateApprovalsCount();
 }
 function updateApprovalsCount(counts) {
-  function paint(c) { var n = c.waiting ? String(c.waiting) : ""; $("approvals-count").textContent = n; $("approver-count").textContent = n; }
+  function paint(c) { var n = c.waiting ? String(c.waiting) : ""; $("approvals-count").textContent = n; $("approver-count").textContent = n; paintEngagementCount(); }
   if (counts) { paint(counts); return; }
   api("/approvals?limit=1").then(readJSON).then(function (res) { if (res.ok) paint(res.body.counts); }, function () {});
 }
@@ -43,7 +43,7 @@ function openApprovals() {
   if (!canApprove()) { openAccount(); return; }
   show("approvals"); loadApprovals();
 }
-$("approvals-back").addEventListener("click", function () { if (isAdmin()) openReview(); else openAccount(); });
+$("approvals-back").addEventListener("click", function () { if (isAdmin()) openEngagement(); else openAccount(); });
 function loadApprovals(focusSel) {
   $("approvals-status").textContent = "Loading…";
   api("/approvals?show=" + APPROVALS.show).then(readJSON).then(function (res) {

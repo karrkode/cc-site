@@ -22,9 +22,12 @@ function queueItemHTML(e, actions, note) { // note: an extra line, such as which
     (note ? '<p class="alt-meta">' + esc(note) + "</p>" : "") + "</div>" +
     '<div class="row">' + actions + "</div></div>";
 }
-function openReview() { if (!isAdmin()) { openAccount(); return; } renderReview(); updateFoundCount(); show("review"); }
+// CC-206: from Event Sourcing, a heading to move to once the two long lists above it are in (they move it down the page)
+var REVIEW_JUMP = null, REVIEW_JUMP_WAIT = 0;
+function reviewListIn() { if (REVIEW_JUMP && !--REVIEW_JUMP_WAIT) { $(REVIEW_JUMP).focus(); REVIEW_JUMP = null; } }
+function openReview(jump) { if (!isAdmin()) { openAccount(); return; } REVIEW_JUMP = jump || null; REVIEW_JUMP_WAIT = 2; renderReview(); updateFoundCount(); show("review"); }
 function updateReviewCount(n) {
-  if (n !== undefined) { $("review-count").textContent = $("review-n").textContent = n ? String(n) : ""; return; } // CC-149: also on the Waiting rule
+  if (n !== undefined) { $("review-count").textContent = $("review-n").textContent = $("rv-review-count").textContent = n ? String(n) : ""; return; } // CC-149: also on the Waiting rule
   api("/admin/events?limit=1").then(readJSON).then(function (res) { if (res.ok) updateReviewCount(res.body.total); }, function () {});
 }
 var EMPTY = { "review-list": "Nothing waiting for review.", "scheduled-list": "Nothing scheduled.", "withdrawn-list": "Nothing withdrawn.",
@@ -41,6 +44,7 @@ function renderReview() {
         '<button class="btn ghost" type="button" data-review="reject" data-id="' + esc(e.id) + '">Reject</button>' + editButtonHTML(e, "btn ghost"));
     }).join("") : '<p class="hint">Nothing waiting for review.</p>';
     refocusAfterEdit();
+    reviewListIn();
   }, function () { $("review-list").innerHTML = '<p class="form-error">' + esc(errorText(null)) + "</p>"; });
 }
 // CC-133: what removing Comedy and Educational withdrew (and everything at The Second City and The Annoyance). Bring one
@@ -191,6 +195,7 @@ function renderWithdrawn() { // CC-56: put back with Restore (approve), or edit 
         editButtonHTML(e, "btn ghost"));
     }).join("") : '<p class="hint">' + EMPTY["withdrawn-list"] + "</p>";
     refocusAfterEdit();
+    reviewListIn();
   }, function () {});
 }
 function renderCaught() { // CC-100: rejected by an auto-reject rule, newest first; approve one if the rule was wrong
@@ -857,7 +862,7 @@ $("i-closed").addEventListener("change", loadInterest);
 // CC-68: visits over the last 30 days: totals, a daily chart of visitors (returning ones stacked under
 // new ones), and views of each part of the site. Counts only.
 var VIEW_NAMES = { home: "Home", join: "Join page", catalog: "Catalog", event: "Event view", plan: "Find an outing", submit: "Submit", account: "Account", crews: "Crews", planner: "My week",
-  review: "Review", venues: "Venues", stats: "Stats", sources: "Event sources", found: "Found events", issues: "Issues",
+  review: "Review", sourcing: "Event Sourcing", engagement: "Engagement", people: "Venues and Members", venues: "Venues", stats: "Stats", sources: "Event sources", found: "Found events", issues: "Issues",
   reset: "Password reset", verify: "Email confirmation" };
 function loadTraffic() {
   $("traffic-status").textContent = "Loading…";
