@@ -160,7 +160,7 @@ Discovery also fills in the venues' opening hours and usual show times. Discover
 
 > **NOTE:** The Anthropic API key is in AWS SSM Parameter Store. The scheduled job gives the key to discovery on standard input. The key is not in the code, on a command line or in a file.
 
-**Monthly budget:** discovery costs about $5 each month. The default budget is $10. At 80% of the budget, the event pages wait until the next month. At 100%, discovery reads only the sources that an admin asks for with "Check now".
+**Monthly budget:** discovery costs about $5 each month. The default budget is $10. At 80% of the budget, the event pages wait until the next month, and discovery sends one email to info@chiculturecrew.com (once a month, CC-211). The weekly recap also says so. Sources are still checked, and the sources with the most approved events per dollar go first, so the money that is left goes to the best sources. A new source counts as average until it has a record. At 100%, discovery reads only the sources that an admin asks for with "Check now".
 
 **Check by hand only:** some sites do not let discovery read them. An admin can set such a site to "Check by hand only". Discovery then does not try the site. The weekly recap shows the site in its "Check these by hand" list.
 
