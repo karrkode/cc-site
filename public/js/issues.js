@@ -95,7 +95,7 @@ function openIssues(q) { // q: a ticket number to look up (the recap links to #i
   $("issues-q").value = ISSUES_Q; $("issues-kind").value = ISSUES_KIND; show("issues"); loadIssues();
 }
 function updateIssuesCount(counts) {
-  if (counts) { $("issues-count").textContent = counts["new"] ? String(counts["new"]) : ""; return; }
+  if (counts) { $("issues-count").textContent = counts["new"] ? String(counts["new"]) : ""; paintEngagementCount(); return; }
   api("/admin/issues?show=new").then(readJSON).then(function (res) { if (res.ok) updateIssuesCount(res.body.counts); }, function () {});
 }
 function loadIssues(focusSel) {
@@ -105,7 +105,7 @@ function loadIssues(focusSel) {
     if (req !== ISSUES_REQ) return;
     if (!res.ok) { $("issues-status").textContent = errorText(res); return; }
     var c = res.body.counts, all = Object.keys(c).reduce(function (n, k) { return n + c[k]; }, 0);
-    if (ISSUES_KIND) updateIssuesCount(); else updateIssuesCount(c); // the Review page's count is every new report, of both kinds
+    if (ISSUES_KIND) updateIssuesCount(); else updateIssuesCount(c); // the Engagement count is every new report, of both kinds
     var kinds = res.body.kinds || {};
     $("issues-kind").innerHTML = [["", "All"], ["issue", "Issues"], ["feature", "Feature requests"]].map(function (o) {
       return '<option value="' + o[0] + '">' + o[1] + (o[0] ? " (" + (kinds[o[0]] || 0) + " open)" : "") + "</option>"; }).join("");

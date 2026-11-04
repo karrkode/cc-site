@@ -51,7 +51,7 @@ function tab(url, opt) {
     helper("start.js", "openFromHash") + helper("start.js", "route"), g);
   ["account", "planner", "journal", "crews", "submit", "join"].forEach((v) => { g["open" + v[0].toUpperCase() + v.slice(1)] = () => g.show(v); });
   g.openJoinPage = () => g.show("join"); g.startPlan = () => g.show("plan");
-  ["review", "venues", "stats", "sources", "found", "issues", "approvals", "members", "card"].forEach((v) => {
+  ["review", "sourcing", "engagement", "people", "venues", "stats", "sources", "found", "issues", "approvals", "members", "card"].forEach((v) => {
     g["open" + v[0].toUpperCase() + v.slice(1)] = () => (admin ? g.show(v) : g.openAccount());
   });
   g.FOUND = {};
@@ -91,7 +91,7 @@ async function check(name, fn) { await fn(); n++; console.log("ok  " + name); }
   });
 
   const reloads = { account: "account", planner: "planner", journal: "journal", crews: "crews", submit: "submit", plan: "plan", catalog: "catalog",
-    review: "review", venues: "venues", stats: "stats", sources: "sources", found: "found", issues: "issues", approvals: "approvals",
+    review: "review", sourcing: "sourcing", engagement: "engagement", people: "people", venues: "venues", stats: "stats", sources: "sources", found: "found", issues: "issues", approvals: "approvals",
     members: "members", card: "card", "e/5": "event", "found/skipped": "found", "issues/ISS-0007": "issues", "source-3": "sources" };
   await check("a reload opens the view in the address and leaves the address as it is", async () => {
     for (const h of Object.keys(reloads)) {

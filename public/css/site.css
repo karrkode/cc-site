@@ -1190,7 +1190,8 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .me-menu[hidden] { display: none; }
 .me-menu [data-me] { display: flex; align-items: center; justify-content: space-between; gap: 10px; text-align: left; min-height: 48px; padding: 0 16px;
   background: none; border: 0; border-bottom: 1px solid var(--line); cursor: pointer; font: inherit; font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; color: var(--text); }
-.me-menu [data-me="account"] { border-bottom: 0; } /* Sign out's rule takes its place: never two rules */
+.me-menu [data-me="account"], .me-menu [data-me="people"] { border-bottom: 0; } /* Sign out's rule takes its place: never two rules */
+.me-menu [data-me="review"] { border-bottom-color: var(--rule); } /* CC-206: the queue, then the three groups */
 .me-menu [data-me="signout"] { border-top: 1px solid var(--rule); border-bottom: 0; }
 .me-menu [data-me]:hover { background: var(--surface); }
 .me-menu [data-me]:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
@@ -1201,7 +1202,8 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 @media (max-width: 960px) {
   .mast.open .me-wrap { display: grid; }
   .mast.open .me-menu { position: static; width: auto; max-width: none; border: 0; }
-  .mast.open .me-menu [data-me="account"] { border-bottom: 1px solid var(--line); }
+  .mast.open .me-menu [data-me="account"], .mast.open .me-menu [data-me="people"] { border-bottom: 1px solid var(--line); }
+  .mast.open .me-menu [data-me="review"] { border-bottom-color: var(--line); }
   .mast.open .me-menu [data-me="signout"] { border-top: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .me-caret { transition: none; } }
@@ -1337,14 +1339,36 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .editor .remove { padding-top: 16px; }
 @media (max-width: 760px) { .editor { padding: 24px 20px; } }
 
-/* the admin index on Review: a link a line, what's waiting as a plain number */
-.admin-nav ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); column-gap: 32px; border-top: 1px solid var(--rule); }
-.admin-link { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 8px 0; background: none; border: 0; border-bottom: 1px solid var(--line);
-  color: var(--text); cursor: pointer; text-align: left; font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; line-height: 1.2; }
-.admin-link::after { content: "→"; margin-left: auto; }
-.admin-link:hover { text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 1px; }
-.admin-link .count { color: var(--muted); font-variant-numeric: tabular-nums; }
-@media (max-width: 560px) { .admin-nav ul { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 20px; } .admin-link { font-size: 1.125rem; } }
+/* CC-206: the Review menu's group pages: one reading column, built for the iPad. A row is one link, with what's waiting as a plain number. */
+.hub { max-width: 50rem; }
+.lf-page .hub .section > h2 { justify-content: flex-start; font-family: var(--display); font-weight: 600; font-size: clamp(1.75rem, 4vw, 2.125rem); letter-spacing: -0.01em; }
+.hub .section:first-child { margin-top: 32px; }
+.hub > .hint:empty { display: none; }
+.hub-rows { list-style: none; margin: 0; padding: 0; }
+.hub-rows li + li { border-top: 1px solid var(--line); }
+.hub-row { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; width: 100%; min-height: 76px; padding: 12px 0;
+  background: none; border: 0; color: var(--text); cursor: pointer; font: inherit; text-align: left; text-decoration: none; }
+.hub-plain .hub-row { grid-template-columns: minmax(0, 1fr) auto; }
+.hub-plain .hub-small { min-height: 52px; padding: 6px 0; }
+.hub-small .hub-name { font-size: 1.3125rem; }
+.hub-n { font-family: var(--sign); font-weight: 700; font-size: 2.375rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.hub-name { display: block; font-family: var(--display); font-weight: 500; font-size: 1.5625rem; line-height: 1.2; }
+.hub-sub { display: block; color: var(--muted); font-size: 1.125rem; line-height: 1.35; }
+.hub-go { font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; white-space: nowrap; }
+.hub-row:hover .hub-name { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+.hub .stat-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px 24px; margin: 4px 0 0; }
+.hub .stat-summary strong { font-family: var(--sign); font-weight: 700; font-size: 2.25rem; }
+.hub-spend { font-family: var(--sign); font-weight: 700; font-size: 2.25rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.hub-spend span { font-family: var(--body); font-weight: 400; font-size: 1.3125rem; color: var(--muted); }
+.hub-link { min-height: 44px; font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; }
+@media (max-width: 560px) {
+  .hub-rows:not(.hub-plain) .hub-row { grid-template-columns: 58px minmax(0, 1fr); }
+  .hub-rows:not(.hub-plain) .hub-go { display: none; }
+  .hub-n { font-size: 2rem; }
+  .hub-name { font-size: 1.3125rem; }
+  .hub .stat-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 
 /* Site stats: the weekly figures without boxes, each under a rule */
 .lf-page .stat-grid { gap: 32px; }
