@@ -141,7 +141,7 @@ function costOption() {
     sel.appendChild(o);
   }
 }
-var WHERE_AREAS = { city: ["city"], suburbs: ["suburbs"], far: ["out_of_town"], local: ["city", "suburbs"] };
+var WHERE_AREAS = { city: ["city"], suburbs: ["suburbs"], local: ["city", "suburbs"] };
 function catalogParams() {
   var p = [], w = catWindow();
   if (cat.when === "past") p.push(["ended_before", isoDate(T)]);

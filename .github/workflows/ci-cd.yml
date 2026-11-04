@@ -47,6 +47,8 @@ jobs:
         run: node scripts/test_rest.js
       - name: The withdrawn Comedy and Educational list deletes one event or all of them, after a confirm
         run: node scripts/test_removed.js
+      - name: Out of town clean-up (CC-217)
+        run: node scripts/test_out_of_town.js
       - name: Found events have one Edit/Approve button, and a short run opens as its days with a time each
         run: node scripts/test_found.js
       - name: Back, Forward and a reload keep to the view in the address

@@ -29,7 +29,7 @@ function withPlanEvents(ws, we, then) {
   var from = ws < T ? T : ws, to = we;
   if (!PLAN_RANGE && same(from, T)) to = add(T, 34);
   $("plan-opts").innerHTML = '<p class="hint">Finding events…</p>';
-  // every side of town, out of town included (CC-73): pool() leaves those out unless "Out of town" is chosen
+  // every side of town (CC-73): pool() narrows it to the ones chosen
   fetchEvents([["from", isoDate(from)], ["to", isoDate(to)], ["sort", "closing"], ["limit", 1000]])
     .then(function (page) { PLAN_EVENTS = page.items; PLAN_RANGE = [from, to]; then(); },
           function () { $("plan-opts").innerHTML = '<p class="form-error">The events couldn\'t be loaded. Check your connection and try again.</p>'; });
@@ -96,14 +96,14 @@ function showTimesText(e, ws, we, slot) {
   return times.length ? (times.length === 1 ? "Starts at " : "Shows at ") + times.map(clockText).join(" and ") + "." : "";
 }
 
-// regions (CC-73): the sides of town chosen in question 4. None chosen means anywhere nearby: the city
-// and suburbs, as before; out-of-town events only come in when "Out of town" is chosen.
+// regions (CC-73): the sides of town chosen in question 4. None chosen means anywhere: the city and suburbs.
+// CC-217: events still at an out-of-town venue, until the clean-up has been run, are never suggested.
 function pool(ws, we, budget, types, regions, slot) {
   var anyType = !types || Object.keys(types).length === 0, anyRegion = !regions || Object.keys(regions).length === 0;
   slot = slot || plan.slot || "day";
   return PLAN_EVENTS.filter(function (e) {
-    return !isPast(e) && overlaps(e, ws, we) && costOk(e, budget || "any") && (anyType || inType(e, types)) &&
-      (anyRegion ? e.region !== "out_of_town" && e.area !== "Out of town" : !!regions[e.region]) && onDuring(e, ws, we, slot);
+    return !e.far && !isPast(e) && overlaps(e, ws, we) && costOk(e, budget || "any") && (anyType || inType(e, types)) &&
+      (anyRegion || !!regions[e.region]) && onDuring(e, ws, we, slot);
   });
 }
 // The "when" choices: Today (until 5 PM), Tonight (until 9 PM), This weekend (Friday to Sunday; not on a
