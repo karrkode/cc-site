@@ -45,8 +45,8 @@
       <div class="field"><label for="vd-name">Name</label><input id="vd-name" type="text" maxlength="200" required></div>
       <div class="fields" style="margin-top:14px">
         <div class="field"><label for="vd-hood">Neighborhood or town</label><input id="vd-hood" type="text" maxlength="120" aria-describedby="vd-hood-hint"><span class="hint small" id="vd-hood-hint">For a suburb, add ", IL".</span></div>
-        <div class="field"><label for="vd-area">Area</label><select id="vd-area"><option value="city">City</option><option value="suburbs">Suburbs</option><option value="out_of_town">Out of town</option></select></div>
-        <div class="field"><label for="vd-region">Side of town</label><select id="vd-region"><option value="">Not set</option><option value="downtown">Downtown/Loop</option><option value="north">Northside</option><option value="west">Westside</option><option value="south">Southside</option><option value="suburbs">Suburbs</option><option value="out_of_town">Out of town</option></select></div>
+        <div class="field"><label for="vd-area">Area</label><select id="vd-area"><option value="city">City</option><option value="suburbs">Suburbs</option></select></div>
+        <div class="field"><label for="vd-region">Side of town</label><select id="vd-region"><option value="">Not set</option><option value="downtown">Downtown/Loop</option><option value="north">Northside</option><option value="west">Westside</option><option value="south">Southside</option><option value="suburbs">Suburbs</option></select></div>
       </div>
       <div class="fields" style="margin-top:14px">
         <div class="field"><label for="vd-category">Default type</label><select id="vd-category" aria-describedby="vd-category-hint"><option value="">Not set</option><option value="Theater">Theater</option><option value="Music">Music</option><option value="Visual Art">Visual Art</option></select>
@@ -910,6 +910,10 @@
       <div class="section vs" id="vs" hidden><h2><span id="vs-h" tabindex="-1">Suggested websites</span> <span class="lf-n" id="vs-n"></span></h2>
         <p class="hint">For venues with no website yet, from each venue's event source and the CC-205 venue research. Nothing is saved until you confirm it, and Dismiss stops suggesting that address.</p>
         <p class="hint" id="vs-status" role="status"></p><div class="queue" id="vs-list"></div></div>
+      <!-- CC-217: delete what's left out of town, events first, then the empty venues; hidden once there's none -->
+      <div class="section" id="oot" hidden><h2 id="oot-title" tabindex="-1">Out of town</h2><p class="hint" id="oot-note"></p>
+        <div class="row"><button class="btn danger" type="button" id="oot-del-events" aria-expanded="false">Delete all out-of-town events…</button><button class="btn danger" type="button" id="oot-del-venues" aria-expanded="false">Delete all empty out-of-town venues…</button></div>
+        <div id="oot-ask"></div><p class="hint" id="oot-status" role="status"></p><div class="queue" id="oot-list"></div></div>
       <h2 class="sr-only">All venues</h2>
       <div class="filters"><div class="field"><label for="v-q">Find a venue</label><input id="v-q" type="search" maxlength="100" placeholder="Name or neighborhood" autocomplete="off"></div>
         <div class="field"><label for="v-hours">Opening hours</label><select id="v-hours"><option value="">Any</option><option value="full">Every day filled in</option><option value="gaps">Some days missing</option></select></div>

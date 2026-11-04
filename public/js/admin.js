@@ -322,7 +322,7 @@ $("roundups-list").addEventListener("click", function (ev) {
 // The list comes from GET /venues/manage (every venue, with how many events use it) and is filtered here.
 // One dialog does rename, merge (with a preview of what moves) and delete (only for unused venues).
 var VLIST = [], VDLG = null; // VDLG: { mode: "edit" | "merge" | "delete", v, opener }
-function openVenues() { if (!isAdmin()) { openAccount(); return; } show("venues"); loadVenues(); VSEDIT = null; $("vs-status").textContent = ""; loadSiteSuggestions(); }
+function openVenues() { if (!isAdmin()) { openAccount(); return; } show("venues"); loadVenues(); VSEDIT = null; $("vs-status").textContent = ""; loadSiteSuggestions(); $("oot-status").textContent = ""; loadOutOfTown(); }
 function loadVenues(focusId) {
   $("v-count").textContent = "Loading…";
   return api("/venues/manage").then(readJSON).then(function (res) {
@@ -348,7 +348,7 @@ function paintVenues() {
   $("venue-list").innerHTML = rows.slice(0, 200).map(function (v) {
     var id = esc(v.id);
     return '<div class="queue-item"><div class="alt-text"><p class="alt-title">' + esc(v.name) + '</p><p class="alt-meta">' +
-      esc(v.neighborhood || "No neighborhood") + " · " + esc(v.region ? REGION_NAMES[v.region] : "No side of town") + " · " + plural(v.events, "event", "events") +
+      esc(v.neighborhood || "No neighborhood") + " · " + esc(REGION_NAMES[v.region] || (v.region ? "Out of town" : "No side of town")) + " · " + plural(v.events, "event", "events") +
       "</p>" + '<p class="alt-meta">' + (v.category ? "Default type: " + esc(typeLabel(v.category, v.opera)) : '<span class="state">No default type</span>') + "</p>" +
       (v.standard_cost ? '<p class="alt-meta">Standard cost: ' + esc(v.standard_cost) + "</p>" : "") +
       (v.website ? '<p class="alt-meta">Website: ' + siteLink(v.website) + "</p>" : "") + hoursNote(v) + "</div>" +
@@ -368,6 +368,108 @@ $("venue-list").addEventListener("click", function (ev) {
   var id = +b.getAttribute("data-venue-" + mode), v = VLIST.filter(function (x) { return x.id === id; })[0];
   if (v) openVenueDialog(mode, v, b);
 });
+// ---------- Out of town clean-up (CC-217) ----------
+// The site covers Chicago and its suburbs. This deletes what's left: every event first, through the admin delete so
+// photos leave storage too, then the empty venues, each behind the same inline confirm as CC-153, one at a time with
+// the progress in a status line. Sources linked to those venues go off first, or they'd go on finding the same events.
+var OOT = { venues: [], event_ids: [], waiting: 0 };
+function ootSources(venues) { return venues.reduce(function (all, v) { return all.concat(v.sources); }, []); }
+function ootEmpty() { return OOT.venues.filter(function (v) { return !v.events; }); }
+function ootSourcesText(n) { return n ? " " + plural(n, "discovery source is", "discovery sources are") + " turned off first." : ""; }
+function ootItemHTML(v) {
+  var id = esc(v.id), label = esc(venueLabel(v));
+  return '<div class="queue-item"><div class="alt-text"><p class="alt-title">' + esc(v.name) + '</p><p class="alt-meta">' +
+    esc(v.neighborhood || "No neighborhood") + " · " + plural(v.events, "event", "events") + "</p>" +
+    (v.sources.length ? '<p class="alt-meta">Source on: ' + esc(v.sources.map(function (s) { return s.name; }).join(", ")) + "</p>" : "") + "</div>" +
+    (v.events ? "" : '<div class="row"><button class="btn danger" type="button" data-oot-del="' + id + '" aria-label="Delete ' + label + '">Delete venue…</button></div>') + "</div>";
+}
+function paintOutOfTown() {
+  var events = OOT.event_ids.length, empty = ootEmpty().length;
+  $("oot").hidden = !OOT.venues.length;
+  $("oot-note").textContent = plural(OOT.venues.length, "venue", "venues") + " and " + plural(events, "event", "events") +
+    " are still marked out of town. " + (events ? "Delete the events first, then the empty venues." : "Delete the empty venues.") +
+    (OOT.waiting ? " " + plural(OOT.waiting, "found event", "found events") + " from their sources " + (OOT.waiting > 1 ? "are" : "is") + " waiting on Found events: reject those there." : "");
+  $("oot-del-events").hidden = !events; $("oot-del-venues").hidden = !empty;
+  $("oot-list").innerHTML = OOT.venues.map(ootItemHTML).join("");
+}
+function closeOotAsk() {
+  $("oot-ask").innerHTML = "";
+  $("oot-del-events").setAttribute("aria-expanded", "false"); $("oot-del-venues").setAttribute("aria-expanded", "false");
+}
+function loadOutOfTown() {
+  return api("/admin/out-of-town").then(readJSON).then(function (res) {
+    if (!res.ok) { $("oot").hidden = false; $("oot-status").textContent = errorText(res); return; }
+    OOT = res.body; closeOotAsk(); paintOutOfTown();
+  }, function () { $("oot").hidden = false; $("oot-status").textContent = errorText(null); });
+}
+function ootAskHTML(what, sources, more, yes, keep) {
+  return '<div class="rm-confirm" role="group" aria-labelledby="oot-ask-q"><p id="oot-ask-q"><strong>Delete ' + esc(what) + "?</strong> " + more +
+    "This can't be undone." + ootSourcesText(sources) + "</p>" +
+    '<div class="row"><button class="btn danger solid" type="button" id="oot-yes">' + esc(yes) + "</button>" +
+    '<button class="btn ghost" type="button" id="oot-no">Keep ' + keep + "</button></div></div>";
+}
+var OOT_RUN = null; // what the open confirm will do
+function ootAsk(opener, html, run) {
+  closeOotAsk();
+  $("oot-ask").innerHTML = html; OOT_RUN = run; OOT_RUN.opener = opener;
+  opener.setAttribute("aria-expanded", "true"); $("oot-no").focus();
+}
+$("oot-del-events").addEventListener("click", function () {
+  var n = OOT.event_ids.length, sources = ootSources(OOT.venues); if (!n) return;
+  ootAsk(this, ootAskHTML(n > 1 ? "all " + n + " out-of-town events" : "the out-of-town event", sources.length,
+    "Everyone's “I've been” marks, plans and photos for " + (n > 1 ? "them" : "it") + " go too. ", "Delete " + plural(n, "event", "events"), n > 1 ? "them" : "it"),
+    { sources: sources, steps: OOT.event_ids.map(function (id) { return function () { return deleteRemoved(id); }; }), one: "event", many: "events" });
+});
+function askDeleteVenues(opener, venues) {
+  var n = venues.length, sources = ootSources(venues);
+  ootAsk(opener, ootAskHTML(n > 1 ? "all " + n + " empty out-of-town venues" : venueLabel(venues[0]), sources.length, "",
+    n > 1 ? "Delete " + n + " venues" : "Delete venue", n > 1 ? "them" : "it"),
+    { sources: sources, one: "venue", many: "venues",
+      steps: venues.map(function (v) { return function () { return ootCall("/venues/" + encodeURIComponent(v.id), { method: "DELETE" }); }; }) });
+}
+$("oot-del-venues").addEventListener("click", function () { var empty = ootEmpty(); if (empty.length) askDeleteVenues(this, empty); });
+$("oot-list").addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-oot-del]"); if (!b) return;
+  var id = b.getAttribute("data-oot-del");
+  askDeleteVenues(b, OOT.venues.filter(function (v) { return String(v.id) === id; }));
+});
+$("oot-ask").addEventListener("click", function (ev) {
+  if (ev.target.closest("#oot-no")) { var opener = OOT_RUN.opener; closeOotAsk(); opener.focus(); return; }
+  if (ev.target.closest("#oot-yes")) runOutOfTown(OOT_RUN);
+});
+function ootCall(path, options) { // resolves true once it's done (404 counts: someone else got there first)
+  return api(path, options).then(function (r) { return r.ok || r.status === 404 ? true : readJSON(r); });
+}
+function setOotBusy(on) { Array.prototype.forEach.call($("oot").querySelectorAll("button"), function (b) { b.disabled = on; }); }
+function runOutOfTown(run) {
+  var total = run.steps.length, done = 0, failed = 0, why = "";
+  setOotBusy(true);
+  function finish(text) {
+    $("oot-status").textContent = $("edit-live").textContent = text;
+    VENUES = null; // the submit form's venue list is out of date now
+    setOotBusy(false); reloadEvents(); loadVenues();
+    loadOutOfTown().then(function () { ($("oot").hidden ? $("venues-title") : $("oot-title")).focus(); });
+  }
+  function off(i) { // any source that won't turn off stops it here, before anything is deleted
+    if (i >= run.sources.length) { del(0); return; }
+    var s = run.sources[i], stop = function (res) { finish(s.name + " couldn't be turned off, so nothing was deleted. " + errorText(res)); };
+    $("oot-status").textContent = "Turning off source " + (i + 1) + " of " + run.sources.length + "…";
+    ootCall("/admin/discovery/sources/" + encodeURIComponent(s.id), { method: "PATCH", body: { active: false } })
+      .then(function (ok) { if (ok === true) off(i + 1); else stop(ok); }, function () { stop(null); });
+  }
+  function del(i) {
+    if (i >= total) {
+      finish("Deleted " + plural(done, run.one, run.many) + "." + (failed ? " " + plural(failed, run.one, run.many) + " couldn't be deleted: " + why : ""));
+      return;
+    }
+    $("oot-status").textContent = "Deleting " + (i + 1) + " of " + total + "…";
+    run.steps[i]().then(function (ok) {
+      if (ok === true) done++; else { failed++; why = errorText(ok); }
+      del(i + 1);
+    }, function () { failed++; why = errorText(null); del(i + 1); });
+  }
+  off(0);
+}
 function openVenueDialog(mode, v, opener) {
   VDLG = { mode: mode, v: v, opener: opener };
   $("vd-heading").textContent = mode === "edit" ? "Edit " + v.name : mode === "merge" ? "Merge " + v.name + " into another venue" : "Delete " + v.name + "?";
@@ -415,8 +517,9 @@ $("venue-form").addEventListener("submit", function (ev) {
     if (!name) { $("vd-error").textContent = "Give the venue a name."; $("vd-name").focus(); return; }
     if (name !== v.name) body.name = name;
     if (hood !== v.neighborhood) body.neighborhood = hood;
-    if ($("vd-area").value !== v.area) body.area = $("vd-area").value;
-    if ($("vd-region").value !== (v.region || "")) body.region = $("vd-region").value || null; // left alone: worked out again if the venue moves
+    // CC-217: an old out-of-town venue has no option here, so its boxes start empty and left that way nothing changes
+    if ($("vd-area").value && $("vd-area").value !== v.area) body.area = $("vd-area").value;
+    if ($("vd-region").value !== (REGION_NAMES[v.region] ? v.region : "")) body.region = $("vd-region").value || null; // left alone: worked out again if the venue moves
     var cost = $("vd-cost").value.trim(); // CC-89: what it usually costs, with its lowest price (0 = free)
     if (cost !== (v.standard_cost || "")) { body.standard_cost = cost; body.standard_min_price = cost ? minPrice(cost) : null; }
     // CC-125: the type new events here start with; its events keep theirs
@@ -443,6 +546,7 @@ $("venue-form").addEventListener("submit", function (ev) {
     VENUES = null; // the submit form's venue list is out of date now
     reloadEvents(); // cards show venue names
     loadSiteSuggestions(); // a venue with a website (or merged away) has none
+    loadOutOfTown(); // CC-217: a venue moved into the suburbs, or merged away, is off that list
     loadVenues(after).then(function () { if (!after || !document.activeElement || document.activeElement === document.body) $("venues-title").focus(); });
   }, function () { setVenueBusy(false); $("vd-error").textContent = errorText(null); });
 });

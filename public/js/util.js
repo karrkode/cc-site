@@ -56,12 +56,12 @@ function inType(e, types) { return !!types[e.type] || (e.opera && !!types.Theate
 // An opera is Music, so it's Music's colour. Its name is always shown in text too.
 var CAT_KEYS = { "Theater": "theater", "Music": "music", "Visual Art": "art" };
 function catClass(type) { return CAT_KEYS[type] ? " cat-" + CAT_KEYS[type] : ""; }
-var AREA_NAMES = { city: "City", suburbs: "Suburbs", out_of_town: "Out of town" };
+var AREA_NAMES = { city: "City", suburbs: "Suburbs" };
 // The page no longer downloads every event (CC-33): each view asks the API for what it shows.
 // FACETS: the categories and neighborhoods in use, plus counts (GET /events/facets).
 // CC-73: the sides of town, in the order Find an outing and the catalog offer them.
 var REGIONS = [["downtown", "Downtown/Loop"], ["north", "Northside"], ["west", "Westside"], ["south", "Southside"],
-  ["suburbs", "Suburbs"], ["out_of_town", "Out of town"]];
+  ["suburbs", "Suburbs"]];
 var REGION_NAMES = {}; REGIONS.forEach(function (r) { REGION_NAMES[r[0]] = r[1]; });
 // KNOWN: every event fetched so far, by id, for "I've been" buttons and outing swaps.
 var FACETS = null, KNOWN = {}, TYPES = [];
@@ -78,6 +78,7 @@ function fromApi(e) {
     submitter: e.submitted_by, // only the admin routes send this (undefined elsewhere; null = none on record)
     creditMe: !!e.credit_me, suggestedBy: e.submitted_by_name || null, // the opt-in "Suggested by" credit (CC-30)
     region: e.venue.region || null, // the side of town (CC-73)
+    far: e.venue.area === "out_of_town" || e.venue.region === "out_of_town", // CC-217: never suggested; gone once the clean-up has been run
     pick: e.pick ? { status: e.pick.status, date: e.pick.date, by: e.pick.by } : null, // the owner's public pick (CC-66)
     sched: e.schedule || { dates: [], weekly: {}, weekly_from: "", hours: {} }, // when it's on, for the planner (CC-79)
     crewPlans: (e.crew_plans || []).map(function (c) { c.been = c.been || []; return c; }), // signed in: crew-mates' shared plans (CC-75), and who's been (CC-117)

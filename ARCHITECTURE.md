@@ -60,7 +60,7 @@ The site has these views:
 - Submit an event: paste the event's link and the API fills in the form from the page (CC-124), or enter it by hand
 - Your account
 - Review (admins only): the queue, with an index of the other admin pages above it (CC-149)
-- Venues, with each venue's hours and website (admins only). Above the list, "Suggested websites" offers a site for each venue that has none, from its event source or the CC-205 venue research. An admin confirms, edits or dismisses each one (CC-213).
+- Venues, with each venue's hours and website (admins only). Above the list, "Suggested websites" offers a site for each venue that has none, from its event source or the CC-205 venue research. An admin confirms, edits or dismisses each one (CC-213). The site covers Chicago and its suburbs, so a new or edited venue can only be City or Suburbs, and discovery leaves out events at an out-of-town venue (CC-217). Until an admin has run it, the "Out of town" clean-up above the list shows the venues still marked that way: Delete all out-of-town events, then Delete venue or Delete all empty out-of-town venues, each after an inline confirm. Their discovery sources are turned off first. The section hides once nothing is left. `scripts/test_out_of_town.js` checks this in CI.
 - Site stats (admins only)
 - Event sources (admins only)
 - Found events (admins only)
@@ -103,7 +103,7 @@ The API has these groups of routes:
 | `/admin/members` | Offer or remove the approver permission | Admins only |
 | `/admin` | Review queue, scheduled events, withdrawn events, auto-reject rules and what they caught, site stats | Admins only |
 | `/admin/discovery` | Event sources, found events, skip rules, the CSV download, the monthly budget | Admins only |
-| `/venues` | Show, rename, merge and delete venues. Set opening hours, show times and the website. Suggested websites to confirm or dismiss (CC-213). | All users can read (without the website). Admins can change. |
+| `/venues` | Show, rename, merge and delete venues. Set opening hours, show times and the website. Suggested websites to confirm or dismiss (CC-213). What is left out of town, for the clean-up (CC-217). | All users can read (without the website). Admins can change. |
 | `/crews` | Start a crew, make invite links, invite by email, accept or decline an invite, join, leave. The owner renames, removes members, hands over or deletes. | Signed-in users. Only a crew's members can see it. |
 | `/issues` | Report a problem with the site. Admins see the reports at `/admin/issues`, set a status and add a note. | Signed-in users report. Admins review. |
 | `/e/{id}-{title}`, `/sitemap.xml`, `/robots.txt` | Plain HTML event pages with schema.org Event data, the sitemap of live events, and robots.txt (CC-108). Public details only. | Anyone, through chiculturecrew.com |
