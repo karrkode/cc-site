@@ -81,14 +81,20 @@ button, input, select { font: inherit; color: inherit; }
 a { color: inherit; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 [tabindex="-1"]:focus { outline: none; }
-/* CC-225: every button presses to .97. A transform can't move an inline box, so the two kinds of link that look like
-   buttons become inline-block. The ::after is only there during a press: without it, the shrink pulls the button's edge
-   out from under the pointer, the release lands on the page and the click is lost. */
+/* CC-225: every button, and every link that is a whole row, presses to .97. A transform can't move an inline box, so the
+   two kinds of link that look like buttons become inline-block. Where the link sits inside its row (an inline link, or
+   a tile placed against the row), the row is what scales. The ::after is only there during a press: without it, the
+   shrink pulls the edge out from under the pointer, the release lands on the page and the click is lost. The lead pick
+   lets go of its overflow for the press, or it would clip that ::after. */
 a.btn, a.textbtn { display: inline-block; }
 @media (prefers-reduced-motion: no-preference) {
-  button, a.btn, a.textbtn { transition: transform var(--dur-press) var(--ease-out); }
-  button:active:not(:disabled), a.btn:active, a.textbtn:active { transform: scale(.97); }
-  button:active:not(:disabled)::after, a.btn:active::after, a.textbtn:active::after { content: ""; position: absolute; inset: -2%; }
+  button, a.btn, a.textbtn, a.hub-row, .last, .lead-pick, .listing, .wk-row, .crew-plan, .journal-row, .acct-row { transition: transform var(--dur-press) var(--ease-out); }
+  button:active:not(:disabled), a.btn:active, a.textbtn:active, a.hub-row:active, .last:active, .lead-pick:active,
+  .listing:has(.listing-a:active), .wk-row:has(> .wk-row-a:active), .crew-plan:has(> .crew-plan-a:active),
+  .journal-row:has(> .journal-a:active), .acct-row:has(.acct-row-t a:active) { transform: scale(.97); }
+  button:active:not(:disabled)::after, a.btn:active::after, a.textbtn:active::after, a.hub-row:active::after, .last:active::after, .lead-pick:active::after,
+  .listing-a:active::after, .wk-row-a:active::after, .crew-plan-a:active::after, .journal-a:active::after, .acct-row-t a:active::after { content: ""; position: absolute; inset: -2%; }
+  .lead-pick:active { overflow: visible; }
 }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .star { width: 1em; height: 1em; fill: var(--star); flex: none; }
