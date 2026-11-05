@@ -57,6 +57,7 @@ assert.ok(view.includes("<h2>Tools</h2>"), "the section is called Tools");
 assert.ok(view.includes('data-hub="manual">Check by hand only</button>'), "Check by hand only opens on the sources checked by hand");
 const js = read("js/sourcing.js");
 assert.ok(js.includes('"#sources/manual"'), "so does Needs you's row");
+assert.ok(js.includes('"#source-" + bad[0].id : "#sources/unreadable"'), "CC-224: one unreadable source opens its Health panel, two or more open the filter");
 
 // --- Event sources: the filters ---
 const admin = read("js/admin.js");
@@ -64,16 +65,24 @@ const f = { SOURCES_HOW: "all", SOURCES_KIND: "all" };
 vm.createContext(f);
 vm.runInContext(admin.slice(admin.indexOf("var SOURCE_TYPES"), admin.indexOf("$(\"sources-how\").addEventListener")), f);
 const list = [{ id: 1, manual: true, kind: "theater" }, { id: 2, manual: false, kind: "theater" }, { id: 3, manual: false, kind: "museum" },
-  { id: 4, manual: false, kind: "opera" }, { id: 5, manual: false, kind: "music" }, { id: 6, manual: false, kind: "comedy" }];
+  { id: 4, manual: false, kind: "opera" }, { id: 5, manual: false, kind: "music" }, { id: 6, manual: false, kind: "comedy" },
+  // CC-224: only state "error" is unreadable. 7 and 8 failed too, but they're by hand and off, so Needs you doesn't count them.
+  { id: 9, manual: false, kind: "theater", state: "error", last_status: "blocked" }, { id: 10, manual: false, kind: "museum", state: "error", last_status: "error" },
+  { id: 7, manual: true, kind: "theater", state: "manual", last_status: "blocked" }, { id: 8, manual: false, kind: "theater", state: "off", last_status: "error" }];
 const ids = (how, kind) => { f.SOURCES_HOW = how; f.SOURCES_KIND = kind; return f.filteredSources(list).map((s) => s.id).join(); };
-assert.strictEqual(ids("all", "all"), "1,2,3,4,5,6");
-assert.strictEqual(ids("manual", "all"), "1");
-assert.strictEqual(ids("auto", "all"), "2,3,4,5,6");
-assert.strictEqual(ids("all", "Theater"), "1,2");
-assert.strictEqual(ids("auto", "Theater"), "2");
+assert.strictEqual(ids("all", "all"), "1,2,3,4,5,6,9,10,7,8");
+assert.strictEqual(ids("manual", "all"), "1,7");
+assert.strictEqual(ids("auto", "all"), "2,3,4,5,6,9,10,8");
+assert.strictEqual(ids("all", "Theater"), "1,2,9,7,8");
+assert.strictEqual(ids("auto", "Theater"), "2,9,8");
+assert.strictEqual(ids("unreadable", "all"), "9,10", "CC-224: the sources Needs you counts, and no others");
+assert.strictEqual(ids("unreadable", "Theater"), "9", "alongside the Type filter");
+assert.strictEqual(ids("unreadable", "Music"), "");
 assert.strictEqual(ids("all", "Music"), "4,5", "an opera source is Music");
-assert.strictEqual(ids("all", "Visual Art"), "3");
+assert.strictEqual(ids("all", "Visual Art"), "3,10");
 assert.strictEqual(ids("manual", "Visual Art"), "");
+assert.ok(html.includes('<option value="unreadable">Couldn\'t be read</option>'), "CC-224: the filter's option");
+assert.ok(admin.includes("There are no sources we couldn't read right now."), "the page says so when there are none");
 const kinds = html.slice(html.indexOf('id="sources-kind"'), html.indexOf("</select>", html.indexOf('id="sources-kind"')));
 assert.deepStrictEqual(kinds.match(/>[^<]+<\/option>/g).map((o) => o.slice(1, -9)), ["All types", "Theater", "Music", "Visual Art"], "only the site's three types");
 const firstLine = view.slice(view.indexOf('class="hub-top"'), view.indexOf('id="found-graph"'));

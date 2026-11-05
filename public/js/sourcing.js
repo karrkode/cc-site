@@ -27,7 +27,7 @@ function paintSourcing(o) {
   var rows = [], bad = o.unreadable, names = function (list) { return list.join(", "); };
   if (o.updates_waiting) rows.push(needRowHTML(o.updates_waiting, o.updates_waiting === 1 ? "Proposed update" : "Proposed updates", "New prices or dates on events already listed", "#found/update"));
   if (bad.length) rows.push(needRowHTML(bad.length, bad.length === 1 ? "Source we couldn't read" : "Sources we couldn't read",
-    bad.length === 1 ? bad[0].name + ": " + bad[0].reason : names(bad.map(function (s) { return s.name; })), bad.length === 1 ? "#source-" + bad[0].id : "#sources"));
+    bad.length === 1 ? bad[0].name + ": " + bad[0].reason : names(bad.map(function (s) { return s.name; })), bad.length === 1 ? "#source-" + bad[0].id : "#sources/unreadable"));
   if (o.by_hand.length) rows.push(needRowHTML(o.by_hand.length, o.by_hand.length === 1 ? "Source to check by hand" : "Sources to check by hand", names(o.by_hand), "#sources/manual"));
   $("needs-n").textContent = rows.length ? String(rows.length) : "";
   $("needs-list").innerHTML = rows.join("");

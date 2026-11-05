@@ -86,9 +86,9 @@ function sgPlacePanel(s, animate) {
   if (animate) { var panel = $("sg-panel"); panel.getBoundingClientRect(); panel.classList.add("open"); } // the browser sees it shut first, so the height can move
   if (SG_OPEN.tab === "events" && s.found) sgLoadEvents(s);
 }
-function paintSourceGrid(shown) {
+function paintSourceGrid(shown, none) {
   var list = $("sources-list");
-  list.innerHTML = shown.length ? sgSorted(shown).map(sgBlockHTML).join("") : '<p class="hint sg-none">No sources match these filters.</p>';
+  list.innerHTML = shown.length ? sgSorted(shown).map(sgBlockHTML).join("") : '<p class="hint sg-none">' + esc(none) + "</p>";
   var s = SG_OPEN && shown.filter(function (x) { return x.id === SG_OPEN.id; })[0];
   if (s) sgPlacePanel(s, false); else SG_OPEN = null;
 }

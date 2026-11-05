@@ -1100,7 +1100,7 @@ $("utm-examples").innerHTML = UTM_EXAMPLES.map(function (u) {
 var SOURCE_KINDS = { theater: "Theater", opera: "Opera", museum: "Museum", music: "Music", comedy: "Comedy" };
 var SOURCE_STATUS = { ok: ["Found changes", "ok"], unchanged: ["No changes", ""], blocked: ["Can't be read", "bad"], error: ["Check failed", "bad"], "": ["Not checked yet", ""] };
 var EVERY = [[7, "Every week"], [14, "Every 2 weeks"], [30, "Every month"], [60, "Every 2 months"]];
-// how (CC-207): "manual" opens on the sources checked by hand; otherwise every source shows, so a link to one finds it
+// how (CC-207): "manual" opens on the sources checked by hand, "unreadable" (CC-224) on the ones we couldn't read; otherwise every source shows, so a link to one finds it
 // openId (CC-221): a link to one source opens its block's Health panel
 function openSources(focusSel, how, openId) {
   if (!isAdmin()) { openAccount(); return; }
@@ -1111,8 +1111,11 @@ var SOURCES = null, SOURCES_HOW = "all", SOURCES_KIND = "all", SRC_ASK = null; /
 // CC-207: the site's three types. An opera source's events are Music, and comedy sources have no type now (CC-133),
 // so they show under All types only. The API's own map is BY_SOURCE_KIND in cc-backend categories.py.
 var SOURCE_TYPES = { theater: "Theater", opera: "Music", music: "Music", museum: "Visual Art" };
+// CC-224: state "error" is the API's own word for a source Needs you counts as unreadable: on, not by hand, last read failed.
+// last_status alone would also bring in sources that are off or checked by hand.
+function sourceHowFits(s) { return SOURCES_HOW === "all" || (SOURCES_HOW === "unreadable" ? s.state === "error" : s.manual === (SOURCES_HOW === "manual")); }
 function filteredSources(list) {
-  return list.filter(function (s) { return (SOURCES_HOW === "all" || s.manual === (SOURCES_HOW === "manual")) && (SOURCES_KIND === "all" || SOURCE_TYPES[s.kind] === SOURCES_KIND); });
+  return list.filter(function (s) { return sourceHowFits(s) && (SOURCES_KIND === "all" || SOURCE_TYPES[s.kind] === SOURCES_KIND); });
 }
 $("sources-how").addEventListener("change", function () { SOURCES_HOW = this.value; if (SOURCES) paintSources(SOURCES); });
 $("sources-kind").addEventListener("change", function () { SOURCES_KIND = this.value; if (SOURCES) paintSources(SOURCES); });
@@ -1141,7 +1144,8 @@ function paintSources(o) {
   $("sources-how").value = SOURCES_HOW; $("sources-kind").value = SOURCES_KIND;
   var shown = filteredSources(o.sources);
   $("sources-shown").textContent = shown.length < o.sources.length ? "Showing " + shown.length + " of " + plural(o.sources.length, "source", "sources") + "." : "";
-  paintSourceGrid(shown); // CC-221
+  var allRead = SOURCES_HOW === "unreadable" && !o.sources.some(function (s) { return s.state === "error"; }); // CC-224
+  paintSourceGrid(shown, allRead ? "There are no sources we couldn't read right now." : "No sources match these filters."); // CC-221
 }
 function srcAskHTML(s) { // CC-133
   var id = esc(s.id);
