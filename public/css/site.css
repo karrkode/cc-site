@@ -65,6 +65,7 @@
   --dur-drop: 200ms;
   --dur-press: 100ms;
   --dur-grow: 180ms;
+  --grow: 2.5; /* CC-226: how many px a link grows on hover */
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -97,9 +98,9 @@ a.btn, a.textbtn { display: inline-block; }
   .listing-a:active::after, .listing-cover:active::after, .wk-row-a:active::after, .crew-plan-a:active::after, .journal-a:active::after, .acct-row-t a:active::after { content: ""; position: absolute; inset: -2%; }
   .lead-pick:active { overflow: visible; }
 }
-/* CC-226: links grow 5px on hover instead of underlining (brief section 6). A scale, so nothing around them moves, from
+/* CC-226: links grow 2.5px (--grow) on hover instead of underlining (brief section 6). A scale, so nothing around them moves, from
    the start of the text. It's the scale property, not transform, so it adds to the press rather than replacing it.
-   --fs is the text's size in px, set beside its font-size, because the same 5px is a different scale at each size
+   --fs is the text's size in px, set beside its font-size, because the same growth is a different scale at each size
    (test_motion.js holds them together). A scaled element holds its absolutely placed children, so a whole-row link's
    cover can't sit inside the part that grows (.listing-cover). With reduced motion it still grows, without the animation.
    A name that fills its column would grow over the price beside it, so on a device that can hover, names wrap early enough
@@ -108,10 +109,10 @@ a.btn, a.textbtn { display: inline-block; }
 .navlink { transform-origin: 8px 50%; } /* its text starts after the padding */
 .listing-t { transform-origin: 0 75%; }
 @media (hover: hover) {
-  .lead-t, .last-t, .listing-t, .crew-top, .hub-name { padding-right: calc(100% * 5 / (var(--fs) + 5)); }
+  .lead-t, .last-t, .listing-t, .crew-top, .hub-name { padding-right: calc(100% * var(--grow) / (var(--fs) + var(--grow))); }
   .navlink:hover, .ev-back:hover, .lf-back .textbtn:hover, .lead-pick:hover .lead-t, .way:hover .way-t, .last:hover .last-t, .listing:hover .listing-t,
   .wk-row-a:hover .listing-t, .journal-a:hover .listing-t, .crew-plan-a:hover .listing-t, .crew-sum:hover .crew-top, .hub-row:hover .hub-name,
-  .lf-page .opt:hover:not(:disabled) .opt-main { scale: calc(1 + 5 / var(--fs)); }
+  .lf-page .opt:hover:not(:disabled) .opt-main { scale: calc(1 + var(--grow) / var(--fs)); }
 }
 /* The growth eases in and out, as an ease-out does most of it in the first frames and then creeps. will-change keeps the text
    on its own layer: without it, the browser redraws the text on the pixel grid as the growth starts and ends, and it jumps. */
@@ -138,7 +139,7 @@ a.btn, a.textbtn { display: inline-block; }
   color: inherit; cursor: pointer; font-family: var(--display); font-size: 2rem; font-weight: 600; line-height: 1; letter-spacing: -0.02em;
 }
 .brand .star { width: 0.56em; height: 0.56em; }
-.mast nav { grid-area: nav; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 0 16px; } /* room for a link to grow (CC-226) */
+.mast nav { grid-area: nav; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 0 8px; }
 .navlink {
   min-height: 44px; padding: 8px; background: none; border: 0; cursor: pointer; color: var(--on-lake);
   font-family: var(--sign); font-weight: 700; font-size: 1.125rem; --fs: 18; text-decoration: none; text-underline-offset: 8px;
