@@ -327,7 +327,7 @@ $("roundups-list").addEventListener("click", function (ev) {
 // The list comes from GET /venues/manage (every venue, with how many events use it) and is filtered here.
 // One dialog does rename, merge (with a preview of what moves) and delete (only for unused venues).
 var VLIST = [], VDLG = null; // VDLG: { mode: "edit" | "merge" | "delete", v, opener }
-function openVenues() { if (!isAdmin()) { openAccount(); return; } show("venues"); loadVenues(); VSEDIT = null; $("vs-status").textContent = ""; loadSiteSuggestions(); $("oot-status").textContent = ""; loadOutOfTown(); }
+function openVenues() { if (!isAdmin()) { openAccount(); return; } show("venues"); loadVenues(); VAEDIT = null; $("va-status").textContent = ""; loadAddressSuggestions(); VSEDIT = null; $("vs-status").textContent = ""; loadSiteSuggestions(); $("oot-status").textContent = ""; loadOutOfTown(); }
 function loadVenues(focusId) {
   $("v-count").textContent = "Loading…";
   return api("/venues/manage").then(readJSON).then(function (res) {
@@ -342,19 +342,22 @@ function venueMatches(v, q) { q = q.trim().toLowerCase(); return !q || (v.name +
 // CC-78: opening hours are "filled in" for a day when it's open (with times) or closed; a day left out isn't known.
 function hoursComplete(v) { var h = v.open_hours || {}; return ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].every(function (d) { return d in h; }); }
 function paintVenues() {
-  var q = $("v-q").value, onlyUnplaced = $("v-noregion").checked, hours = $("v-hours").value;
+  var q = $("v-q").value, onlyUnplaced = $("v-noregion").checked, hours = $("v-hours").value, noAddress = $("v-noaddress").checked;
   var rows = VLIST.filter(function (v) {
-    return venueMatches(v, q) && (!onlyUnplaced || !v.region) && (!hours || hoursComplete(v) === (hours === "full"));
+    return venueMatches(v, q) && (!onlyUnplaced || !v.region) && (!noAddress || !v.address) && (!hours || hoursComplete(v) === (hours === "full"));
   });
+  var unaddressed = VLIST.filter(function (v) { return !v.address; }).length; // CC-218
   var unplaced = VLIST.filter(function (v) { return !v.region; }).length;
-  $("v-count").textContent = plural(rows.length, "venue", "venues") + (q.trim() || onlyUnplaced || hours ? " match" : "") +
+  $("v-count").textContent = plural(rows.length, "venue", "venues") + (q.trim() || onlyUnplaced || noAddress || hours ? " match" : "") +
     (rows.length > 200 ? ", showing the first 200. Search to narrow it down." : ".") +
-    (unplaced && !onlyUnplaced ? " " + plural(unplaced, "venue has", "venues have") + " no side of town yet." : "");
+    (unplaced && !onlyUnplaced ? " " + plural(unplaced, "venue has", "venues have") + " no side of town yet." : "") +
+    (unaddressed && !noAddress ? " " + plural(unaddressed, "venue has", "venues have") + " no address yet." : "");
   $("venue-list").innerHTML = rows.slice(0, 200).map(function (v) {
     var id = esc(v.id);
     return '<div class="queue-item"><div class="alt-text"><p class="alt-title">' + esc(v.name) + '</p><p class="alt-meta">' +
       esc(v.neighborhood || "No neighborhood") + " · " + esc(REGION_NAMES[v.region] || (v.region ? "Out of town" : "No side of town")) + " · " + plural(v.events, "event", "events") +
       "</p>" + '<p class="alt-meta">' + (v.category ? "Default type: " + esc(typeLabel(v.category, v.opera)) : '<span class="state">No default type</span>') + "</p>" +
+      '<p class="alt-meta">' + (v.address ? "Address: " + esc(v.full_address) : '<span class="state">No address yet</span>') + "</p>" +
       (v.standard_cost ? '<p class="alt-meta">Standard cost: ' + esc(v.standard_cost) + "</p>" : "") +
       (v.website ? '<p class="alt-meta">Website: ' + siteLink(v.website) + "</p>" : "") + hoursNote(v) + "</div>" +
       '<div class="row"><button class="btn ghost" type="button" data-venue-edit="' + id + '" aria-label="Edit ' + esc(venueLabel(v)) + '">Edit</button>' +
@@ -366,6 +369,7 @@ function paintVenues() {
 }
 $("v-q").addEventListener("input", paintVenues);
 $("v-noregion").addEventListener("change", paintVenues);
+$("v-noaddress").addEventListener("change", paintVenues);
 $("v-hours").addEventListener("change", paintVenues);
 $("venue-list").addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-venue-edit],[data-venue-merge],[data-venue-delete]"); if (!b) return;
@@ -483,7 +487,7 @@ function openVenueDialog(mode, v, opener) {
   $("vd-go").className = mode === "delete" ? "btn danger solid" : "btn";
   $("vd-error").textContent = ""; setVenueBusy(false);
   if (mode === "edit") { $("vd-name").value = v.name; $("vd-hood").value = v.neighborhood; $("vd-area").value = v.area; $("vd-region").value = v.region || ""; $("vd-cost").value = v.standard_cost || "";
-    $("vd-category").value = v.category || ""; $("vd-opera").checked = !!v.opera; $("vd-website").value = v.website || ""; }
+    $("vd-category").value = v.category || ""; $("vd-opera").checked = !!v.opera; $("vd-website").value = v.website || ""; $("vd-address").value = v.address || ""; $("vd-city").value = v.city || ""; $("vd-zip").value = v.zip_code || ""; }
   if (mode === "merge") { $("vd-find").value = ""; fillMergeTargets(); }
   if (mode === "delete") $("vd-delete").textContent = "No events use " + venueLabel(v) + ", so it can go. This can't be undone.";
   $("venue-dialog").showModal();
@@ -533,6 +537,9 @@ $("venue-form").addEventListener("submit", function (ev) {
     var site = $("vd-website").value.trim(); // CC-213: the API checks and normalises it too
     if (site && !/^https?:\/\/\S+$/i.test(site)) { $("vd-error").textContent = "A website starts with https:// or http://."; $("vd-website").focus(); return; }
     if (site !== (v.website || "")) body.website = site;
+    var place = addressFrom("vd"), bad = place.address || place.city || place.zip_code ? addressProblem("vd", place) : null; // CC-218: all three, or none
+    if (bad) { $("vd-error").textContent = bad[1]; $(bad[0]).focus(); return; }
+    if (place.address !== (v.address || "") || place.city !== (v.city || "") || place.zip_code !== (v.zip_code || "")) { body.address = place.address; body.city = place.city; body.zip_code = place.zip_code; }
     if (!Object.keys(body).length) { $("venue-dialog").close(); return; }
     req = api("/venues/" + v.id, { method: "PATCH", body: body }); said = "Saved " + name + "."; after = v.id;
   } else if (d.mode === "merge") {
@@ -551,6 +558,7 @@ $("venue-form").addEventListener("submit", function (ev) {
     VENUES = null; // the submit form's venue list is out of date now
     reloadEvents(); // cards show venue names
     loadSiteSuggestions(); // a venue with a website (or merged away) has none
+    loadAddressSuggestions(); // and the same for an address (CC-218)
     loadOutOfTown(); // CC-217: a venue moved into the suburbs, or merged away, is off that list
     loadVenues(after).then(function () { if (!after || !document.activeElement || document.activeElement === document.body) $("venues-title").focus(); });
   }, function () { setVenueBusy(false); $("vd-error").textContent = errorText(null); });
@@ -625,6 +633,101 @@ $("vs-list").addEventListener("keydown", function (ev) { // Enter in the edit bo
   if (b) { ev.preventDefault(); b.click(); }
 });
 
+// ---------- add a venue (admins, CC-218) ----------
+// The one place a venue is added directly, so the street, city and ZIP are required (POST /venues checks them too). A venue
+// typed while editing or approving an event comes in through /venues/from-event with no address, and shows as missing one.
+function addressFrom(p) { // the three fields of a form: vd-, vn- or va-
+  return { address: $(p + "-address").value.trim().replace(/\s+/g, " "), city: $(p + "-city").value.trim().replace(/\s+/g, " "), zip_code: $(p + "-zip").value.trim() };
+}
+function addressProblem(p, a) { // [the field at fault, what to say], or null
+  return !a.address ? [p + "-address", "Enter the street address."] : !a.city ? [p + "-city", "Enter the city."] :
+    !/^\d{5}(-\d{4})?$/.test(a.zip_code) ? [p + "-zip", "Enter a 5-digit ZIP code."] : null;
+}
+$("va-add").addEventListener("input", function () { $("vn-error").textContent = ""; });
+$("va-add").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var name = $("vn-name").value.trim(), hood = $("vn-hood").value.trim(), place = addressFrom("vn");
+  var bad = !name ? ["vn-name", "Give the venue a name."] : addressProblem("vn", place);
+  if (bad) { $("vn-error").textContent = bad[1]; $(bad[0]).focus(); return; }
+  $("vn-go").disabled = true; $("vn-status").textContent = ""; $("vn-error").textContent = "";
+  api("/venues", { method: "POST", body: { name: name, neighborhood: hood, address: place.address, city: place.city, zip_code: place.zip_code } }).then(readJSON).then(function (res) {
+    $("vn-go").disabled = false;
+    if (!res.ok) { $("vn-error").textContent = errorText(res); return; }
+    $("va-add").reset(); $("vn-status").textContent = "Added " + venueLabel(res.body) + ".";
+    if (VENUES) VENUES.push(res.body);
+    loadVenues(res.body.id);
+  }, function () { $("vn-go").disabled = false; $("vn-error").textContent = errorText(null); });
+});
+
+// ---------- suggested street addresses (admins, CC-218) ----------
+// Discovery keeps what it sees in pages' event data; GET /venues/address-suggestions lists it for venues with no address.
+// Only Confirm saves one (POST /venues/{id}/address, which never replaces an address already set). Dismiss is remembered.
+// Addresses come from other sites, so they're untrusted text: always shown escaped.
+var VASUGG = [], VAEDIT = null; // VAEDIT: the suggestion being edited, "venue_id address"
+function addressKey(s) { return s.venue_id + " " + s.address; }
+function loadAddressSuggestions() {
+  return api("/venues/address-suggestions").then(readJSON).then(function (res) {
+    if (!res.ok) { $("va").hidden = false; $("va-status").textContent = errorText(res); return; }
+    VASUGG = res.body; paintAddressSuggestions();
+  }, function () { $("va").hidden = false; $("va-status").textContent = errorText(null); });
+}
+function paintAddressSuggestions() {
+  $("va").hidden = !VASUGG.length && !$("va-status").textContent;
+  $("va-n").textContent = VASUGG.length ? String(VASUGG.length) : "";
+  $("va-list").innerHTML = VASUGG.map(function (s) {
+    var k = esc(addressKey(s)), label = esc(venueLabel({ name: s.venue_name, neighborhood: s.neighborhood }));
+    if (VAEDIT === addressKey(s)) {
+      return '<div class="queue-item vs-item"><div class="alt-text"><p class="alt-title">' + label + "</p>" +
+        '<div class="field"><label for="va-address">Street address</label><input id="va-address" type="text" maxlength="200" autocomplete="off" value="' + esc(s.address) + '"></div>' +
+        '<div class="field"><label for="va-city">City</label><input id="va-city" type="text" maxlength="120" autocomplete="off" value="' + esc(s.city) + '"></div>' +
+        '<div class="field"><label for="va-zip">ZIP</label><input id="va-zip" type="text" inputmode="numeric" maxlength="10" autocomplete="off" value="' + esc(s.zip_code) + '"></div></div>' +
+        '<div class="row"><button class="btn" type="button" data-va-save="' + k + '">Save address</button>' +
+        '<button class="btn ghost" type="button" data-va-cancel="' + k + '">Cancel</button></div></div>';
+    }
+    return '<div class="queue-item vs-item"><div class="alt-text"><p class="alt-title">' + label + "</p>" +
+      '<p class="alt-meta">' + esc(s.address + ", " + s.city + (s.zip_code ? " " + s.zip_code : "")) + "</p>" +
+      '<p class="alt-meta">From ' + esc(s.source || "an event page") + (s.zip_code ? "" : '. <span class="state">No ZIP on the page: use Edit to add it</span>') + "</p></div>" +
+      '<div class="row">' + (s.zip_code ? '<button class="btn" type="button" data-va-confirm="' + k + '" aria-label="Confirm ' + esc(s.address) + " for " + label + '">Confirm</button>' : "") +
+      '<button class="btn ghost" type="button" data-va-edit="' + k + '" aria-label="Edit the address for ' + label + '">Edit</button>' +
+      '<button class="btn ghost" type="button" data-va-dismiss="' + k + '" aria-label="Dismiss ' + esc(s.address) + " for " + label + '">Dismiss</button></div></div>';
+  }).join("");
+}
+function addressBusy(on) { Array.prototype.forEach.call($("va-list").querySelectorAll("button, input"), function (x) { x.disabled = on; }); }
+function addressDone(said) { // after a save or dismiss: refresh both lists, and keep focus in the suggestions
+  VAEDIT = null; $("va-status").textContent = said;
+  return Promise.all([loadAddressSuggestions(), loadVenues()]).then(function () {
+    var next = $("va-list").querySelector("[data-va-confirm],[data-va-edit]");
+    (next || $("va-h")).focus();
+  });
+}
+$("va-list").addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-va-confirm],[data-va-edit],[data-va-dismiss],[data-va-save],[data-va-cancel]"); if (!b) return;
+  var act = ["confirm", "edit", "dismiss", "save", "cancel"].filter(function (a) { return b.hasAttribute("data-va-" + a); })[0];
+  var key = b.getAttribute("data-va-" + act), s = VASUGG.filter(function (x) { return addressKey(x) === key; })[0];
+  if (!s) return;
+  var label = venueLabel({ name: s.venue_name, neighborhood: s.neighborhood });
+  if (act === "edit" || act === "cancel") {
+    VAEDIT = act === "edit" ? key : null; $("va-status").textContent = ""; paintAddressSuggestions();
+    var f = act === "edit" ? $("va-address") : $("va-list").querySelector('[data-va-edit="' + CSS.escape(key) + '"]');
+    if (f) f.focus();
+    return;
+  }
+  var place = act === "save" ? addressFrom("va") : { address: s.address, city: s.city, zip_code: s.zip_code }, address = place.address;
+  var bad = act === "save" ? addressProblem("va", place) : null;
+  if (bad) { $("va-status").textContent = bad[1]; $(bad[0]).focus(); return; }
+  var path = "/venues/" + s.venue_id + "/address" + (act === "dismiss" ? "/dismiss" : "");
+  addressBusy(true);
+  api(path, { method: "POST", body: act === "dismiss" ? { address: address } : place }).then(readJSON).then(function (res) {
+    if (!res.ok) { addressBusy(false); $("va-status").textContent = errorText(res); return; }
+    addressDone(act === "dismiss" ? "Dismissed " + address + " for " + label + "." : "Saved the address for " + label + ".");
+  }, function () { addressBusy(false); $("va-status").textContent = errorText(null); });
+});
+$("va-list").addEventListener("keydown", function (ev) { // Enter in the edit box saves, Escape cancels
+  if (!/^va-(address|city|zip)$/.test(ev.target.id) || (ev.key !== "Enter" && ev.key !== "Escape")) return;
+  var b = $("va-list").querySelector(ev.key === "Enter" ? "[data-va-save]" : "[data-va-cancel]");
+  if (b) { ev.preventDefault(); b.click(); }
+});
+
 // ---------- edit, withdraw or delete an event (admins, CC-56) ----------
 // One dialog for every place an event shows (cards, the review lists). It sends only the fields that
 // changed, so an untouched price keeps its exact lowest price. Afterwards every list on the
@@ -691,7 +794,7 @@ function venueIdFor(name, hood) {
   }
   var known = find(VENUES);
   if (known) return Promise.resolve(known.id);
-  return api("/venues", { method: "POST", body: { name: name, neighborhood: hood } }).then(readJSON).then(function (res) {
+  return api("/venues/from-event", { method: "POST", body: { name: name, neighborhood: hood } }).then(readJSON).then(function (res) {
     if (res.ok) { if (VENUES) VENUES.push(res.body); return res.body.id; }
     if (res.status !== 409) throw res;
     return api("/venues?q=" + encodeURIComponent(name)).then(readJSON).then(function (r) { // added since we last looked
