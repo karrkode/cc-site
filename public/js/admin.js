@@ -501,7 +501,7 @@ function openVenueDialog(mode, v, opener) {
   if (mode === "delete") $("vd-delete").textContent = "No events use " + venueLabel(v) + ", so it can go. This can't be undone.";
   if (mode === "hide") $("vd-delete").textContent = venueLabel(v) + " will leave the public venue list. " + (v.events === 1 ? "Its event stays" : "Its " + v.events + " events stay") + " listed, and you can unhide it at any time.";
   if (mode === "unhide") $("vd-delete").textContent = venueLabel(v) + (v.pending ? " will go on the public venue list once one of its events is approved." : " will go back on the public venue list.");
-  $("venue-dialog").showModal();
+  openDialog($("venue-dialog"));
   (mode === "edit" ? $("vd-name") : mode === "merge" ? $("vd-find") : $("vd-cancel")).focus();
 }
 function fillMergeTargets() {
@@ -522,7 +522,7 @@ $("vd-find").addEventListener("input", fillMergeTargets);
 operaGoesWithMusic("vd-category", "vd-opera");
 $("vd-into").addEventListener("change", mergePreview);
 function setVenueBusy(on) { Array.prototype.forEach.call($("venue-form").querySelectorAll("button, input, select"), function (x) { x.disabled = on; }); }
-$("vd-cancel").addEventListener("click", function () { $("venue-dialog").close(); });
+$("vd-cancel").addEventListener("click", function () { closeDialog($("venue-dialog")); });
 $("venue-form").addEventListener("input", function () { $("vd-error").textContent = ""; });
 $("venue-dialog").addEventListener("close", function () {
   var was = VDLG; VDLG = null;
@@ -551,7 +551,7 @@ $("venue-form").addEventListener("submit", function (ev) {
     var place = addressFrom("vd"), bad = place.address || place.city || place.zip_code ? addressProblem("vd", place) : null; // CC-218: all three, or none
     if (bad) { $("vd-error").textContent = bad[1]; $(bad[0]).focus(); return; }
     if (place.address !== (v.address || "") || place.city !== (v.city || "") || place.zip_code !== (v.zip_code || "")) { body.address = place.address; body.city = place.city; body.zip_code = place.zip_code; }
-    if (!Object.keys(body).length) { $("venue-dialog").close(); return; }
+    if (!Object.keys(body).length) { closeDialog($("venue-dialog")); return; }
     req = api("/venues/" + v.id, { method: "PATCH", body: body }); said = "Saved " + name + "."; after = v.id;
   } else if (d.mode === "merge") {
     var into = VLIST.filter(function (x) { return String(x.id) === $("vd-into").value; })[0];
@@ -568,7 +568,7 @@ $("venue-form").addEventListener("submit", function (ev) {
   req.then(readJSON).then(function (res) {
     if (!res.ok) { setVenueBusy(false); $("vd-error").textContent = errorText(res); return; }
     $("edit-live").textContent = said;
-    VDLG = null; $("venue-dialog").close();
+    VDLG = null; closeDialog($("venue-dialog"));
     VENUES = null; // the submit form's venue list is out of date now
     reloadEvents(); // cards show venue names
     loadSiteSuggestions(); // a venue with a website (or merged away) has none
@@ -804,9 +804,9 @@ function openEditor(e, opener) {
   $("ed-dates-note").hidden = !datesToLookUp(e); // CC-102: a reminder to find its dates
   $("ed-withdraw").textContent = e.status === "withdrawn" ? "Restore" : "Withdraw";
   $("ed-error").textContent = ""; $("ed-confirm").hidden = true; setEditorBusy(false);
-  $("edit-dialog").showModal(); $("ed-title").focus();
+  openDialog($("edit-dialog")); $("ed-title").focus();
 }
-function closeEditor() { if ($("edit-dialog").open) $("edit-dialog").close(); }
+function closeEditor() { if ($("edit-dialog").open) closeDialog($("edit-dialog")); }
 $("edit-dialog").addEventListener("close", function () { // Escape, Cancel or done: back to where the admin was
   var was = EDITING; EDITING = null; if (!was) return;
   REFOCUS = was.e.id;

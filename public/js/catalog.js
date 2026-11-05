@@ -239,16 +239,17 @@ function paintWhere() {
 }
 function openWhere(open) {
   var panel = $("f-where-panel"), btn = $("f-where-btn");
-  panel.hidden = !open; btn.setAttribute("aria-expanded", String(open));
-  if (open) { // open towards whichever side has room, so it never runs off the screen
+  btn.setAttribute("aria-expanded", String(open));
+  if (!open) { if (!panel.hidden) dropClose(panel); return; }
+  dropOpen(panel, function () { // open towards whichever side has room, so it never runs off the screen
     panel.style.left = "0"; panel.style.right = "auto";
     var r = panel.getBoundingClientRect(), field = btn.parentElement.getBoundingClientRect();
     if (r.right > document.documentElement.clientWidth - 16) {
       panel.style.left = "auto"; panel.style.right = "0";
       if (panel.getBoundingClientRect().left < 16) { panel.style.right = "auto"; panel.style.left = (16 - field.left) + "px"; }
     }
-  }
-  if (open) { paintWhere(); (panel.querySelector('[aria-pressed="true"], input:checked') || panel.querySelector("button, input")).focus(); }
+    paintWhere(); (panel.querySelector('[aria-pressed="true"], input:checked') || panel.querySelector("button, input")).focus();
+  });
 }
 function whereChanged() { paintWhere(); clearTimeout(WHERE_TIMER); WHERE_TIMER = setTimeout(renderCatalog, 250); }
 $("f-where-btn").addEventListener("click", function () { openWhere($("f-where-panel").hidden); });
@@ -339,22 +340,22 @@ $("active-filters").addEventListener("click", function (ev) {
 });
 $("filters-btn").addEventListener("click", function () {
   $("sheet-body").appendChild($("more-fields"));
-  $("filter-sheet").showModal();
+  openDialog($("filter-sheet"));
   $("f-when").focus();
 });
 $("filter-sheet").addEventListener("close", function () { // Escape, Close, Show N events or a tap outside
   openWhere(false);
-  $("filters-btn").parentElement.insertBefore($("more-fields"), $("filters-btn"));
+  afterExit(this, function () { $("filters-btn").parentElement.insertBefore($("more-fields"), $("filters-btn")); }); // the sheet leaves with its fields
   if (PHONE.matches) $("filters-btn").focus();
 });
 $("filter-sheet").addEventListener("click", function (ev) {
-  if (ev.target === this || ev.target.id === "sheet-close" || ev.target.id === "sheet-show") this.close(); // the dialog itself is only its backdrop
+  if (ev.target === this || ev.target.id === "sheet-close" || ev.target.id === "sheet-show") closeDialog(this); // the dialog itself is only its backdrop
 });
 $("sheet-reset").addEventListener("click", function () {
   cat.when = "upcoming"; cat.custom = null; cat.cost = "any"; cat.where = "any"; cat.regions = {}; cat.hoods = {}; cat.sort = "opening";
   renderCatalog();
 });
-PHONE.addEventListener("change", function () { if (!PHONE.matches && $("filter-sheet").open) $("filter-sheet").close(); });
+PHONE.addEventListener("change", function () { if (!PHONE.matches && $("filter-sheet").open) closeDialog($("filter-sheet")); });
 
 // ---------- the event view (CC-117) ----------
 // A card opens its event here, at #e/<id>: the details, your plans and your crews', and Tickets as the way out

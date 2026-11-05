@@ -66,7 +66,7 @@ function openHoursDialog(v, opener) {
     $("hd-show-" + k).value = ((v.show_times || {})[k] || []).map(clockText).join(", ");
   });
   $("hd-error").textContent = ""; setHoursBusy(false);
-  $("hours-dialog").showModal(); $("hd-open").querySelector("select").focus();
+  openDialog($("hours-dialog")); $("hd-open").querySelector("select").focus();
 }
 function sameHours(a, b) { // the same days and values, in any order
   b = b || {};
@@ -104,7 +104,7 @@ $("hd-shows").addEventListener("blur", function (ev) {
   var got = parseTimes(input.value); if (!got.error) input.value = got.times.map(clockText).join(", ");
 }, true);
 $("hours-form").addEventListener("input", function () { $("hd-error").textContent = ""; });
-$("hd-cancel").addEventListener("click", function () { $("hours-dialog").close(); });
+$("hd-cancel").addEventListener("click", function () { closeDialog($("hours-dialog")); });
 $("hours-dialog").addEventListener("close", function () {
   var was = HDLG; HDLG = null; if (!was) return;
   var back = was.opener && document.contains(was.opener) ? was.opener : $("venue-list").querySelector('[data-venue-hours="' + was.v.id + '"]');
@@ -144,13 +144,13 @@ $("hours-form").addEventListener("submit", function (ev) {
   var body = {}; // only what changed, so untouched hours keep who filled them in
   if (!sameHours(open, v.open_hours)) body.open_hours = open;
   if (!sameHours(shows, v.show_times)) body.show_times = shows;
-  if (!Object.keys(body).length) { $("hours-dialog").close(); return; }
+  if (!Object.keys(body).length) { closeDialog($("hours-dialog")); return; }
   setHoursBusy(true);
   api("/venues/" + v.id, { method: "PATCH", body: body }).then(readJSON).then(function (res) {
     if (!res.ok) { hoursFail(errorText(res)); return; }
     VLIST = VLIST.map(function (x) { return x.id === v.id ? res.body : x; });
     paintVenues(); $("edit-live").textContent = "Saved the hours at " + v.name + ".";
-    HDLG.opener = null; $("hours-dialog").close();
+    HDLG.opener = null; closeDialog($("hours-dialog"));
   }, function () { hoursFail(errorText(null)); });
 });
 

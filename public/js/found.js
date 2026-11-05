@@ -285,7 +285,7 @@ function openFoundEditor(i, opener, done) { // done (CC-207): what to do once it
   $("ed-sched-hint").textContent = own ? "From the venue's page; check them." : Object.keys(venueTimes).length ?
     "These are the venue's usual show times; change them if this show is different." : "Choose the days, and give a start time for each.";
   $("ed-error").textContent = ""; $("ed-confirm").hidden = true; setEditorBusy(false);
-  $("edit-dialog").showModal();
+  openDialog($("edit-dialog"));
   (i.needs === "date" ? $("ed-begin") : run.length && !run[0].time ? $("ed-run-list").querySelector("[data-run-time]") :
     i.needs === "show_days" ? $("ed-days").firstElementChild : $("ed-title")).focus(); // what's missing first
 }

@@ -39,12 +39,12 @@ function openIssueDialog(from) {
   $("is-what").value = ""; $("is-expected").value = ""; $("is-error").textContent = ""; $("is-send").disabled = false;
   document.querySelector('input[name="is-kind"][value="issue"]').checked = true; paintIssueKind();
   $("is-about").textContent = "We'll include the page you're on (" + currentViewName() + "), your browser and your screen size.";
-  $("issue-dialog").showModal(); document.querySelector('input[name="is-kind"]:checked').focus();
+  openDialog($("issue-dialog")); document.querySelector('input[name="is-kind"]:checked').focus();
 }
 $("report-open").addEventListener("click", function () { openIssueDialog(this); });
-$("is-cancel").addEventListener("click", function () { $("issue-dialog").close(); });
-$("is-close").addEventListener("click", function () { $("issue-dialog").close(); });
-$("is-see").addEventListener("click", function () { $("issue-dialog").close(); });
+$("is-cancel").addEventListener("click", function () { closeDialog($("issue-dialog")); });
+$("is-close").addEventListener("click", function () { closeDialog($("issue-dialog")); });
+$("is-see").addEventListener("click", function () { closeDialog($("issue-dialog")); });
 $("issue-dialog").addEventListener("close", function () {
   var back = ISSUE_FROM; ISSUE_FROM = null;
   if (back && document.contains(back) && !visible("account")) back.focus();

@@ -270,5 +270,122 @@ assert.strictEqual(c.g.posterSource(null), null);
     "the text keeps its layer, or it jumps to the pixel grid as the growth starts and ends; touch screens don't pay for the layers");
   assert.ok(!/\.listing-a::after \{ content/.test(css) && /\.listing-cover \{ position: absolute; inset: 0; \}/.test(css), "a scaled name would hold the row's cover, so the cover is outside it");
 
-  console.log("motion: ok");
+  // ---------- opening and closing (CC-227) ----------
+// The helper in util.js, on elements whose Animation you finish by hand
+{
+const util = read("js/util.js");
+function mover(opt) {
+  const anims = [], doc = {};
+  const animation = () => { const a = { reversed: 0, cancelled: 0, currentTime: 0, reverse() { a.reversed++; }, cancel() { a.cancelled++; } }; anims.push(a); return a; };
+  const el = (over) => Object.assign({ hidden: true, inert: false, open: false, isConnected: true, style: { setProperty(k, v, p) { this[k] = v; this.important = p; } },
+    classList: { add() {}, remove() {} }, getClientRects: () => [1], getBoundingClientRect: () => ({ left: 100, top: 100, width: 400, height: 300 }),
+    animate: () => animation() }, over);
+  const sandbox = {
+    window: { matchMedia: () => ({ matches: !!(opt && opt.calm) }), innerWidth: 1000, innerHeight: 800, scrollTo() {}, scrollX: 0, scrollY: 0 },
+    document: { addEventListener: (t, f) => { doc[t] = f; }, documentElement: {}, createElement: () => el({ remove() { sandbox.scrimGone = true; } }), body: { appendChild() {} } },
+    getComputedStyle: () => ({ position: "absolute", display: "grid", backgroundColor: "rgb(0 0 0)", getPropertyValue: (k) => ({ "--dur-drop": "200ms", "--ease-out": "ease-out", "--ease-in-out": "ease-in-out" })[k] }),
+    WeakMap, Object, Math, parseFloat,
+  };
+  vm.createContext(sandbox);
+  const from = util.indexOf("// ---------- opening and closing (CC-227"), to = util.indexOf("// ---------- the masthead (CC-137)");
+  assert.ok(from > 0 && to > from, "the helper sits before the masthead");
+  vm.runInContext(util.slice(from, to), sandbox);
+  return { g: sandbox, el, anims, doc };
+}
+
+// a drop-down: state changes at once, and the exit keeps it painted and inert until it ends
+let m = mover(), panel = m.el();
+m.g.dropOpen(panel);
+assert.strictEqual(panel.hidden, false, "it opens");
+assert.strictEqual(m.anims.length, 1, "with one animation");
+m.anims[0].onfinish();
+m.g.dropClose(panel);
+assert.strictEqual(panel.hidden, true, "hidden changes at once, so everything that reads it works as before");
+assert.strictEqual(panel.inert, true, "nothing in it can be reached while it leaves");
+assert.strictEqual(panel.style.display, "grid", "it stays painted");
+assert.strictEqual(panel.style.important, "important", "over the page's [hidden] rule, which is !important");
+assert.strictEqual(m.anims[1].reversed, 1, "the exit is the entrance played backwards");
+m.anims[1].onfinish();
+assert.strictEqual(panel.style.display, "", "and only then does it go");
+assert.strictEqual(panel.inert, false, "leaving nothing behind");
+
+// opened and closed quickly: the one animation turns round, and the last word wins
+m = mover(); panel = m.el();
+m.g.dropOpen(panel); m.g.dropClose(panel); m.g.dropOpen(panel);
+assert.strictEqual(m.anims.length, 1, "it never stacks up animations");
+assert.strictEqual(m.anims[0].reversed, 2, "it turns round from where it is, each time");
+assert.strictEqual(panel.hidden, false);
+assert.strictEqual(panel.inert, false, "reachable again as soon as it's coming back");
+assert.strictEqual(panel.style.display, "");
+m.anims[0].onfinish();
+assert.strictEqual(panel.hidden, false, "the exit it turned away from doesn't finish later and hide it");
+assert.strictEqual(panel.style.display, "");
+
+// focus goes in before the move: focus on something shifted off the screen scrolls the page
+m = mover(); panel = m.el();
+let order = [];
+panel.animate = () => { order.push("move"); return { reverse() {} }; };
+m.g.dropOpen(panel, () => order.push("focus"));
+assert.deepStrictEqual(order, ["focus", "move"]);
+
+// a class shows the phone menu: it's hidden when the exit ends, not before
+m = mover(); panel = m.el({ hidden: false });
+let hid = 0;
+m.g.dropClose(panel, () => hid++);
+assert.strictEqual(hid, 0, "the exit finishes first");
+m.anims[0].onfinish();
+assert.strictEqual(hid, 1);
+m = mover(); panel = m.el({ hidden: false }); hid = 0;
+m.g.dropClose(panel, () => hid++); m.g.dropOpen(panel); m.anims[0].onfinish();
+assert.strictEqual(hid, 0, "opened again mid-exit, it stays");
+
+// reduced motion, or a browser without the API: they swap at once
+m = mover({ calm: true }); panel = m.el();
+m.g.dropOpen(panel); assert.strictEqual(panel.hidden, false);
+m.g.dropClose(panel); assert.strictEqual(panel.hidden, true);
+assert.strictEqual(m.anims.length, 0, "no animation with reduced motion");
+assert.strictEqual(panel.inert, false);
+
+// a dialog closes for real at once, so focus returns to a page that can take it; only then does it leave on screen
+m = mover();
+let closed = 0, opened = 0, sized = [];
+const dlg = m.el({ tagName: "DIALOG", open: false, showModal() { this.open = true; opened++; }, close() { this.open = false; closed++; },
+  animate(f, t) { sized.push([f, t]); return Object.assign(m.el().animate(), { reverse() { this.reversed++; } }); } });
+dlg.classList = { list: [], add(c) { this.list.push(c); }, remove(c) { this.list = this.list.filter((x) => x !== c); } };
+m.doc.click({ target: { closest: () => m.el({ getBoundingClientRect: () => ({ left: 10, top: 20, width: 80, height: 40 }) }) } });
+m.g.openDialog(dlg);
+assert.strictEqual(opened, 1);
+assert.ok(/^translate\(-[\d.]+px, -[\d.]+px\) scale\(0\.2\)$/.test(sized[0][0][0].transform), "it starts at the control pressed: " + sized[0][0][0].transform);
+assert.strictEqual(sized[0][1].easing, "ease-out", "an entrance eases out");
+assert.strictEqual(sized[0][1].duration, 200, "in --dur-drop");
+assert.strictEqual(sized[1][1].pseudoElement, "::backdrop", "its backdrop fades with it");
+m.anims[0].onfinish();
+m.g.closeDialog(dlg);
+assert.strictEqual(closed, 1, "close() runs at once");
+assert.strictEqual(dlg.inert, true);
+assert.ok(dlg.classList.list.includes("dialog-leaving"), "held on screen");
+assert.strictEqual(sized[2][1].easing, "ease-in-out", "an exit eases in and out: an ease-out backwards sits still");
+m.g.closeDialog(dlg);
+assert.strictEqual(closed, 1, "a second close does nothing");
+// Escape reaches the same place through the dialog's cancel event, and the browser closes it
+m = mover();
+const esc = m.el({ tagName: "DIALOG", open: true, classList: { add() { esc.leaving = 1; }, remove() {} }, showModal() {} });
+m.doc.cancel({ target: esc });
+assert.ok(!esc.leaving, "a dialog openDialog didn't open is left alone: the QR screen");
+m.g.openDialog(esc); m.doc.cancel({ target: esc });
+assert.strictEqual(esc.leaving, 1, "Escape leaves the same way");
+
+// every dialog goes through the helper, except the QR screen, which stays white and instant
+["photos", "hours", "issues", "admin", "account", "catalog", "found"].forEach((f) => {
+  const src = read("js/" + f + ".js");
+  (src.match(/\$\("[\w-]+"\)\.(showModal|close)\(\)/g) || []).forEach((call) => {
+    assert.ok(/qr-full|invite-dialog"\)\.close/.test(call), f + ".js goes round the helper: " + call);
+  });
+});
+const site = read("css/site.css");
+assert.ok(/\.qr-full::backdrop \{ background: #FFFFFF; \}/.test(site), "the QR screen's backdrop is white in both themes");
+assert.ok(/dialog\.dialog-leaving \{[^}]*position: fixed/.test(site), "a leaving dialog is held in place");
+}
+
+console.log("motion: ok");
 })().catch((e) => { console.error(e); process.exit(1); });
