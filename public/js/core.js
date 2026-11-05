@@ -14,6 +14,9 @@
   });
 })();
 
+// CC-225: Safari on iPhones and iPads only applies :active, which presses a button to .97, once the page listens for touches
+document.addEventListener("touchstart", function () {}, { passive: true });
+
 // ---------- talking to the API ----------
 // The access token lives only in this variable (never localStorage), so other scripts on the
 // page can't lift it from storage. The refresh token is an HttpOnly cookie the API sets on

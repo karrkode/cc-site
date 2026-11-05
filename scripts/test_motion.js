@@ -222,5 +222,18 @@ assert.strictEqual(c.g.posterSource(null), null);
   assert.ok(/@media \(prefers-reduced-motion: reduce\) \{\s*::view-transition-group\(\*\), ::view-transition-old\(\*\), ::view-transition-new\(\*\) \{ animation: none !important; \}/.test(css),
     "reduced motion: views swap instantly");
 
+  // ---------- CC-225: the shared tokens, and buttons press to .97 ----------
+  const root = css.match(/:root \{\s*--on-cat[\s\S]*?\n\}/)[0];
+  assert.ok(/--ease-out: cubic-bezier/.test(root) && /--ease-in-out: cubic-bezier/.test(root), "an easing for entrances and one for movement");
+  assert.ok(/--dur-drop: 200ms/.test(root), "drop-downs take about 200ms");
+  assert.ok(/\.view \{ animation: rise [^;]*var\(--ease-out\)/.test(css), "views enter with ease-out");
+  const press = css.match(/@media \(prefers-reduced-motion: no-preference\) \{\s*button, a\.btn, a\.textbtn \{[\s\S]*?\n\}/);
+  assert.ok(press, "the press only exists when motion is welcome, so reduced motion never scales");
+  assert.ok(/button:active:not\(:disabled\), a\.btn:active, a\.textbtn:active \{ transform: scale\(\.97\); \}/.test(press[0]), "every button scales to .97, unless it's disabled");
+  assert.ok(/::after \{ content: ""; position: absolute; inset: -2%; \}/.test(press[0]), "the shrinking edge keeps the pointer, so the click isn't lost");
+  assert.strictEqual(css.split("scale(.97)").length, 2, "and nothing outside that block scales a button");
+  assert.ok(/a\.btn, a\.textbtn \{ display: inline-block; \}/.test(css), "a transform can't move an inline link");
+  assert.ok(/addEventListener\("touchstart", function \(\) \{\}, \{ passive: true \}\)/.test(read("js/core.js")), "iOS needs a touch listener for :active");
+
   console.log("motion: ok");
 })().catch((e) => { console.error(e); process.exit(1); });

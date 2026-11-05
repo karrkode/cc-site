@@ -59,6 +59,11 @@
   /* Shape (CC-136): square corners everywhere. Circles are people (.face) and nothing else. */
   --r-card: 0;
   --r-ctl: 0;
+  /* Motion (CC-225; brief section 6): ease-out for what arrives, ease-in-out for what moves, about 200ms for what drops down */
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --ease-in-out: cubic-bezier(.45, 0, .55, 1);
+  --dur-drop: 200ms;
+  --dur-press: 100ms;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -76,6 +81,15 @@ button, input, select { font: inherit; color: inherit; }
 a { color: inherit; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 [tabindex="-1"]:focus { outline: none; }
+/* CC-225: every button presses to .97. A transform can't move an inline box, so the two kinds of link that look like
+   buttons become inline-block. The ::after is only there during a press: without it, the shrink pulls the button's edge
+   out from under the pointer, the release lands on the page and the click is lost. */
+a.btn, a.textbtn { display: inline-block; }
+@media (prefers-reduced-motion: no-preference) {
+  button, a.btn, a.textbtn { transition: transform var(--dur-press) var(--ease-out); }
+  button:active:not(:disabled), a.btn:active, a.textbtn:active { transform: scale(.97); }
+  button:active:not(:disabled)::after, a.btn:active::after, a.textbtn:active::after { content: ""; position: absolute; inset: -2%; }
+}
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .star { width: 1em; height: 1em; fill: var(--star); flex: none; }
 .wrap { max-width: 1120px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
@@ -171,7 +185,7 @@ a { color: inherit; }
 .way-t { font-family: var(--display); font-weight: 600; font-size: 30px; line-height: 1.05; letter-spacing: -0.01em; }
 .way-d { font-size: 1rem; color: var(--muted); }
 .way:hover .way-t, .way:focus-visible .way-t { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px; }
-.ways.rise .way { animation: door-rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.ways.rise .way { animation: door-rise 0.6s var(--ease-out) both; }
 .ways.rise .way:nth-of-type(2) { animation-delay: 0.12s; }
 .ways.rise .way:nth-of-type(3) { animation-delay: 0.24s; }
 @keyframes door-rise { from { opacity: 0; transform: translateY(24px); } }
@@ -554,7 +568,7 @@ footer .roundup-links a { display: inline-flex; align-items: center; min-height:
 .queue-item.roundup .field { flex: 1 1 320px; }
 .queue-item.roundup textarea { display: block; width: 100%; background: var(--page); color: var(--text); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 9px 10px; font: inherit; resize: vertical; }
 footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are counted */
-.view { animation: rise 0.28s ease both; }
+.view { animation: rise 0.28s var(--ease-out) both; }
 @keyframes rise { from { transform: translateY(8px); } to { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .view, .ways.rise .way { animation: none; } .card { transition: none; } }
 
