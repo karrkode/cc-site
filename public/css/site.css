@@ -1591,7 +1591,7 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 
 /* CC-221: the Event sources grid. Rows are auto so a panel's row can grow from nothing, which is what pushes the
    blocks below it down; the blocks set their own height. Dense fills the gaps a big block leaves. */
-.sg-grid { --sg-row: 132px; --sg-gap: 6px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); grid-auto-flow: dense; gap: var(--sg-gap); margin-bottom: 24px; }
+.sg-grid { --sg-row: 132px; --sg-gap: 0px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); grid-auto-flow: dense; gap: var(--sg-gap); margin-bottom: 24px; }
 .sg-none { grid-column: 1 / -1; }
 .sg-block { position: relative; height: var(--sg-row); overflow: hidden; color: var(--on-src); transition: background-color 150ms ease; }
 .sg-size2 { grid-column: span 2; }
