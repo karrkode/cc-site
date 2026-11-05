@@ -242,5 +242,33 @@ assert.strictEqual(c.g.posterSource(null), null);
   assert.ok(/a\.btn, a\.textbtn \{ display: inline-block; \}/.test(css), "a transform can't move an inline link");
   assert.ok(/addEventListener\("touchstart", function \(\) \{\}, \{ passive: true \}\)/.test(read("js/core.js")), "iOS needs a touch listener for :active");
 
+  // ---------- CC-226: links grow 2.5px on hover instead of underlining ----------
+  assert.ok(!/:hover[^{}]*\{[^{}]*text-decoration/.test(css), "no hover turns an underline on");
+  const hoverOnly = css.match(/@media \(hover: hover\) \{\s*\.lead-t[\s\S]*?\n\}/);
+  const grow = hoverOnly && hoverOnly[0].match(/([^{}]*)\{ scale: calc\(1 \+ var\(--grow\) \/ var\(--fs\)\); \}/);
+  assert.ok(grow, "the growth is the same px at each text's own size, and only where a device can hover");
+  [".navlink:hover", ".ev-back:hover", ".lf-back .textbtn:hover", ".lead-pick:hover .lead-t", ".way:hover .way-t", ".last:hover .last-t", ".listing:hover .listing-t",
+    ".wk-row-a:hover .listing-t", ".journal-a:hover .listing-t", ".crew-plan-a:hover .listing-t", ".crew-sum:hover .crew-top", ".hub-row:hover .hub-name",
+    ".lf-page .opt:hover:not(:disabled) .opt-main"].forEach((sel) => assert.ok(grow[1].includes(sel), sel + " grows"));
+  // The scale is only right if --fs says what font-size says, wherever a size changes
+  const sized = css.match(/font-size: [^;]+; --fs: \d+;/g);
+  assert.ok(sized.length >= 15, "each size of each growing text has its --fs");
+  sized.forEach((d) => {
+    const [, size, unit, fs] = d.match(/font-size: ([\d.]+)(px|rem); --fs: (\d+);/);
+    assert.strictEqual(parseFloat(size) * (unit === "rem" ? 16 : 1), Number(fs), d);
+  });
+  assert.ok(/@media \(hover: hover\) \{\s*\.lead-t, \.last-t, \.listing-t, \.crew-top, \.hub-name \{ padding-right: calc\(100% \* var\(--grow\) \/ \(var\(--fs\) \+ var\(--grow\)\)\); \}/.test(css),
+    "a name wraps so that, grown, it still fits its column and misses the price");
+  assert.ok(/--grow: 2\.5;/.test(root), "links grow 2.5px");
+  const origin = css.match(/([^{}]*)\{ transform-origin: 0 50%; \}/)[1];
+  [".lead-t", ".way-t", ".last-t", ".listing-t", ".crew-top", ".hub-name", ".opt-main", ".ev-back", ".lf-back .textbtn"].forEach((sel) => assert.ok(origin.includes(sel), sel + " grows from the start of its text"));
+  assert.ok(/\.navlink \{ transform-origin: 8px 50%; \}/.test(css), "a nav link's text starts after its padding");
+  const animated = css.match(/@media \(prefers-reduced-motion: no-preference\) \{\s*\.lead-t[\s\S]*?\n\}/);
+  assert.ok(animated && /transition: scale var\(--dur-grow\) var\(--ease-in-out\)/.test(animated[0]), "the growth is animated only when motion is welcome");
+  assert.ok(/\.navlink, \.ev-back, \.lf-back \.textbtn \{ transition: transform var\(--dur-press\) var\(--ease-out\), scale var\(--dur-grow\)/.test(animated[0]), "buttons that grow keep their press");
+  assert.ok(/@media \(hover: hover\) and \(prefers-reduced-motion: no-preference\) \{\s*[^{}]*\.listing-t[^{}]*\{ will-change: scale; \}/.test(css),
+    "the text keeps its layer, or it jumps to the pixel grid as the growth starts and ends; touch screens don't pay for the layers");
+  assert.ok(!/\.listing-a::after \{ content/.test(css) && /\.listing-cover \{ position: absolute; inset: 0; \}/.test(css), "a scaled name would hold the row's cover, so the cover is outside it");
+
   console.log("motion: ok");
 })().catch((e) => { console.error(e); process.exit(1); });

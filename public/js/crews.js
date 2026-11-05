@@ -97,7 +97,7 @@ function crewHTML(c) {
   return '<article class="crew' + (open ? " open" : "") + '" data-crew-card="' + id + '">' +
     '<h3 class="crew-h"><button type="button" class="crew-sum" id="crew-h-' + id + '" data-crew-act="open" data-crew="' + id + '" aria-expanded="' + open + '"' +
     (open ? ' aria-controls="crew-d-' + id + '"' : "") + ">" +
-    '<span class="crew-id"><span class="crew-name">' + esc(c.name) + "</span>" + (c.owner ? ' <span class="crew-you">You started it</span>' : "") +
+    '<span class="crew-id"><span class="crew-top"><span class="crew-name">' + esc(c.name) + "</span>" + (c.owner ? ' <span class="crew-you">You started it</span>' : "") + "</span>" +
     (c.description ? '<span class="crew-about">' + esc(c.description) + "</span>" : "") + "</span>" +
     '<span class="crew-banner">' + crewFacesHTML(c) + crewNextHTML(c) + "</span>" + CREW_CARET + "</button></h3>" +
     (open ? crewDetailHTML(c) : "") + "</article>";
