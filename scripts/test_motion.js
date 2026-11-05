@@ -222,5 +222,25 @@ assert.strictEqual(c.g.posterSource(null), null);
   assert.ok(/@media \(prefers-reduced-motion: reduce\) \{\s*::view-transition-group\(\*\), ::view-transition-old\(\*\), ::view-transition-new\(\*\) \{ animation: none !important; \}/.test(css),
     "reduced motion: views swap instantly");
 
+  // ---------- CC-225: the shared tokens, and buttons press to .97 ----------
+  const root = css.match(/:root \{\s*--on-cat[\s\S]*?\n\}/)[0];
+  assert.ok(/--ease-out: cubic-bezier/.test(root) && /--ease-in-out: cubic-bezier/.test(root), "an easing for entrances and one for movement");
+  assert.ok(/--dur-drop: 200ms/.test(root), "drop-downs take about 200ms");
+  assert.ok(/\.view \{ animation: rise [^;]*var\(--ease-out\)/.test(css), "views enter with ease-out");
+  const press = css.match(/@media \(prefers-reduced-motion: no-preference\) \{\s*button, a\.btn, a\.textbtn[\s\S]*?\n\}/);
+  assert.ok(press, "the press only exists when motion is welcome, so reduced motion never scales");
+  const scaled = press[0].match(/([^{}]*)\{ transform: scale\(\.97\); \}/)[1], kept = press[0].match(/([^{}]*)\{ content: ""; position: absolute; inset: -2%; \}/)[1];
+  assert.ok(scaled.includes("button:active:not(:disabled)") && scaled.includes("a.btn:active") && scaled.includes("a.textbtn:active"), "every button scales to .97, unless it's disabled");
+  // Whole-row links. The link scales only where it is the row; otherwise the row does, as an inline link can't move and a tile would jump.
+  [".last:active", ".lead-pick:active", "a.hub-row:active", ".listing:has(.listing-a:active)", ".wk-row:has(> .wk-row-a:active)",
+    ".crew-plan:has(> .crew-plan-a:active)", ".journal-row:has(> .journal-a:active)", ".acct-row:has(.acct-row-t a:active)"].forEach((sel) => assert.ok(scaled.includes(sel), sel + " presses"));
+  [".wk-row-a:active", ".listing-a:active", ".crew-plan-a:active", ".journal-a:active"].forEach((sel) => assert.ok(!scaled.replace(/:has\([^)]*\)/g, "").includes(sel), sel + " leaves the scaling to its row"));
+  ["button:active:not(:disabled)::after", "a.btn:active::after", "a.textbtn:active::after", "a.hub-row:active::after", ".last:active::after", ".lead-pick:active::after", ".listing-a:active::after",
+    ".wk-row-a:active::after", ".crew-plan-a:active::after", ".journal-a:active::after", ".acct-row-t a:active::after"].forEach((sel) => assert.ok(kept.includes(sel), sel + ": the shrinking edge keeps the pointer, so the click isn't lost"));
+  assert.ok(/\.lead-pick:active \{ overflow: visible; \}/.test(press[0]), "the lead pick's field doesn't clip that");
+  assert.strictEqual(css.split("scale(.97)").length, 2, "and nothing outside that block scales a button");
+  assert.ok(/a\.btn, a\.textbtn \{ display: inline-block; \}/.test(css), "a transform can't move an inline link");
+  assert.ok(/addEventListener\("touchstart", function \(\) \{\}, \{ passive: true \}\)/.test(read("js/core.js")), "iOS needs a touch listener for :active");
+
   console.log("motion: ok");
 })().catch((e) => { console.error(e); process.exit(1); });
