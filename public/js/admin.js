@@ -1064,14 +1064,11 @@ var EVERY = [[7, "Every week"], [14, "Every 2 weeks"], [30, "Every month"], [60,
 // how (CC-207): "manual" opens on the sources checked by hand; otherwise every source shows, so a link to one finds it
 function openSources(focusSel, how) { if (!isAdmin()) { openAccount(); return; } SOURCES_HOW = how || "all"; SOURCES_KIND = "all"; show("sources"); loadSources(focusSel); }
 var SOURCES = null, SOURCES_SORT = "name", SOURCES_HOW = "all", SOURCES_KIND = "all", SRC_ASK = null; // SRC_ASK: the source whose delete is being confirmed
-function filteredSources(list) { // CC-207
-  return list.filter(function (s) { return (SOURCES_HOW === "all" || s.manual === (SOURCES_HOW === "manual")) && (SOURCES_KIND === "all" || s.kind === SOURCES_KIND); });
-}
-function paintSourceFilters(list) {
-  var kinds = list.map(function (s) { return s.kind; }).filter(function (k, i, all) { return all.indexOf(k) === i; }).sort();
-  $("sources-kind").innerHTML = '<option value="all">All types</option>' + kinds.map(function (k) {
-    return '<option value="' + esc(k) + '">' + esc(k.charAt(0).toUpperCase() + k.slice(1)) + "</option>"; }).join("");
-  $("sources-how").value = SOURCES_HOW; $("sources-kind").value = SOURCES_KIND;
+// CC-207: the site's three types. An opera source's events are Music, and comedy sources have no type now (CC-133),
+// so they show under All types only. The API's own map is BY_SOURCE_KIND in cc-backend categories.py.
+var SOURCE_TYPES = { theater: "Theater", opera: "Music", music: "Music", museum: "Visual Art" };
+function filteredSources(list) {
+  return list.filter(function (s) { return (SOURCES_HOW === "all" || s.manual === (SOURCES_HOW === "manual")) && (SOURCES_KIND === "all" || SOURCE_TYPES[s.kind] === SOURCES_KIND); });
 }
 // Sort the sources list: by name, by found items waiting, or by when each was last checked (never-checked last
 // for "most recent", first for "longest ago"). Ties keep name order.
@@ -1110,7 +1107,7 @@ function paintSources(o) {
   $("sources-budget-note").textContent = o.budget_state === "paused" ? "The monthly budget is used up: only Check now runs until next month." :
     o.budget_state === "saving" ? "Over 80% of the monthly budget: event pages wait until next month. Sources are still checked." : "";
   if (document.activeElement !== $("budget-usd")) $("budget-usd").value = o.budget_usd;
-  paintSourceFilters(o.sources);
+  $("sources-how").value = SOURCES_HOW; $("sources-kind").value = SOURCES_KIND;
   var shown = filteredSources(o.sources);
   $("sources-shown").textContent = shown.length < o.sources.length ? "Showing " + shown.length + " of " + plural(o.sources.length, "source", "sources") + "." : "";
   $("sources-list").innerHTML = !shown.length ? '<p class="hint">No sources match these filters.</p>' : sortedSources(shown).map(function (s) {
