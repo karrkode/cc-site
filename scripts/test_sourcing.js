@@ -62,7 +62,7 @@ assert.ok(js.includes('"#sources/manual"'), "so does Needs you's row");
 const admin = read("js/admin.js");
 const f = { SOURCES_HOW: "all", SOURCES_KIND: "all" };
 vm.createContext(f);
-vm.runInContext(admin.slice(admin.indexOf("var SOURCE_TYPES"), admin.indexOf("// Sort the sources list")), f);
+vm.runInContext(admin.slice(admin.indexOf("var SOURCE_TYPES"), admin.indexOf("$(\"sources-how\").addEventListener")), f);
 const list = [{ id: 1, manual: true, kind: "theater" }, { id: 2, manual: false, kind: "theater" }, { id: 3, manual: false, kind: "museum" },
   { id: 4, manual: false, kind: "opera" }, { id: 5, manual: false, kind: "music" }, { id: 6, manual: false, kind: "comedy" }];
 const ids = (how, kind) => { f.SOURCES_HOW = how; f.SOURCES_KIND = kind; return f.filteredSources(list).map((s) => s.id).join(); };

@@ -57,6 +57,8 @@ jobs:
         run: node scripts/test_found.js
       - name: Event Sourcing page
         run: node scripts/test_sourcing.js
+      - name: Event sources grid page
+        run: node scripts/test_sources.js
       - name: Back, Forward and a reload keep to the view in the address
         run: node scripts/test_routing.js
       - name: The theme button says Lights down in the light theme and Lights up in the dark one, from the first paint

@@ -840,7 +840,7 @@
       <div class="view-head">
         <p class="lf-back"><button class="textbtn" type="button" data-go="sourcing"><span aria-hidden="true">←</span>Event Sourcing</button></p>
         <h1 id="sources-title" tabindex="-1">Event sources</h1>
-        <p class="lf-deck">Venues and companies whose own pages are checked now and then for new events. What's found waits for your review; nothing goes live by itself. A page is only read again when it has changed.</p>
+        <p class="lf-deck">Venues and companies whose own pages are checked now and then for new events. What's found waits for your review; nothing goes live by itself. A bigger block means more approved events in the last year.</p>
       </div>
       <p class="hint" id="sources-status" role="status"></p>
       <div class="stat-summary" id="sources-summary"></div>
@@ -852,11 +852,13 @@
       </form>
       <div class="found-filters"><div class="field"><label for="sources-how">How it's checked</label>
         <select id="sources-how"><option value="all">All sources</option><option value="auto">Automatically</option><option value="manual">By hand only</option></select></div>
-        <div class="field"><label for="sources-kind">Type</label><select id="sources-kind"><option value="all">All types</option><option value="Theater">Theater</option><option value="Music">Music</option><option value="Visual Art">Visual Art</option></select></div>
-        <div class="field"><label for="sources-sort">Sort by</label>
-        <select id="sources-sort"><option value="name">Name</option><option value="waiting">Most found, waiting for review</option><option value="checked">Last checked, most recent first</option><option value="stale">Last checked, longest ago first</option></select></div></div>
+        <div class="field"><label for="sources-kind">Type</label><select id="sources-kind"><option value="all">All types</option><option value="Theater">Theater</option><option value="Music">Music</option><option value="Visual Art">Visual Art</option></select></div></div>
       <p class="hint" id="sources-shown" role="status"></p>
-      <div class="queue" id="sources-list"></div>
+      <ul class="sg-key" aria-label="What the colours mean">
+        <li class="sg-ok">Reading fine</li><li class="sg-nothing">No events found</li><li class="sg-error">Can't be read</li>
+        <li class="sg-manual">By hand</li><li class="sg-new">Not read yet</li><li class="sg-off">Off</li>
+      </ul>
+      <div class="sg-grid" id="sources-list"></div>
     </section>
 
     <!-- Site stats (admins, CC-67) -->
@@ -1042,6 +1044,7 @@
 <script src="js/admin.js?v=dev"></script>
 <script src="js/hours.js?v=dev"></script>
 <script src="js/found.js?v=dev"></script>
+<script src="js/sourcegrid.js?v=dev"></script>
 <script src="js/issues.js?v=dev"></script>
 <script src="js/photos.js?v=dev"></script>
 <script src="js/approvals.js?v=dev"></script>

@@ -1062,27 +1062,19 @@ var SOURCE_KINDS = { theater: "Theater", opera: "Opera", museum: "Museum", music
 var SOURCE_STATUS = { ok: ["Found changes", "ok"], unchanged: ["No changes", ""], blocked: ["Can't be read", "bad"], error: ["Check failed", "bad"], "": ["Not checked yet", ""] };
 var EVERY = [[7, "Every week"], [14, "Every 2 weeks"], [30, "Every month"], [60, "Every 2 months"]];
 // how (CC-207): "manual" opens on the sources checked by hand; otherwise every source shows, so a link to one finds it
-function openSources(focusSel, how) { if (!isAdmin()) { openAccount(); return; } SOURCES_HOW = how || "all"; SOURCES_KIND = "all"; show("sources"); loadSources(focusSel); }
-var SOURCES = null, SOURCES_SORT = "name", SOURCES_HOW = "all", SOURCES_KIND = "all", SRC_ASK = null; // SRC_ASK: the source whose delete is being confirmed
+// openId (CC-221): a link to one source opens its block's Health panel
+function openSources(focusSel, how, openId) {
+  if (!isAdmin()) { openAccount(); return; }
+  SOURCES_HOW = how || "all"; SOURCES_KIND = "all"; SG_OPEN = openId ? { id: +openId, tab: "health" } : null; SG_SAID = "";
+  show("sources"); loadSources(openId ? "#sg-panel-title" : focusSel);
+}
+var SOURCES = null, SOURCES_HOW = "all", SOURCES_KIND = "all", SRC_ASK = null; // SRC_ASK: the source whose delete is being confirmed
 // CC-207: the site's three types. An opera source's events are Music, and comedy sources have no type now (CC-133),
 // so they show under All types only. The API's own map is BY_SOURCE_KIND in cc-backend categories.py.
 var SOURCE_TYPES = { theater: "Theater", opera: "Music", music: "Music", museum: "Visual Art" };
 function filteredSources(list) {
   return list.filter(function (s) { return (SOURCES_HOW === "all" || s.manual === (SOURCES_HOW === "manual")) && (SOURCES_KIND === "all" || SOURCE_TYPES[s.kind] === SOURCES_KIND); });
 }
-// Sort the sources list: by name, by found items waiting, or by when each was last checked (never-checked last
-// for "most recent", first for "longest ago"). Ties keep name order.
-function sortedSources(list) {
-  function when(s) { return s.last_checked_at ? new Date(s.last_checked_at).getTime() : null; }
-  return list.slice().sort(function (a, b) {
-    var ta = when(a), tb = when(b), d = 0;
-    if (SOURCES_SORT === "waiting") d = b.waiting - a.waiting;
-    else if (SOURCES_SORT === "checked") d = (tb === null ? -Infinity : tb) - (ta === null ? -Infinity : ta);
-    else if (SOURCES_SORT === "stale") d = (ta === null ? -Infinity : ta) - (tb === null ? -Infinity : tb);
-    return d || a.name.localeCompare(b.name);
-  });
-}
-$("sources-sort").addEventListener("change", function () { SOURCES_SORT = this.value; if (SOURCES) paintSources(SOURCES); });
 $("sources-how").addEventListener("change", function () { SOURCES_HOW = this.value; if (SOURCES) paintSources(SOURCES); });
 $("sources-kind").addEventListener("change", function () { SOURCES_KIND = this.value; if (SOURCES) paintSources(SOURCES); });
 function loadSources(focusId) {
@@ -1110,28 +1102,7 @@ function paintSources(o) {
   $("sources-how").value = SOURCES_HOW; $("sources-kind").value = SOURCES_KIND;
   var shown = filteredSources(o.sources);
   $("sources-shown").textContent = shown.length < o.sources.length ? "Showing " + shown.length + " of " + plural(o.sources.length, "source", "sources") + "." : "";
-  $("sources-list").innerHTML = !shown.length ? '<p class="hint">No sources match these filters.</p>' : sortedSources(shown).map(function (s) {
-    var st = SOURCE_STATUS[s.last_status] || [s.last_status, ""], id = esc(s.id);
-    var every = EVERY.some(function (e) { return e[0] === s.every_days; }) ? EVERY : EVERY.concat([[s.every_days, "Every " + s.every_days + " days"]]);
-    return '<div class="queue-item source"><div class="alt-text">' +
-      '<p class="alt-title">' + esc(s.name) + ' <span class="state ' + st[1] + '">' + esc(st[0]) + "</span>" + (s.active ? "" : ' <span class="state">Off</span>') +
-        (s.manual ? ' <span class="state">Checked by hand</span>' : "") + "</p>" +
-      '<p class="alt-meta">' + esc(SOURCE_KINDS[s.kind] || s.kind) + " · " + (s.reader === "aic_api" ? "the museum's own API" : plural(s.pages.length, "page", "pages")) +
-        " · last checked " + esc(whenText(s.last_checked_at)) + " · next " + (!s.active ? "off" : s.manual ? "by hand only" : s.next_check_on ? esc(short(parseISO(s.next_check_on))) : "within the hour") +
-        (s.waiting ? " · " + plural(s.waiting, "item", "items") + " waiting" : "") + "</p>" +
-      (s.last_error ? '<p class="alt-meta source-error">' + esc(s.last_error) + "</p>" : "") +
-      (s.reader === "aic_api" ? "" : '<p class="alt-meta">' + s.pages.map(function (p) { return '<a href="' + esc(safeUrl(p)) + '" target="_blank" rel="noopener">' + esc(p.replace(/^https?:\/\/(www\.)?/, "")) + "</a>"; }).join(" · ") + "</p>") +
-      "</div>" +
-      '<div class="row"><label class="sr-only" for="src-every-' + id + '">How often to check ' + esc(s.name) + "</label>" +
-      '<select id="src-every-' + id + '" data-src-every="' + id + '">' + every.map(function (e) {
-        return '<option value="' + e[0] + '"' + (e[0] === s.every_days ? " selected" : "") + ">" + esc(e[1]) + "</option>"; }).join("") + "</select>" +
-      '<button class="btn neutral" type="button" data-src-check="' + id + '"' + (s.active ? "" : " disabled") + ' aria-label="Check ' + esc(s.name) + ' now">Check now</button>' +
-      '<button class="btn ghost" type="button" data-src-manual="' + id + '" data-on="' + s.manual + '" aria-label="' + (s.manual ? "Check " + esc(s.name) + " automatically again" : "Check " + esc(s.name) + " by hand only") + '">' +
-        (s.manual ? "Check automatically" : "Check by hand only") + "</button>" +
-      '<button class="btn ghost" type="button" data-src-toggle="' + id + '" data-on="' + s.active + '" aria-label="' + (s.active ? "Turn off " : "Turn on ") + esc(s.name) + '">' + (s.active ? "Turn off" : "Turn on") + "</button>" +
-      '<button class="btn danger" type="button" data-src-delete="' + id + '" aria-label="Delete ' + esc(s.name) + '">Delete…</button>' +
-      "</div>" + (SRC_ASK === s.id ? srcAskHTML(s) : "") + "</div>";
-  }).join("");
+  paintSourceGrid(shown); // CC-221
 }
 function srcAskHTML(s) { // CC-133
   var id = esc(s.id);
