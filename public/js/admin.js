@@ -325,7 +325,7 @@ $("roundups-list").addEventListener("click", function (ev) {
 
 // ---------- venues (admins, CC-57) ----------
 // The list comes from GET /venues/manage (every venue, with how many events use it) and is filtered here.
-// One dialog does rename, merge (with a preview of what moves) and delete (only for unused venues).
+// One dialog does rename, merge (with a preview of what moves), delete (only for unused venues), and hide and unhide (CC-219).
 var VLIST = [], VDLG = null; // VDLG: { mode: "edit" | "merge" | "delete", v, opener }
 function openVenues() { if (!isAdmin()) { openAccount(); return; } show("venues"); loadVenues(); VAEDIT = null; $("va-status").textContent = ""; loadAddressSuggestions(); VSEDIT = null; $("vs-status").textContent = ""; loadSiteSuggestions(); $("oot-status").textContent = ""; loadOutOfTown(); }
 function loadVenues(focusId) {
@@ -341,6 +341,11 @@ function venueLabel(v) { return v.neighborhood ? v.name + " · " + v.neighborhoo
 function venueMatches(v, q) { q = q.trim().toLowerCase(); return !q || (v.name + " " + v.neighborhood).toLowerCase().indexOf(q) >= 0; }
 // CC-78: opening hours are "filled in" for a day when it's open (with times) or closed; a day left out isn't known.
 function hoursComplete(v) { var h = v.open_hours || {}; return ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].every(function (d) { return d in h; }); }
+// CC-219: why a venue isn't in the public list. Pending ends when one of its events is approved; hidden only with Unhide.
+function venueStates(v) {
+  var says = (v.hidden ? ['<span class="state">Hidden</span>'] : []).concat(v.pending ? ['<span class="state">Pending</span>'] : []);
+  return says.length ? '<p class="alt-meta">' + says.join(" ") + "</p>" : "";
+}
 function paintVenues() {
   var q = $("v-q").value, onlyUnplaced = $("v-noregion").checked, hours = $("v-hours").value, noAddress = $("v-noaddress").checked;
   var rows = VLIST.filter(function (v) {
@@ -354,7 +359,7 @@ function paintVenues() {
     (unaddressed && !noAddress ? " " + plural(unaddressed, "venue has", "venues have") + " no address yet." : "");
   $("venue-list").innerHTML = rows.slice(0, 200).map(function (v) {
     var id = esc(v.id);
-    return '<div class="queue-item"><div class="alt-text"><p class="alt-title">' + esc(v.name) + '</p><p class="alt-meta">' +
+    return '<div class="queue-item"><div class="alt-text"><p class="alt-title">' + esc(v.name) + "</p>" + venueStates(v) + '<p class="alt-meta">' +
       esc(v.neighborhood || "No neighborhood") + " · " + esc(REGION_NAMES[v.region] || (v.region ? "Out of town" : "No side of town")) + " · " + plural(v.events, "event", "events") +
       "</p>" + '<p class="alt-meta">' + (v.category ? "Default type: " + esc(typeLabel(v.category, v.opera)) : '<span class="state">No default type</span>') + "</p>" +
       '<p class="alt-meta">' + (v.address ? "Address: " + esc(v.full_address) : '<span class="state">No address yet</span>') + "</p>" +
@@ -363,6 +368,8 @@ function paintVenues() {
       '<div class="row"><button class="btn ghost" type="button" data-venue-edit="' + id + '" aria-label="Edit ' + esc(venueLabel(v)) + '">Edit</button>' +
       '<button class="btn ghost" type="button" data-venue-hours="' + id + '" aria-label="Hours at ' + esc(venueLabel(v)) + '">Hours…</button>' +
       '<button class="btn ghost" type="button" data-venue-merge="' + id + '" aria-label="Merge ' + esc(venueLabel(v)) + ' into another venue">Merge…</button>' +
+      (v.hidden ? '<button class="btn ghost" type="button" data-venue-unhide="' + id + '" aria-label="Unhide ' + esc(venueLabel(v)) + '">Unhide</button>' :
+        v.events ? '<button class="btn ghost" type="button" data-venue-hide="' + id + '" aria-label="Hide ' + esc(venueLabel(v)) + '">Hide</button>' : "") +
       (v.events ? "" : '<button class="btn danger" type="button" data-venue-delete="' + id + '" aria-label="Delete ' + esc(venueLabel(v)) + '">Delete</button>') +
       "</div></div>";
   }).join("");
@@ -372,8 +379,8 @@ $("v-noregion").addEventListener("change", paintVenues);
 $("v-noaddress").addEventListener("change", paintVenues);
 $("v-hours").addEventListener("change", paintVenues);
 $("venue-list").addEventListener("click", function (ev) {
-  var b = ev.target.closest("[data-venue-edit],[data-venue-merge],[data-venue-delete]"); if (!b) return;
-  var mode = b.hasAttribute("data-venue-edit") ? "edit" : b.hasAttribute("data-venue-merge") ? "merge" : "delete";
+  var b = ev.target.closest("[data-venue-edit],[data-venue-merge],[data-venue-delete],[data-venue-hide],[data-venue-unhide]"); if (!b) return;
+  var mode = ["edit", "merge", "delete", "hide", "unhide"].filter(function (m) { return b.hasAttribute("data-venue-" + m); })[0];
   var id = +b.getAttribute("data-venue-" + mode), v = VLIST.filter(function (x) { return x.id === id; })[0];
   if (v) openVenueDialog(mode, v, b);
 });
@@ -481,15 +488,19 @@ function runOutOfTown(run) {
 }
 function openVenueDialog(mode, v, opener) {
   VDLG = { mode: mode, v: v, opener: opener };
-  $("vd-heading").textContent = mode === "edit" ? "Edit " + v.name : mode === "merge" ? "Merge " + v.name + " into another venue" : "Delete " + v.name + "?";
-  $("vd-edit").hidden = mode !== "edit"; $("vd-merge").hidden = mode !== "merge"; $("vd-delete").hidden = mode !== "delete";
-  $("vd-go").textContent = mode === "edit" ? "Save changes" : mode === "merge" ? "Merge" : "Delete venue";
+  var asks = mode === "delete" || mode === "hide" || mode === "unhide"; // CC-219: these three only say what will happen
+  $("vd-heading").textContent = mode === "edit" ? "Edit " + v.name : mode === "merge" ? "Merge " + v.name + " into another venue" :
+    mode === "hide" ? "Hide " + v.name + "?" : mode === "unhide" ? "Unhide " + v.name + "?" : "Delete " + v.name + "?";
+  $("vd-edit").hidden = mode !== "edit"; $("vd-merge").hidden = mode !== "merge"; $("vd-delete").hidden = !asks;
+  $("vd-go").textContent = mode === "edit" ? "Save changes" : mode === "merge" ? "Merge" : mode === "hide" ? "Hide venue" : mode === "unhide" ? "Unhide venue" : "Delete venue";
   $("vd-go").className = mode === "delete" ? "btn danger solid" : "btn";
   $("vd-error").textContent = ""; setVenueBusy(false);
   if (mode === "edit") { $("vd-name").value = v.name; $("vd-hood").value = v.neighborhood; $("vd-area").value = v.area; $("vd-region").value = v.region || ""; $("vd-cost").value = v.standard_cost || "";
     $("vd-category").value = v.category || ""; $("vd-opera").checked = !!v.opera; $("vd-website").value = v.website || ""; $("vd-address").value = v.address || ""; $("vd-city").value = v.city || ""; $("vd-zip").value = v.zip_code || ""; }
   if (mode === "merge") { $("vd-find").value = ""; fillMergeTargets(); }
   if (mode === "delete") $("vd-delete").textContent = "No events use " + venueLabel(v) + ", so it can go. This can't be undone.";
+  if (mode === "hide") $("vd-delete").textContent = venueLabel(v) + " will leave the public venue list. " + (v.events === 1 ? "Its event stays" : "Its " + v.events + " events stay") + " listed, and you can unhide it at any time.";
+  if (mode === "unhide") $("vd-delete").textContent = venueLabel(v) + (v.pending ? " will go on the public venue list once one of its events is approved." : " will go back on the public venue list.");
   $("venue-dialog").showModal();
   (mode === "edit" ? $("vd-name") : mode === "merge" ? $("vd-find") : $("vd-cancel")).focus();
 }
@@ -547,6 +558,9 @@ $("venue-form").addEventListener("submit", function (ev) {
     if (!into) { $("vd-error").textContent = "Choose the venue to merge into."; $("vd-into").focus(); return; }
     req = api("/venues/" + v.id + "/merge-into/" + into.id, { method: "POST" });
     said = "Merged " + venueLabel(v) + " into " + venueLabel(into) + "."; after = into.id;
+  } else if (d.mode === "hide" || d.mode === "unhide") {
+    req = api("/venues/" + v.id + "/" + d.mode, { method: "POST" });
+    said = (d.mode === "hide" ? "Hid " : "Unhid ") + venueLabel(v) + "."; after = v.id;
   } else {
     req = api("/venues/" + v.id, { method: "DELETE" }); said = "Deleted " + venueLabel(v) + ".";
   }
