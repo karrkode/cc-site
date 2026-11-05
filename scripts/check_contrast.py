@@ -65,6 +65,13 @@ PAIRS = [  # (foreground, background, minimum, where it's used)
     ("gauge-ok", "page", NON_TEXT, "the budget dial, under 80%"),
     ("gauge-warn", "page", NON_TEXT, "the budget dial, from 80%"),
     ("gauge-stop", "page", NON_TEXT, "the budget dial, at the limit"),
+    # CC-221: a venue's name on its Event sources block, and the block's outline when it's turned off
+    ("on-src", "src-ok", TEXT, "a source reading fine"),
+    ("on-src", "src-nothing", TEXT, "a source that finds nothing"),
+    ("on-src", "src-error", TEXT, "a source that can't be read"),
+    ("on-src", "src-manual", TEXT, "a source checked by hand"),
+    ("on-src", "src-new", TEXT, "a source not read yet"),
+    ("rule", "src-new", NON_TEXT, "the outline on an open block"),
 ] + [("dot-ink", f"dot-{i}", TEXT, "initials on a crew dot") for i in range(6)]
 
 

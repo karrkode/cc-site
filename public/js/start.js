@@ -42,12 +42,12 @@ function openFromHash() {
   if (h === "crews") { (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(function () { openCrews(); }); return true; } // CC-104
   if (h === "submit") { openSubmit(); return true; }
   // admin pages (the recap email links here, CC-77/81/84): #sourcing, #engagement, #people (CC-206), #approvals (approvers too, CC-91), #members, #issues, #issues/ISS-0007, #found, #found/<show> (e.g. #found/skipped), #sources, #sources/manual (CC-207),
-  // and #source-<id> (Event sources, at that source's "Check by hand only" button)
+  // and #source-<id> (Event sources, with that source's Health panel open, CC-221)
   var fm = /^found\/(waiting|needs|new|update|approved|rejected|skipped|listed|all)$/.exec(h), sm = /^source-(\d+)$/.exec(h);
   var im = /^issues\/(ISS-\d+)$/i.exec(h); // a ticket, from the recap (CC-84)
   if (h === "review" || h === "sourcing" || h === "engagement" || h === "people" || h === "venues" || h === "stats" || h === "found" || h === "sources" || h === "sources/manual" || h === "issues" || h === "approvals" || h === "members" || h === "card" || fm || sm || im) {
     var open = h === "review" ? function () { openReview(); } : h === "sourcing" ? openSourcing : h === "engagement" ? openEngagement : h === "people" ? openPeople : h === "venues" ? openVenues : h === "stats" ? openStats : h === "approvals" ? openApprovals : h === "members" ? openMembers : h === "card" ? openCard : h === "issues" ? function () { openIssues(); } : im ? function () { openIssues(im[1].toUpperCase()); } : (h === "found" || fm) ? function () { if (fm) { FOUND.show = fm[1]; FOUND.source = ""; } openFound(); } :
-      sm ? function () { openSources('[data-src-manual="' + sm[1] + '"]'); } : h === "sources/manual" ? function () { openSources(null, "manual"); } : function () { openSources(); };
+      sm ? function () { openSources(null, null, sm[1]); } : h === "sources/manual" ? function () { openSources(null, "manual"); } : function () { openSources(); };
     // On a fresh visit the sign-in comes back from the refresh cookie first; then open the page (or Sign in).
     (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(open);
     return true;
