@@ -773,12 +773,12 @@
             <ul class="hub-rows src-rows" id="src-list" aria-labelledby="src-title"></ul>
           </div>
         </div>
-        <div class="section"><h2>The tools</h2>
+        <div class="section"><h2>Tools</h2>
           <div class="hub-tools">
             <button class="btn ghost" type="button" data-go="found">Found events</button>
             <button class="btn ghost" type="button" data-go="sources">Event sources</button>
             <button class="btn ghost" type="button" data-hub="rules">Skip rules</button>
-            <button class="btn ghost" type="button" data-go="sources">Check by hand only</button>
+            <button class="btn ghost" type="button" data-hub="manual">Check by hand only</button>
             <button class="btn ghost" type="button" data-hub="withdrawn">Withdrawn</button>
           </div>
         </div>
@@ -850,8 +850,12 @@
         <button class="btn neutral" type="submit">Save budget</button>
         <p class="hint small" id="budget-hint">For reading pages with Claude. At 80%, event pages wait until next month; at 100%, only Check now runs.</p>
       </form>
-      <div class="found-filters"><div class="field"><label for="sources-sort">Sort by</label>
+      <div class="found-filters"><div class="field"><label for="sources-how">How it's checked</label>
+        <select id="sources-how"><option value="all">All sources</option><option value="auto">Automatically</option><option value="manual">By hand only</option></select></div>
+        <div class="field"><label for="sources-kind">Type</label><select id="sources-kind"><option value="all">All types</option></select></div>
+        <div class="field"><label for="sources-sort">Sort by</label>
         <select id="sources-sort"><option value="name">Name</option><option value="waiting">Most found, waiting for review</option><option value="checked">Last checked, most recent first</option><option value="stale">Last checked, longest ago first</option></select></div></div>
+      <p class="hint" id="sources-shown" role="status"></p>
       <div class="queue" id="sources-list"></div>
     </section>
 

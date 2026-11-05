@@ -309,7 +309,7 @@ var ROUTE = null; // the address openFromHash is opening: the view it lands on (
 function viewOf(hash) { // the view an address opens
   var h = hash.replace(/^#/, "");
   if (!h) return onJoinPage() ? "join" : "home";
-  return /^e\//.test(h) ? "event" : /^o-/.test(h) ? "plan" : /^found\//.test(h) ? "found" : /^source-/.test(h) ? "sources" : /^issues\//i.test(h) ? "issues" : h;
+  return /^e\//.test(h) ? "event" : /^o-/.test(h) ? "plan" : /^found\//.test(h) ? "found" : /^sources?[-/]/.test(h) ? "sources" : /^issues\//i.test(h) ? "issues" : h;
 }
 function syncAddress(name) {
   var routed = ROUTE !== null && location.hash === ROUTE; ROUTE = null;

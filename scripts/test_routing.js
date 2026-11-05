@@ -92,7 +92,7 @@ async function check(name, fn) { await fn(); n++; console.log("ok  " + name); }
 
   const reloads = { account: "account", planner: "planner", journal: "journal", crews: "crews", submit: "submit", plan: "plan", catalog: "catalog",
     review: "review", sourcing: "sourcing", engagement: "engagement", people: "people", venues: "venues", stats: "stats", sources: "sources", found: "found", issues: "issues", approvals: "approvals",
-    members: "members", card: "card", "e/5": "event", "found/skipped": "found", "issues/ISS-0007": "issues", "source-3": "sources" };
+    members: "members", card: "card", "e/5": "event", "found/skipped": "found", "issues/ISS-0007": "issues", "source-3": "sources", "sources/manual": "sources" };
   await check("a reload opens the view in the address and leaves the address as it is", async () => {
     for (const h of Object.keys(reloads)) {
       const t = tab("/#" + h);

@@ -53,7 +53,24 @@ assert.ok(order.every((n, i) => n >= 0 && (!i || n > order[i - 1])), "the page r
 assert.ok(/id="needs-section" hidden/.test(view), "Needs you starts hidden, heading included");
 ["This week", "week-figures", "left out", "Checks run"].forEach((s) => assert.ok(!view.includes(s), "gone from the page: " + s));
 ["Found events", "Event sources", "Skip rules", "Check by hand only", "Withdrawn"].forEach((t) => assert.ok(view.includes(">" + t + "</button>"), "a tool: " + t));
+assert.ok(view.includes("<h2>Tools</h2>"), "the section is called Tools");
+assert.ok(view.includes('data-hub="manual">Check by hand only</button>'), "Check by hand only opens on the sources checked by hand");
 const js = read("js/sourcing.js");
+assert.ok(js.includes('"#sources/manual"'), "so does Needs you's row");
+
+// --- Event sources: the filters ---
+const admin = read("js/admin.js");
+const f = { SOURCES_HOW: "all", SOURCES_KIND: "all" };
+vm.createContext(f);
+vm.runInContext(admin.slice(admin.indexOf("function filteredSources"), admin.indexOf("function paintSourceFilters")), f);
+const list = [{ id: 1, manual: true, kind: "theater" }, { id: 2, manual: false, kind: "theater" }, { id: 3, manual: false, kind: "museum" }];
+const ids = (how, kind) => { f.SOURCES_HOW = how; f.SOURCES_KIND = kind; return f.filteredSources(list).map((s) => s.id).join(); };
+assert.strictEqual(ids("all", "all"), "1,2,3");
+assert.strictEqual(ids("manual", "all"), "1");
+assert.strictEqual(ids("auto", "all"), "2,3");
+assert.strictEqual(ids("all", "theater"), "1,2");
+assert.strictEqual(ids("auto", "theater"), "2");
+assert.strictEqual(ids("manual", "museum"), "");
 const firstLine = view.slice(view.indexOf('class="hub-top"'), view.indexOf('id="found-graph"'));
 assert.ok(firstLine.includes('id="needs-section"') && firstLine.includes('id="budget-gauge"'), "Needs you and Budget share a line");
 assert.ok(!/function needRowHTML[^\n]*\n[^\n]*\n?[^\n]*hub-go/.test(js), "a Needs you row is its text, with no link at the right");
