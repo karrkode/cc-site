@@ -1130,7 +1130,7 @@ function loadSources(focusId) {
 function whenText(iso) { return iso ? short(new Date(iso)) : "never"; }
 function paintSources(o) {
   SOURCES = o;
-  var bad = o.sources.filter(function (s) { return s.last_status === "blocked" || s.last_status === "error"; }).length;
+  var bad = o.sources.filter(function (s) { return s.state === "error"; }).length; // CC-224: the sources Needs you counts
   $("sources-summary").innerHTML =
     "<div><strong>" + o.sources.length + "</strong><span>sources" + (bad ? ", " + bad + " to look at" : "") + "</span></div>" +
     "<div><strong>" + o.sources.reduce(function (n, s) { return n + s.waiting; }, 0) + "</strong><span>found, waiting for review</span></div>" +
@@ -1144,8 +1144,7 @@ function paintSources(o) {
   $("sources-how").value = SOURCES_HOW; $("sources-kind").value = SOURCES_KIND;
   var shown = filteredSources(o.sources);
   $("sources-shown").textContent = shown.length < o.sources.length ? "Showing " + shown.length + " of " + plural(o.sources.length, "source", "sources") + "." : "";
-  var allRead = SOURCES_HOW === "unreadable" && !o.sources.some(function (s) { return s.state === "error"; }); // CC-224
-  paintSourceGrid(shown, allRead ? "There are no sources we couldn't read right now." : "No sources match these filters."); // CC-221
+  paintSourceGrid(shown, SOURCES_HOW === "unreadable" && !bad ? "There are no sources we couldn't read right now." : "No sources match these filters."); // CC-221
 }
 function srcAskHTML(s) { // CC-133
   var id = esc(s.id);

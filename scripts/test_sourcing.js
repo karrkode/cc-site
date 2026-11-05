@@ -83,6 +83,7 @@ assert.strictEqual(ids("all", "Visual Art"), "3,10");
 assert.strictEqual(ids("manual", "Visual Art"), "");
 assert.ok(html.includes('<option value="unreadable">Couldn\'t be read</option>'), "CC-224: the filter's option");
 assert.ok(admin.includes("There are no sources we couldn't read right now."), "the page says so when there are none");
+assert.ok(admin.includes('var bad = o.sources.filter(function (s) { return s.state === "error"; }).length;'), "the summary's to look at is the same sources");
 const kinds = html.slice(html.indexOf('id="sources-kind"'), html.indexOf("</select>", html.indexOf('id="sources-kind"')));
 assert.deepStrictEqual(kinds.match(/>[^<]+<\/option>/g).map((o) => o.slice(1, -9)), ["All types", "Theater", "Music", "Visual Art"], "only the site's three types");
 const firstLine = view.slice(view.indexOf('class="hub-top"'), view.indexOf('id="found-graph"'));
