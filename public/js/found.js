@@ -11,7 +11,7 @@ var FOUND_SHOWS = [["waiting", "Waiting for you"], ["needs", "Needs a date"], ["
 var FOUND_KINDS = { production: "Production", exhibition: "Exhibition", concert: "Concert", comedy_show: "Comedy", talk: "Talk",
   tour: "Tour", program: "Program", class: "Class", rental: "Rental", members_only: "Members only", recurring: "Recurring",
   permanent: "Permanent gallery", other: "Other" };
-var FOUND_STATES = { update: "Update", approved: "Approved", rejected: "Rejected", skipped: "Left out", listed: "Already listed" };
+var FOUND_STATES = { update: "Update", approved: "Approved", rejected: "Rejected", skipped: "Left out", listed: "Already listed", hidden: "Hidden" };
 var CHANGE_NAMES = { cost_text: "Price", min_price: "Lowest price", begin_date: "Opens", end_date: "Closes", weekly: "Show days", weeks: "Weeks of the month" };
 var FOUND_NEEDS = { date: "Needs a date", show_days: "Needs show days" }; // CC-88: approving asks for these
 
@@ -75,8 +75,9 @@ function changeValue(field, v) {
   if (field === "weeks") return HOUR_DAYS.filter(function (d) { return v && v[d[0]]; }).map(function (d) { return weeksText(v[d[0]]) + d[1].slice(0, 3); }).join(", ") || "every week";
   return v;
 }
-function foundItemHTML(i) {
-  var id = esc(i.id), title = esc(i.title), state = FOUND_STATES[i.status];
+function foundItemHTML(i) { return foundRowHTML(i, foundActions(i, esc(i.id), esc(i.title))); }
+function foundRowHTML(i, actions) { // CC-207: Event Sourcing's list shows the same row, with its own buttons
+  var id = esc(i.id), title = esc(i.title), state = i.status === "hidden" && actions.indexOf("data-src-act") >= 0 ? "" : FOUND_STATES[i.status];
   var where = i.venue_name + (i.neighborhood ? " · " + i.neighborhood : i.venue_id ? "" : " · new venue");
   var html = '<div class="queue-item found" data-found="' + id + '"><div class="alt-text">' +
     '<p class="kind">' + esc(foundType(i).category ? typeLabel(foundType(i).category, foundType(i).opera) : FOUND_KINDS[i.kind] || "Event") + (i.needs ? ' <span class="state needs">' + esc(FOUND_NEEDS[i.needs]) + "</span>" : "") + (state ? ' <span class="state' + (i.status === "rejected" ? " rejected" : i.status === "approved" ? " approved" : "") + '">' + esc(state) + "</span>" : "") + "</p>" +
@@ -86,7 +87,7 @@ function foundItemHTML(i) {
       (i.dates_listed > 1 ? " · " + plural(i.dates_listed, "date", "dates") + " listed" : "") +
       (i.event && i.status !== "update" ? ' · in the catalog as “' + esc(i.event.title) + "”" : "") + "</p>" +
     (Object.keys(i.weekly || {}).length ? '<p class="alt-meta">Shows: ' + esc(showDaysText(i.weekly, i.weeks)) + "</p>" : "") +
-    (i.needs ? '<p class="alt-meta">' + esc(lookedText(i)) + "</p>" : "") +
+    (i.needs && i.status !== "hidden" ? '<p class="alt-meta">' + esc(lookedText(i)) + "</p>" : "") + // CC-207: not read while hidden
     (i.possible_duplicate ? '<p class="alt-meta dup">Possibly already listed as “' + esc(i.possible_duplicate.title) + "”</p>" : "") +
     (i.skip_reason && i.status !== "approved" ? '<p class="alt-meta">Why: ' + esc(i.skip_reason) + "</p>" : "");
   if (i.status === "update") {
@@ -95,7 +96,7 @@ function foundItemHTML(i) {
       return "<li>" + esc(CHANGE_NAMES[c.field] || c.field) + ": " + esc(changeValue(c.field, c.listed)) + ' <span aria-hidden="true">→</span><span class="sr-only">becomes</span> <strong>' + esc(changeValue(c.field, c.found)) + "</strong></li>";
     }).join("") + "</ul>";
   }
-  html += "</div>" + '<div class="row">' + foundActions(i, id, title) + "</div></div>";
+  html += "</div>" + '<div class="row">' + actions + "</div></div>";
   return html;
 }
 function lookedText(i) { // CC-88: how its page is being read again for what's missing
@@ -110,11 +111,11 @@ function foundActions(i, id, title) {
     return '<button class="btn" type="button" data-found-act="accept" aria-label="Accept the changes to ' + title + '">Accept</button>' +
       '<button class="btn ghost" type="button" data-found-act="dismiss" aria-label="Dismiss the changes to ' + title + '">Dismiss</button>';
   }
-  if (i.status === "new" || i.status === "skipped" || i.status === "rejected") {
+  if (i.status === "new" || i.status === "skipped" || i.status === "rejected" || i.status === "hidden") {
     // CC-212: one button to the approve form, which asks for anything missing (CC-88); its row says what that is
     a += '<button class="btn" type="button" data-found-act="edit" aria-label="Edit and approve ' + title + '">Edit/Approve</button>';
   }
-  if (i.status === "new" || i.status === "skipped") {
+  if (i.status === "new" || i.status === "skipped" || i.status === "hidden") {
     a += '<button class="btn ghost" type="button" data-found-act="reject" aria-label="Reject ' + title + '">Reject</button>' +
       '<button class="btn ghost" type="button" data-found-act="skip" aria-expanded="false" aria-label="Reject ' + title + ' and skip similar">Reject and skip similar…</button>';
   }
@@ -260,8 +261,8 @@ function shortRun(i) {
   }
   return days;
 }
-function openFoundEditor(i, opener) {
-  EDITING = { e: { id: "found-" + i.id }, found: i, opener: opener };
+function openFoundEditor(i, opener, done) { // done (CC-207): what to do once it's approved, for a list other than Found events
+  EDITING = { e: { id: "found-" + i.id }, found: i, opener: opener, done: done };
   foundMode(i);
   var run = shortRun(i); // found events come with their own dates; a longer one's fixed run is set after (CC-96)
   setRun("ed", run); $("ed-runkind").hidden = !run.length; $("ed-dates-note").hidden = true;
@@ -297,7 +298,7 @@ function stillNeeds(i, type, begin, end, openRun, weekly, runTimed) {
   return timed ? "" : "show_days";
 }
 function approveFromEditor() {
-  var i = EDITING.found;
+  var i = EDITING.found, done = EDITING.done;
   var title = $("ed-title").value.trim(), venue = $("ed-venue").value.trim(), hood = $("ed-hood").value.trim(), type = $("ed-category").value;
   var begin = $("ed-begin").value || null, end = $("ed-end").value || null, url = $("ed-url").value.trim(), cost = $("ed-cost").value.trim();
   // CC-212: a short run's days; with no times at all it goes in as its first to last date, as before
@@ -333,9 +334,9 @@ function approveFromEditor() {
     return api("/admin/discovery/items/" + i.id + "/approve", { method: "POST", body: body }).then(readJSON);
   }).then(function (res) {
     if (!res.ok) { editorFail(res); return; }
-    var row = document.querySelector('[data-found="' + i.id + '"]'), said = (review ? "Sent " + title + " to the review queue." :
+    var row = $("found-list").querySelector('[data-found="' + i.id + '"]'), said = (review ? "Sent " + title + " to the review queue." :
       body.publish === "later" ? "Scheduled " + title + "." : "Added " + title + " to the catalog.");
     EDITING = null; closeEditor(); reloadEvents(); if (review) updateReviewCount();
-    if (row) foundDone(row, said); else $("edit-live").textContent = said;
+    if (done) done(said); else if (row) foundDone(row, said); else $("edit-live").textContent = said;
   }).catch(function (res) { editorFail(res && res.status ? res : null, "ed-venue"); });
 }

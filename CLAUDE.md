@@ -7,7 +7,7 @@ serves this site locally on http://localhost:4173.
 ## Code
 
 - `public/js/*.js` are plain scripts loaded in order (core, util, water, listings, catalog, planner, account, crews, submit, admin,
-  hours, found, issues, photos, approvals, start). They share one global scope, so check that a name is free before
+  hours, found, issues, photos, approvals, hubs, sourcing, start). They share one global scope, so check that a name is free before
   adding it.
 - `start.js` routes on the URL hash (`#account`, `#submit`, `#approvals`, ...). Links in emails use these.
 - Colors are theme tokens. Check new UI in both light and dark themes and at phone width.

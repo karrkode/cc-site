@@ -1061,8 +1061,15 @@ $("utm-examples").innerHTML = UTM_EXAMPLES.map(function (u) {
 var SOURCE_KINDS = { theater: "Theater", opera: "Opera", museum: "Museum", music: "Music", comedy: "Comedy" };
 var SOURCE_STATUS = { ok: ["Found changes", "ok"], unchanged: ["No changes", ""], blocked: ["Can't be read", "bad"], error: ["Check failed", "bad"], "": ["Not checked yet", ""] };
 var EVERY = [[7, "Every week"], [14, "Every 2 weeks"], [30, "Every month"], [60, "Every 2 months"]];
-function openSources(focusSel) { if (!isAdmin()) { openAccount(); return; } show("sources"); loadSources(focusSel); }
-var SOURCES = null, SOURCES_SORT = "name", SRC_ASK = null; // SRC_ASK: the source whose delete is being confirmed
+// how (CC-207): "manual" opens on the sources checked by hand; otherwise every source shows, so a link to one finds it
+function openSources(focusSel, how) { if (!isAdmin()) { openAccount(); return; } SOURCES_HOW = how || "all"; SOURCES_KIND = "all"; show("sources"); loadSources(focusSel); }
+var SOURCES = null, SOURCES_SORT = "name", SOURCES_HOW = "all", SOURCES_KIND = "all", SRC_ASK = null; // SRC_ASK: the source whose delete is being confirmed
+// CC-207: the site's three types. An opera source's events are Music, and comedy sources have no type now (CC-133),
+// so they show under All types only. The API's own map is BY_SOURCE_KIND in cc-backend categories.py.
+var SOURCE_TYPES = { theater: "Theater", opera: "Music", music: "Music", museum: "Visual Art" };
+function filteredSources(list) {
+  return list.filter(function (s) { return (SOURCES_HOW === "all" || s.manual === (SOURCES_HOW === "manual")) && (SOURCES_KIND === "all" || SOURCE_TYPES[s.kind] === SOURCES_KIND); });
+}
 // Sort the sources list: by name, by found items waiting, or by when each was last checked (never-checked last
 // for "most recent", first for "longest ago"). Ties keep name order.
 function sortedSources(list) {
@@ -1076,6 +1083,8 @@ function sortedSources(list) {
   });
 }
 $("sources-sort").addEventListener("change", function () { SOURCES_SORT = this.value; if (SOURCES) paintSources(SOURCES); });
+$("sources-how").addEventListener("change", function () { SOURCES_HOW = this.value; if (SOURCES) paintSources(SOURCES); });
+$("sources-kind").addEventListener("change", function () { SOURCES_KIND = this.value; if (SOURCES) paintSources(SOURCES); });
 function loadSources(focusId) {
   $("sources-status").textContent = "Loading…";
   api("/admin/discovery/sources").then(readJSON).then(function (res) {
@@ -1098,7 +1107,10 @@ function paintSources(o) {
   $("sources-budget-note").textContent = o.budget_state === "paused" ? "The monthly budget is used up: only Check now runs until next month." :
     o.budget_state === "saving" ? "Over 80% of the monthly budget: event pages wait until next month. Sources are still checked." : "";
   if (document.activeElement !== $("budget-usd")) $("budget-usd").value = o.budget_usd;
-  $("sources-list").innerHTML = sortedSources(o.sources).map(function (s) {
+  $("sources-how").value = SOURCES_HOW; $("sources-kind").value = SOURCES_KIND;
+  var shown = filteredSources(o.sources);
+  $("sources-shown").textContent = shown.length < o.sources.length ? "Showing " + shown.length + " of " + plural(o.sources.length, "source", "sources") + "." : "";
+  $("sources-list").innerHTML = !shown.length ? '<p class="hint">No sources match these filters.</p>' : sortedSources(shown).map(function (s) {
     var st = SOURCE_STATUS[s.last_status] || [s.last_status, ""], id = esc(s.id);
     var every = EVERY.some(function (e) { return e[0] === s.every_days; }) ? EVERY : EVERY.concat([[s.every_days, "Every " + s.every_days + " days"]]);
     return '<div class="queue-item source"><div class="alt-text">' +

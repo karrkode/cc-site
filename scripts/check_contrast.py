@@ -61,6 +61,10 @@ PAIRS = [  # (foreground, background, minimum, where it's used)
     ("text", "danger-soft", TEXT, "a button's label and outline on the confirm band"),
     ("focus", "danger-soft", NON_TEXT, "focus ring on the confirm band"),
     ("text", "page", NON_TEXT, "the 2.5px border on a field at fault"),
+    # CC-207: the budget dial's zones
+    ("gauge-ok", "page", NON_TEXT, "the budget dial, under 80%"),
+    ("gauge-warn", "page", NON_TEXT, "the budget dial, from 80%"),
+    ("gauge-stop", "page", NON_TEXT, "the budget dial, at the limit"),
 ] + [("dot-ink", f"dot-{i}", TEXT, "initials on a crew dot") for i in range(6)]
 
 

@@ -17,6 +17,7 @@
   --danger-soft: #FBE9E7; --on-danger-soft: #0E2A40;
   --focus: #0F5E8C;
   --cat-theater: #B9472E; --cat-music: #5B3E9E; --cat-art: #2F7A5B;
+  --gauge-ok: #1B8258; --gauge-warn: #B3730A; --gauge-stop: #C8102E; /* CC-207: the budget dial's zones, and nothing else */
   color-scheme: light;
 }
 :root[data-theme="dark"] {
@@ -30,6 +31,7 @@
   --danger-soft: #3A1C22; --on-danger-soft: #EAF2F7;
   --focus: #9CD3EF;
   --cat-theater: #B9472E; --cat-music: #7A5AD0; --cat-art: #2F7A5B; /* music is lighter at night, so tiles don't vanish */
+  --gauge-ok: #4FB08A; --gauge-warn: #E3A73C; --gauge-stop: #FF5C70;
   color-scheme: dark;
 }
 :root {
@@ -1350,15 +1352,11 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .hub-row { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; width: 100%; min-height: 76px; padding: 12px 0;
   background: none; border: 0; color: var(--text); cursor: pointer; font: inherit; text-align: left; text-decoration: none; }
 .hub-plain .hub-row { grid-template-columns: minmax(0, 1fr) auto; }
-.hub-plain .hub-small { min-height: 52px; padding: 6px 0; }
-.hub-small .hub-name { font-size: 1.3125rem; }
 .hub-n { font-family: var(--sign); font-weight: 700; font-size: 2.375rem; line-height: 1; font-variant-numeric: tabular-nums; }
 .hub-name { display: block; font-family: var(--display); font-weight: 500; font-size: 1.5625rem; line-height: 1.2; }
 .hub-sub { display: block; color: var(--muted); font-size: 1.125rem; line-height: 1.35; }
 .hub-go { font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; white-space: nowrap; }
 .hub-row:hover .hub-name { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
-.hub .stat-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px 24px; margin: 4px 0 0; }
-.hub .stat-summary strong { font-family: var(--sign); font-weight: 700; font-size: 2.25rem; }
 .hub-spend { font-family: var(--sign); font-weight: 700; font-size: 2.25rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .hub-spend span { font-family: var(--body); font-weight: 400; font-size: 1.3125rem; color: var(--muted); }
 .hub-link { min-height: 44px; font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; }
@@ -1367,8 +1365,36 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
   .hub-rows:not(.hub-plain) .hub-go { display: none; }
   .hub-n { font-size: 2rem; }
   .hub-name { font-size: 1.3125rem; }
-  .hub .stat-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hub-rows.src-rows:not(.hub-plain) .hub-row { grid-template-columns: 58px minmax(0, 1fr) auto; }
+  .hub-rows.src-rows .hub-go { display: block; }
 }
+/* CC-207: Event Sourcing: the budget dial, the graph of new events found, the found events list and the tools */
+.hub-top { display: flex; flex-wrap: wrap; gap: 0 48px; } /* Needs you beside the budget, one under the other on a phone; with nothing needed, the budget alone */
+.hub .hub-top > .section { flex: 1 1 17rem; min-width: 0; margin-top: 32px; align-self: flex-start; } /* not stretched to the taller one: that pulls a heading from its list */
+#needs-list .hub-row { grid-template-columns: 52px minmax(0, 1fr); }
+#needs-list .hub-name { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+.gauge { max-width: 320px; margin: 8px 0 12px; }
+.gauge svg { display: block; width: 100%; height: auto; }
+.gauge .zone { fill: none; stroke-width: 8; }
+.gauge .zone.on { stroke-width: 18; } /* the zone it's in is the thick one, so it doesn't rest on colour alone */
+.gauge .ok { stroke: var(--gauge-ok); } .gauge .warn { stroke: var(--gauge-warn); } .gauge .stop { stroke: var(--gauge-stop); }
+.gauge .needle { stroke: var(--text); stroke-width: 3; }
+.gauge .pin { fill: var(--text); }
+.gauge text, .graph text { fill: var(--muted); font-family: var(--sign); font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; }
+.graph { position: relative; }
+.graph svg { display: block; width: 100%; height: 220px; touch-action: pan-y; }
+.graph .grid { stroke: var(--line); stroke-width: 1; }
+.graph .line { fill: none; stroke: var(--lead); stroke-width: 2; }
+.graph .dot { fill: var(--lead); stroke: var(--page); stroke-width: 2; }
+.graph .cross { stroke: var(--field-line); stroke-width: 1; }
+.graph text.now { fill: var(--text); }
+.graph-tip { position: absolute; top: 0; z-index: 1; padding: 4px 8px; background: var(--text); color: var(--page); font-family: var(--sign); font-weight: 700; font-size: 1rem; white-space: nowrap; pointer-events: none; font-variant-numeric: tabular-nums; }
+.src-panel { padding: 0 0 12px; }
+.src-panel[hidden] { display: none; }
+.lf-page .src-panel .queue-item:last-child { border-bottom: 0; } /* the row below brings its own rule: never stack two */
+.src-rows .hub-go { min-width: 3em; text-align: right; }
+.hub-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.hub-tools .btn { padding-inline: 14px; } /* all five on one line on an iPad */
 
 
 /* Site stats: the weekly figures without boxes, each under a rule */
