@@ -32,7 +32,7 @@ has(admin, 'addressProblem("vn", place)', "the form needs all three");
 has(admin, "place.address || place.city || place.zip_code ? addressProblem(\"vd\", place)", "Edit takes all three or none");
 has(admin, "s.zip_code ? '<button class=\"btn\" type=\"button\" data-va-confirm", "a suggestion with no ZIP can't be confirmed as it is");
 has(admin, 'api("/venues/from-event", { method: "POST", body: { name: name, neighborhood: hood } })', "editing an event needs no address");
-has(admin, 'api("/venues", { method: "POST", body: { name: name, neighborhood: hood, address: place.address, city: place.city, zip_code: place.zip_code } })');
+has(admin, 'api("/venues", { method: "POST", body: { name: name, neighborhood: hood, address: place.address, city: place.city, zip_code: place.zip_code, website: $("vn-website").value.trim() } })');
 
 // --- only an admin's action saves one ---
 const load = admin.slice(admin.indexOf("function loadAddressSuggestions"), admin.indexOf("function paintAddressSuggestions"));

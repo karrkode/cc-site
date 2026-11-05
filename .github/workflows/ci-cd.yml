@@ -53,6 +53,8 @@ jobs:
         run: node scripts/test_hide_venue.js
       - name: Check venue addresses
         run: node scripts/test_venue_address.js
+      - name: Check adding a venue by its website
+        run: node scripts/test_venue_from_website.js
       - name: Found events have one Edit/Approve button, and a short run opens as its days with a time each
         run: node scripts/test_found.js
       - name: Event Sourcing page

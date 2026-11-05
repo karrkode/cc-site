@@ -989,6 +989,8 @@
       <!-- CC-218: the one place a venue is added directly, so the address is required -->
       <details class="section va-new"><summary>Add a venue</summary>
         <form id="va-add" novalidate>
+          <!-- CC-222: pasting a website fills in what the page says; nothing is saved until Add venue -->
+          <div class="field" style="margin-bottom:14px"><label for="vn-website">Website</label><input id="vn-website" type="url" inputmode="url" maxlength="500" placeholder="https://" autocomplete="off" aria-describedby="vn-website-hint vn-read"><span class="hint small" id="vn-website-hint">Paste the venue's website and we'll fill in what its page says. You can also type everything yourself.</span><p class="hint" id="vn-read" role="status"></p></div>
           <div class="fields">
             <div class="field"><label for="vn-name">Name</label><input id="vn-name" type="text" maxlength="200" required autocomplete="off"></div>
             <div class="field"><label for="vn-hood">Neighborhood or town</label><input id="vn-hood" type="text" maxlength="120" autocomplete="off" aria-describedby="vn-hood-hint"><span class="hint small" id="vn-hood-hint">For a suburb, add the state: Oak Park, IL.</span></div>
