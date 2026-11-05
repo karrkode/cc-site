@@ -1369,6 +1369,10 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
   .hub-rows.src-rows .hub-go { display: block; }
 }
 /* CC-207: Event Sourcing: the budget dial, the graph of new events found, the found events list and the tools */
+.hub-top { display: flex; flex-wrap: wrap; gap: 0 48px; } /* Needs you beside the budget, one under the other on a phone; with nothing needed, the budget alone */
+.hub .hub-top > .section { flex: 1 1 17rem; min-width: 0; margin-top: 32px; align-self: flex-start; } /* not stretched to the taller one: that pulls a heading from its list */
+#needs-list .hub-row { grid-template-columns: 52px minmax(0, 1fr); }
+#needs-list .hub-name { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
 .gauge { max-width: 320px; margin: 8px 0 12px; }
 .gauge svg { display: block; width: 100%; height: auto; }
 .gauge .zone { fill: none; stroke-width: 8; }

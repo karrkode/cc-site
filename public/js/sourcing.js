@@ -14,9 +14,9 @@ function loadSourcing() {
     $("sourcing-status").textContent = ""; paintSourcing(res.body);
   }, function () { if (req === SOURCING_REQ) $("sourcing-status").textContent = errorText(null); });
 }
-function needRowHTML(n, name, sub, href, tool) {
+function needRowHTML(n, name, sub, href) {
   return '<li><a class="hub-row" href="' + href + '"><span class="hub-n">' + n + '</span><span class="hub-text"><span class="hub-name">' + esc(name) +
-    '</span><span class="hub-sub">' + esc(sub) + '</span></span><span class="hub-go">' + tool + " →</span></a></li>";
+    '</span><span class="hub-sub">' + esc(sub) + "</span></span></a></li>";
 }
 function money(usd) { return "$" + usd.toFixed(2); }
 function wholeMoney(usd) { return "$" + (usd % 1 ? usd.toFixed(2) : usd.toFixed(0)); } // "$10", but "$12.50"
@@ -25,10 +25,10 @@ function chicagoDate(iso, parts) { // iso: a plain date; noon keeps it on that d
 }
 function paintSourcing(o) {
   var rows = [], bad = o.unreadable, names = function (list) { return list.join(", "); };
-  if (o.updates_waiting) rows.push(needRowHTML(o.updates_waiting, o.updates_waiting === 1 ? "Proposed update" : "Proposed updates", "New prices or dates on events already listed", "#found/update", "Found events"));
+  if (o.updates_waiting) rows.push(needRowHTML(o.updates_waiting, o.updates_waiting === 1 ? "Proposed update" : "Proposed updates", "New prices or dates on events already listed", "#found/update"));
   if (bad.length) rows.push(needRowHTML(bad.length, bad.length === 1 ? "Source we couldn't read" : "Sources we couldn't read",
-    bad.length === 1 ? bad[0].name + ": " + bad[0].reason : names(bad.map(function (s) { return s.name; })), bad.length === 1 ? "#source-" + bad[0].id : "#sources", "Event sources"));
-  if (o.by_hand.length) rows.push(needRowHTML(o.by_hand.length, o.by_hand.length === 1 ? "Source to check by hand" : "Sources to check by hand", names(o.by_hand), "#sources", "Event sources"));
+    bad.length === 1 ? bad[0].name + ": " + bad[0].reason : names(bad.map(function (s) { return s.name; })), bad.length === 1 ? "#source-" + bad[0].id : "#sources"));
+  if (o.by_hand.length) rows.push(needRowHTML(o.by_hand.length, o.by_hand.length === 1 ? "Source to check by hand" : "Sources to check by hand", names(o.by_hand), "#sources"));
   $("needs-n").textContent = rows.length ? String(rows.length) : "";
   $("needs-list").innerHTML = rows.join("");
   $("needs-section").hidden = !rows.length;
@@ -38,7 +38,7 @@ function paintSourcing(o) {
   var month = new Intl.DateTimeFormat("en-US", { month: "long", timeZone: "America/Chicago" }).format(new Date());
   var spent = money(o.spent_month_usd) + " of " + wholeMoney(o.budget_usd);
   $("budget-gauge").innerHTML = gaugeHTML(g, o.budget_usd, "Budget speedometer: " + spent + " spent in " + month + ", an estimate. That's " + g.pct + "% of the budget: " + g.words + ".");
-  $("budget-spent").innerHTML = esc(money(o.spent_month_usd)) + " <span>of " + esc(wholeMoney(o.budget_usd)) + " spent in " + esc(month) + ", " + esc(g.words) + "</span>";
+  $("budget-spent").innerHTML = esc(money(o.spent_month_usd)) + " <span>of " + esc(wholeMoney(o.budget_usd)) + " in " + esc(month) + ", " + esc(g.words) + "</span>";
   $("budget-note").textContent = o.budget_note; $("budget-note").hidden = !o.budget_note;
 
   GRAPH_WEEKS_SHOWN = o.found_weeks; paintGraph();

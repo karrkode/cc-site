@@ -54,5 +54,8 @@ assert.ok(/id="needs-section" hidden/.test(view), "Needs you starts hidden, head
 ["This week", "week-figures", "left out", "Checks run"].forEach((s) => assert.ok(!view.includes(s), "gone from the page: " + s));
 ["Found events", "Event sources", "Skip rules", "Check by hand only", "Withdrawn"].forEach((t) => assert.ok(view.includes(">" + t + "</button>"), "a tool: " + t));
 const js = read("js/sourcing.js");
+const firstLine = view.slice(view.indexOf('class="hub-top"'), view.indexOf('id="found-graph"'));
+assert.ok(firstLine.includes('id="needs-section"') && firstLine.includes('id="budget-gauge"'), "Needs you and Budget share a line");
+assert.ok(!/function needRowHTML[^\n]*\n[^\n]*\n?[^\n]*hub-go/.test(js), "a Needs you row is its text, with no link at the right");
 assert.ok(!/Found events? to review/.test(js), "found events moved to the list below");
 console.log("Event Sourcing checks pass");
