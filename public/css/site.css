@@ -1706,3 +1706,8 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .lf-page .vs-item .alt-text { flex: 1 1 280px; min-width: 0; }
 .lf-page .vs-item .alt-meta a { overflow-wrap: anywhere; }
 .lf-page .vs-item .field { margin-top: 8px; }
+
+/* CC-227: a dialog on its way out (openDialog, util.js). It has left the top layer, so it's held where it was, over a stand-in
+   for its backdrop. The script sets its box. */
+dialog.dialog-leaving { display: block; position: fixed; z-index: 101; margin: 0; max-width: none; max-height: none; box-sizing: border-box; }
+.dialog-scrim { position: fixed; inset: 0; z-index: 100; }

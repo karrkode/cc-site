@@ -26,7 +26,7 @@ function openPhoto(e, opener) {
   $("ph-send").textContent = p ? "Send this one instead" : "Send photo";
   $("ph-remove").hidden = !p;
   showPhoto(p ? API + p.url : null, p ? photoState(p) : "");
-  $("photo-dialog").showModal(); (p ? $("ph-heading") : $("ph-file")).focus();
+  openDialog($("photo-dialog")); (p ? $("ph-heading") : $("ph-file")).focus();
 }
 function photoState(p) {
   return p.status === "rejected" ? "Not approved" + (p.reason ? ": " + p.reason : ".") + " You can send another." :
@@ -38,7 +38,7 @@ function showPhoto(src, state) {
   else $("ph-img").removeAttribute("src");
   $("ph-state").textContent = state;
 }
-$("ph-cancel").addEventListener("click", function () { $("photo-dialog").close(); });
+$("ph-cancel").addEventListener("click", function () { closeDialog($("photo-dialog")); });
 $("photo-dialog").addEventListener("close", function () {
   var was = PHOTO; PHOTO = null;
   if (was && was.preview) URL.revokeObjectURL(was.preview);
@@ -86,7 +86,7 @@ $("photo-form").addEventListener("submit", function (ev) {
     WENT_PHOTO[was.e.id] = res.body;
     $("edit-live").textContent = "Photo sent. It's waiting for approval.";
     redrawCards(was.e.id, was.opener.closest("[data-card],[data-journal]"), "[data-photo]");
-    $("photo-dialog").close();
+    closeDialog($("photo-dialog"));
   }, function () { $("ph-send").disabled = false; $("ph-state").textContent = ""; $("ph-error").textContent = errorText(null); });
 });
 $("ph-remove").addEventListener("click", function () {
@@ -98,6 +98,6 @@ $("ph-remove").addEventListener("click", function () {
     delete WENT_PHOTO[was.e.id];
     $("edit-live").textContent = "Photo removed.";
     redrawCards(was.e.id, was.opener.closest("[data-card],[data-journal]"), "[data-photo]");
-    $("photo-dialog").close();
+    closeDialog($("photo-dialog"));
   }, function () { $("ph-remove").disabled = false; $("ph-error").textContent = errorText(null); });
 });

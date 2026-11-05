@@ -25,7 +25,7 @@ function onAuthChange() {
     if (visible("review") || visible("sourcing") || visible("engagement") || visible("people") || visible("venues") || visible("stats") || visible("sources") || visible("found") || visible("issues")) show("home");
     if (visible("submit")) renderSubmit();
     CREWS = []; buildCrewFilter(); PENDING = []; paintPending(); $("my-issues-section").hidden = true;
-    if ($("issue-dialog").open) $("issue-dialog").close();
+    if ($("issue-dialog").open) closeDialog($("issue-dialog"));
     rerenderLists();
     if (visible("crews")) renderCrewsPage();
     if (visible("planner")) renderPlannerPage();
@@ -640,20 +640,22 @@ function paintMeMode() {
   meItems().forEach(function (it) { // in the sheet each item is a plain button that Tab reaches
     if (sheet) { it.removeAttribute("role"); it.removeAttribute("tabindex"); } else { it.setAttribute("role", "menuitem"); it.setAttribute("tabindex", "-1"); }
   });
-  menu.hidden = !sheet;
+  moveStop(menu); menu.hidden = !sheet;
   if (!sheet && AUTH.user) $("nav-account").setAttribute("aria-expanded", "false");
 }
 MAST_PHONE.addEventListener("change", paintMeMode);
 function meItems() { return Array.prototype.slice.call($("me-menu").querySelectorAll("[data-me]")); }
 function openMeMenu(at) {
-  var menu = $("me-menu"); menu.style.right = ""; menu.hidden = false; $("nav-account").setAttribute("aria-expanded", "true");
-  var r = menu.getBoundingClientRect(), edge = 16; // on a phone your name can sit at the left: keep the menu on screen
-  if (r.left < edge) menu.style.right = (r.left - edge) + "px";
-  var items = meItems(); items[at === "last" ? items.length - 1 : 0].focus();
+  var menu = $("me-menu"); menu.style.right = ""; $("nav-account").setAttribute("aria-expanded", "true");
+  dropOpen(menu, function () {
+    var r = menu.getBoundingClientRect(), edge = 16; // on a phone your name can sit at the left: keep the menu on screen
+    if (r.left < edge) menu.style.right = (r.left - edge) + "px";
+    var items = meItems(); items[at === "last" ? items.length - 1 : 0].focus();
+  });
 }
 function closeMeMenu(refocus) {
   if ($("me-menu").hidden || meInSheet()) return;
-  $("me-menu").hidden = true; $("nav-account").setAttribute("aria-expanded", "false");
+  dropClose($("me-menu")); $("nav-account").setAttribute("aria-expanded", "false");
   if (refocus) $("nav-account").focus();
 }
 $("nav-account").addEventListener("click", function () {
@@ -690,7 +692,7 @@ function adminInviteUrl(medium) { return location.origin + "/invite?utm_source=i
 var INVITE_FROM = null;
 function inviteReturnFocus() {
   var el = INVITE_FROM; INVITE_FROM = null;
-  if (!el || !el.isConnected || !el.getClientRects().length) el = meInSheet() ? $("mast-burger") : $("nav-account");
+  if (!el || !el.isConnected || !el.getClientRects().length || el.closest("[inert]")) el = meInSheet() ? $("mast-burger") : $("nav-account");
   if (el && el.getClientRects().length) el.focus();
 }
 function inviteFriend() {
@@ -703,7 +705,7 @@ function inviteFriend() {
     "Send them this link. They can look around without an account, and sign up when they want to go out with you.";
   $("invite-url").value = url; $("invite-msg").textContent = "";
   INVITE_FROM = document.activeElement;
-  $("invite-dialog").showModal();
+  openDialog($("invite-dialog"), meInSheet() ? $("mast-burger") : $("nav-account")); // the you menu has closed, so it goes back into your name
   if (share) { $("invite-url").scrollLeft = 0; $("invite-share").focus(); } else { $("invite-url").focus(); $("invite-url").select(); $("invite-url").scrollLeft = 0; } // CC-147: selected, showing its start
 }
 $("invite-share").addEventListener("click", function () {

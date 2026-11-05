@@ -24,7 +24,7 @@ has(dlg, '<label for="invite-url">Link to the site</label>', "the link has a vis
 has(dlg, '<button class="invite-done" type="submit">Done</button>', "Done closes the dialog (Escape does too, natively)");
 has(css, ".invite-dlg::backdrop { background: rgb(14 42 64 / 0.55); }", "the lake scrim at 55%");
 has(css, "border: 1.5px solid var(--rule); }", "a square dialog with an ink border");
-has(account, 'INVITE_FROM = document.activeElement;\n  $("invite-dialog").showModal();', "remembers what opened it");
+has(account, 'INVITE_FROM = document.activeElement;\n  openDialog($("invite-dialog")', "remembers what opened it");
 has(account, '$("invite-dialog").addEventListener("close", function () { if (!$("qr-full").open) inviteReturnFocus(); });',
   "closing returns focus, unless the QR screen took over");
 

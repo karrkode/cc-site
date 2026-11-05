@@ -332,6 +332,124 @@ function show(name, focusId) {
   var h = $(focusId || VIEWS[name]); if (h) h.focus({ preventScroll: true });
   track("view", name);
 }
+// ---------- opening and closing (CC-227; brief section 6) ----------
+// Things open from their trigger and exit back into it. One helper for all of them: dropOpen and dropClose for what drops
+// down, openDialog and closeDialog for dialogs. Whatever closes changes state at once, as if there were no animation:
+// hidden, aria-expanded, the dialog's own close(), and so focus and Escape. The element then stays painted, inert, until its
+// exit ends. A dialog has to close first: while it's modal the page behind it is inert, so nothing can take focus there.
+// Fill is none, so an interrupted move always lands on the element's real state. With reduced motion they swap at once.
+var MOTION_CALM = window.matchMedia("(prefers-reduced-motion: reduce)");
+var MOVES = new WeakMap(); // an element's running move: its Animation, which way it's going, and what to do when it ends
+function motionOn(el) { return !!el.animate && !MOTION_CALM.matches; }
+// An exit plays the entrance backwards, and an ease-out backwards sits still for half its time, so exits ease in and out
+function motionTiming(leaving) {
+  var root = getComputedStyle(document.documentElement);
+  return { duration: parseFloat(root.getPropertyValue("--dur-drop")), easing: root.getPropertyValue(leaving ? "--ease-in-out" : "--ease-out").trim() };
+}
+function moveEl(el, frames, opening, done) {
+  var m = MOVES.get(el);
+  if (m) { // already moving: turn round from where it is, so a quick open and close never jumps or sticks
+    m.done = done;
+    if (m.opening !== opening) { m.opening = opening; m.anim.reverse(); }
+    return;
+  }
+  m = { anim: el.animate(frames, motionTiming(!opening)), opening: opening, done: done };
+  if (!opening) m.anim.reverse();
+  MOVES.set(el, m);
+  m.anim.onfinish = function () { moveEnd(el, m); };
+  m.anim.oncancel = function () { moveEnd(el, m); };
+}
+function moveEnd(el, m) {
+  if (MOVES.get(el) === m) MOVES.delete(el);
+  var done = m.done; m.done = null;
+  if (done) done();
+}
+function moveStop(el) { var m = MOVES.get(el); if (m) { m.anim.cancel(); moveEnd(el, m); } }
+function afterExit(el, then) { // for what has to wait until the exit is over
+  var m = MOVES.get(el), done = m && m.done;
+  if (!m || m.opening) { then(); return; }
+  m.done = function () { if (done) done(); then(); };
+}
+// A panel over the page comes out from behind its own top edge. One in the flow (the Where list in the filter sheet)
+// opens up its height, so what's below it moves with it instead of jumping. The side and bottom insets keep any shadow.
+function dropFrames(el) {
+  var css = getComputedStyle(el);
+  if (css.position !== "static") return [
+    { transform: "translateY(-100%)", clipPath: "inset(100% -40px -40px -40px)" },
+    { transform: "none", clipPath: "inset(0 -40px -40px -40px)" }];
+  var shut = { overflow: "clip" }, full = { overflow: "clip", height: el.getBoundingClientRect().height + "px" };
+  shut.height = "0px";
+  ["marginTop", "marginBottom", "paddingTop", "paddingBottom", "borderTopWidth", "borderBottomWidth"].forEach(function (k) { shut[k] = "0px"; full[k] = css[k]; });
+  return [shut, full];
+}
+// `ready` places it and focuses into it. That has to happen before the move: focus on something shifted off the screen scrolls
+// the page to it. One turned round mid-exit is still shifted, but it was just on screen, so the page stays where it is.
+function dropOpen(el, ready) {
+  var moving = MOVES.has(el), x = window.scrollX, y = window.scrollY;
+  el.hidden = false; el.inert = false; el.style.display = ""; // it may be on its way out
+  if (ready) ready();
+  if (moving) window.scrollTo(x, y);
+  if (motionOn(el)) moveEl(el, dropFrames(el), true, null);
+}
+// `hide` is for an element that a class shows rather than `hidden`: it runs when the exit ends
+function dropClose(el, hide) {
+  if (!motionOn(el) || !el.getClientRects().length) { moveStop(el); if (hide) hide(); else el.hidden = true; return; }
+  var frames = dropFrames(el), display = getComputedStyle(el).display;
+  el.inert = true;
+  if (!hide) { el.hidden = true; el.style.setProperty("display", display, "important"); } // [hidden] is !important too
+  moveEl(el, frames, false, function () { el.inert = false; el.style.display = ""; if (hide) hide(); });
+}
+// The control just pressed, with where it was: a menu item has gone by the time its dialog closes, and a row may be redrawn.
+// Taken from the click, not from focus, as Safari doesn't focus a button you press.
+var PRESSED = null, DIALOG_FROM = new WeakMap();
+document.addEventListener("click", function (ev) {
+  var b = ev.target.closest("button, a, label");
+  PRESSED = b ? { el: b, rect: b.getBoundingClientRect() } : null;
+}, true);
+function dialogFrames(box, to) {
+  if (!to) return [{ opacity: 0, transform: "scale(.96)" }, { opacity: 1, transform: "none" }]; // nothing opened it: a link or a reload
+  var x = Math.min(Math.max(to.left + to.width / 2, 0), window.innerWidth), y = Math.min(Math.max(to.top + to.height / 2, 0), window.innerHeight);
+  var size = Math.min(Math.max(to.width / box.width, to.height / box.height, 0.1), 0.5); // a phone's menu row is as wide as the dialog: it still grows
+  return [{ opacity: 0, transform: "translate(" + (x - box.left - box.width / 2) + "px, " + (y - box.top - box.height / 2) + "px) scale(" + size + ")" },
+    { opacity: 1, offset: 0.4 }, { opacity: 1, transform: "none" }];
+}
+// `back` is for a dialog whose opener won't be there when it closes (Invite a friend, from the you menu)
+function openDialog(d, back) {
+  moveStop(d);
+  var from = PRESSED; PRESSED = null;
+  DIALOG_FROM.set(d, { from: from, back: back });
+  d.showModal();
+  if (!motionOn(d)) return;
+  moveEl(d, dialogFrames(d.getBoundingClientRect(), from && from.rect), true, null);
+  d.animate({ opacity: [0, 1] }, Object.assign(motionTiming(), { pseudoElement: "::backdrop" }));
+}
+function dialogTarget(d) {
+  var t = DIALOG_FROM.get(d) || {}, el = t.back || (t.from && t.from.el);
+  return el && el.isConnected && el.getClientRects().length ? el.getBoundingClientRect() : t.from && t.from.rect;
+}
+// Called just before a dialog closes, however that happens. Out of the top layer it has no backdrop, so a scrim of the same
+// colour stands in for it, and takes any click while the dialog leaves.
+function dialogLeaves(d) {
+  if (!DIALOG_FROM.has(d) || !d.open || MOVES.has(d) && !MOVES.get(d).opening || !motionOn(d)) return;
+  var midway = MOVES.has(d) ? MOVES.get(d).anim.currentTime : null; // closed while still opening: turn round from there
+  moveStop(d);
+  var box = d.getBoundingClientRect(), top = d.scrollTop, scrim = document.createElement("div");
+  scrim.className = "dialog-scrim"; scrim.style.background = getComputedStyle(d, "::backdrop").backgroundColor;
+  document.body.appendChild(scrim);
+  d.classList.add("dialog-leaving"); d.inert = true;
+  d.style.left = box.left + "px"; d.style.top = box.top + "px"; d.style.width = box.width + "px"; d.style.height = box.height + "px";
+  d.scrollTop = top;
+  scrim.animate({ opacity: [0, 1] }, motionTiming(true)).reverse();
+  moveEl(d, dialogFrames(box, dialogTarget(d)), false, function () {
+    scrim.remove(); d.classList.remove("dialog-leaving"); d.inert = false;
+    d.style.left = d.style.top = d.style.width = d.style.height = "";
+  });
+  if (midway !== null) MOVES.get(d).anim.currentTime = midway;
+}
+function closeDialog(d) { dialogLeaves(d); if (d.open) d.close(); }
+document.addEventListener("cancel", function (ev) { if (ev.target.tagName === "DIALOG") dialogLeaves(ev.target); }, true); // Escape, or back on Android
+document.addEventListener("submit", function (ev) { if (ev.target.method === "dialog") dialogLeaves(ev.target.closest("dialog")); }, true);
+
 // ---------- the masthead (CC-137) ----------
 // Full on home and the join page, compact on every other view. On a phone the nav is a sheet the hamburger opens;
 // Escape, a click outside or tabbing out closes it. The date is Chicago's, like the listings.
@@ -347,15 +465,16 @@ function paintMast(name) {
   });
   closeMastSheet(false);
 }
-function mastSheetOpen() { return $("mast").classList.contains("open"); }
+function mastSheetOpen() { return $("mast-burger").getAttribute("aria-expanded") === "true"; } // .open stays on through the exit
 function closeMastSheet(refocus) {
   if (!mastSheetOpen()) return;
-  $("mast").classList.remove("open"); $("mast-burger").setAttribute("aria-expanded", "false");
+  $("mast-burger").setAttribute("aria-expanded", "false");
+  dropClose($("mast-nav"), function () { $("mast").classList.remove("open"); });
   if (refocus) $("mast-burger").focus();
 }
 $("mast-burger").addEventListener("click", function () {
   if (mastSheetOpen()) { closeMastSheet(false); return; }
-  $("mast").classList.add("open"); $("mast-burger").setAttribute("aria-expanded", "true");
+  $("mast").classList.add("open"); $("mast-burger").setAttribute("aria-expanded", "true"); dropOpen($("mast-nav"));
 });
 document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && mastSheetOpen()) closeMastSheet(true); });
 document.addEventListener("click", function (ev) { if (!$("mast").contains(ev.target)) closeMastSheet(false); });

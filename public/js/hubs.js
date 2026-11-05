@@ -14,17 +14,17 @@ function paintRvMode() {
   rvItems().forEach(function (it) { // in the sheet each item is a plain button that Tab reaches
     if (sheet) { it.removeAttribute("role"); it.removeAttribute("tabindex"); } else { it.setAttribute("role", "menuitem"); it.setAttribute("tabindex", "-1"); }
   });
-  menu.hidden = !sheet; $("nav-review").setAttribute("aria-expanded", "false");
+  moveStop(menu); menu.hidden = !sheet; $("nav-review").setAttribute("aria-expanded", "false");
 }
 MAST_PHONE.addEventListener("change", paintRvMode);
 paintRvMode();
 function openRvMenu(at) {
-  $("rv-menu").hidden = false; $("nav-review").setAttribute("aria-expanded", "true");
-  var items = rvItems(); items[at === "last" ? items.length - 1 : 0].focus();
+  $("nav-review").setAttribute("aria-expanded", "true");
+  dropOpen($("rv-menu"), function () { var items = rvItems(); items[at === "last" ? items.length - 1 : 0].focus(); });
 }
 function closeRvMenu(refocus) {
   if ($("rv-menu").hidden || MAST_PHONE.matches) return;
-  $("rv-menu").hidden = true; $("nav-review").setAttribute("aria-expanded", "false");
+  dropClose($("rv-menu")); $("nav-review").setAttribute("aria-expanded", "false");
   if (refocus) $("nav-review").focus();
 }
 $("nav-review").addEventListener("click", function () { if ($("rv-menu").hidden) openRvMenu(); else closeRvMenu(true); });
