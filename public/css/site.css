@@ -1593,7 +1593,8 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
    blocks below it down; the blocks set their own height. Dense fills the gaps a big block leaves. */
 .sg-grid { --sg-row: 132px; --sg-gap: 0px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); grid-auto-flow: dense; gap: var(--sg-gap); margin-bottom: 24px; }
 .sg-none { grid-column: 1 / -1; }
-.sg-block { position: relative; height: var(--sg-row); overflow: hidden; color: var(--on-src); transition: background-color 150ms ease; }
+.sg-block { position: relative; height: var(--sg-row); overflow: hidden; color: var(--on-src); transition: background-color 150ms ease;
+  box-shadow: inset -1px -1px 0 color-mix(in srgb, var(--on-src) 25%, transparent); } /* the right and bottom edges: one line between blocks, not two */
 .sg-size2 { grid-column: span 2; }
 .sg-size3, .sg-size4 { grid-column: span 2; grid-row: span 2; height: calc(var(--sg-row) * 2 + var(--sg-gap)); }
 .sg-size4 { grid-column: span 3; }
