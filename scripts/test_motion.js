@@ -264,8 +264,10 @@ assert.strictEqual(c.g.posterSource(null), null);
   [".lead-t", ".way-t", ".last-t", ".listing-t", ".crew-top", ".hub-name", ".opt-main", ".ev-back", ".lf-back .textbtn"].forEach((sel) => assert.ok(origin.includes(sel), sel + " grows from the start of its text"));
   assert.ok(/\.navlink \{ transform-origin: 8px 50%; \}/.test(css), "a nav link's text starts after its padding");
   const animated = css.match(/@media \(prefers-reduced-motion: no-preference\) \{\s*\.lead-t[\s\S]*?\n\}/);
-  assert.ok(animated && /transition: scale var\(--dur-grow\) var\(--ease-out\)/.test(animated[0]), "the growth is animated only when motion is welcome");
+  assert.ok(animated && /transition: scale var\(--dur-grow\) var\(--ease-in-out\)/.test(animated[0]), "the growth is animated only when motion is welcome");
   assert.ok(/\.navlink, \.ev-back, \.lf-back \.textbtn \{ transition: transform var\(--dur-press\) var\(--ease-out\), scale var\(--dur-grow\)/.test(animated[0]), "buttons that grow keep their press");
+  assert.ok(/@media \(hover: hover\) and \(prefers-reduced-motion: no-preference\) \{\s*[^{}]*\.listing-t[^{}]*\{ will-change: scale; \}/.test(css),
+    "the text keeps its layer, or it jumps to the pixel grid as the growth starts and ends; touch screens don't pay for the layers");
   assert.ok(!/\.listing-a::after \{ content/.test(css) && /\.listing-cover \{ position: absolute; inset: 0; \}/.test(css), "a scaled name would hold the row's cover, so the cover is outside it");
 
   console.log("motion: ok");
