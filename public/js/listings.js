@@ -45,7 +45,8 @@ function listingHTML(e) {
     (e.suggestedBy ? '<span class="listing-where">Suggested by ' + esc(e.suggestedBy) + "</span>" : "") + listingCrewHTML(e) + "</span>" +
     '<span class="listing-meta"><span class="listing-when">' + esc(dateText(e)) +
     (going ? '<span class="going-day">Going ' + esc(goingDay(mine.date)) + "</span>" : "") + "</span>" +
-    '<span class="listing-cost">' + esc(costText(e)) + "</span></span></div>";
+    '<span class="listing-cost">' + esc(costText(e)) + "</span></span>" +
+    '<a class="listing-cover" href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '" tabindex="-1" aria-hidden="true"></a></div>';
 }
 
 // CC-155: the admin's pick beside the name, as a button that says what it means: its name is the event page's

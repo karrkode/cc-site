@@ -64,6 +64,7 @@
   --ease-in-out: cubic-bezier(.45, 0, .55, 1);
   --dur-drop: 200ms;
   --dur-press: 100ms;
+  --dur-grow: 120ms;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -90,11 +91,31 @@ a.btn, a.textbtn { display: inline-block; }
 @media (prefers-reduced-motion: no-preference) {
   button, a.btn, a.textbtn, a.hub-row, .last, .lead-pick, .listing, .wk-row, .crew-plan, .journal-row, .acct-row { transition: transform var(--dur-press) var(--ease-out); }
   button:active:not(:disabled), a.btn:active, a.textbtn:active, a.hub-row:active, .last:active, .lead-pick:active,
-  .listing:has(.listing-a:active), .wk-row:has(> .wk-row-a:active), .crew-plan:has(> .crew-plan-a:active),
+  .listing:has(.listing-a:active), .listing:has(.listing-cover:active), .wk-row:has(> .wk-row-a:active), .crew-plan:has(> .crew-plan-a:active),
   .journal-row:has(> .journal-a:active), .acct-row:has(.acct-row-t a:active) { transform: scale(.97); }
   button:active:not(:disabled)::after, a.btn:active::after, a.textbtn:active::after, a.hub-row:active::after, .last:active::after, .lead-pick:active::after,
-  .listing-a:active::after, .wk-row-a:active::after, .crew-plan-a:active::after, .journal-a:active::after, .acct-row-t a:active::after { content: ""; position: absolute; inset: -2%; }
+  .listing-a:active::after, .listing-cover:active::after, .wk-row-a:active::after, .crew-plan-a:active::after, .journal-a:active::after, .acct-row-t a:active::after { content: ""; position: absolute; inset: -2%; }
   .lead-pick:active { overflow: visible; }
+}
+/* CC-226: links grow 5px on hover instead of underlining (brief section 6). A scale, so nothing around them moves, from
+   the start of the text. It's the scale property, not transform, so it adds to the press rather than replacing it.
+   --fs is the text's size in px, set beside its font-size, because the same 5px is a different scale at each size
+   (test_motion.js holds them together). A scaled element holds its absolutely placed children, so a whole-row link's
+   cover can't sit inside the part that grows (.listing-cover). With reduced motion it still grows, without the animation.
+   A name that fills its column would grow over the price beside it, so on a device that can hover, names wrap early enough
+   that the grown text just fills the column. The row names sit a little low so they mostly grow up, off the line below. */
+.navlink, .ev-back, .lf-back .textbtn, .lead-t, .way-t, .last-t, .listing-t, .crew-top, .hub-name, .lf-page .opt-main { transform-origin: 0 50%; }
+.navlink { transform-origin: 8px 50%; } /* its text starts after the padding */
+.listing-t { transform-origin: 0 75%; }
+@media (hover: hover) {
+  .lead-t, .last-t, .listing-t, .crew-top, .hub-name { padding-right: calc(100% * 5 / (var(--fs) + 5)); }
+  .navlink:hover, .ev-back:hover, .lf-back .textbtn:hover, .lead-pick:hover .lead-t, .way:hover .way-t, .last:hover .last-t, .listing:hover .listing-t,
+  .wk-row-a:hover .listing-t, .journal-a:hover .listing-t, .crew-plan-a:hover .listing-t, .crew-sum:hover .crew-top, .hub-row:hover .hub-name,
+  .lf-page .opt:hover:not(:disabled) .opt-main { scale: calc(1 + 5 / var(--fs)); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lead-t, .way-t, .last-t, .listing-t, .crew-top, .hub-name, .lf-page .opt-main { transition: scale var(--dur-grow) var(--ease-out); }
+  .navlink, .ev-back, .lf-back .textbtn { transition: transform var(--dur-press) var(--ease-out), scale var(--dur-grow) var(--ease-out); }
 }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .star { width: 1em; height: 1em; fill: var(--star); flex: none; }
@@ -112,12 +133,11 @@ a.btn, a.textbtn { display: inline-block; }
   color: inherit; cursor: pointer; font-family: var(--display); font-size: 2rem; font-weight: 600; line-height: 1; letter-spacing: -0.02em;
 }
 .brand .star { width: 0.56em; height: 0.56em; }
-.mast nav { grid-area: nav; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 0 8px; }
+.mast nav { grid-area: nav; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 0 16px; } /* room for a link to grow (CC-226) */
 .navlink {
   min-height: 44px; padding: 8px; background: none; border: 0; cursor: pointer; color: var(--on-lake);
-  font-family: var(--sign); font-weight: 700; font-size: 1.125rem; text-decoration: none; text-underline-offset: 8px;
+  font-family: var(--sign); font-weight: 700; font-size: 1.125rem; --fs: 18; text-decoration: none; text-underline-offset: 8px;
 }
-.navlink:hover { text-decoration: underline 1px; }
 .navlink[aria-current="page"] { text-decoration: underline 3px var(--stripe); }
 .theme-toggle { display: inline-flex; align-items: center; justify-content: space-between; gap: 12px; }
 /* CC-161: "Lights down" in the light theme, "Lights up" in the dark one: the label names the change it will make */
@@ -154,7 +174,7 @@ a.btn, a.textbtn { display: inline-block; }
   .mast.open :focus-visible { outline-color: var(--focus); outline-offset: -3px; }
   .mast.open .navlink, .mast.open .me-menu [data-me] {
     display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 52px; padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
-    border-bottom: 1px solid var(--line); color: var(--text); font-size: 1.25rem; text-align: left;
+    border-bottom: 1px solid var(--line); color: var(--text); font-size: 1.25rem; --fs: 20; text-align: left;
   }
   .mast.open .navlink[aria-current="page"], .mast.open .me-menu [aria-current="page"] { font-weight: 800; text-decoration: underline 3px var(--stripe); }
   .mast.open .count:not(:empty) { color: var(--muted); }
@@ -177,10 +197,9 @@ a.btn, a.textbtn { display: inline-block; }
 .lead-sea { position: relative; flex: 1 1 120px; min-height: 120px; }
 .lead-in { display: grid; gap: 14px; padding: 0 28px 28px; }
 .lead-k { font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; line-height: 1.2; }
-.lead-t { font-family: var(--display); font-weight: 500; font-size: 58px; line-height: 1; letter-spacing: -0.02em; overflow-wrap: anywhere; margin-top: -6px; }
+.lead-t { font-family: var(--display); font-weight: 500; font-size: 58px; --fs: 58; line-height: 1; letter-spacing: -0.02em; overflow-wrap: anywhere; margin-top: -6px; }
 .lead-deck { font-size: 21px; font-style: italic; line-height: 1.4; max-width: 34ch; }
 .lead-by { display: flex; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid currentColor; font-family: var(--sign); font-weight: 700; font-size: 1.125rem; line-height: 1.25; font-variant-numeric: tabular-nums; }
-.lead-pick:hover .lead-t { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 8px; }
 .lead-pick .mark-host { width: 34px; height: 33px; --mark-bg: var(--cat); --dol-body: #fff; --dol-belly: #fff; --dol-mouth: var(--cat); } /* on a field the dolphin is white and the gold carries it */
 .lead-pick .mark-host-int { width: 39px; height: 26px; --dol-body: #fff; --dol-belly: #fff; --dol-mouth: var(--cat); } /* CC-162: interested, no ring */
 
@@ -188,9 +207,8 @@ a.btn, a.textbtn { display: inline-block; }
 .ways { padding-right: 24px; border-right: 1px solid var(--rule); }
 .way { display: grid; gap: 4px; width: 100%; min-height: 44px; padding: 16px 0; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--text); text-align: left; cursor: pointer; font: inherit; }
 .way:last-child { border-bottom: 0; }
-.way-t { font-family: var(--display); font-weight: 600; font-size: 30px; line-height: 1.05; letter-spacing: -0.01em; }
+.way-t { font-family: var(--display); font-weight: 600; font-size: 30px; --fs: 30; line-height: 1.05; letter-spacing: -0.01em; }
 .way-d { font-size: 1rem; color: var(--muted); }
-.way:hover .way-t, .way:focus-visible .way-t { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px; }
 .ways.rise .way { animation: door-rise 0.6s var(--ease-out) both; }
 .ways.rise .way:nth-of-type(2) { animation-delay: 0.12s; }
 .ways.rise .way:nth-of-type(3) { animation-delay: 0.24s; }
@@ -203,9 +221,8 @@ a.btn, a.textbtn { display: inline-block; }
 .lasts { list-style: none; margin: 0; padding: 0; }
 .last { display: grid; gap: 2px; padding: 14px 0; border-bottom: 1px solid var(--line); color: var(--text); text-decoration: none; }
 .last-w { font-family: var(--sign); font-weight: 700; font-size: 1.0625rem; color: var(--star); font-variant-numeric: tabular-nums; }
-.last-t { font-family: var(--display); font-weight: 600; font-size: 22px; line-height: 1.15; overflow-wrap: anywhere; }
+.last-t { font-family: var(--display); font-weight: 600; font-size: 22px; --fs: 22; line-height: 1.15; overflow-wrap: anywhere; }
 .last-where { font-size: 1rem; color: var(--muted); }
-.last:hover .last-t, .last:focus-visible .last-t { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 .last-more { min-height: 44px; margin-top: 4px; font-size: 1.0625rem; }
 
 /* The listings: the double rule, the head, then rows (listings.js) */
@@ -224,7 +241,7 @@ a.btn, a.textbtn { display: inline-block; }
   .front, .front.no-lead { grid-template-columns: minmax(0, 1fr); padding-top: 20px; }
   .lead-pick { min-height: 340px; }
   .lead-in { padding: 0 20px 20px; }
-  .lead-t { font-size: 40px; }
+  .lead-t { font-size: 40px; --fs: 40; }
   .ways, .no-lead .ways { padding-right: 0; border-right: 0; }
   .last-col, .no-lead .last-col { padding-left: 0; }
   .front-list-head h2 { font-size: 32px; }
@@ -241,14 +258,16 @@ a.btn, a.textbtn { display: inline-block; }
 .listings { list-style: none; margin: 0; padding: 0; }
 .listing { position: relative; display: grid; grid-template-columns: 112px 150px minmax(0, 1fr) 110px; gap: 20px; align-items: center; min-height: 44px;
   padding: 12px 0; border-bottom: 1px solid var(--line); color: var(--text); text-decoration: none; }
-/* CC-155: the name's link covers the row, so the whole row still opens the event; the dolphin's button sits above it */
+/* CC-155: the whole row opens the event. CC-226: the name grows, so the row's cover is its own link, out of the name's
+   way and hidden from keyboards and screen readers (the name is the link they get). The name sits above the cover and
+   lets clicks through, except on its link and the dolphin's button. */
 .listing-a { text-decoration: none; }
-.listing-a::after { content: ""; position: absolute; inset: 0; }
+.listing-cover { position: absolute; inset: 0; }
 .listing:has(.listing-a:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
 .listing-a:focus-visible { outline: none; } /* the whole row shows the focus ring */
-.listing-t { font-family: var(--display); font-size: 26px; font-weight: 500; line-height: 1.12; overflow-wrap: anywhere;
-  text-decoration: underline transparent; text-decoration-thickness: 1px; text-underline-offset: 5px; transition: text-decoration-color 0.15s ease; }
-.listing:hover .listing-t, .listing:has(.listing-a:focus-visible) .listing-t { text-decoration-color: currentColor; }
+.listing-t { display: block; font-family: var(--display); font-size: 26px; --fs: 26; font-weight: 500; line-height: 1.12; overflow-wrap: anywhere; }
+.listing .listing-t { position: relative; z-index: 1; pointer-events: none; }
+.listing .listing-t > * { pointer-events: auto; }
 .listing-t .mark { margin-left: 8px; vertical-align: -3px; }
 /* the dolphin's button: a 44px target around the mark, pulled in so the name's line keeps its height */
 .row-pick { position: relative; z-index: 1; display: inline-grid; place-items: center; min-width: 44px; height: 44px; margin: -12px -8px -12px 0;
@@ -280,7 +299,7 @@ a.btn, a.textbtn { display: inline-block; }
 @container listings (max-width: 700px) {
   .listing { grid-template-columns: 76px minmax(0, 1fr); gap: 12px; align-items: start; }
   .tile { width: 76px; height: 76px; grid-row: span 2; }
-  .listing-t { font-size: 21px; }
+  .listing-t { font-size: 21px; --fs: 21; }
   .listing-meta { display: flex; flex-wrap: wrap; grid-column: 2; justify-content: space-between; align-items: baseline; gap: 4px 8px; }
   .listing-meta .listing-when, .listing-meta .listing-cost { grid-column: auto; grid-row: auto; }
   .listing-when, .listing-cost { font-size: 1rem; }
@@ -307,7 +326,6 @@ a.btn, a.textbtn { display: inline-block; }
 .card h3 { font-family: var(--display); font-weight: 600; font-size: var(--step-1); line-height: 1.2; letter-spacing: -0.01em; overflow-wrap: anywhere; }
 .card h3 a { text-decoration: none; }
 .card h3 a::after { content: ""; position: absolute; inset: 0; }
-.card:hover h3 a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .where { font-size: 1rem; color: var(--muted); overflow-wrap: anywhere; }
 .where .hood { white-space: nowrap; }
 .card-body { display: grid; align-content: start; gap: 4px; }
@@ -666,8 +684,7 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
    view-transition-name for the tile-becomes-poster move. */
 .event-view { max-width: none; }
 .ev-back-row { padding-top: 12px; }
-.ev-back { display: inline-flex; text-decoration: none; align-items: center; min-height: 44px; font-size: 1.1875rem; color: var(--text); }
-.ev-back:hover { text-decoration: underline; }
+.ev-back { display: inline-flex; text-decoration: none; align-items: center; min-height: 44px; font-size: 1.1875rem; --fs: 19; color: var(--text); }
 #ev-body { display: block; padding-top: 4px; }
 #ev-body > h1 { font-family: var(--display); font-weight: 600; font-size: var(--step-3); line-height: 1.08; letter-spacing: -0.02em; overflow-wrap: anywhere; text-wrap: balance; } /* "That event isn't on the list" */
 #ev-body > p, #ev-body > .row { margin-top: 14px; }
@@ -969,9 +986,8 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
   .wk-row:has(> .wk-row-a:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
 }
 .wk-row .tile, .journal-a .tile { position: absolute; left: 0; top: 12px; width: 76px; height: 76px; }
-.wk-row .listing-t { grid-column: 1; font-size: 1.5rem; }
+.wk-row .listing-t { grid-column: 1; font-size: 1.5rem; --fs: 24; }
 .wk-row .listing-t .mark { margin-left: 8px; vertical-align: -3px; }
-.wk-row-a:hover .listing-t, .journal-a:hover .listing-t { text-decoration-color: currentColor; }
 .wk-where { grid-column: 1; font-size: 1rem; color: var(--muted); }
 .wk-when { grid-column: 2; grid-row: 1 / span 2; display: grid; justify-items: end; gap: 6px; font-family: var(--sign); font-weight: 700; font-size: 1.0625rem;
   line-height: 1.2; text-align: right; font-variant-numeric: tabular-nums; }
@@ -984,7 +1000,7 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
    name and venue keep the full width */
 @container weekcol (max-width: 460px) {
   .wk-row-a { grid-template-columns: minmax(0, 1fr); }
-  .wk-row .listing-t { font-size: 1.3125rem; }
+  .wk-row .listing-t { font-size: 1.3125rem; --fs: 21; }
   .wk-when { grid-column: 1; grid-row: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; text-align: left; font-size: 1rem; }
   .wk-row .myplan { left: 0; width: 100%; }
 }
@@ -1017,7 +1033,7 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .journal-row { position: relative; min-height: 76px; padding-left: 92px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: start; }
 .journal-a { grid-column: 1; display: grid; gap: 3px; color: var(--text); text-decoration: none; }
 .journal-a .tile { top: 0; }
-.journal-a .listing-t { font-size: 1.5rem; }
+.journal-a .listing-t { font-size: 1.5rem; --fs: 24; }
 .journal-thumb { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: cover; }
 .journal-words { grid-column: 1; font-style: italic; font-size: 1.625rem; line-height: 1.2; overflow-wrap: anywhere; }
 .journal-nowords { grid-column: 1; }
@@ -1050,7 +1066,7 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
   .week-head { padding-top: 24px; }
   .week-cols { grid-template-columns: minmax(0, 1fr); } /* the week, then Still deciding */
   .journal-row { grid-template-columns: minmax(0, 1fr); }
-  .journal-a .listing-t { font-size: 1.3125rem; }
+  .journal-a .listing-t { font-size: 1.3125rem; --fs: 21; }
   .journal-words { font-size: 1.375rem; }
   .journal-meta { grid-column: 1; grid-row: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; text-align: left; }
   .journal-meta > span { padding-top: 0; }
@@ -1123,9 +1139,8 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
   padding: 18px 0; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .crew-sum:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .crew-id { display: block; min-width: 0; }
-.crew-name { font-family: var(--display); font-weight: 500; font-size: 1.875rem; line-height: 1.1; letter-spacing: -0.01em; overflow-wrap: anywhere;
-  text-decoration: underline transparent; text-decoration-thickness: 1px; text-underline-offset: 5px; transition: text-decoration-color 0.15s ease; }
-.crew-sum:hover .crew-name { text-decoration-color: currentColor; }
+.crew-top { display: block; font-size: 1.875rem; --fs: 30; } /* CC-226: the name and "You started it" grow together, or the name would run over it */
+.crew-name { font-family: var(--display); font-weight: 500; line-height: 1.1; letter-spacing: -0.01em; overflow-wrap: anywhere; }
 .crew-you { margin-left: 8px; font-family: var(--sign); font-weight: 700; font-size: 1.0625rem; color: var(--muted); white-space: nowrap; vertical-align: 4px; }
 .crew-about { display: block; margin-top: 4px; font-size: 1rem; color: var(--muted); }
 .crew-banner { display: flex; align-items: center; gap: 14px; min-width: 0; }
@@ -1156,8 +1171,7 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
   .crew-plan:has(> .crew-plan-a:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
 }
 .crew-plan .tile { position: absolute; left: 0; top: 12px; width: 76px; height: 76px; }
-.crew-plan .listing-t { grid-column: 1; font-size: 1.5rem; }
-.crew-plan-a:hover .listing-t { text-decoration-color: currentColor; }
+.crew-plan .listing-t { grid-column: 1; font-size: 1.5rem; --fs: 24; }
 .crew-plan-where { grid-column: 1; font-size: 1rem; color: var(--muted); }
 .crew-plan-when { grid-column: 2; grid-row: 1; font-family: var(--sign); font-weight: 700; font-size: 1.0625rem; text-align: right; font-variant-numeric: tabular-nums; }
 .crew-line { margin-top: 6px; font-size: 1.0625rem; line-height: 1.5; } /* dots, dolphin, words: one run of text that wraps */
@@ -1195,15 +1209,14 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
   .crew-sum { grid-template-columns: minmax(0, 1fr) 28px; gap: 8px 12px; }
   .crew-banner { grid-column: 1 / -1; grid-row: 2; flex-wrap: wrap; }
   .crew-caret { grid-column: 2; grid-row: 1; }
-  .crew-name { font-size: 1.5625rem; }
+  .crew-top { font-size: 1.5625rem; --fs: 25; }
   .crew-cols { grid-template-columns: minmax(0, 1fr); } /* plans, then members */
   .crew-plan-a { grid-template-columns: minmax(0, 1fr); }
-  .crew-plan .listing-t { font-size: 1.3125rem; }
+  .crew-plan .listing-t { font-size: 1.3125rem; --fs: 21; }
   .crew-plan-when { grid-column: 1; grid-row: auto; text-align: left; font-size: 1rem; }
   .crew-email-row { flex-wrap: wrap; }
   .crew-tacts { margin-left: 34px; } /* under the name, past the dot */
 }
-@media (prefers-reduced-motion: reduce) { .crew-name { transition: none; } }
 
 /* CC-105: your name in the header, and its menu. CC-137: the you menu is a square panel (1.5px ink border, no
    shadow) with the current page in bold; in the phone sheet it sits open under your name. */
@@ -1274,8 +1287,7 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
    border; buttons are the event page's (48px; 44px inside a row). Notices sit on the pale blue band; errors on the
    pale red one, starting "Check this:" (never red text). Scoped to .lf-page and .editor so the other pages keep theirs. */
 .lf-back { margin-bottom: -2px; }
-.lf-back .textbtn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: var(--text); font-size: 1.1875rem; text-decoration: none; }
-.lf-back .textbtn:hover { text-decoration: underline; }
+.lf-back .textbtn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: var(--text); font-size: 1.1875rem; --fs: 19; text-decoration: none; }
 .lf-page .section { margin-top: 48px; gap: 12px; }
 .lf-page .section > h2, .lf-page .interest-head h2 { font-family: var(--sign); font-weight: 700; font-size: 1.375rem; line-height: 1.2; letter-spacing: 0; }
 .lf-page .section > h2, .lf-page .interest-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 12px 16px;
@@ -1377,10 +1389,9 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
   background: none; border: 0; color: var(--text); cursor: pointer; font: inherit; text-align: left; text-decoration: none; }
 .hub-plain .hub-row { grid-template-columns: minmax(0, 1fr) auto; }
 .hub-n { font-family: var(--sign); font-weight: 700; font-size: 2.375rem; line-height: 1; font-variant-numeric: tabular-nums; }
-.hub-name { display: block; font-family: var(--display); font-weight: 500; font-size: 1.5625rem; line-height: 1.2; }
+.hub-name { display: block; font-family: var(--display); font-weight: 500; font-size: 1.5625rem; --fs: 25; line-height: 1.2; }
 .hub-sub { display: block; color: var(--muted); font-size: 1.125rem; line-height: 1.35; }
 .hub-go { font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; white-space: nowrap; }
-.hub-row:hover .hub-name { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
 .hub-spend { font-family: var(--sign); font-weight: 700; font-size: 2.25rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .hub-spend span { font-family: var(--body); font-weight: 400; font-size: 1.3125rem; color: var(--muted); }
 .hub-link { min-height: 44px; font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; }
@@ -1388,7 +1399,7 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
   .hub-rows:not(.hub-plain) .hub-row { grid-template-columns: 58px minmax(0, 1fr); }
   .hub-rows:not(.hub-plain) .hub-go { display: none; }
   .hub-n { font-size: 2rem; }
-  .hub-name { font-size: 1.3125rem; }
+  .hub-name { font-size: 1.3125rem; --fs: 21; }
   .hub-rows.src-rows:not(.hub-plain) .hub-row { grid-template-columns: 58px minmax(0, 1fr) auto; }
   .hub-rows.src-rows .hub-go { display: block; }
 }
@@ -1438,8 +1449,7 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .lf-page .progress { justify-content: flex-start; margin-top: 8px; }
 .lf-page .opts { gap: 0; margin-top: 0; border-top: 1px solid var(--rule); }
 .lf-page .opt { align-items: center; min-height: 64px; padding: 14px 12px; background: none; border: 0; border-bottom: 1px solid var(--line); color: var(--text); }
-.lf-page .opt-main { font-weight: 500; font-size: 1.5rem; line-height: 1.15; text-decoration: underline transparent; text-decoration-thickness: 1px; text-underline-offset: 5px; }
-.lf-page .opt:hover:not(:disabled) .opt-main { text-decoration-color: currentColor; }
+.lf-page .opt-main { display: inline-block; font-weight: 500; font-size: 1.5rem; --fs: 24; line-height: 1.15; }
 .lf-page .opt-sub { font-size: 1.0625rem; }
 .lf-page .opt-n { font-family: var(--sign); font-weight: 700; font-size: 1.0625rem; }
 .lf-page .opt[aria-pressed="true"] { background: var(--text); color: var(--page); box-shadow: none; }
