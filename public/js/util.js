@@ -74,6 +74,7 @@ function fromApi(e) {
     beginTbd: !e.begin_date, cost: usual ? usual.standard_cost : e.cost_text || "TBD", min: usual ? usual.standard_min_price : e.min_price,
     costUsual: !!usual, type: e.category, url: e.url, opera: !!e.opera, label: typeLabel(e.category, e.opera),
     venueId: e.venue.id, costRaw: e.cost_text, // for the admin edit form (CC-56)
+    address: e.venue.full_address || "", mapUrl: e.venue.map_url || "", // CC-218: "" when the venue has none
     status: e.status, publishAt: e.publish_at ? new Date(e.publish_at) : null,
     submitter: e.submitted_by, // only the admin routes send this (undefined elsewhere; null = none on record)
     creditMe: !!e.credit_me, suggestedBy: e.submitted_by_name || null, // the opt-in "Suggested by" credit (CC-30)

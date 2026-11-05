@@ -48,6 +48,12 @@
         <div class="field"><label for="vd-area">Area</label><select id="vd-area"><option value="city">City</option><option value="suburbs">Suburbs</option></select></div>
         <div class="field"><label for="vd-region">Side of town</label><select id="vd-region"><option value="">Not set</option><option value="downtown">Downtown/Loop</option><option value="north">Northside</option><option value="west">Westside</option><option value="south">Southside</option><option value="suburbs">Suburbs</option></select></div>
       </div>
+      <div class="field" style="margin-top:14px"><label for="vd-address">Street address <span class="opt-label">(optional)</span></label><input id="vd-address" type="text" maxlength="200" placeholder="78 E Washington St" autocomplete="off" aria-describedby="vd-address-hint"></div>
+      <div class="fields" style="margin-top:14px">
+        <div class="field"><label for="vd-city">City</label><input id="vd-city" type="text" maxlength="120" placeholder="Chicago" autocomplete="off"></div>
+        <div class="field"><label for="vd-zip">ZIP</label><input id="vd-zip" type="text" inputmode="numeric" maxlength="10" placeholder="60602" autocomplete="off"></div>
+      </div>
+      <span class="hint small" id="vd-address-hint">Fill in all three, or leave all three empty. Everyone sees the address on the event page, with a map link.</span>
       <div class="fields" style="margin-top:14px">
         <div class="field"><label for="vd-category">Default type</label><select id="vd-category" aria-describedby="vd-category-hint"><option value="">Not set</option><option value="Theater">Theater</option><option value="Music">Music</option><option value="Visual Art">Visual Art</option></select>
           <label class="radio"><input type="checkbox" id="vd-opera"> Opera</label><span class="hint small" id="vd-category-hint">New events here start with this type. Its events keep the type they have.</span></div>
@@ -961,12 +967,32 @@
       <div class="view-head">
         <p class="lf-back"><button class="textbtn" type="button" data-go="people"><span aria-hidden="true">←</span>Venues and Members</button></p>
         <h1 id="venues-title" tabindex="-1">Venues</h1>
-        <p class="lf-deck">Rename a venue or fix its neighborhood, merge a duplicate into the right one, or delete one nothing uses.</p>
+        <p class="lf-deck">Add a venue, rename one or fix its neighborhood, merge a duplicate into the right one, or delete one nothing uses.</p>
       </div>
       <!-- CC-213: suggested websites for venues that have none; nothing is saved until an admin confirms one -->
       <div class="section vs" id="vs" hidden><h2><span id="vs-h" tabindex="-1">Suggested websites</span> <span class="lf-n" id="vs-n"></span></h2>
         <p class="hint">For venues with no website yet, from each venue's event source and the CC-205 venue research. Nothing is saved until you confirm it, and Dismiss stops suggesting that address.</p>
         <p class="hint" id="vs-status" role="status"></p><div class="queue" id="vs-list"></div></div>
+      <!-- CC-218: the one place a venue is added directly, so the address is required -->
+      <details class="section va-new"><summary>Add a venue</summary>
+        <form id="va-add" novalidate>
+          <div class="fields">
+            <div class="field"><label for="vn-name">Name</label><input id="vn-name" type="text" maxlength="200" required autocomplete="off"></div>
+            <div class="field"><label for="vn-hood">Neighborhood or town</label><input id="vn-hood" type="text" maxlength="120" autocomplete="off" aria-describedby="vn-hood-hint"><span class="hint small" id="vn-hood-hint">For a suburb, add the state: Oak Park, IL.</span></div>
+          </div>
+          <div class="field" style="margin-top:14px"><label for="vn-address">Street address</label><input id="vn-address" type="text" maxlength="200" required placeholder="78 E Washington St" autocomplete="off"></div>
+          <div class="fields" style="margin-top:14px">
+            <div class="field"><label for="vn-city">City</label><input id="vn-city" type="text" maxlength="120" required placeholder="Chicago" autocomplete="off"></div>
+            <div class="field"><label for="vn-zip">ZIP</label><input id="vn-zip" type="text" inputmode="numeric" maxlength="10" required placeholder="60602" autocomplete="off"></div>
+          </div>
+          <p class="form-error" id="vn-error" role="alert"></p>
+          <div class="row"><button class="btn" type="submit" id="vn-go">Add venue</button></div>
+        </form>
+        <p class="hint" id="vn-status" role="status"></p></details>
+      <!-- CC-218: addresses seen in venues' event data, for venues with none; nothing is saved until an admin confirms one -->
+      <div class="section vs" id="va" hidden><h2><span id="va-h" tabindex="-1">Suggested addresses</span> <span class="lf-n" id="va-n"></span></h2>
+        <p class="hint">For venues with no address yet, from the event data on their own pages. Nothing is saved until you confirm it, and Dismiss stops suggesting that address.</p>
+        <p class="hint" id="va-status" role="status"></p><div class="queue" id="va-list"></div></div>
       <!-- CC-217: delete what's left out of town, events first, then the empty venues; hidden once there's none -->
       <div class="section" id="oot" hidden><h2 id="oot-title" tabindex="-1">Out of town</h2><p class="hint" id="oot-note"></p>
         <div class="row"><button class="btn danger" type="button" id="oot-del-events" aria-expanded="false">Delete all out-of-town events…</button><button class="btn danger" type="button" id="oot-del-venues" aria-expanded="false">Delete all empty out-of-town venues…</button></div>
@@ -974,7 +1000,8 @@
       <h2 class="sr-only">All venues</h2>
       <div class="filters"><div class="field"><label for="v-q">Find a venue</label><input id="v-q" type="search" maxlength="100" placeholder="Name or neighborhood" autocomplete="off"></div>
         <div class="field"><label for="v-hours">Opening hours</label><select id="v-hours"><option value="">Any</option><option value="full">Every day filled in</option><option value="gaps">Some days missing</option></select></div>
-        <label class="radio"><input type="checkbox" id="v-noregion"> Only venues without a side of town</label></div>
+        <label class="radio"><input type="checkbox" id="v-noregion"> Only venues without a side of town</label>
+        <label class="radio"><input type="checkbox" id="v-noaddress"> Only venues without an address</label></div>
       <p class="hint lf-count" id="v-count" role="status"></p>
       <div class="queue" id="venue-list"></div>
     </section>
