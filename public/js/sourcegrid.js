@@ -92,11 +92,14 @@ function paintSourceGrid(shown, none) {
   var s = SG_OPEN && shown.filter(function (x) { return x.id === SG_OPEN.id; })[0];
   if (s) sgPlacePanel(s, false); else SG_OPEN = null;
 }
+function sgTapsOff() { // CC-224: blocks tapped to show their options go back to their names. The open block keeps its options.
+  [].forEach.call($("sources-list").querySelectorAll(".sg-block.on:not(.is-open)"), function (b) { b.classList.remove("on"); });
+}
 function sgMarks() { // which block and option are open, without repainting the grid: that would stop the panel's motion
   [].forEach.call($("sources-list").querySelectorAll(".sg-block"), function (b) {
     var here = !!SG_OPEN && +b.getAttribute("data-sg-block") === SG_OPEN.id;
     b.classList.toggle("is-open", here);
-    if (here) b.classList.add("on");
+    b.classList.toggle("on", here); // CC-224: a block that stops being open goes back to its name
     [].forEach.call(b.querySelectorAll("[data-sg-tab]"), function (t) { t.setAttribute("aria-expanded", String(here && t.getAttribute("data-sg-tab") === SG_OPEN.tab)); });
   });
 }
@@ -107,13 +110,15 @@ function sgOpenTab(id, tab) {
   $("sg-panel-title").focus({ preventScroll: true });
   setTimeout(function () { var p = $("sg-panel"); if (p) p.scrollIntoView({ block: "nearest" }); }, had ? 0 : SG_PAUSE);
 }
-function sgClose(back) {
+// quiet (CC-224): closed with a click or tap, so focus goes back to the option but its block returns to its name.
+// A key press or focus moving on ends that, so the keyboard never lands on hidden options.
+function sgClose(back, quiet) {
   var panel = $("sg-panel"), was = SG_OPEN; if (!panel || !was) return;
   SG_OPEN = null; SRC_ASK = null; sgMarks();
   panel.removeAttribute("id"); panel.classList.remove("open"); // the id is free for one opened while this one shuts
   setTimeout(function () { panel.remove(); }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : SG_PAUSE);
   var opt = back && $("sources-list").querySelector('[data-sg-block="' + was.id + '"] [data-sg-tab="' + was.tab + '"]');
-  if (opt) opt.focus();
+  if (opt) { opt.focus(); opt.closest(".sg-block").classList.toggle("sg-quiet", !!quiet); } // after: leaving Close is a focusout too
 }
 function sgSave(s) {
   var pagesBox = $("sg-pages"), siteBox = $("sg-site"), steps = [];
@@ -138,23 +143,26 @@ $("sources-list").addEventListener("click", function (ev) {
   var tab = ev.target.closest("[data-sg-tab]");
   if (tab) {
     var id = +tab.closest(".sg-block").getAttribute("data-sg-block"), which = tab.getAttribute("data-sg-tab");
-    if (SG_OPEN && SG_OPEN.id === id && SG_OPEN.tab === which) sgClose(true); else sgOpenTab(id, which);
+    if (SG_OPEN && SG_OPEN.id === id && SG_OPEN.tab === which) sgClose(true, ev.detail > 0); else sgOpenTab(id, which);
     return;
   }
-  if (ev.target.closest("[data-sg-close]")) { sgClose(true); return; }
+  if (ev.target.closest("[data-sg-close]")) { sgClose(true, ev.detail > 0); return; } // detail 0: Enter or Space
   var found = ev.target.closest("[data-sg-found]");
   if (found) { FOUND.source = found.getAttribute("data-sg-found"); FOUND.show = "all"; FOUND.price = FOUND.dates = "any"; openFound(); return; }
   var block = ev.target.closest(".sg-block"); // a tap, where there's no hover: the options show until another block is tapped
   if (!block) return;
-  [].forEach.call(this.querySelectorAll(".sg-block.on:not(.is-open)"), function (b) { b.classList.remove("on"); });
+  sgTapsOff();
   block.classList.add("on");
 });
+document.addEventListener("click", function (ev) { if (!ev.target.closest(".sg-block")) sgTapsOff(); }); // CC-224: a tap on blank space
 $("sources-list").addEventListener("submit", function (ev) {
   if (ev.target.id !== "sg-form") return;
   ev.preventDefault();
   var s = SG_OPEN && sgFind(SG_OPEN.id); if (s) sgSave(s);
 });
-$("sources-list").addEventListener("keydown", function (ev) { if (ev.key === "Escape" && SG_OPEN) sgClose(true); });
+function sgLoud() { [].forEach.call($("sources-list").querySelectorAll(".sg-quiet"), function (b) { b.classList.remove("sg-quiet"); }); }
+$("sources-list").addEventListener("keydown", function (ev) { sgLoud(); if (ev.key === "Escape" && SG_OPEN) sgClose(true); });
+$("sources-list").addEventListener("focusout", sgLoud);
 window.addEventListener("resize", function () { // the columns change, so the row the panel goes under may too
   var s = SG_OPEN && sgFind(SG_OPEN.id);
   if (s && !$("view-sources").hidden) sgPlacePanel(s, false);

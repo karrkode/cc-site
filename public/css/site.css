@@ -1604,7 +1604,8 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .sg-manual { --sg-deep: var(--src-manual-deep); background: var(--src-manual); }
 .sg-new { --sg-deep: var(--src-new-deep); background: var(--src-new); }
 .sg-off { --sg-deep: var(--surface); background: none; box-shadow: inset 0 0 0 1.5px var(--field-line); color: var(--muted); }
-.sg-block:hover, .sg-block:focus-within, .sg-block.on { background: var(--sg-deep); } /* .on: clicked or tapped */
+.sg-block:focus-within:not(.sg-quiet), .sg-block.on { background: var(--sg-deep); } /* .on: clicked or tapped. .sg-quiet (CC-224): focus came back from a click on Close */
+@media (hover: hover) { .sg-block:hover { background: var(--sg-deep); } } /* a touch screen's hover sticks, so there .on alone shows the options */
 .sg-block.is-open { outline: 3px solid var(--rule); outline-offset: -3px; }
 .sg-name { margin: 0; padding: 10px 12px; font-family: var(--sign); font-weight: 700; font-size: 1.125rem; line-height: 1.15; overflow-wrap: anywhere; }
 .sg-size2 .sg-name { font-size: 1.375rem; }
@@ -1613,7 +1614,8 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 /* The options sit over the block: stacked to fill the smallest one, along the bottom of the rest */
 .sg-opts { position: absolute; inset: 0; display: grid; grid-auto-rows: 44px; background: var(--sg-deep); opacity: 0; pointer-events: none; transition: opacity 120ms ease; }
 .sg-size2 .sg-opts, .sg-size3 .sg-opts, .sg-size4 .sg-opts { inset: auto 0 0; grid-template-columns: repeat(3, 1fr); }
-.sg-block:hover .sg-opts, .sg-block:focus-within .sg-opts, .sg-block.on .sg-opts { opacity: 1; pointer-events: auto; }
+.sg-block:focus-within:not(.sg-quiet) .sg-opts, .sg-block.on .sg-opts { opacity: 1; pointer-events: auto; }
+@media (hover: hover) { .sg-block:hover .sg-opts { opacity: 1; pointer-events: auto; } }
 .sg-opt { min-height: 44px; padding: 0 6px; border: 0; border-top: 1px solid currentColor; border-radius: 0; background: none; color: inherit; font-family: var(--sign); font-weight: 700; font-size: 1.0625rem; cursor: pointer; }
 .sg-opt:hover { background: var(--info-soft); color: var(--on-info-soft); }
 .sg-opt[aria-expanded="true"] { background: var(--text); color: var(--page); }

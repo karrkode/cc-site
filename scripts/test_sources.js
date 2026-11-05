@@ -12,7 +12,16 @@ const PUB = path.join(__dirname, "..", "public");
 const read = (f) => fs.readFileSync(path.join(PUB, f), "utf8");
 const html = read("index.html"), css = read("css/site.css");
 const el = () => ({ addEventListener() {}, innerHTML: "", textContent: "", hidden: false });
-const g = { window: { addEventListener() {} }, $: el, esc: (s) => String(s), SOURCES: null, SRC_ASK: null };
+// CC-224: just enough of a block for sgMarks and sgTapsOff
+const fakeBlock = (id, on, open) => {
+  const c = new Set([].concat(on ? ["on"] : [], open ? ["is-open"] : []));
+  return { c, classList: { add: (n) => c.add(n), remove: (n) => c.delete(n), toggle: (n, yes) => { if (yes) c.add(n); else c.delete(n); return yes; } },
+    getAttribute: () => String(id), querySelectorAll: () => [] };
+};
+let fakeBlocks = [], docClick = null;
+const grid = Object.assign(el(), { querySelectorAll: (sel) => fakeBlocks.filter((b) => sel === ".sg-block" || (b.c.has("on") && !b.c.has("is-open"))) });
+const g = { window: { addEventListener() {} }, document: { addEventListener: (type, fn) => { if (type === "click") docClick = fn; } },
+  $: (id) => (id === "sources-list" ? grid : el()), esc: (s) => String(s), SOURCES: null, SRC_ASK: null };
 vm.createContext(g);
 vm.runInContext(read("js/sourcegrid.js"), g);
 
@@ -35,7 +44,26 @@ assert.ok(/Metro<span class="sr-only">: Can't be read<\/span>/.test(block), "the
 assert.strictEqual((block.match(/data-sg-tab=/g) || []).length, 3);
 ["events", "health", "settings"].forEach((t) => assert.ok(block.includes('data-sg-tab="' + t + '"')));
 Object.keys(g.SG_STATES).forEach((s) => assert.ok(new RegExp("\\.sg-" + s + " \\{ --sg-deep: ").test(css), "a colour and a deeper one for " + s));
-assert.ok(/\.sg-block:hover, \.sg-block:focus-within, \.sg-block\.on \{ background: var\(--sg-deep\)/.test(css), "hovering or clicking deepens the colour");
+assert.ok(/\.sg-block:focus-within:not\(\.sg-quiet\), \.sg-block\.on \{ background: var\(--sg-deep\)/.test(css), "focus or a click deepens the colour");
+assert.ok(/@media \(hover: hover\) \{ \.sg-block:hover \{ background: var\(--sg-deep\)/.test(css), "so does hovering, where there is hover");
+assert.ok(/\.sg-block:focus-within:not\(\.sg-quiet\) \.sg-opts/.test(css) && !/\.sg-block:focus-within \.sg-opts/.test(css), "CC-224: focus handed back by a click on Close doesn't hold the options up");
+const gridJs = read("js/sourcegrid.js");
+assert.ok(gridJs.includes('if (ev.target.closest("[data-sg-close]")) { sgClose(true, ev.detail > 0);'), "a click on Close is quiet, Enter or Space isn't");
+assert.ok(gridJs.includes('{ sgLoud(); if (ev.key === "Escape" && SG_OPEN) sgClose(true); }'), "Escape isn't, and any key brings the options back");
+
+// --- CC-224: only the open block, and a block just tapped, show their options ---
+const shows = () => fakeBlocks.map((b) => b.c.has("on"));
+fakeBlocks = [fakeBlock(1, true, true), fakeBlock(2), fakeBlock(3, true)];
+g.SG_OPEN = { id: 2, tab: "events" }; g.sgMarks();
+assert.deepStrictEqual(shows(), [false, true, false], "moving to another block's panel: the last one goes back to its name");
+g.SG_OPEN = null; g.sgMarks();
+assert.deepStrictEqual(shows(), [false, false, false], "Close: the block goes back to its name");
+fakeBlocks = [fakeBlock(1, true, true), fakeBlock(2, true)];
+docClick({ target: { closest: () => null } });
+assert.deepStrictEqual(shows(), [true, false], "a tap on blank space clears a tapped block and keeps the open one");
+docClick({ target: { closest: () => ({}) } });
+fakeBlocks[1].c.add("on"); docClick({ target: { closest: () => ({}) } });
+assert.deepStrictEqual(shows(), [true, true], "a tap on a block is the block's own to handle");
 
 // --- the page ---
 const view = html.slice(html.indexOf('id="view-sources"'), html.indexOf("<!-- Site stats"));
