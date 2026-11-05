@@ -752,28 +752,33 @@
     <section class="view lf-page" id="view-sourcing" hidden>
       <div class="view-head">
         <h1 id="sourcing-title" tabindex="-1">Event Sourcing</h1>
-        <p class="lf-deck">What's waiting on you, and how the week went.</p>
+        <p class="lf-deck">What's waiting on you, what it's costing, and what we've found.</p>
       </div>
       <div class="hub">
         <p class="hint" id="sourcing-status" role="status"></p>
         <div id="sourcing-live" hidden>
-          <div class="section"><h2 id="needs-title">Needs you <span class="lf-n" id="needs-n"></span></h2><ul class="hub-rows" id="needs-list" aria-labelledby="needs-title"></ul></div>
-          <div class="section"><h2>This week <span class="lf-n" id="week-period"></span></h2><div class="stat-summary" id="week-figures"></div><p class="hint" id="week-recap"></p></div>
+          <div class="section" id="needs-section" hidden><h2 id="needs-title">Needs you <span class="lf-n" id="needs-n"></span></h2><ul class="hub-rows" id="needs-list" aria-labelledby="needs-title"></ul></div>
           <div class="section"><h2>Budget</h2>
+            <div class="gauge" id="budget-gauge"></div>
             <p class="hub-spend" id="budget-spent"></p>
             <p class="hint">An estimate from recorded use. The Anthropic Console has the real bill.</p>
             <p class="notice" id="budget-note" hidden></p>
             <p><button class="textbtn hub-link" type="button" data-go="sources">Change the budget on Event sources</button></p>
           </div>
+          <div class="section"><h2 id="graph-title">New events found</h2><div class="graph" id="found-graph"></div><p class="hint" id="week-recap"></p></div>
+          <div class="section"><h2 id="src-title" tabindex="-1">Found events <span class="lf-n" id="src-n"></span></h2>
+            <p class="hint" id="src-status" role="status"></p>
+            <ul class="hub-rows src-rows" id="src-list" aria-labelledby="src-title"></ul>
+          </div>
         </div>
         <div class="section"><h2>The tools</h2>
-          <ul class="hub-rows hub-plain">
-            <li><button class="hub-row" type="button" data-go="found"><span class="hub-text"><span class="hub-name">Found events</span><span class="hub-sub">Everything discovery has found, with its filters and CSV</span></span><span class="hub-go" aria-hidden="true">→</span></button></li>
-            <li><button class="hub-row" type="button" data-go="sources"><span class="hub-text"><span class="hub-name">Event sources</span><span class="hub-sub" id="tools-sources">How often each source is checked, and Check now</span></span><span class="hub-go" aria-hidden="true">→</span></button></li>
-            <li><button class="hub-row hub-small" type="button" data-hub="rules"><span class="hub-text"><span class="hub-name">Skip rules</span></span><span class="hub-go" aria-hidden="true">→</span></button></li>
-            <li><button class="hub-row hub-small" type="button" data-go="sources"><span class="hub-text"><span class="hub-name">Check by hand only</span></span><span class="hub-go" aria-hidden="true">→</span></button></li>
-            <li><button class="hub-row hub-small" type="button" data-hub="withdrawn"><span class="hub-text"><span class="hub-name">Withdrawn</span></span><span class="hub-go" aria-hidden="true">→</span></button></li>
-          </ul>
+          <div class="hub-tools">
+            <button class="btn ghost" type="button" data-go="found">Found events</button>
+            <button class="btn ghost" type="button" data-go="sources">Event sources</button>
+            <button class="btn ghost" type="button" data-hub="rules">Skip rules</button>
+            <button class="btn ghost" type="button" data-go="sources">Check by hand only</button>
+            <button class="btn ghost" type="button" data-hub="withdrawn">Withdrawn</button>
+          </div>
         </div>
       </div>
     </section>
@@ -1035,6 +1040,7 @@
 <script src="js/photos.js?v=dev"></script>
 <script src="js/approvals.js?v=dev"></script>
 <script src="js/hubs.js?v=dev"></script>
+<script src="js/sourcing.js?v=dev"></script>
 <script src="js/start.js?v=dev"></script>
 </body>
 </html>
