@@ -658,16 +658,55 @@ function addressProblem(p, a) { // [the field at fault, what to say], or null
     !/^\d{5}(-\d{4})?$/.test(a.zip_code) ? [p + "-zip", "Enter a 5-digit ZIP code."] : null;
 }
 $("va-add").addEventListener("input", function () { $("vn-error").textContent = ""; });
+// CC-222: paste a website and POST /venues/from-website says what its page gives; nothing is saved until Add venue. A field
+// the admin has typed in stays: only an empty one, or one the last read filled and nobody changed, takes a new value.
+var VNREAD = 0, VNASKED = "", VNFILLED = {}; // VNREAD: the latest read, so a late answer is dropped
+var VN_FIELDS = { name: ["vn-name", "name"], neighborhood: ["vn-hood"], address: ["vn-address", "street address"], city: ["vn-city", "city"], zip_code: ["vn-zip", "ZIP"] };
+function vnForget() { VNREAD++; VNASKED = ""; VNFILLED = {}; $("vn-read").textContent = ""; }
+function vnList(words) { return words.length < 2 ? words.join("") : words.slice(0, -1).join(", ") + " or " + words[words.length - 1]; }
+function vnFill(d) {
+  var filled = 0;
+  Object.keys(VN_FIELDS).forEach(function (k) {
+    var f = $(VN_FIELDS[k][0]), id = f.id, mine = !f.value.trim() || f.value === VNFILLED[id];
+    if (!mine) return;
+    f.value = d[k] || ""; if (d[k]) { VNFILLED[id] = d[k]; filled++; } else delete VNFILLED[id];
+  });
+  return filled;
+}
+function vnSaid(d, filled) {
+  var missing = (d.missing || []).map(function (k) { return VN_FIELDS[k][1]; });
+  var said = d.problem ? d.problem + " You can type the details yourself." :
+    (filled ? "We filled this in from the page. Check it before adding." : "") +
+    (missing.length ? (filled ? " " : "") + "We couldn't find the " + vnList(missing) + " on that page, so add " + (missing.length > 1 ? "them" : "it") + " yourself." : "");
+  var same = (d.same_website || []).map(venueLabel);
+  return said + (same.length ? " " + same.join(", ") + (same.length > 1 ? " already have" : " already has") + " this website. You can still add this venue." : "");
+}
+function vnReadSite() {
+  var url = $("vn-website").value.trim();
+  if (!url) { vnForget(); return; }
+  if (url === VNASKED) return;
+  var mine = ++VNREAD; VNASKED = url;
+  $("vn-read").textContent = "Reading the page…";
+  api("/venues/from-website", { method: "POST", body: { url: url } }).then(readJSON, function () { return null; }).then(function (res) {
+    if (mine !== VNREAD) return;
+    if (!res || !res.ok) { VNASKED = ""; $("vn-read").textContent = errorText(res) + " You can type the details yourself."; return; }
+    $("vn-read").textContent = vnSaid(res.body, vnFill(res.body));
+  });
+}
+$("vn-website").addEventListener("paste", function () { setTimeout(vnReadSite, 0); }); // the pasted text is there after this event
+$("vn-website").addEventListener("change", vnReadSite); // typed, then left
+$("vn-website").addEventListener("input", function () { if (!this.value.trim()) vnForget(); });
+$("vn-website").addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); vnReadSite(); } }); // Enter reads, it doesn't add
 $("va-add").addEventListener("submit", function (ev) {
   ev.preventDefault();
   var name = $("vn-name").value.trim(), hood = $("vn-hood").value.trim(), place = addressFrom("vn");
   var bad = !name ? ["vn-name", "Give the venue a name."] : addressProblem("vn", place);
   if (bad) { $("vn-error").textContent = bad[1]; $(bad[0]).focus(); return; }
   $("vn-go").disabled = true; $("vn-status").textContent = ""; $("vn-error").textContent = "";
-  api("/venues", { method: "POST", body: { name: name, neighborhood: hood, address: place.address, city: place.city, zip_code: place.zip_code } }).then(readJSON).then(function (res) {
+  api("/venues", { method: "POST", body: { name: name, neighborhood: hood, address: place.address, city: place.city, zip_code: place.zip_code, website: $("vn-website").value.trim() } }).then(readJSON).then(function (res) {
     $("vn-go").disabled = false;
     if (!res.ok) { $("vn-error").textContent = errorText(res); return; }
-    $("va-add").reset(); $("vn-status").textContent = "Added " + venueLabel(res.body) + ".";
+    $("va-add").reset(); vnForget(); $("vn-status").textContent = "Added " + venueLabel(res.body) + ".";
     if (VENUES) VENUES.push(res.body);
     loadVenues(res.body.id);
   }, function () { $("vn-go").disabled = false; $("vn-error").textContent = errorText(null); });
