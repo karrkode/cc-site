@@ -71,7 +71,13 @@ PAIRS = [  # (foreground, background, minimum, where it's used)
     ("on-src", "src-error", TEXT, "a source that can't be read"),
     ("on-src", "src-manual", TEXT, "a source checked by hand"),
     ("on-src", "src-new", TEXT, "a source not read yet"),
+    ("on-src", "src-ok-deep", TEXT, "a source reading fine, hovered or clicked"),
+    ("on-src", "src-nothing-deep", TEXT, "a source that finds nothing, hovered or clicked"),
+    ("on-src", "src-error-deep", TEXT, "a source that can't be read, hovered or clicked"),
+    ("on-src", "src-manual-deep", TEXT, "a source checked by hand, hovered or clicked"),
+    ("on-src", "src-new-deep", TEXT, "a source not read yet, hovered or clicked"),
     ("rule", "src-new", NON_TEXT, "the outline on an open block"),
+    ("rule", "src-new-deep", NON_TEXT, "the outline on an open block"),
 ] + [("dot-ink", f"dot-{i}", TEXT, "initials on a crew dot") for i in range(6)]
 
 

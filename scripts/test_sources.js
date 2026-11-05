@@ -34,7 +34,8 @@ assert.ok(/sg-size3/.test(block) && /sg-error/.test(block));
 assert.ok(/Metro<span class="sr-only">: Can't be read<\/span>/.test(block), "the state doesn't rest on colour alone");
 assert.strictEqual((block.match(/data-sg-tab=/g) || []).length, 3);
 ["events", "health", "settings"].forEach((t) => assert.ok(block.includes('data-sg-tab="' + t + '"')));
-Object.keys(g.SG_STATES).forEach((s) => assert.ok(css.includes(".sg-" + s + " {"), "a colour for " + s));
+Object.keys(g.SG_STATES).forEach((s) => assert.ok(new RegExp("\\.sg-" + s + " \\{ --sg-deep: ").test(css), "a colour and a deeper one for " + s));
+assert.ok(/\.sg-block:hover, \.sg-block:focus-within, \.sg-block\.on \{ background: var\(--sg-deep\)/.test(css), "hovering or clicking deepens the colour");
 
 // --- the page ---
 const view = html.slice(html.indexOf('id="view-sources"'), html.indexOf("<!-- Site stats"));

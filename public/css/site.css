@@ -19,6 +19,7 @@
   --cat-theater: #B9472E; --cat-music: #5B3E9E; --cat-art: #2F7A5B;
   --gauge-ok: #1B8258; --gauge-warn: #B3730A; --gauge-stop: #C8102E; /* CC-207: the budget dial's zones, and nothing else */
   --src-ok: #BFE6D2; --src-nothing: #FBEFB0; --src-error: #F9CFCB; --src-manual: #F9BE7C; --src-new: #DFE6EB; --on-src: #0E2A40; /* CC-221: the Event sources blocks */
+  --src-ok-deep: #8FD1B0; --src-nothing-deep: #F3DC6B; --src-error-deep: #F2A9A2; --src-manual-deep: #F2A251; --src-new-deep: #C3CFD7; /* hovered or clicked */
   color-scheme: light;
 }
 :root[data-theme="dark"] {
@@ -34,6 +35,7 @@
   --cat-theater: #B9472E; --cat-music: #7A5AD0; --cat-art: #2F7A5B; /* music is lighter at night, so tiles don't vanish */
   --gauge-ok: #4FB08A; --gauge-warn: #E3A73C; --gauge-stop: #FF5C70;
   --src-ok: #24604A; --src-nothing: #5E5316; --src-error: #7E3F47; --src-manual: #84501A; --src-new: #2E4356; --on-src: #EAF2F7;
+  --src-ok-deep: #174A38; --src-nothing-deep: #483F0E; --src-error-deep: #662E36; --src-manual-deep: #693E12; --src-new-deep: #223443;
   color-scheme: dark;
 }
 :root {
@@ -1591,29 +1593,30 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
    blocks below it down; the blocks set their own height. Dense fills the gaps a big block leaves. */
 .sg-grid { --sg-row: 132px; --sg-gap: 6px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); grid-auto-flow: dense; gap: var(--sg-gap); margin-bottom: 24px; }
 .sg-none { grid-column: 1 / -1; }
-.sg-block { position: relative; height: var(--sg-row); overflow: hidden; color: var(--on-src); }
+.sg-block { position: relative; height: var(--sg-row); overflow: hidden; color: var(--on-src); transition: background-color 150ms ease; }
 .sg-size2 { grid-column: span 2; }
 .sg-size3, .sg-size4 { grid-column: span 2; grid-row: span 2; height: calc(var(--sg-row) * 2 + var(--sg-gap)); }
 .sg-size4 { grid-column: span 3; }
-.sg-ok { background: var(--src-ok); }
-.sg-nothing { background: var(--src-nothing); }
-.sg-error { background: var(--src-error); }
-.sg-manual { background: var(--src-manual); }
-.sg-new { background: var(--src-new); }
-.sg-off { background: none; box-shadow: inset 0 0 0 1.5px var(--field-line); color: var(--muted); }
+.sg-ok { --sg-deep: var(--src-ok-deep); background: var(--src-ok); }
+.sg-nothing { --sg-deep: var(--src-nothing-deep); background: var(--src-nothing); }
+.sg-error { --sg-deep: var(--src-error-deep); background: var(--src-error); }
+.sg-manual { --sg-deep: var(--src-manual-deep); background: var(--src-manual); }
+.sg-new { --sg-deep: var(--src-new-deep); background: var(--src-new); }
+.sg-off { --sg-deep: var(--surface); background: none; box-shadow: inset 0 0 0 1.5px var(--field-line); color: var(--muted); }
+.sg-block:hover, .sg-block:focus-within, .sg-block.on { background: var(--sg-deep); } /* .on: clicked or tapped */
 .sg-block.is-open { outline: 3px solid var(--rule); outline-offset: -3px; }
 .sg-name { margin: 0; padding: 10px 12px; font-family: var(--sign); font-weight: 700; font-size: 1.125rem; line-height: 1.15; overflow-wrap: anywhere; }
 .sg-size2 .sg-name { font-size: 1.375rem; }
 .sg-size3 .sg-name { font-size: 1.75rem; }
 .sg-size4 .sg-name { font-size: 2.25rem; }
 /* The options sit over the block: stacked to fill the smallest one, along the bottom of the rest */
-.sg-opts { position: absolute; inset: 0; display: grid; grid-auto-rows: 44px; opacity: 0; pointer-events: none; transition: opacity 120ms ease; }
+.sg-opts { position: absolute; inset: 0; display: grid; grid-auto-rows: 44px; background: var(--sg-deep); opacity: 0; pointer-events: none; transition: opacity 120ms ease; }
 .sg-size2 .sg-opts, .sg-size3 .sg-opts, .sg-size4 .sg-opts { inset: auto 0 0; grid-template-columns: repeat(3, 1fr); }
 .sg-block:hover .sg-opts, .sg-block:focus-within .sg-opts, .sg-block.on .sg-opts { opacity: 1; pointer-events: auto; }
-.sg-opt { min-height: 44px; padding: 0 6px; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: var(--page); color: var(--text); font-family: var(--sign); font-weight: 700; font-size: 1.0625rem; cursor: pointer; }
+.sg-opt { min-height: 44px; padding: 0 6px; border: 0; border-top: 1px solid currentColor; border-radius: 0; background: none; color: inherit; font-family: var(--sign); font-weight: 700; font-size: 1.0625rem; cursor: pointer; }
 .sg-opt:hover { background: var(--info-soft); color: var(--on-info-soft); }
 .sg-opt[aria-expanded="true"] { background: var(--text); color: var(--page); }
-.sg-opt:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.sg-opt:focus-visible { outline: 3px solid currentColor; outline-offset: -3px; }
 .sg-panel { grid-column: 1 / -1; display: grid; grid-template-rows: 0fr; transition: grid-template-rows 300ms ease; }
 .sg-panel.open { grid-template-rows: 1fr; }
 .sg-inner { min-height: 0; overflow: hidden; }
@@ -1634,7 +1637,7 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .sg-key li { padding: 3px 9px; color: var(--on-src); font-size: 1rem; }
 .sg-key .sg-off { color: var(--muted); }
 @media (max-width: 520px) { .sg-size4 { grid-column: span 2; } .sg-size4 .sg-name { font-size: 1.75rem; } }
-@media (prefers-reduced-motion: reduce) { .sg-panel, .sg-opts { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .sg-panel, .sg-opts, .sg-block { transition: none; } }
 
 /* CC-126: the invite QR code fills the screen to be scanned from the admin's phone. CC-147: always paper-white, in
    both themes, under a small flag band: the code is deep lake ink on white, which any phone can scan. The colours are
