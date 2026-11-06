@@ -59,7 +59,7 @@ assert.strictEqual(g.leadPick([soon], [running]).id, soon.id, "going comes first
 const closed = interested({ begin_date: iso(g.add(g.T, -30)), end_date: iso(g.add(g.T, -1)) });
 assert.strictEqual(g.leadPick([], [closed]), null, "a closed run isn't a lead pick");
 assert.strictEqual(g.leadPick([], []), null, "neither: no lead pick");
-assert.strictEqual(g.leadPick([ev({})], [ev({})]), null, "only events the host picked");
+assert.strictEqual(g.leadPick([ev({})], [ev({})]), null, "only events the admin picked");
 
 // --- the deck ---
 const run = going(3, { begin_date: iso(g.add(g.T, 2)), end_date: iso(g.add(g.T, 40)),
@@ -82,7 +82,7 @@ assert.ok(html.startsWith('<a class="lead-pick water-field cat-theater" href="#e
 assert.strictEqual((html.match(/<a /g) || []).length, 1);
 assert.ok(!/<button|<input/.test(html), "no controls inside the link");
 assert.match(html, /<span class="lead-sea"><canvas class="water" aria-hidden="true" data-water="poster"/, "the water sits in its own patch, above the words");
-assert.match(html, /<span class="lead-k">The crew’s pick · Theater<\/span><h2 class="lead-t">Event \d+<\/h2>/);
+assert.match(html, /<span class="lead-k">Curated by Yours Truly · Theater<\/span><h2 class="lead-t">Event \d+<\/h2>/);
 assert.match(html, /class="mark mark-host" role="img" aria-label="Andrew is committed to seeing this on \w+day, \w+ \d+\."/);
 assert.match(html, /<span>Going \w{3}, \w{3} \d+ · \w{3} \d+ – \w{3} \d+ · \$28–\$98<\/span>/);
 const fallback = g.leadHTML(interested({ title: "A <b>" }));

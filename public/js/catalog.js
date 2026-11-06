@@ -19,7 +19,7 @@ function loadHome() {
   fetchEvents([["from", t], ["sort", "opening"], ["limit", HOME_ROWS]]).then(function (p) { HOME_LIST = p.items; renderHome(); }, function () {});
 }
 
-// The lead pick: the host's soonest upcoming "going" event (by the day they're going), otherwise their soonest
+// The lead pick: the admin's soonest upcoming "going" event (by the day they're going), otherwise their soonest
 // "interested" one (by the day it's next on), otherwise none, and the column goes.
 function leadNext(e) { return e.b && e.b > T ? e.b : T; }
 function leadPick(going, interested) {
@@ -31,7 +31,7 @@ function leadPick(going, interested) {
   var best = first(g) || first(i);
   return best ? best.e : null;
 }
-// Its deck, built from data (a note from the host is a later idea): where it is, then, signed in, who from your crews
+// Its deck, built from data (a note from the admin is a later idea): where it is, then, signed in, who from your crews
 // is in on it. With no crew-mates in, the run says when.
 function leadDeck(e) {
   var where = "At " + e.venue + (e.hood ? " in " + e.hood : ""), going = {}, interested = {};
@@ -52,7 +52,7 @@ function leadHTML(e) {
   var by = [going ? "Going" + (p.date ? " " + goingDay(p.date) : "") : "Interested", dateText(e), costText(e)].join(" · ");
   return '<a class="lead-pick water-field' + catClass(e.type) + '" href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '" data-lead="' + esc(e.id) + '">' +
     '<span class="lead-sea">' + waterHTML(e, "poster") + "</span>" +
-    '<span class="lead-in"><span class="lead-k">The crew’s pick · ' + esc(e.label) + "</span>" +
+    '<span class="lead-in"><span class="lead-k">Curated by Yours Truly · ' + esc(e.label) + "</span>" +
     '<h2 class="lead-t">' + esc(e.title) + "</h2>" +
     '<span class="lead-deck">' + esc(leadDeck(e)) + "</span>" +
     '<span class="lead-by">' + pickMarkHTML(p, pickText(p)) + "<span>" + esc(by) + "</span></span></span></a>";
@@ -383,7 +383,7 @@ function evCrewHTML(c) {
   var lines = line(c.going, " is going", " are going") + line(c.interested, " is interested", " are interested") + line(c.been, " has been", " have been");
   return lines ? '<div class="ev-crew"><h3>' + esc(c.crew_name) + "</h3><ul>" + lines + "</ul></div>" : "";
 }
-// The host's pick under Your crews, in the host's voice ("Yours truly is interested in this one."). CC-152: not when
+// The admin's pick under Your crews, in the admin's voice ("Yours truly is interested in this one."). CC-152: not when
 // it's your own plan (an owner with the dolphins setting): that shows as your plan, not as somebody else's line.
 function evHostHTML(e) {
   var me = AUTH.user && AUTH.user.dolphins && MYPLANS[e.id] ? (AUTH.user.display_name || "").trim() : null;

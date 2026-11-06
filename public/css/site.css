@@ -42,7 +42,7 @@
   --on-cat: #FFFFFF;
   /* Crew dots (people): pale tints with ink type, by member, the same in both themes */
   --dot-ink: #0E2A40;
-  /* CC-139: the host's ring and star, shaded as 3-D metal: highlight, gold, shade, deep. The same in both themes. */
+  /* CC-139: the admin's ring and star, shaded as 3-D metal: highlight, gold, shade, deep. The same in both themes. */
   --gold-hi: #FFF3A6; --gold: #FFD700; --gold-shade: #F4C430; --gold-deep: #D4A20F;
   --dot-0: #9CD3EF; --dot-1: #F2C14E; --dot-2: #F4A99A; --dot-3: #B8E0C2; --dot-4: #D9C8F5; --dot-5: #F7D9A8;
   /* Type (CC-136): Newsreader is the reading voice (titles, body, form text); Big Shoulders Text is the signage voice
@@ -740,7 +740,7 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .ev-more .went, .ev-more .textbtn { min-height: 44px; }
 .ev-more .crewshare { top: 100%; left: 0; right: auto; width: min(100%, 360px); } /* the crew-share picker opens under the row */
 
-/* your crews: the host's pick first, then each crew, with its people as dots (circles are people) */
+/* your crews: the admin's pick first, then each crew, with its people as dots (circles are people) */
 .ev-side h2, .ev-takes h2 { font-family: var(--sign); font-weight: 700; font-size: 1.375rem; padding-bottom: 6px; border-bottom: 1px solid var(--rule); }
 .ev-crew { padding: 14px 0; border-bottom: 1px solid var(--line); }
 .ev-crew h3 { font-family: var(--sign); font-weight: 700; font-size: 1.125rem; }
