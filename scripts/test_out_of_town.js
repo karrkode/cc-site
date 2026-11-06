@@ -54,6 +54,7 @@ const g = {
   reloadEvents() { g.RELOADS += 1; }, loadVenues() {},
 };
 vm.createContext(g);
+g.dropFill = (b, h) => { b.innerHTML = h; b.hidden = false; }; g.dropEmpty = (b) => { b.innerHTML = ""; b.hidden = true; }; // util.js: test_motion.js has the slide
 vm.runInContext(admin.slice(admin.indexOf("// ---------- Out of town clean-up"), admin.indexOf("function openVenueDialog(")), g);
 const flush = async (n = 30) => { for (let i = 0; i < n; i++) await new Promise((r) => setTimeout(r, 0)); };
 const click = (sel) => $("oot-ask").handlers.click({ target: { closest: (s) => (s === sel ? {} : null) } });

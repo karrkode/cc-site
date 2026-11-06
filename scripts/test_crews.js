@@ -106,7 +106,7 @@ has(g.crewHTML(crew({ plans: [] })), "No plans shared yet.");
 
 // --- Manage crew: closed by default; every action there when open ---
 has(html, 'data-crew-act="manage" data-crew="7" aria-expanded="false" aria-controls="crew-mg-7">Manage crew');
-has(html, '<div id="crew-mg-7" hidden></div>');
+has(html, '<div id="crew-mg-7" data-drop hidden></div>');
 set("CREW_MANAGE = '7';");
 html = g.crewHTML(c);
 has(html, ">Make an invite link</button>");
@@ -133,7 +133,7 @@ has(html, '<img src="data:image/png;base64,AAAA"');
 
 // --- confirmations stay inline, in today's words ---
 set("CREW_ASK = { crew: 7, act: 'delete-yes', text: \"Dissolve Thursday Theater for everyone? This can't be undone.\" };");
-has(g.crewHTML(c), "<div class=\"confirm\"><p><b>Dissolve Thursday Theater for everyone?</b> This can&#39;t be undone.</p>");
+has(g.crewHTML(c), "data-drop><p><b>Dissolve Thursday Theater for everyone?</b> This can&#39;t be undone.</p>");
 set("CREW_ASK = null;");
 
 // --- errors say so; names are escaped ---

@@ -17,7 +17,7 @@ const has = (s, part, msg) => assert.ok(s.includes(part), msg || "has " + part);
 // --- the page: a Delete all button, a place for its confirm, and a status line for the progress ---
 const section = html.slice(html.indexOf('id="removed"'), html.indexOf('id="othertypes"'));
 has(section, '<button class="btn danger" type="button" id="removed-del-all" aria-expanded="false">Delete all…</button>');
-has(section, '<div id="removed-ask"></div><p class="hint" id="removed-status" role="status"></p>');
+has(section, '<div id="removed-ask" hidden></div><p class="hint" id="removed-status" role="status"></p>');
 has(css, ".src-confirm, .rm-confirm { flex-basis: 100%; display: grid; gap: 10px; padding: 12px 14px; border-radius: var(--r-ctl); background: var(--danger-soft); color: var(--on-danger-soft); }",
   "the confirm is the source delete's: square, on the pale band, never red text");
 
@@ -58,6 +58,7 @@ const g = {
   refocusAfterEdit() {}, reloadEvents() { g.RELOADS += 1; },
 };
 vm.createContext(g);
+g.dropFill = (b, h) => { b.innerHTML = h; b.hidden = false; }; g.dropEmpty = (b) => { b.innerHTML = ""; b.hidden = true; }; // util.js: test_motion.js has the slide
 vm.runInContext(admin.slice(admin.indexOf("// CC-133: what removing"), admin.indexOf("// CC-125: events whose type")), g);
 const flush = () => new Promise((r) => setTimeout(r, 0));
 

@@ -387,5 +387,101 @@ assert.ok(/\.qr-full::backdrop \{ background: #FFFFFF; \}/.test(site), "the QR s
 assert.ok(/dialog\.dialog-leaving \{[^}]*position: fixed/.test(site), "a leaving dialog is held in place");
 }
 
+// ---------- everything else that drops down (CC-228) ----------
+{
+const util = read("js/util.js");
+const from = util.indexOf("// ---------- opening and closing (CC-227"), to = util.indexOf("// ---------- the masthead (CC-137)");
+// A list with panels in it: repaint() swaps in new panels, as innerHTML does, and the old ones are gone from it
+function shelf(opt) {
+  const anims = [], root = { kids: [] };
+  const panel = (id, hidden) => {
+    const attrs = { "data-drop": "" }, p = { id, hidden, inert: false, removed: 0, style: { setProperty(k, v) { this[k] = v; } }, getClientRects: () => [1], getBoundingClientRect: () => ({ height: 120 }),
+      closest: () => null, getAttribute: (k) => attrs[k], setAttribute: (k, v) => { attrs[k] = v; }, removeAttribute: (k) => { if (k === "id") p.id = ""; delete attrs[k]; },
+      has: (k) => k in attrs, after: (x) => root.kids.push(x), remove() { p.removed++; root.kids = root.kids.filter((k) => k !== p); },
+      animate: () => { const a = { reversed: 0, currentTime: 0, reverse() { a.reversed++; }, cancel() { a.cancelled = true; if (a.oncancel) a.oncancel(); }, finish() { a.onfinish(); } }; anims.push(a); return a; } };
+    return p;
+  };
+  root.querySelectorAll = (sel) => root.kids.filter((k) => k.has(sel.slice(1, -1)));
+  const sandbox = {
+    window: { matchMedia: () => ({ matches: !!(opt && opt.calm) }), scrollTo() {}, scrollX: 0, scrollY: 0 },
+    document: { addEventListener() {}, documentElement: {} },
+    getComputedStyle: () => ({ position: "static", display: "block", getPropertyValue: (k) => ({ "--dur-drop": "200ms", "--ease-out": "ease-out", "--ease-in-out": "ease-in-out" })[k] }),
+    WeakMap, Object, Math, parseFloat,
+  };
+  vm.createContext(sandbox); vm.runInContext(util.slice(from, to), sandbox);
+  return { g: sandbox, root, panel, anims, repaint: (...kids) => sandbox.dropRepaint(root, () => { root.kids = kids; }) };
+}
+let s = shelf();
+s.root.kids = [s.panel("a", true)];
+s.repaint(s.panel("a", true));
+assert.strictEqual(s.anims.length, 0, "a repaint that changes nothing moves nothing");
+s.repaint(s.panel("a", false));
+assert.strictEqual(s.anims.length, 1, "shut to open: it slides");
+assert.strictEqual(s.anims[0].reversed, 0);
+s.anims[0].finish();
+s.repaint(s.panel("a", false));
+assert.strictEqual(s.anims.length, 1, "open and still open: it's left alone");
+
+const was = s.root.kids[0], standIn = s.panel("a", true);
+s.repaint(standIn);
+assert.ok(s.root.kids.includes(was), "the panel a repaint shut comes back to leave");
+assert.strictEqual(was.id, "", "without its id, which is the stand-in's now");
+assert.strictEqual(was.inert, true, "and nothing in it can be reached");
+assert.strictEqual(s.anims[1].reversed, 1, "the exit is the entrance backwards");
+s.anims[1].currentTime = 80;
+const again = s.panel("a", false);
+s.repaint(again);
+assert.strictEqual(s.anims[1].cancelled, true, "opened mid-exit: the old one stops");
+assert.strictEqual(was.removed, 1, "and goes");
+assert.strictEqual(s.anims[2].currentTime, 80, "the new one starts where the old one had got to");
+
+s = shelf();
+s.repaint(s.panel("new", false));
+assert.strictEqual(s.anims.length, 0, "a first paint is drawn as it stands: a lone crew doesn't slide open on arrival");
+
+s = shelf({ calm: true });
+s.root.kids = [s.panel("a", false)];
+const calm = s.root.kids[0];
+s.repaint(s.panel("a", true));
+assert.strictEqual(s.anims.length, 0, "reduced motion: no animation");
+assert.strictEqual(calm.removed, 1, "and it's gone at once");
+s.repaint(s.panel("a", false));
+assert.strictEqual(s.anims.length, 0, "and the next one opens at once");
+
+// a filled box empties only once it's shut, and a change while it's open doesn't replay the entrance
+s = shelf();
+const box = Object.assign(s.panel("box", true), { innerHTML: "" });
+s.g.dropFill(box, "ask");
+assert.strictEqual(s.anims.length, 1); assert.strictEqual(box.innerHTML, "ask");
+s.anims[0].finish();
+s.g.dropFill(box, "ask again");
+assert.strictEqual(s.anims.length, 1, "already open: its words just change");
+s.g.dropEmpty(box);
+assert.strictEqual(box.hidden, true); assert.strictEqual(box.innerHTML, "ask again", "it keeps its words on the way out");
+s.anims[1].finish();
+assert.strictEqual(box.innerHTML, "");
+
+// a position: relative panel is in the flow: the pick note opens up its height, rather than shifting over the page
+const plain = s.panel("p", false);
+const place = (position) => { s.g.getComputedStyle = () => ({ position, display: "block" }); return s.g.dropFrames(plain); };
+assert.ok("height" in place("relative")[0] && "height" in place("static")[0]);
+assert.ok("transform" in place("absolute")[0] && "transform" in place("fixed")[0]);
+
+// Every panel that drops down from a control goes through the helper
+const all = ["util", "crews", "account", "admin", "found", "sourcing"].map((f) => read("js/" + f + ".js")).join("\n");
+[/note\.hidden = /, /names\.hidden = /, /panel\.hidden = !open/, /box\.hidden = true; toggle/, /\$\("crew-new"\)\.hidden = /, /form\.hidden = /, /\$\("ed-confirm"\)\.hidden = false/, /\.rm-confirm"\)[^\n]*open\.remove\(\)/, /\$\("(oot|removed)-ask"\)\.innerHTML = /].forEach((old) => {
+  assert.ok(!old.test(all), "a panel appears or goes without its slide: " + old);
+});
+["crew-list", "went-grid", "src-list", "sources-list"].forEach((id) => assert.ok(all.includes('dropRepaint($("' + id + '")'), id + " repaints through dropRepaint"));
+const page = read("index.html");
+(page.match(/<details[\s\S]*?<\/details>/g) || []).forEach((d) => assert.ok(/<\/summary>\s*<div class="details-body">/.test(d), "a <details> needs a .details-body to slide: " + d.slice(0, 60)));
+
+// the grid's panel on Event sources keeps the same time, its wait with it, and no time with reduced motion
+const css = read("css/site.css"), grid = read("js/sourcegrid.js");
+assert.ok(/\.sg-panel \{[^}]*transition: grid-template-rows var\(--dur-drop\) var\(--ease-in-out\)/.test(css), "it shuts in --dur-drop");
+assert.ok(/\.sg-panel\.open \{[^}]*transition-timing-function: var\(--ease-out\)/.test(css), "and opens easing out");
+assert.strictEqual(+grid.match(/SG_PAUSE = (\d+)/)[1], parseFloat(css.match(/--dur-drop: (\d+)ms/)[1]), "sourcegrid.js waits as long as the panel moves");
+}
+
 console.log("motion: ok");
 })().catch((e) => { console.error(e); process.exit(1); });

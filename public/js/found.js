@@ -162,7 +162,8 @@ $("found-list").addEventListener("click", function (ev) {
 // "Reject and skip similar": a phrase (from the title, to trim down) and whether it covers this source or all.
 function toggleSkipForm(row, i, opener) {
   var open = row.querySelector(".skip-form");
-  if (open) { open.remove(); opener.setAttribute("aria-expanded", "false"); opener.focus(); return; }
+  if (open && open.inert) { dropOpen(open); opener.setAttribute("aria-expanded", "true"); return; } // pressed again as it left
+  if (open) { dropGone(open); opener.setAttribute("aria-expanded", "false"); opener.focus(); return; }
   var id = esc(i.id);
   var form = document.createElement("form"); form.className = "skip-form"; form.noValidate = true;
   form.innerHTML = '<div class="field"><label for="skip-phrase-' + id + '">Also reject future events whose title contains</label>' +
@@ -174,7 +175,8 @@ function toggleSkipForm(row, i, opener) {
     '<p class="form-error" role="alert"></p>' +
     '<div class="row"><button class="btn" type="submit">Reject and skip</button><button class="btn ghost" type="button" data-skip-cancel>Cancel</button></div>';
   row.appendChild(form); opener.setAttribute("aria-expanded", "true");
-  var input = form.querySelector("input[type=text]"); input.focus(); input.select();
+  var input = form.querySelector("input[type=text]");
+  dropOpen(form, function () { input.focus(); input.select(); });
   form.querySelector("[data-skip-cancel]").addEventListener("click", function () { toggleSkipForm(row, i, opener); });
   form.addEventListener("submit", function (ev) {
     ev.preventDefault();

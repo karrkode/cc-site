@@ -234,7 +234,7 @@ function pickHTML(e) {
 document.addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-pick]"); if (!b) return;
   var note = document.getElementById(b.getAttribute("aria-controls")), open = b.getAttribute("aria-expanded") !== "true";
-  b.setAttribute("aria-expanded", String(open)); if (note) note.hidden = !open;
+  b.setAttribute("aria-expanded", String(open)); if (note) dropToggle(note, open);
 });
 // Committed to a day after today: "I've been" would be premature, so the card doesn't offer it.
 // "Ben K. and Maya C. from Thursday Theater are going" / "3 from Laughin Times are interested" (CC-75), per crew.
@@ -370,11 +370,11 @@ function afterExit(el, then) { // for what has to wait until the exit is over
   if (!m || m.opening) { then(); return; }
   m.done = function () { if (done) done(); then(); };
 }
-// A panel over the page comes out from behind its own top edge. One in the flow (the Where list in the filter sheet)
-// opens up its height, so what's below it moves with it instead of jumping. The side and bottom insets keep any shadow.
+// A panel over the page comes out from behind its own top edge. One in the flow (the Where list in the filter sheet, a pick
+// note, which is relative only to sit above the row's link) opens up its height, so what's below it moves with it instead of jumping. The side and bottom insets keep any shadow.
 function dropFrames(el) {
   var css = getComputedStyle(el);
-  if (css.position !== "static") return [
+  if (css.position === "absolute" || css.position === "fixed") return [
     { transform: "translateY(-100%)", clipPath: "inset(100% -40px -40px -40px)" },
     { transform: "none", clipPath: "inset(0 -40px -40px -40px)" }];
   var shut = { overflow: "clip" }, full = { overflow: "clip", height: el.getBoundingClientRect().height + "px" };
@@ -399,6 +399,45 @@ function dropClose(el, hide) {
   if (!hide) { el.hidden = true; el.style.setProperty("display", display, "important"); } // [hidden] is !important too
   moveEl(el, frames, false, function () { el.inert = false; el.style.display = ""; if (hide) hide(); });
 }
+function dropToggle(el, open, ready) { if (open) dropOpen(el, ready); else dropClose(el); }
+function dropGone(el) { dropClose(el, function () { el.remove(); }); } // for a panel that only exists while it's open
+// For a box that's filled when it opens (a confirm under a button). Filled while open, it just changes; it empties once it's shut.
+function dropFill(box, html) { var shut = box.hidden; box.innerHTML = html; if (shut) dropOpen(box); }
+function dropEmpty(box) {
+  if (box.hidden) return;
+  dropClose(box); afterExit(box, function () { if (box.hidden) box.innerHTML = ""; });
+}
+// CC-228: a panel that a repaint opens or shuts (the open crew, Manage crew, a source's list). It has [data-drop] and an id,
+// and shut it's an empty hidden element with the same id. The repaint has already thrown the old one away, so that goes back
+// in beside its stand-in, without its id, to leave. Opened mid-exit, the new one starts from where the old one had got to.
+// Only a change moves anything: a first paint, or a repaint that leaves a panel as it was, is drawn as it stands.
+function dropRepaint(root, paint) {
+  var was = {}, leaving = {};
+  root.querySelectorAll("[data-drop]").forEach(function (el) { if (!el.closest("[data-drop-gone]")) was[el.id] = el; });
+  root.querySelectorAll("[data-drop-gone]").forEach(function (el) { leaving[el.getAttribute("data-drop-gone")] = el; });
+  paint();
+  root.querySelectorAll("[data-drop]").forEach(function (el) {
+    var old = was[el.id]; if (!old || old.hidden === el.hidden) return;
+    if (el.hidden) {
+      old.removeAttribute("data-drop"); old.setAttribute("data-drop-gone", el.id); old.removeAttribute("id");
+      el.after(old); dropGone(old);
+      return;
+    }
+    var back = leaving[el.id], m = back && MOVES.get(back), at = m ? m.anim.currentTime : null;
+    if (m) moveStop(back);
+    dropOpen(el);
+    if (at !== null && MOVES.has(el)) MOVES.get(el).anim.currentTime = at;
+  });
+}
+// A <details> shuts the moment it's told to, so the summary's click is taken over: `open` stays on until the exit ends.
+// Its contents sit in a .details-body, as the browser gives no way to move the box it draws them in.
+document.addEventListener("click", function (ev) {
+  var s = ev.target.closest && ev.target.closest("summary"), d = s && s.parentElement, body = d && d.querySelector(":scope > .details-body");
+  if (!body || !motionOn(body)) return;
+  ev.preventDefault();
+  if (d.open && !body.inert) { dropClose(body, function () { d.open = false; }); return; }
+  d.open = true; dropOpen(body);
+});
 // The control just pressed, with where it was: a menu item has gone by the time its dialog closes, and a row may be redrawn.
 // Taken from the click, not from focus, as Safari doesn't focus a button you press.
 var PRESSED = null, DIALOG_FROM = new WeakMap();

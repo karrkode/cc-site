@@ -156,7 +156,7 @@ function saveMyPlan(id, body, panel, focusOn) {
     if (!res.ok) throw res;
     if (body) MYPLANS[id] = { status: body.status, date: body.date || null, crews: (MYPLANS[id] && MYPLANS[id].crews) || [] }; else delete MYPLANS[id];
     $("myplan-live").textContent = myplanSaid(MYPLANS[id]) + ": " + KNOWN[id].title;
-    return redrawCards(id, card, focusOn);
+    return pickerShut(panel).then(function () { return redrawCards(id, card, focusOn); });
   }).catch(function (res) {
     Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
     err.textContent = res && res.status ? errorText(res) : "Couldn't save your plan. Check your connection and try again.";
@@ -164,7 +164,15 @@ function saveMyPlan(id, body, panel, focusOn) {
 }
 function closeMyPlan(toggle) {
   var panel = $(toggle.getAttribute("aria-controls"));
-  toggle.setAttribute("aria-expanded", "false"); if (panel) panel.hidden = true;
+  toggle.setAttribute("aria-expanded", "false"); if (panel) dropClose(panel);
+}
+// CC-228: a saved picker slides shut before its card is redrawn, or the redraw would take it away at once. The event page's
+// buttons have no toggle: they stay out. Focus waits on the toggle, as the panel can't hold it while it leaves.
+function pickerShut(panel) {
+  var toggle = panel.id && document.querySelector('[aria-controls="' + panel.id + '"]');
+  if (!toggle || panel.hidden) return Promise.resolve();
+  toggle.setAttribute("aria-expanded", "false"); toggle.focus(); dropClose(panel);
+  return new Promise(function (done) { afterExit(panel, done); });
 }
 document.addEventListener("click", function (ev) {
   // one picker open at a time: a click anywhere else closes it
@@ -176,8 +184,8 @@ document.addEventListener("click", function (ev) {
   var t = ev.target.closest("[data-myplan-toggle],[data-myplan-set],[data-myplan-going],[data-myplan-clear]"); if (!t) return;
   if (t.hasAttribute("data-myplan-toggle")) {
     var open = t.getAttribute("aria-expanded") !== "true", panel = $(t.getAttribute("aria-controls"));
-    t.setAttribute("aria-expanded", String(open)); panel.hidden = !open;
-    if (open) panel.querySelector("button, input").focus();
+    t.setAttribute("aria-expanded", String(open));
+    dropToggle(panel, open, function () { panel.querySelector("button, input").focus(); });
     return;
   }
   var box = t.closest(".myplan");
@@ -401,19 +409,25 @@ function dayFoundHTML(iso) { // what's in the open list: loading, an error, noth
 function dayFindHTML(iso, whole) { // the button on the day's line; weekDayHTML puts its list under the line
   return '<button type="button" class="week-tbtn day-find" data-find-day="' + iso + '" data-whole="' + esc(whole) + '" aria-controls="find-' + iso + '"></button>';
 }
-function paintFindDay(iso) { // the button says what it does next; the list shows when it's open
+// slide (CC-228): pressed, so it moves. A list waits for its events, so it opens once to the height it will have.
+function paintFindDay(iso, slide) { // the button says what it does next; the list shows when it's open
   var b = document.querySelector('[data-find-day="' + iso + '"]'), box = $("find-" + iso); if (!b || !box) return;
-  var open = !!FIND_DAY_OPEN[iso];
+  var open = !!FIND_DAY_OPEN[iso], ready = open && !!FIND_DAY[iso] && !FIND_DAY[iso].loading, was = !box.hidden;
   b.setAttribute("aria-expanded", String(open));
   b.textContent = open ? "Hide that day\u2019s events" : "Find something \u2192";
   b.setAttribute("aria-label", (open ? "Hide the events for " : "Find something for ") + b.getAttribute("data-whole"));
-  box.hidden = !open; box.innerHTML = open ? dayFoundHTML(iso) : "";
+  if (!ready && slide) {
+    if (was) { dropClose(box); afterExit(box, function () { if (box.hidden) box.innerHTML = ""; }); }
+    return;
+  }
+  box.hidden = !ready; box.innerHTML = ready ? dayFoundHTML(iso) : "";
   fitFindDay(box);
+  if (ready && slide && !was) dropOpen(box);
 }
-function setDayKind(iso, type) { // the one day's choice; the day that had it before shows them all again
+function setDayKind(iso, type, slide) { // the one day's choice; the day that had it before shows them all again
   var was = FIND_DAY_KIND.iso; FIND_DAY_KIND = { iso: type ? iso : "", type: type };
   if (was && was !== iso) paintFindDay(was);
-  paintFindDay(iso);
+  paintFindDay(iso, slide);
 }
 function fitFindDay(box) { // FIND_DAY_TALL items high (the day-scroll is their offsetParent), measured, since titles wrap more in a narrow column
   var sc = box.querySelector(".day-scroll"); if (!sc) return;
@@ -447,10 +461,10 @@ document.addEventListener("click", function (ev) {
   }
   var b = ev.target.closest("[data-find-day]"); if (!b) return;
   var iso = b.getAttribute("data-find-day");
-  if (FIND_DAY_OPEN[iso]) { delete FIND_DAY_OPEN[iso]; if (FIND_DAY_KIND.iso === iso) FIND_DAY_KIND = { iso: "", type: "" }; paintFindDay(iso); return; }
-  FIND_DAY_OPEN[iso] = true; setDayKind(iso, ""); // another day: its list starts with them all, and the last day's choice clears
-  if (!FIND_DAY[iso] || FIND_DAY[iso].error) findDay(iso).then(function () { paintFindDay(iso); });
-  paintFindDay(iso);
+  if (FIND_DAY_OPEN[iso]) { delete FIND_DAY_OPEN[iso]; if (FIND_DAY_KIND.iso === iso) FIND_DAY_KIND = { iso: "", type: "" }; paintFindDay(iso, true); return; }
+  FIND_DAY_OPEN[iso] = true;
+  if (!FIND_DAY[iso] || FIND_DAY[iso].error) findDay(iso).then(function () { paintFindDay(iso, true); });
+  setDayKind(iso, "", true); // another day: its list starts with them all, and the last day's choice clears
 });
 
 // ---------- Cultural Journal (CC-98) ----------
@@ -482,11 +496,11 @@ function journalEntryHTML(e, open) {
     '<div class="journal-meta">' + notes.map(function (n) { return "<span>" + n + "</span>"; }).join("") + (photoState ? "<span>Photo " + esc(photoState.toLowerCase()) + "</span>" : "") +
     '<button type="button" class="week-tbtn" data-journal-open="' + id + '" aria-expanded="' + open + '" aria-label="' +
     esc((open ? "Close your entry for " : saved.words ? "Edit your entry for " : "Write your entry for ") + e.title) + '">' + (open ? "Close" : saved.words ? "Edit" : "Write") + "</button></div></div>";
-  if (!open) return '<article class="journal-entry" data-journal="' + id + '" aria-labelledby="' + k + '-h">' + head + "</article>";
+  if (!open) return '<article class="journal-entry" data-journal="' + id + '" aria-labelledby="' + k + '-h">' + head + '<div id="' + k + '-b" data-drop hidden></div></article>';
   var photo = hasPhoto ? '<figure class="journal-photo"><img src="' + esc(API + p.url) + '" alt="Your photo from ' + esc(e.title) + '">' +
     (photoState ? "<figcaption>" + esc(photoState) + "</figcaption>" : "") + "</figure>" : "";
   return '<article class="journal-entry open" data-journal="' + id + '" aria-labelledby="' + k + '-h">' + head +
-    '<div class="journal-body">' +
+    '<div class="journal-body" id="' + k + '-b" data-drop>' +
     '<form class="journal-form" data-journal-form="' + id + '" novalidate>' +
     '<fieldset class="field three-words"><legend>Three words</legend><div class="row">' + [0, 1, 2].map(function (i) {
       return '<input name="word" type="text" maxlength="' + WORD_MAX + '" autocomplete="off" spellcheck="true" required aria-label="Word ' + (i + 1) + '" value="' + esc(words[i] || "") + '">';
@@ -536,10 +550,12 @@ document.addEventListener("change", function (ev) {
 });
 function renderJournal() {
   var shown = WENT_LIST.slice(0, JOURNAL_SHOWN), open = journalOpenId(shown);
-  $("went-grid").innerHTML = shown.length ? shown.map(function (e) { return journalEntryHTML(e, e.id === open); }).join("") :
-    WENT_STATE === "loading" ? '<p class="week-hint" role="status">Finding your journal\u2026</p>' :
-    WENT_STATE === "error" ? '<p class="week-error" role="alert">' + esc(checkThis("your journal couldn\u2019t be loaded. Reload the page to try again.")) + "</p>" :
-    '<p class="week-hint">Mark events with \u201cI\u2019ve been\u201d and they\u2019ll show up here, ready for your notes.</p>';
+  dropRepaint($("went-grid"), function () { // CC-228: the entry that opens and the one that folds both slide
+    $("went-grid").innerHTML = shown.length ? shown.map(function (e) { return journalEntryHTML(e, e.id === open); }).join("") :
+      WENT_STATE === "loading" ? '<p class="week-hint" role="status">Finding your journal\u2026</p>' :
+      WENT_STATE === "error" ? '<p class="week-error" role="alert">' + esc(checkThis("your journal couldn\u2019t be loaded. Reload the page to try again.")) + "</p>" :
+      '<p class="week-hint">Mark events with \u201cI\u2019ve been\u201d and they\u2019ll show up here, ready for your notes.</p>';
+  });
   paintWater($("went-grid"));
 }
 // Edit (or Write) opens an entry and folds the one that was open; Close folds it. What you'd typed stays as a draft.
@@ -899,8 +915,9 @@ $("reset-form").addEventListener("submit", function (ev) {
 });
 $("forgot-open").addEventListener("click", function () {
   var form = $("forgot-form"), open = form.hidden;
-  form.hidden = !open; this.setAttribute("aria-expanded", String(open));
-  if (open) { $("forgot-email").value = $("login-email").value.trim(); $("forgot-msg").textContent = ""; $("forgot-email").focus(); }
+  this.setAttribute("aria-expanded", String(open));
+  if (open) { $("forgot-email").value = $("login-email").value.trim(); $("forgot-msg").textContent = ""; }
+  dropToggle(form, open, function () { $("forgot-email").focus(); });
 });
 $("forgot-form").addEventListener("input", function () { acctClear(this, $("forgot-error")); });
 $("forgot-form").addEventListener("submit", function (ev) {
