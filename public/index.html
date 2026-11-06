@@ -294,7 +294,7 @@
       </div>
       <section class="front-list" aria-labelledby="front-list-h">
         <div class="front-list-head"><h2 id="front-list-h">The listings</h2><button class="textbtn" type="button" id="front-all">All events&nbsp;→</button></div>
-        <div class="listing-days" id="home-list"></div>
+        <div class="listing-days" id="home-list" data-rows></div>
       </section>
     </section>
 
@@ -396,7 +396,7 @@
         <button class="textbtn" type="button" id="clear-filters" hidden>Clear filters</button>
       </div>
       <h2 class="sr-only">Results</h2>
-      <div class="listing-days" id="grid"></div>
+      <div class="listing-days" id="grid" data-rows></div>
       <div class="more-row" id="more-row" hidden><button class="btn ghost" type="button" id="more-btn">Show more</button></div>
     </section>
 
@@ -551,12 +551,12 @@
           <section class="week-col" aria-labelledby="myplans-title">
             <h2 class="week-sub"><span id="myplans-title" tabindex="-1">The week ahead</span><span class="week-sub-n" id="week-n"></span></h2>
             <div class="week-state" id="week-state" hidden></div>
-            <div class="week-days" id="planner-week"></div>
+            <div class="week-days" id="planner-week" data-rows></div>
           </section>
           <section class="week-col" aria-labelledby="deciding-title">
             <h2 class="week-sub"><span id="deciding-title" tabindex="-1">Still deciding</span><span class="week-sub-n" id="deciding-n"></span></h2>
             <div class="week-undo-box" id="deciding-undo"></div><!-- CC-160: Undo for Withdraw interest -->
-            <ul class="week-rows" id="myplans-grid"></ul>
+            <ul class="week-rows" id="myplans-grid" data-rows></ul>
             <p class="week-hint" id="deciding-hint"></p>
           </section>
         </div>
@@ -609,7 +609,7 @@
           <p class="form-error" id="crew-new-error" role="alert"></p>
           <div class="row"><button class="btn" type="submit">Start the crew</button><button class="btn ghost" type="button" id="crew-new-cancel">Cancel</button></div>
         </form>
-        <div class="crews" id="crew-list"></div>
+        <div class="crews" id="crew-list" data-rows></div>
       </div>
     </section>
 

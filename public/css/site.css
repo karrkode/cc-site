@@ -65,6 +65,7 @@
   --dur-drop: 200ms;
   --dur-press: 100ms;
   --dur-grow: 180ms;
+  --stagger: 30ms;
   --grow: 2.5; /* CC-226: how many px a link grows on hover */
 }
 

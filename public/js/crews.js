@@ -245,7 +245,7 @@ function crewPlansHTML(c) {
   if (!c.plans.length) return '<p class="crew-none">No plans shared yet. Use “Invite your Crew?” on an event you’re interested in.</p>';
   return '<ul class="crew-plans">' + c.plans.map(function (row) {
     var e = toEvent(row.event), id = esc(e.id), going = row.people.some(function (p) { return p.status === "going"; });
-    return '<li class="crew-plan"><a class="crew-plan-a" href="#e/' + id + '" data-ev-open="' + id + '">' +
+    return '<li class="crew-plan" data-row="' + esc(c.id) + "-" + id + '"><a class="crew-plan-a" href="#e/' + id + '" data-ev-open="' + id + '">' +
       '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + '<span class="tile-k">' + esc(e.label) + "</span></span>" +
       '<span class="listing-t">' + esc(e.title) + '</span><span class="crew-plan-where">' + esc(placeText(e)) + "</span>" +
       '<span class="crew-plan-when">' + esc(dateText(e)) + "</span></a>" +
@@ -299,7 +299,7 @@ function paintCrews() {
     $("crew-list").innerHTML = CREWS.length ? CREWS.map(crewHTML).join("") :
       '<p class="crews-empty">Start one for the friends you see shows with, then send them an invite link. Or ask a friend for theirs.</p>';
   });
-  paintWater($("crew-list"));
+  paintWater($("crew-list")); rowsPainted($("crew-list"));
   crewJoinedMotion();
 }
 // An action that didn't go through: the band in the part of Manage crew it came from (else at the top), and its buttons back
