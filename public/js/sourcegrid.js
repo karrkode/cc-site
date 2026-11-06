@@ -3,7 +3,7 @@
 // block's row that pushes the rest down. admin.js keeps loading the sources, the filters and the Settings buttons' actions.
 "use strict";
 var SG_OPEN = null, SG_SAID = "", SG_REQ = 0; // SG_OPEN: { id, tab }. SG_SAID: what the last save said, kept across the repaint
-var SG_PAUSE = 300; // the panel's transition in site.css
+var SG_PAUSE = 200; // the panel's transition in site.css: --dur-drop (CC-228)
 var SG_TABS = [["events", "Events"], ["health", "Health"], ["settings", "Settings"]];
 var SG_STATES = { ok: "Reading fine", nothing: "Reads fine, no events found", error: "Can't be read", manual: "Checked by hand", "new": "Not read yet", off: "Turned off" };
 
@@ -58,7 +58,7 @@ function sgSettingsHTML(s) {
       return '<option value="' + e[0] + '"' + (e[0] === s.every_days ? " selected" : "") + ">" + esc(e[1]) + "</option>"; }).join("") + "</select>" +
     '<button class="btn ghost" type="button" data-src-manual="' + id + '" data-on="' + s.manual + '" aria-label="' + (s.manual ? "Check " + esc(s.label) + " automatically again" : "Check " + esc(s.label) + " by hand only") + '">' + (s.manual ? "Check automatically" : "Check by hand only") + "</button>" +
     '<button class="btn ghost" type="button" data-src-toggle="' + id + '" data-on="' + s.active + '" aria-label="' + (s.active ? "Turn off " : "Turn on ") + esc(s.label) + '">' + (s.active ? "Turn off" : "Turn on") + "</button>" +
-    '<button class="btn danger" type="button" data-src-delete="' + id + '" aria-label="Delete ' + esc(s.label) + '">Delete…</button></div>' + (SRC_ASK === s.id ? srcAskHTML(s) : "");
+    '<button class="btn danger" type="button" data-src-delete="' + id + '" aria-label="Delete ' + esc(s.label) + '">Delete…</button></div>' + (SRC_ASK === s.id ? srcAskHTML(s) : '<div id="src-ask-box" data-drop hidden></div>');
 }
 function sgPanelHTML(s, tab) {
   var name = SG_TABS.filter(function (t) { return t[0] === tab; })[0][1];

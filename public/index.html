@@ -728,7 +728,7 @@
         <h1 id="review-title" tabindex="-1">Waiting for review</h1>
         <p class="lf-deck">Approve to put an event on the list. Rejected events stay out of sight.</p>
       </div>
-      <div class="section" id="removed" hidden><h2 id="removed-title" tabindex="-1">Comedy and Educational, withdrawn</h2><p class="hint" id="removed-note"></p><div class="row" id="removed-actions"><button class="btn danger" type="button" id="removed-del-all" aria-expanded="false">Delete all…</button></div><div id="removed-ask"></div><p class="hint" id="removed-status" role="status"></p><div class="queue" id="removed-list"></div></div><!-- CC-133, CC-153: Delete and Delete all -->
+      <div class="section" id="removed" hidden><h2 id="removed-title" tabindex="-1">Comedy and Educational, withdrawn</h2><p class="hint" id="removed-note"></p><div class="row" id="removed-actions"><button class="btn danger" type="button" id="removed-del-all" aria-expanded="false">Delete all…</button></div><div id="removed-ask" hidden></div><p class="hint" id="removed-status" role="status"></p><div class="queue" id="removed-list"></div></div><!-- CC-133, CC-153: Delete and Delete all -->
       <div class="section" id="othertypes" hidden><h2>Need a new type</h2><p class="notice" id="othertypes-note"></p><div class="queue" id="othertypes-list"></div></div>
       <div class="section"><h2 id="waiting-title">Waiting <span class="lf-n" id="review-n"></span></h2><div class="queue" id="review-list"></div></div>
       <div class="section"><h2>Scheduled</h2><p class="hint">Approved, and waiting for their publish time.</p><div class="queue" id="scheduled-list"></div></div>
@@ -949,8 +949,10 @@
         <div class="table-wrap"><table class="sources-table" id="traffic-sources" aria-labelledby="sources-title"></table></div>
         <details class="hint small utm-help">
           <summary>Tags to put on your links</summary>
-          <p>Add these to the end of a chiculturecrew.com link so its visits show up here under their own name. Change the campaign to suit the post.</p>
-          <ul id="utm-examples"></ul>
+          <div class="details-body">
+            <p>Add these to the end of a chiculturecrew.com link so its visits show up here under their own name. Change the campaign to suit the post.</p>
+            <ul id="utm-examples"></ul>
+          </div>
         </details>
         <!-- CC-121: visits to chiculturecrew.com/join, and the sign-ups in those visits, by source -->
         <h3 id="join-stats-title">Join page</h3>
@@ -987,7 +989,7 @@
         <p class="hint">For venues with no website yet, from each venue's event source and the CC-205 venue research. Nothing is saved until you confirm it, and Dismiss stops suggesting that address.</p>
         <p class="hint" id="vs-status" role="status"></p><div class="queue" id="vs-list"></div></div>
       <!-- CC-218: the one place a venue is added directly, so the address is required -->
-      <details class="section va-new"><summary>Add a venue</summary>
+      <details class="section va-new"><summary>Add a venue</summary><div class="details-body">
         <form id="va-add" novalidate>
           <!-- CC-222: pasting a website fills in what the page says; nothing is saved until Add venue -->
           <div class="field" style="margin-bottom:14px"><label for="vn-website">Website</label><input id="vn-website" type="url" inputmode="url" maxlength="500" placeholder="https://" autocomplete="off" aria-describedby="vn-website-hint vn-read"><span class="hint small" id="vn-website-hint">Paste the venue's website and we'll fill in what its page says. You can also type everything yourself.</span><p class="hint" id="vn-read" role="status"></p></div>
@@ -1003,7 +1005,7 @@
           <p class="form-error" id="vn-error" role="alert"></p>
           <div class="row"><button class="btn" type="submit" id="vn-go">Add venue</button></div>
         </form>
-        <p class="hint" id="vn-status" role="status"></p></details>
+        <p class="hint" id="vn-status" role="status"></p></div></details>
       <!-- CC-218: addresses seen in venues' event data, for venues with none; nothing is saved until an admin confirms one -->
       <div class="section vs" id="va" hidden><h2><span id="va-h" tabindex="-1">Suggested addresses</span> <span class="lf-n" id="va-n"></span></h2>
         <p class="hint">For venues with no address yet, from the event data on their own pages. Nothing is saved until you confirm it, and Dismiss stops suggesting that address.</p>
@@ -1011,7 +1013,7 @@
       <!-- CC-217: delete what's left out of town, events first, then the empty venues; hidden once there's none -->
       <div class="section" id="oot" hidden><h2 id="oot-title" tabindex="-1">Out of town</h2><p class="hint" id="oot-note"></p>
         <div class="row"><button class="btn danger" type="button" id="oot-del-events" aria-expanded="false">Delete all out-of-town events…</button><button class="btn danger" type="button" id="oot-del-venues" aria-expanded="false">Delete all empty out-of-town venues…</button></div>
-        <div id="oot-ask"></div><p class="hint" id="oot-status" role="status"></p><div class="queue" id="oot-list"></div></div>
+        <div id="oot-ask" hidden></div><p class="hint" id="oot-status" role="status"></p><div class="queue" id="oot-list"></div></div>
       <h2 class="sr-only">All venues</h2>
       <div class="filters"><div class="field"><label for="v-q">Find a venue</label><input id="v-q" type="search" maxlength="100" placeholder="Name or neighborhood" autocomplete="off"></div>
         <div class="field"><label for="v-hours">Opening hours</label><select id="v-hours"><option value="">Any</option><option value="full">Every day filled in</option><option value="gaps">Some days missing</option></select></div>

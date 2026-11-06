@@ -73,7 +73,7 @@ function removedLeft() { // CC-153: the count, and the section gone once it's em
   $("removed-del-all").setAttribute("aria-label", n > 1 ? "Delete all " + n + " withdrawn Comedy and Educational events" : "Delete the withdrawn Comedy or Educational event");
   return n;
 }
-function closeRemovedAsk() { $("removed-ask").innerHTML = ""; $("removed-del-all").setAttribute("aria-expanded", "false"); }
+function closeRemovedAsk() { dropEmpty($("removed-ask")); $("removed-del-all").setAttribute("aria-expanded", "false"); }
 function renderRemoved() {
   api("/admin/events/removed").then(readJSON).then(function (res) {
     var list = res.ok ? res.body : [];
@@ -102,8 +102,12 @@ $("removed-list").addEventListener("click", function (ev) {
   var ask = ev.target.closest("[data-rm-del],[data-rm-del-no]");
   if (ask) { // CC-153: open or close the confirm under that event
     var asking = ask.hasAttribute("data-rm-del"), aid = ask.getAttribute(asking ? "data-rm-del" : "data-rm-del-no");
-    var open = $("removed-list").querySelector(".rm-confirm"); if (open) open.remove();
-    if (asking) { closeRemovedAsk(); ask.closest(".queue-item").insertAdjacentHTML("beforeend", rmAskHTML(esc(aid), ask.getAttribute("data-title"))); }
+    var open = $("removed-list").querySelector(".rm-confirm:not([inert])"), item = ask.closest(".queue-item"), here = asking && open && item.contains(open);
+    if (open && !here) dropGone(open);
+    if (asking && !here) {
+      closeRemovedAsk(); item.insertAdjacentHTML("beforeend", rmAskHTML(esc(aid), ask.getAttribute("data-title")));
+      dropOpen(item.lastElementChild);
+    }
     $("removed-list").querySelector(asking ? '[data-rm-del-no="' + aid + '"]' : '[data-rm-del="' + aid + '"]').focus();
     return;
   }
@@ -133,12 +137,12 @@ $("removed-list").addEventListener("click", function (ev) {
 // CC-153: Delete all, after a confirm that says how many go; one DELETE at a time, with the progress in a status line
 $("removed-del-all").addEventListener("click", function () {
   var n = $("removed-list").children.length; if (!n) return;
-  var open = $("removed-list").querySelector(".rm-confirm"); if (open) open.remove();
-  $("removed-ask").innerHTML = '<div class="rm-confirm" role="group" aria-labelledby="rm-ask-all"><p id="rm-ask-all"><strong>Delete ' +
+  var open = $("removed-list").querySelector(".rm-confirm:not([inert])"); if (open) dropGone(open);
+  dropFill($("removed-ask"), '<div class="rm-confirm" role="group" aria-labelledby="rm-ask-all"><p id="rm-ask-all"><strong>Delete ' +
     (n > 1 ? "all " + n + " events" : "this event") + "?</strong> Everyone's “I've been” marks, plans and photos for " + (n > 1 ? "them" : "it") +
     " go too. This can't be undone.</p>" +
     '<div class="row"><button class="btn danger solid" type="button" id="rm-all-yes">Delete ' + plural(n, "event", "events") + "</button>" +
-    '<button class="btn ghost" type="button" id="rm-all-no">Keep ' + (n > 1 ? "them" : "it") + "</button></div></div>";
+    '<button class="btn ghost" type="button" id="rm-all-no">Keep ' + (n > 1 ? "them" : "it") + "</button></div></div>");
   $("removed-del-all").setAttribute("aria-expanded", "true"); $("rm-all-no").focus();
 });
 $("removed-ask").addEventListener("click", function (ev) {
@@ -409,7 +413,7 @@ function paintOutOfTown() {
   $("oot-list").innerHTML = OOT.venues.map(ootItemHTML).join("");
 }
 function closeOotAsk() {
-  $("oot-ask").innerHTML = "";
+  dropEmpty($("oot-ask"));
   $("oot-del-events").setAttribute("aria-expanded", "false"); $("oot-del-venues").setAttribute("aria-expanded", "false");
 }
 function loadOutOfTown() {
@@ -426,8 +430,8 @@ function ootAskHTML(what, sources, more, yes, keep) {
 }
 var OOT_RUN = null; // what the open confirm will do
 function ootAsk(opener, html, run) {
-  closeOotAsk();
-  $("oot-ask").innerHTML = html; OOT_RUN = run; OOT_RUN.opener = opener;
+  $("oot-del-events").setAttribute("aria-expanded", "false"); $("oot-del-venues").setAttribute("aria-expanded", "false");
+  dropFill($("oot-ask"), html); OOT_RUN = run; OOT_RUN.opener = opener;
   opener.setAttribute("aria-expanded", "true"); $("oot-no").focus();
 }
 $("oot-del-events").addEventListener("click", function () {
@@ -908,9 +912,9 @@ $("ed-withdraw").addEventListener("click", function () {
 $("ed-delete").addEventListener("click", function () {
   var e = EDITING && EDITING.e; if (!e) return;
   $("ed-confirm-text").textContent = "Delete \u201c" + e.title + "\u201d for good? Everyone's \u201cI've been\u201d marks and plans for it go too, and it can't be undone.";
-  $("ed-confirm").hidden = false; $("ed-delete-no").focus();
+  dropOpen($("ed-confirm"), function () { $("ed-delete-no").focus(); });
 });
-$("ed-delete-no").addEventListener("click", function () { $("ed-confirm").hidden = true; $("ed-delete").focus(); });
+$("ed-delete-no").addEventListener("click", function () { dropClose($("ed-confirm")); $("ed-delete").focus(); });
 $("ed-delete-yes").addEventListener("click", function () {
   var e = EDITING && EDITING.e; if (!e) return;
   setEditorBusy(true);
@@ -1148,7 +1152,7 @@ function paintSources(o) {
 }
 function srcAskHTML(s) { // CC-133
   var id = esc(s.id);
-  return '<div class="confirm src-confirm" role="group" aria-labelledby="src-ask-' + id + '"><p id="src-ask-' + id + '"><strong>Delete ' + esc(s.name) + "?</strong> It won't be checked again. " +
+  return '<div class="confirm src-confirm" id="src-ask-box" data-drop role="group" aria-labelledby="src-ask-' + id + '"><p id="src-ask-' + id + '"><strong>Delete ' + esc(s.name) + "?</strong> It won't be checked again. " +
     (s.waiting ? "Its " + plural(s.waiting, "found event", "found events") + " waiting for review stay on Found events. " : "") +
     "Events already in the catalog aren't touched. This can't be undone.</p>" +
     '<div class="row"><button class="btn danger solid" type="button" data-src-delete-yes="' + id + '">Delete source</button>' +
@@ -1158,7 +1162,7 @@ $("sources-list").addEventListener("click", function (ev) {
   var ask = ev.target.closest("[data-src-delete],[data-src-delete-no]");
   if (ask) {
     var asking = ask.hasAttribute("data-src-delete"), sid = ask.getAttribute(asking ? "data-src-delete" : "data-src-delete-no");
-    SRC_ASK = asking ? +sid : null; paintSources(SOURCES);
+    SRC_ASK = asking ? +sid : null; dropRepaint($("sources-list"), function () { paintSources(SOURCES); });
     $("sources-list").querySelector(asking ? '[data-src-delete-no="' + sid + '"]' : '[data-src-delete="' + sid + '"]').focus();
     return;
   }

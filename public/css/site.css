@@ -814,7 +814,7 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .changes { margin: 6px 0 0; padding-left: 18px; font-size: 1rem; }
 .changes li { margin: 2px 0; }
 .skip-form { flex-basis: 100%; display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; }
-.skip-form fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.skip-form fieldset { position: relative; /* holds its .sr-only legend, which is otherwise as wide as the page and scrolls it sideways */ border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; }
 /* CC-78: venue hours */
 .editor fieldset.hours, #submit-form fieldset.hours { margin: 0; display: grid; gap: 10px; } /* CC-149: no box; the legend is its label */
 /* CC-88: show days, each with its start times */
@@ -1656,8 +1656,8 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .sg-opt:hover { background: var(--info-soft); color: var(--on-info-soft); }
 .sg-opt[aria-expanded="true"] { background: var(--text); color: var(--page); }
 .sg-opt:focus-visible { outline: 3px solid currentColor; outline-offset: -3px; }
-.sg-panel { grid-column: 1 / -1; display: grid; grid-template-rows: 0fr; transition: grid-template-rows 300ms ease; }
-.sg-panel.open { grid-template-rows: 1fr; }
+.sg-panel { grid-column: 1 / -1; display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--dur-drop) var(--ease-in-out); } /* sourcegrid.js waits the same time */
+.sg-panel.open { grid-template-rows: 1fr; transition-timing-function: var(--ease-out); }
 .sg-inner { min-height: 0; overflow: hidden; }
 .sg-body { display: grid; gap: 12px; padding: 14px 16px; background: var(--surface); border-top: 2px solid var(--rule); }
 .sg-body p { margin: 0; }

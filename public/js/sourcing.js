@@ -146,25 +146,26 @@ function srcActions(i) {
 }
 function srcPanelHTML() {
   if (SRC.error) return '<p class="form-error" role="alert">' + esc(SRC.error) + "</p>";
-  if (SRC.loading && !SRC.items.length) return '<p class="hint">Loading…</p>';
   return '<div class="queue">' + SRC.items.map(function (i) { return foundRowHTML(i, srcActions(i)); }).join("") + "</div>" +
     (SRC.items.length < SRC.total ? '<div class="row"><button class="btn ghost" type="button" data-src-more' + (SRC.loading ? " disabled" : "") + ">Show more</button>" +
       '<span class="hint">Showing ' + SRC.items.length + " of " + SRC.total + "</span></div>" : "");
 }
 function srcRowHTML(key, n, name, sub) {
-  var open = SRC.open === key, k = esc(key);
+  var open = SRC.open === key, k = esc(key), waiting = open && SRC.loading && !SRC.items.length && !SRC.error; // CC-228: it opens once, to its events
   return '<li data-src="' + k + '"><button class="hub-row" type="button" data-src-row aria-expanded="' + open + '" aria-controls="src-panel-' + k + '"><span class="hub-n">' + n +
     '</span><span class="hub-text"><span class="hub-name">' + esc(name) + "</span>" + (sub ? '<span class="hub-sub">' + esc(sub) + "</span>" : "") +
-    '</span><span class="hub-go">' + (open ? "Close" : "Open") + '</span></button><div class="src-panel" id="src-panel-' + k + '"' + (open ? ">" + srcPanelHTML() : " hidden>") + "</div></li>";
+    '</span><span class="hub-go">' + (waiting ? "Loading…" : open ? "Close" : "Open") + '</span></button><div class="src-panel" id="src-panel-' + k + '" data-drop' + (open && !waiting ? ">" + srcPanelHTML() : " hidden>") + "</div></li>";
 }
 function paintSrc() {
   var was = document.activeElement && document.activeElement.closest && document.activeElement.closest("[data-src-row]");
   var key = was && was.parentNode.getAttribute("data-src");
   var waiting = SRC.rows.reduce(function (n, r) { return n + r.n; }, 0);
   $("src-n").textContent = waiting ? String(waiting) : "";
-  $("src-list").innerHTML = SRC.rows.map(function (r) { return srcRowHTML(r.key, r.n, r.name, ""); }).join("") +
-    (SRC.hidden ? srcRowHTML("hidden", SRC.hidden, "Hidden", "Not sure yet. They stay here until you decide.") : "");
-  if (!waiting && !SRC.hidden) $("src-list").innerHTML = '<li><p class="hint">Nothing waiting. New finds show up here after each check.</p></li>';
+  dropRepaint($("src-list"), function () {
+    $("src-list").innerHTML = SRC.rows.map(function (r) { return srcRowHTML(r.key, r.n, r.name, ""); }).join("") +
+      (SRC.hidden ? srcRowHTML("hidden", SRC.hidden, "Hidden", "Not sure yet. They stay here until you decide.") : "");
+    if (!waiting && !SRC.hidden) $("src-list").innerHTML = '<li><p class="hint">Nothing waiting. New finds show up here after each check.</p></li>';
+  });
   if (key) srcFocusRow(key);
 }
 function srcFocusRow(key) {

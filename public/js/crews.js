@@ -33,8 +33,8 @@ function renderCrewsPage() {
 }
 $("crews-signin-btn").addEventListener("click", function () { AFTER_SIGN_IN = "crews"; openAccount(); });
 function showCrewForm(open) {
-  $("crew-new").hidden = !open; $("crew-start-btn").setAttribute("aria-expanded", String(open));
-  if (open) $("crew-name").focus(); else { $("crew-new-error").textContent = ""; crewMarkInvalid($("crew-name"), false); $("crew-start-btn").focus(); }
+  dropToggle($("crew-new"), open, open ? function () { $("crew-name").focus(); } : null); $("crew-start-btn").setAttribute("aria-expanded", String(open));
+  if (!open) { $("crew-new-error").textContent = ""; crewMarkInvalid($("crew-name"), false); $("crew-start-btn").focus(); }
 }
 $("crew-start-btn").addEventListener("click", function () { showCrewForm($("crew-new").hidden); });
 $("crew-new-cancel").addEventListener("click", function () { showCrewForm(false); });
@@ -86,9 +86,9 @@ function crewAct(act, crew, extra, label, cls, aria) {
   return '<button class="' + (cls || "btn ghost") + '" type="button" data-crew-act="' + act + '" data-crew="' + esc(crew.id) + '"' +
     (extra ? " " + extra : "") + (aria ? ' aria-label="' + esc(aria) + '"' : "") + ">" + esc(label) + "</button>";
 }
-function askHTML(text, act, crew, extra) { // an inline "are you sure?" in place of a dialog: the question in bold, then the rest
+function askHTML(text, act, crew, extra, box) { // an inline "are you sure?" in place of a dialog: the question in bold, then the rest
   var q = text.indexOf("?") + 1;
-  return '<div class="confirm"><p><b>' + esc(text.slice(0, q)) + "</b>" + esc(text.slice(q)) + '</p><div class="row">' +
+  return '<div class="confirm" id="' + box + '" data-drop><p><b>' + esc(text.slice(0, q)) + "</b>" + esc(text.slice(q)) + '</p><div class="row">' +
     crewAct(act, crew, extra, "Yes", "btn ink") + crewAct("ask-no", crew, "", "Keep it", "btn ghost") + "</div></div>";
 }
 var CREW_CARET = '<svg class="crew-caret" aria-hidden="true" viewBox="0 0 12 12"><path d="M2 4.5l4 4 4-4"/></svg>';
@@ -100,7 +100,7 @@ function crewHTML(c) {
     '<span class="crew-id"><span class="crew-top"><span class="crew-name">' + esc(c.name) + "</span>" + (c.owner ? ' <span class="crew-you">You started it</span>' : "") + "</span>" +
     (c.description ? '<span class="crew-about">' + esc(c.description) + "</span>" : "") + "</span>" +
     '<span class="crew-banner">' + crewFacesHTML(c) + crewNextHTML(c) + "</span>" + CREW_CARET + "</button></h3>" +
-    (open ? crewDetailHTML(c) : "") + "</article>";
+    (open ? crewDetailHTML(c) : '<div id="crew-d-' + id + '" data-drop hidden></div>') + "</article>";
 }
 // A section's head: its name on the rule, with a count or a note at the right ("Plans 2", "5 members · room for 20 more")
 function crewSubHTML(id, label, note) {
@@ -110,7 +110,7 @@ function crewSubHTML(id, label, note) {
 // then Manage crew. Roles are words, not pills.
 function crewDetailHTML(c) {
   var id = esc(c.id), manage = CREW_MANAGE === String(c.id), room = c.max_members - c.members.length;
-  return '<div class="crew-detail" id="crew-d-' + id + '"><div class="crew-cols">' +
+  return '<div class="crew-detail" id="crew-d-' + id + '" data-drop><div class="crew-cols">' +
     '<section class="crew-col" aria-labelledby="crew-p-' + id + '">' + crewSubHTML("crew-p-" + id, "Plans", c.plans.length ? String(c.plans.length) : "") + crewPlansHTML(c) + "</section>" +
     '<section class="crew-col" aria-labelledby="crew-m-' + id + '">' +
     crewSubHTML("crew-m-" + id, plural(c.members.length, "member", "members"), room > 0 ? "room for " + room + " more" : "full") +
@@ -120,17 +120,18 @@ function crewDetailHTML(c) {
     }).join("") + "</ul></section></div>" +
     '<div class="crew-manage-wrap"><button class="crew-manage-btn" type="button" data-crew-act="manage" data-crew="' + id + '" aria-expanded="' + manage +
     '" aria-controls="crew-mg-' + id + '">Manage crew' + CREW_CARET + "</button>" +
-    (manage ? crewManageHTML(c) : '<div id="crew-mg-' + id + '" hidden></div>') + "</div></div>";
+    (manage ? crewManageHTML(c) : '<div id="crew-mg-' + id + '" data-drop hidden></div>') + "</div></div>";
 }
 // Share the link (a phone's share sheet, which the person picks from) or Copy it. The QR code is made here (CC-86).
 var CREW_SHARE = !!navigator.share && window.matchMedia("(pointer: coarse)").matches;
 function crewManageHTML(c) {
   var id = esc(c.id), asking = CREW_ASK && String(CREW_ASK.crew) === String(c.id) ? CREW_ASK : null, full = c.members.length >= c.max_members;
-  var ask = function (acts) {
-    return asking && acts.indexOf(asking.act) >= 0 ? askHTML(asking.text, asking.act, c, asking.user ? 'data-user="' + esc(asking.user) + '"' : "") : "";
+  var ask = function (acts, part) {
+    var box = "crew-ask-" + part + "-" + id;
+    return asking && acts.indexOf(asking.act) >= 0 ? askHTML(asking.text, asking.act, c, asking.user ? 'data-user="' + esc(asking.user) + '"' : "", box) : '<div id="' + box + '" data-drop hidden></div>';
   };
   var err = '<p class="form-error" role="alert" data-crew-err></p>';
-  var html = '<div class="crew-manage" id="crew-mg-' + id + '">';
+  var html = '<div class="crew-manage" id="crew-mg-' + id + '" data-drop>';
   // Invite people: any member can make a link or send an email invite
   var link = CREW_LINKS[c.id];
   html += '<section class="crew-mg-part" aria-labelledby="crew-mi-' + id + '">' + crewSubHTML("crew-mi-" + id, "Invite people") +
@@ -141,7 +142,7 @@ function crewManageHTML(c) {
       '<div class="row">' + (CREW_SHARE ? crewAct("share", c, "", "Share the link", "btn") : crewAct("copy", c, "", "Copy link", "btn")) +
       crewAct("qr", c, 'aria-expanded="' + !!link.qr + '" aria-controls="crew-qr-' + id + '"', link.qr ? "Hide the QR code" : "Show a QR code") +
       '<span class="hint" role="status" id="crew-copied-' + id + '"></span></div>' +
-      '<figure class="crew-qr" id="crew-qr-' + id + '"' + (link.qr ? "" : " hidden") + ">" + (link.qr ?
+      '<figure class="crew-qr" id="crew-qr-' + id + '" data-drop' + (link.qr ? "" : " hidden") + ">" + (link.qr ?
         '<img src="' + link.qr + '" width="240" height="240" alt="QR code for the invite link to ' + esc(c.name) + '">' +
         '<figcaption class="hint">Scan it with a phone camera to join ' + esc(c.name) + '. <a href="' + link.qr + '" download="' +
         esc(qrFileName(c.name)) + '">Download it</a> to text or print.</figcaption>' : "") + "</figure></div>";
@@ -175,19 +176,19 @@ function crewManageHTML(c) {
         return "<li>" + crewDotHTML(m.name, false, "face-s") + '<span class="who">' + esc(m.name) + '</span><span class="crew-tacts">' +
           crewAct("owner", c, 'data-user="' + esc(m.user_id) + '"', "Make crew leader", "textbtn crew-tbtn", "Make " + m.name + " the crew leader of " + c.name) +
           crewAct("remove", c, 'data-user="' + esc(m.user_id) + '"', "Remove", "textbtn crew-tbtn", "Remove " + m.name + " from " + c.name) + "</span></li>";
-      }).join("") + "</ul>" + ask(["owner-yes", "remove-yes"]) + err + "</section>";
+      }).join("") + "</ul>" + ask(["owner-yes", "remove-yes"], "m") + err + "</section>";
   }
   html += '<section class="crew-mg-part" aria-labelledby="crew-mc-' + id + '">' + crewSubHTML("crew-mc-" + id, "The crew");
   if (CREW_EDIT === c.id) {
-    html += '<form class="crew-edit" data-crew-form="' + id + '" novalidate><div class="fields">' +
+    html += '<form class="crew-edit" id="crew-edit-' + id + '" data-drop data-crew-form="' + id + '" novalidate><div class="fields">' +
       '<div class="field"><label for="crew-ename-' + id + '">Name</label><input id="crew-ename-' + id + '" type="text" maxlength="60" value="' + esc(c.name) +
       '" aria-describedby="crew-eerr-' + id + '"></div>' +
       '<div class="field"><label for="crew-edesc-' + id + '">About it</label><input id="crew-edesc-' + id + '" type="text" maxlength="200" value="' + esc(c.description) + '"></div></div>' +
       '<p class="form-error" role="alert" id="crew-eerr-' + id + '"></p><div class="row"><button class="btn" type="submit">Save</button>' + crewAct("edit-no", c, "", "Cancel") + "</div></form>";
   } else {
-    html += '<div class="row">' + (c.owner ? crewAct("edit", c, "", "Rename") + crewAct("delete", c, "", "Dissolve crew…") : crewAct("leave", c, "", "Leave crew…")) + "</div>";
+    html += '<div class="row">' + (c.owner ? crewAct("edit", c, "", "Rename") + crewAct("delete", c, "", "Dissolve crew…") : crewAct("leave", c, "", "Leave crew…")) + '</div><div id="crew-edit-' + id + '" data-drop hidden></div>';
   }
-  return html + ask(["leave-yes", "delete-yes"]) + err + "</section></div>";
+  return html + ask(["leave-yes", "delete-yes"], "c") + err + "</section></div>";
 }
 // The crew's shared plans (CC-75): each event once, soonest first, with who's going or interested, in the
 // product owner's words: "Only you are interested in this…for now.", "Jordan Reyes is interested!",
@@ -268,7 +269,7 @@ function crewTip(b) {
 document.addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-crew-count]"); if (!b) return;
   var names = $(b.getAttribute("aria-controls")), open = b.getAttribute("aria-expanded") !== "true";
-  b.setAttribute("aria-expanded", String(open)); if (names) names.hidden = !open;
+  b.setAttribute("aria-expanded", String(open)); if (names) dropToggle(names, open);
   crewTip(null);
 });
 document.addEventListener("pointerover", function (ev) {
@@ -279,7 +280,7 @@ document.addEventListener("focusin", function (ev) { var b = ev.target.closest &
 window.addEventListener("scroll", function () { crewTip(null); }, true);
 
 // CC-145: joining slides your dot in (320ms), in the crew's row and its members, once the crew you joined is drawn.
-// Opening a crew is instant. With reduced motion, the dot is just there.
+// With reduced motion, the dot is just there.
 var CREW_JOINED = null;
 function crewJoinedMotion() {
   if (CREW_JOINED === null) return;
@@ -294,8 +295,10 @@ function crewJoinedMotion() {
 function paintCrews() {
   if (CREW_OPEN === null && crewOpenSaved() === null && CREWS.length === 1) CREW_OPEN = String(CREWS[0].id); // a lone crew starts open
   $("crews-n").textContent = CREWS.length ? plural(CREWS.length, "crew", "crews") : "No crews yet";
-  $("crew-list").innerHTML = CREWS.length ? CREWS.map(crewHTML).join("") :
-    '<p class="crews-empty">Start one for the friends you see shows with, then send them an invite link. Or ask a friend for theirs.</p>';
+  dropRepaint($("crew-list"), function () { // CC-228: what's opened or shut slides
+    $("crew-list").innerHTML = CREWS.length ? CREWS.map(crewHTML).join("") :
+      '<p class="crews-empty">Start one for the friends you see shows with, then send them an invite link. Or ask a friend for theirs.</p>';
+  });
   paintWater($("crew-list"));
   crewJoinedMotion();
 }
@@ -415,7 +418,7 @@ $("crew-new").addEventListener("submit", function (ev) {
   api("/crews", { method: "POST", body: { name: name, description: $("crew-desc").value.trim() } }).then(readJSON).then(function (res) {
     if (!res.ok) { err.textContent = checkThis(errorText(res)); return; }
     setCrewOpen(res.body.id); CREW_MANAGE = String(res.body.id); // CC-120: open, with its invites showing
-    $("crew-name").value = ""; $("crew-desc").value = ""; $("crew-new").hidden = true; $("crew-start-btn").setAttribute("aria-expanded", "false");
+    $("crew-name").value = ""; $("crew-desc").value = ""; dropClose($("crew-new")); $("crew-start-btn").setAttribute("aria-expanded", "false");
     loadCrews('[data-crew-card="' + res.body.id + '"] [data-crew-act="invite"]').then(function () {
       $("edit-live").textContent = "Started " + res.body.name + ". Make an invite link to bring people in.";
     });
@@ -484,14 +487,14 @@ function crewShareHTML(e) {
 document.addEventListener("click", function (ev) {
   Array.prototype.forEach.call(document.querySelectorAll('[data-crewshare-toggle][aria-expanded="true"]'), function (open) {
     var panel = $(open.getAttribute("aria-controls"));
-    if (!open.contains(ev.target) && !(panel && panel.contains(ev.target))) { open.setAttribute("aria-expanded", "false"); if (panel) panel.hidden = true; }
+    if (!open.contains(ev.target) && !(panel && panel.contains(ev.target))) { open.setAttribute("aria-expanded", "false"); if (panel) dropClose(panel); }
   });
   if (!AUTH.user) return;
   var t = ev.target.closest("[data-crewshare-toggle],[data-crewshare-save]"); if (!t) return;
   if (t.hasAttribute("data-crewshare-toggle")) {
     var open = t.getAttribute("aria-expanded") !== "true", panel = $(t.getAttribute("aria-controls"));
-    t.setAttribute("aria-expanded", String(open)); panel.hidden = !open;
-    if (open) panel.querySelector("input").focus();
+    t.setAttribute("aria-expanded", String(open));
+    dropToggle(panel, open, function () { panel.querySelector("input").focus(); });
     return;
   }
   var box = t.closest(".crewshare"), id = t.getAttribute("data-crewshare-save"), err = box.querySelector(".form-error");
@@ -503,7 +506,8 @@ document.addEventListener("click", function (ev) {
     var names = CREWS.filter(function (c) { return res.body.crews.indexOf(c.id) >= 0; }).map(function (c) { return c.name; });
     $("myplan-live").textContent = (names.length ? "Shared with " + names.join(" and ") : "Not shared with any crew") + ": " + KNOWN[id].title;
     if (visible("crews")) loadCrews();
-    return redrawCards(id, box.closest("[data-card]"), "[data-crewshare-toggle]");
+    var card = box.closest("[data-card]");
+    return pickerShut(box).then(function () { return redrawCards(id, card, "[data-crewshare-toggle]"); });
   }).catch(function (res) {
     t.disabled = false; err.textContent = res && res.status ? errorText(res) : "Couldn't save. Check your connection and try again.";
   });
@@ -512,7 +516,7 @@ document.addEventListener("keydown", function (ev) { // Escape closes the crew p
   if (ev.key !== "Escape") return;
   var box = ev.target.closest && ev.target.closest(".crewshare"); if (!box) return;
   var toggle = document.querySelector('[aria-controls="' + box.id + '"]');
-  if (toggle) { toggle.setAttribute("aria-expanded", "false"); box.hidden = true; toggle.focus(); }
+  if (toggle) { toggle.setAttribute("aria-expanded", "false"); dropClose(box); toggle.focus(); }
 });
 
 // ---------- invites waiting for you (CC-59) ----------
