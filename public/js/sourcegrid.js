@@ -1,4 +1,4 @@
-// Culture Crew site: the grid on Event sources (admins, CC-221): a block per source, coloured by how its reading goes
+// Culture Crew site: the Source grid (admins, CC-221): a block per source, coloured by how its reading goes
 // and sized by the venue's approved events. Hover, focus or a tap shows three options, and each opens a panel under the
 // block's row that pushes the rest down. admin.js keeps loading the sources, the filters and the Settings buttons' actions.
 "use strict";

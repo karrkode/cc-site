@@ -1022,7 +1022,7 @@ $("i-closed").addEventListener("change", loadInterest);
 // CC-68: visits over the last 30 days: totals, a daily chart of visitors (returning ones stacked under
 // new ones), and views of each part of the site. Counts only.
 var VIEW_NAMES = { home: "Home", join: "Join page", catalog: "Catalog", event: "Event view", plan: "Find an outing", submit: "Submit", account: "Account", crews: "Crews", planner: "My week",
-  review: "Review", sourcing: "Event Sourcing", engagement: "Engagement", people: "Venues and Members", venues: "Venues", stats: "Stats", sources: "Event sources", found: "Found events", issues: "Issues",
+  review: "Review", sourcing: "Event Sourcing", engagement: "Engagement", people: "Venues and Members", venues: "Venues", stats: "Stats", sources: "Source grid", found: "Found events", issues: "Issues",
   reset: "Password reset", verify: "Email confirmation" };
 function loadTraffic() {
   $("traffic-status").textContent = "Loading…";

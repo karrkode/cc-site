@@ -42,7 +42,7 @@ function openFromHash() {
   if (h === "crews") { (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(function () { openCrews(); }); return true; } // CC-104
   if (h === "submit") { openSubmit(); return true; }
   // admin pages (the recap email links here, CC-77/81/84): #sourcing, #engagement, #people (CC-206), #approvals (approvers too, CC-91), #members, #issues, #issues/ISS-0007, #found, #found/<show> (e.g. #found/skipped), #sources, #sources/manual (CC-207), #sources/unreadable (CC-224),
-  // and #source-<id> (Event sources, with that source's Health panel open, CC-221)
+  // and #source-<id> (the Source grid, with that source's Health panel open, CC-221)
   var fm = /^found\/(waiting|needs|new|update|approved|rejected|skipped|listed|all)$/.exec(h), sm = /^source-(\d+)$/.exec(h), hm = /^sources\/(manual|unreadable)$/.exec(h);
   var im = /^issues\/(ISS-\d+)$/i.exec(h); // a ticket, from the recap (CC-84)
   if (h === "review" || h === "sourcing" || h === "engagement" || h === "people" || h === "venues" || h === "stats" || h === "found" || h === "sources" || hm || h === "issues" || h === "approvals" || h === "members" || h === "card" || fm || sm || im) {
