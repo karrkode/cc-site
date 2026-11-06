@@ -483,5 +483,84 @@ assert.ok(/\.sg-panel\.open \{[^}]*transition-timing-function: var\(--ease-out\)
 assert.strictEqual(+grid.match(/SG_PAUSE = (\d+)/)[1], parseFloat(css.match(/--dur-drop: (\d+)ms/)[1]), "sourcegrid.js waits as long as the panel moves");
 }
 
+// ---------- the price slider (CC-229) ----------
+{
+const planner = read("js/planner.js");
+const code = planner.slice(planner.indexOf("function priceFill"), planner.indexOf('$("plan-opts").addEventListener("input"'));
+assert.ok(/id="plan-price" min="0" max="' \+ last \+ '" step="any"/.test(planner), "the thumb is free to sit between stops");
+assert.ok(/touch-action: pan-y/.test(read("css/site.css").match(/\.price-pick input\[type="range"\] \{[^}]*\}/)[0]), "a sideways drag on a phone stays with the thumb");
+
+function slider(opt) {
+  const frames = [], paints = [];
+  const r = { max: "3", value: "1", isConnected: true, style: { setProperty() {} } };
+  const anim = { progress: 0, cancelled: false, effect: { getComputedTiming: () => ({ progress: anim.progress }) }, cancel() { anim.cancelled = true; } };
+  r.animate = (keys, timing) => { r.timing = timing; return anim; };
+  const g = { PLAN_STOPS: [20, 35, 50, "any"], plan: { budget: 35 }, paintPrice: () => paints.push(g.plan.budget),
+    motionOn: () => !(opt && opt.calm), motionTiming: (leaving) => ({ leaving }), requestAnimationFrame: (f) => frames.push(f) };
+  vm.createContext(g);
+  vm.runInContext(code, g);
+  const step = () => frames.shift()();
+  return { g, r, anim, paints, frames, step, drag: (on) => vm.runInContext("priceDrag = " + on, g), glide: () => vm.runInContext("priceGlide", g) };
+}
+
+// a drag: the thumb stays where the pointer has it, and the budget changes only as it passes a stop, always to a real one
+let s = slider();
+s.drag(true);
+s.r.value = "1.3"; s.g.priceMoved(s.r);
+assert.strictEqual(s.g.plan.budget, 35); assert.deepStrictEqual(s.paints, [], "nothing repaints between stops");
+assert.strictEqual(s.r.value, "1.3", "the thumb is left where it is");
+s.r.value = "1.7"; s.g.priceMoved(s.r);
+assert.strictEqual(s.g.plan.budget, 50); assert.deepStrictEqual(s.paints, [50], "passing a stop updates the label and count");
+s.r.value = "2.8"; s.g.priceMoved(s.r);
+assert.strictEqual(s.g.plan.budget, "any", "the top stop can be Any price");
+
+// not a drag: however small or large the browser's nudge, it's one stop; Home and End go to the ends
+s = slider();
+s.r.value = "1.02"; s.g.priceMoved(s.r);
+assert.strictEqual(s.g.plan.budget, 50); assert.strictEqual(+s.r.value, 2, "a small nudge up is one stop");
+s.r.value = "1.7"; s.g.priceMoved(s.r);
+assert.strictEqual(s.g.plan.budget, 35); assert.strictEqual(+s.r.value, 1, "a big nudge down is one stop");
+s.r.value = "3"; s.g.priceMoved(s.r);
+assert.strictEqual(s.g.plan.budget, "any", "End");
+s.r.value = "0"; s.g.priceMoved(s.r);
+assert.strictEqual(s.g.plan.budget, 20, "Home");
+
+// on release it eases to the stop, using the shared exit timing, and ends exactly on it
+s = slider();
+s.r.value = "1.4";
+s.g.priceSettle(s.r);
+assert.strictEqual(s.r.timing.leaving, true, "ease-in-out, the shared time");
+s.anim.progress = 0.5; s.step();
+assert.ok(Math.abs(s.r.value - 1.2) < 1e-9, "it goes where the easing says");
+s.anim.progress = null; s.step();
+assert.strictEqual(s.r.value, 1, "lands on the stop");
+assert.strictEqual(s.frames.length, 0, "and stops asking for frames");
+assert.strictEqual(s.glide(), null);
+
+// grabbed again as it settles: the settling stops, and the thumb is the pointer's
+s = slider();
+s.r.value = "1.4";
+s.g.priceSettle(s.r);
+s.g.priceGlideStop();
+assert.ok(s.anim.cancelled);
+s.r.value = "1.3"; s.step();
+assert.strictEqual(s.r.value, "1.3", "a late frame doesn't move it");
+
+// the slider is gone (Back, the next step) as it settles: no frames left running
+s = slider();
+s.r.value = "1.4";
+s.g.priceSettle(s.r);
+s.r.isConnected = false; s.step();
+assert.strictEqual(s.frames.length, 0);
+
+// reduced motion, or already on a stop: straight there, nothing animated
+s = slider({ calm: true });
+s.r.value = "1.4"; s.g.priceSettle(s.r);
+assert.strictEqual(s.r.value, 1); assert.strictEqual(s.r.timing, undefined, "no animation with reduced motion");
+s = slider();
+s.r.value = "1"; s.g.priceSettle(s.r);
+assert.strictEqual(s.r.timing, undefined, "nothing to do");
+}
+
 console.log("motion: ok");
 })().catch((e) => { console.error(e); process.exit(1); });
