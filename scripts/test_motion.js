@@ -266,8 +266,7 @@ assert.strictEqual(c.g.posterSource(null), null);
   const animated = css.match(/@media \(prefers-reduced-motion: no-preference\) \{\s*\.lead-t[\s\S]*?\n\}/);
   assert.ok(animated && /transition: scale var\(--dur-grow\) var\(--ease-in-out\)/.test(animated[0]), "the growth is animated only when motion is welcome");
   assert.ok(/\.navlink, \.ev-back, \.lf-back \.textbtn \{ transition: transform var\(--dur-press\) var\(--ease-out\), scale var\(--dur-grow\)/.test(animated[0]), "buttons that grow keep their press");
-  assert.ok(/@media \(hover: hover\) and \(prefers-reduced-motion: no-preference\) \{\s*[^{}]*\.listing-t[^{}]*\{ will-change: scale; \}/.test(css),
-    "the text keeps its layer, or it jumps to the pixel grid as the growth starts and ends; touch screens don't pay for the layers");
+  assert.ok(!/will-change:\s*[^;]*scale/.test(css), "CC-235: will-change stretches a layer drawn at normal size, so hovered text goes soft");
   assert.ok(!/\.listing-a::after \{ content/.test(css) && /\.listing-cover \{ position: absolute; inset: 0; \}/.test(css), "a scaled name would hold the row's cover, so the cover is outside it");
 
   // ---------- opening and closing (CC-227) ----------
