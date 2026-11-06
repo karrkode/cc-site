@@ -53,7 +53,7 @@ The browser runs the JavaScript.
 The JavaScript gets the data from the API.
 
 The site has these views:
-- Home: a front page (CC-143). It has the full masthead, then three columns: the lead pick, three ways in, and Last chance (sorted by closing date). "The listings" follow as rows. On a phone, the columns stack.
+- Home: a front page (CC-143). It has the full masthead, then three columns: the lead pick, three ways in, and Last chances (sorted by closing date). "The listings" follow as rows. On a phone, the columns stack.
 - Join page (`/join`), and the invite page (`/invite`)
 - Catalog
 - Find an outing

@@ -1,4 +1,4 @@
-// Culture Crew site: The home page's "Last chance" list and the catalog with its filters.
+// Culture Crew site: The home page's "Last chances" list and the catalog with its filters.
 // Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
@@ -57,11 +57,11 @@ function leadHTML(e) {
     '<span class="lead-deck">' + esc(leadDeck(e)) + "</span>" +
     '<span class="lead-by">' + pickMarkHTML(p, pickText(p)) + "<span>" + esc(by) + "</span></span></span></a>";
 }
-// A Last chance item: "Closes today" or "Closes Friday" in red, then the name, then venue · price.
+// A Last chance item: "Today only!" or "Closes Friday" in red, then the name, then venue · price.
 function lastWhen(e) {
   if (!e.n || e.openRun) return "Open run";
   var left = diff(e.n, T);
-  return left <= 0 ? "Closes today" : left <= 6 ? "Closes " + F.wd.format(e.n) : "Closes " + short(e.n);
+  return left <= 0 ? "Today only!" : left <= 6 ? "Closes " + F.wd.format(e.n) : "Closes " + short(e.n);
 }
 function lastHTML(e) {
   return '<li><a class="last" href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '"><span class="last-w">' + esc(lastWhen(e)) + "</span>" +

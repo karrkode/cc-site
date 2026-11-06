@@ -141,7 +141,7 @@ function eventStatus(e) {
   if (e.b && e.b > T) return { label: "Opens " + short(e.b), tone: "next-t" };
   if (e.openRun || !e.n) return { label: "Open run", tone: "" };
   var left = diff(e.n, T);
-  if (left === 0) return { label: "Closes today", tone: "soon-t" };
+  if (left === 0) return { label: "Today only!", tone: "soon-t" };
   if (left <= 6) return { label: "Closes " + F.wd.format(e.n), tone: "soon-t" };
   return { label: "Now playing", tone: "" };
 }

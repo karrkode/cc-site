@@ -12,7 +12,7 @@ function listingDay(d) { return LISTING_DAY.format(d) + (d.getFullYear() === T.g
 // is the API's order (CC-132). "closing": the day it closes, soonest first. Any other sort keeps its order with no heads.
 function listingHead(e, by) {
   if (by === "opening") return e.b && e.b > T ? "Opening " + listingDay(e.b) : "On now";
-  if (by === "closing") return !e.n ? "Open run" : same(e.n, T) ? "Closes today" : "Closing " + listingDay(e.n);
+  if (by === "closing") return !e.n ? "Open run" : same(e.n, T) ? "Today only!" : "Closing " + listingDay(e.n);
   return "";
 }
 
