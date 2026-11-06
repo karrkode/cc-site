@@ -91,12 +91,12 @@ assert.match(fallback, /<span>Interested · /);
 assert.match(fallback, /class="mark mark-host-int" role="img"/, "CC-162: interested: the dolphin without the ring");
 
 // --- Last chance ---
-assert.strictEqual(g.lastWhen(ev({ end_date: iso(g.T) })), "Closes today");
+assert.strictEqual(g.lastWhen(ev({ end_date: iso(g.T) })), "Today only!");
 assert.match(g.lastWhen(ev({ end_date: iso(g.add(g.T, 3)) })), /^Closes \w+day$/);
 assert.match(g.lastWhen(ev({ end_date: iso(g.add(g.T, 9)) })), /^Closes \w{3} \d+/);
 assert.strictEqual(g.lastWhen(ev({ end_date: null, open_run: true })), "Open run");
 const last = g.lastHTML(ev({ end_date: iso(g.T), cost_text: "Free", min_price: 0 }));
-assert.match(last, /^<li><a class="last" href="#e\/\d+" data-ev-open="\d+"><span class="last-w">Closes today<\/span><span class="last-t">Event \d+<\/span><span class="last-where">Biograph Theater · Lincoln Park · Free<\/span><\/a><\/li>$/);
+assert.match(last, /^<li><a class="last" href="#e\/\d+" data-ev-open="\d+"><span class="last-w">Today only!<\/span><span class="last-t">Event \d+<\/span><span class="last-where">Biograph Theater · Lincoln Park · Free<\/span><\/a><\/li>$/);
 assert.ok(!/data-listing/.test(last), "not a row: account.js mustn't swap it for one");
 
 console.log("home: ok");

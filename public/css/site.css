@@ -3,7 +3,7 @@
    "Lights down", the lake at night. Every pair used below meets WCAG AA: scripts/check_contrast.py checks them in CI.
    page/surface/line/rule: backgrounds, hairlines and structural rules · text/muted: type (deep lake, never black)
    field-line: form borders (3:1) · lead: primary buttons, links, active chips, "Free" · star: the star in the wordmark
-   and "Closes today", nothing else · gold-*: the admin's ring and its star, nothing else (CC-139) · lake/on-lake/stripe: the masthead band and the flag's stripes
+   and "Today only!", nothing else · gold-*: the admin's ring and its star, nothing else (CC-139) · lake/on-lake/stripe: the masthead band and the flag's stripes
    info-soft: calm notes ("Opens…", notices, plain tags) · danger-soft: errors (a band, never red text)
    cat-*: the three category fields, with only white (--on-cat) on them */
 :root, :root[data-theme="light"] {
@@ -221,7 +221,7 @@ a.btn, a.textbtn { display: inline-block; }
 .ways.rise .way:nth-of-type(3) { animation-delay: 0.24s; }
 @keyframes door-rise { from { opacity: 0; transform: translateY(24px); } }
 
-/* Last chance: soonest to close. "Closes today" is one of red's two jobs (the other is the star). */
+/* Last chance: soonest to close. "Today only!" is one of red's two jobs (the other is the star). */
 .last-col { padding-left: 24px; }
 .no-lead .ways { padding-right: 32px; }
 .no-lead .last-col { padding-left: 32px; }
@@ -328,7 +328,7 @@ a.btn, a.textbtn { display: inline-block; }
 .card > .card-top .kind { grid-column: 2; }
 .kind { font-family: var(--sign); font-size: 1rem; font-weight: 700; color: var(--muted); } /* category colour stays on its fields, never text */
 .pill { font-family: var(--sign); font-size: 1rem; font-weight: 700; padding: 0 8px; white-space: nowrap; background: var(--info-soft); color: var(--text); }
-.pill.soon-t { background: none; padding-inline: 0; color: var(--star); } /* "Closes today": one of red's three jobs */
+.pill.soon-t { background: none; padding-inline: 0; color: var(--star); } /* "Today only!": one of red's three jobs */
 .pill.next-t { background: var(--info-soft); color: var(--on-info-soft); }
 .card h3 { font-family: var(--display); font-weight: 600; font-size: var(--step-1); line-height: 1.2; letter-spacing: -0.01em; overflow-wrap: anywhere; }
 .card h3 a { text-decoration: none; }

@@ -61,7 +61,7 @@ assert.strictEqual(g.listingHead(opening, "opening"), "Opening " + new Intl.Date
   (fri.getFullYear() === g.T.getFullYear() ? "" : ", " + fri.getFullYear()));
 assert.strictEqual(g.listingHead(ev({}), "opening"), "On now", "already running");
 assert.strictEqual(g.listingHead(ev({ begin_date: iso(g.T), end_date: iso(g.T) }), "opening"), "On now", "tonight only");
-assert.strictEqual(g.listingHead(ev({ end_date: iso(g.T) }), "closing"), "Closes today");
+assert.strictEqual(g.listingHead(ev({ end_date: iso(g.T) }), "closing"), "Today only!");
 assert.match(g.listingHead(ev({ end_date: iso(g.add(g.T, 2)) }), "closing"), /^Closing \w+day, \w{3} \d+/);
 assert.strictEqual(g.listingHead(ev({ end_date: null, open_run: true }), "closing"), "Open run");
 assert.strictEqual(g.listingHead(ev({}), "az"), "", "A to Z has no heads");
