@@ -319,7 +319,9 @@ function syncAddress(name) {
   if (url === location.pathname + location.search + location.hash) return;
   try { if (routed) history.replaceState(null, "", url); else history.pushState({ view: name }, "", url); } catch (e) {}
 }
-function show(name, focusId) {
+// still: back to a list that's been there all along (closeEvent), so its rows don't come in again
+function show(name, focusId, still) {
+  var lists = rowLists(), showing = lists.filter(rowsShowing);
   Object.keys(VIEWS).forEach(function (v) { $("view-" + v).hidden = v !== name && !(v === "catalog" && name === "join"); }); // CC-121: the catalog shows under the join page
   ["catalog", "plan", "submit", "review", "account"].forEach(function (v) {
     if (v === name || (v === "catalog" && name === "event") || (v === "account" && (name === "crews" || name === "planner" || name === "journal")) || (v === "review" && RV_GROUP[name] && (name !== "approvals" || isAdmin()))) $("nav-" + v).setAttribute("aria-current", "page"); else $("nav-" + v).removeAttribute("aria-current");
@@ -330,6 +332,7 @@ function show(name, focusId) {
   syncAddress(name);
   if (typeof paintPending === "function") paintPending(); // the crew-invite notice hides on the crews page (CC-59, CC-104)
   var h = $(focusId || VIEWS[name]); if (h) h.focus({ preventScroll: true });
+  if (!still) lists.forEach(function (root) { if (showing.indexOf(root) < 0 && rowsShowing(root)) rowsShown(root); });
   track("view", name);
 }
 // ---------- opening and closing (CC-227; brief section 6) ----------
@@ -488,6 +491,46 @@ function dialogLeaves(d) {
 function closeDialog(d) { dialogLeaves(d); if (d.open) d.close(); }
 document.addEventListener("cancel", function (ev) { if (ev.target.tagName === "DIALOG") dialogLeaves(ev.target); }, true); // Escape, or back on Android
 document.addEventListener("submit", function (ev) { if (ev.target.method === "dialog") dialogLeaves(ev.target.closest("dialog")); }, true);
+
+// ---------- list rows arrive (CC-230; brief section 6) ----------
+// When a list appears its rows come in one after another, --stagger apart. Only the first ROW_CAP are spaced and the rest come
+// with the last of them, so even a long list is readable within half a second. It's opacity and `translate`, so the layout never
+// moves (a restored scroll position stays put), and the press and the hover growth, on transform and scale, carry on underneath.
+// A list is a [data-rows] element and its rows have [data-row]. Lists repaint all the time (home once per reply, every list when a
+// plan's saved), so only rows the last paint didn't have come in, and a repaint during an entrance carries on from where it was.
+var ROW_CAP = 10, ROW_STATE = new WeakMap(); // a list's rows from its last paint, and its entrance: their order, its start and end
+var ROW_IN = [{ opacity: 0, translate: "0 8px" }, { opacity: 1, translate: "0 0" }];
+function rowLists() { return Array.prototype.slice.call(document.querySelectorAll("[data-rows]")); }
+function rowsShowing(root) { return root.getClientRects().length > 0; }
+function rowsPainted(root) {
+  var list = ROW_STATE.get(root) || { seen: {}, order: {}, n: 0, at: 0, ends: 0, runs: [] };
+  ROW_STATE.set(root, list);
+  var rows = Array.prototype.slice.call(root.querySelectorAll("[data-row]")), seen = {}, now = performance.now(), on = rowsShowing(root) && motionOn(root);
+  if (now >= list.ends) { list.order = {}; list.n = 0; list.at = now; }
+  rows.forEach(function (r) {
+    var k = r.getAttribute("data-row"); seen[k] = true;
+    if (on && !list.seen[k] && !(k in list.order)) list.order[k] = list.n++;
+  });
+  list.seen = seen; list.runs = []; list.ends = 0;
+  if (!on || !list.n) return;
+  var timing = motionTiming(), gap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--stagger"));
+  list.ends = list.at + (Math.min(list.n, ROW_CAP) - 1) * gap + timing.duration;
+  rows.forEach(function (r) {
+    var i = list.order[r.getAttribute("data-row")]; if (i === undefined) return;
+    var a = r.animate(ROW_IN, { duration: timing.duration, easing: timing.easing, delay: Math.min(i, ROW_CAP - 1) * gap, fill: "backwards" });
+    a.currentTime = now - list.at; list.runs.push(a);
+  });
+}
+function rowsShown(root) { // its view has just opened: every row comes in
+  var list = ROW_STATE.get(root); if (list) { list.seen = {}; list.ends = 0; }
+  rowsPainted(root);
+}
+function rowsSettle() { // before the tile becomes the poster, which photographs the page as it stands
+  rowLists().forEach(function (root) {
+    var list = ROW_STATE.get(root); if (!list) return;
+    list.runs.forEach(function (a) { a.finish(); }); list.runs = []; list.ends = 0;
+  });
+}
 
 // ---------- the masthead (CC-137) ----------
 // Full on home and the join page, compact on every other view. On a phone the nav is a sheet the hamburger opens;

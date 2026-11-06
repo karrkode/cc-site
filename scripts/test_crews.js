@@ -90,7 +90,7 @@ has(html, '<h4 class="crew-sub" id="crew-m-7"><span>3 members</span><span class=
 has(html, '<span class="who">Yours Truly</span><span class="crew-role">Crew leader · you</span>');
 lacks(html, '<span class="who">Maya Chen</span><span class="crew-role">', "no role, no words");
 has(g.crewHTML(crew({ max_members: 3 })), '<span class="crew-sub-n">full</span>');
-const rows = html.match(/<li class="crew-plan">[\s\S]*?<\/li>/g);
+const rows = html.match(/<li class="crew-plan"[^>]*>[\s\S]*?<\/li>/g);
 assert.strictEqual(rows.length, 2, "a row per plan");
 const link = rows[0].match(/<a class="crew-plan-a"[\s\S]*?<\/a>/)[0];
 has(link, 'href="#e/' + c.plans[0].event.id + '" data-ev-open="' + c.plans[0].event.id + '"', "the row opens the event page");

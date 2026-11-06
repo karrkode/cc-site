@@ -248,7 +248,7 @@ function weekRowHTML(e, d) {
   var acts = d ? myplanToggleHTML(e) + crewShareToggleHTML(e, "Tell a crew") : // the toggles first: their pickers take the same number
     myplanToggleHTML(e, goingRange(e) ? "Pick a day" : "Change plan") + wentHTML(e) + crewShareToggleHTML(e, "Tell a crew") + // closed: no day left to pick
     (going ? "" : '<button type="button" class="went" data-plan-withdraw="' + id + '">Withdraw interest</button>'); // CC-160: undone from the line above
-  return '<li class="wk-row" data-day-item="' + id + '"><a class="wk-row-a" href="#e/' + id + '" data-ev-open="' + id + '">' +
+  return '<li class="wk-row" data-day-item="' + id + '"' + (d ? "" : ' data-row="' + id + '"') + '><a class="wk-row-a" href="#e/' + id + '" data-ev-open="' + id + '">' +
     '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + '<span class="tile-k">' + esc(e.label) + "</span></span>" +
     '<span class="listing-t">' + esc(e.title) + (e.pick ? pickMarkHTML(e.pick, pickText(e.pick)) : "") + "</span>" +
     '<span class="wk-where">' + esc(placeText(e)) + "</span>" +
@@ -258,7 +258,7 @@ function weekRowHTML(e, d) {
 // One day: its name, then its plans as rows, or "Nothing yet…" and Find something (the list opens under it).
 function weekDayHTML(day) {
   var now = same(day.d, T), whole = (now ? "Today, " : "") + dayName(day.d), iso = isoDate(day.d);
-  return '<section class="wk-day' + (now ? " today" : "") + '" aria-label="' + esc(whole) + '">' +
+  return '<section class="wk-day' + (now ? " today" : "") + '" data-row="' + iso + '" aria-label="' + esc(whole) + '">' + // CC-230: on My week the row that arrives is the day
     '<div class="wk-day-h"><h3 class="wk-day-t">' + esc((now ? "Today, " : "") + listingDay(day.d)) + "</h3>" +
     (day.items.length ? "" : '<span class="wk-none">Nothing yet\u2026</span>' + dayFindHTML(iso, dayName(day.d))) + "</div>" +
     (day.items.length ? '<ul class="wk-rows">' + day.items.map(function (e) { return weekRowHTML(e, day.d); }).join("") + "</ul>" :
@@ -299,7 +299,7 @@ function renderPlanner() {
   $("deciding-undo").innerHTML = ready ? withdrawnHTML() : "";
   $("deciding-hint").textContent = !ready ? "" : deciding.some(goingRange) ? "Pick a day for one, and it moves into your week." : deciding.length ? "" :
     "Nothing waiting. Mark an event Interested, and it waits here until you pick a day.";
-  paintWater($("planner-main"));
+  paintWater($("planner-main")); rowsPainted($("planner-week")); rowsPainted($("myplans-grid")); // the two columns arrive side by side
 }
 // CC-160: Withdraw interest clears the plan (and so its sharing with crews, server side) at once, and a line at the top
 // of Still deciding offers Undo, which puts back the plan and the crews it was shared with. Only an interested plan has

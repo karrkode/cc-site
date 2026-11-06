@@ -37,7 +37,7 @@ function listingCrewHTML(e) {
 function listingHTML(e) {
   var mine = AUTH.user ? MYPLANS[e.id] : null, going = !!mine && mine.status === "going";
   // CC-162: a dolphin on a row is only ever the admin's pick; your own plan shows as "Going Fri" under the date
-  return '<div class="listing" data-listing="' + esc(e.id) + '">' +
+  return '<div class="listing" data-listing="' + esc(e.id) + '" data-row="' + esc(e.id) + '">' +
     '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + '<span class="tile-k">' + esc(e.label) + "</span></span>" +
     '<span class="listing-main"><span class="listing-t"><a class="listing-a" href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '">' +
     esc(e.title) + "</a>" + listingPickHTML(e) + "</span>" +

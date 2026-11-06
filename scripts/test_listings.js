@@ -88,7 +88,7 @@ let row = g.listingHTML(art);
 assert.strictEqual((row.match(/<a /g) || []).length, 2, "the name's link and the row's cover");
 assert.ok(row.endsWith('<a class="listing-cover" href="#e/' + art.id + '" data-ev-open="' + art.id + '" tabindex="-1" aria-hidden="true"></a></div>'),
   "the cover goes to the same event, out of the keyboard's and screen readers' way (CC-226)");
-assert.ok(row.startsWith('<div class="listing" data-listing="' + art.id + '">'), "the row holds the link and the button side by side");
+assert.ok(row.startsWith('<div class="listing" data-listing="' + art.id + '" data-row="' + art.id + '">'), "the row holds the link and the button side by side");
 assert.match(row, new RegExp('<span class="listing-t"><a class="listing-a" href="#e/' + art.id + '" data-ev-open="' + art.id + '">Dawoud Bey &lt;Street&gt;</a><button '),
   "the name is the link, and the admin's mark comes right after it (CC-155)");
 assert.ok(!/<a [^>]*>(?:(?!<\/a>)[\s\S])*<button/.test(row), "no button inside the link");

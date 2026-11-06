@@ -116,7 +116,7 @@ function catalog(opt) {
   const g = {
     document: { documentElement: { classList: { add: (...c) => c.forEach((x) => cls.add(x)), remove: (...c) => c.forEach((x) => cls.delete(x)),
       toggle: (c, on) => (on ? cls.add(c) : cls.delete(c)) } } },
-    motionOK: () => !(opt && opt.reduce), renderEventView: () => log.push("redraw"), console,
+    motionOK: () => !(opt && opt.reduce), renderEventView: () => log.push("redraw"), rowsSettle: () => { g.settled = (g.settled || 0) + 1; }, console,
   };
   if (!(opt && opt.noApi)) g.document.startViewTransition = (cb) => {
     let finish; const finished = new Promise((r) => (finish = r));
@@ -560,6 +560,78 @@ assert.strictEqual(s.r.value, 1); assert.strictEqual(s.r.timing, undefined, "no 
 s = slider();
 s.r.value = "1"; s.g.priceSettle(s.r);
 assert.strictEqual(s.r.timing, undefined, "nothing to do");
+}
+
+// ---------- list rows arrive (CC-230) ----------
+// rowsPainted in util.js, on a list whose rows record what they're asked to play
+{
+const util = read("js/util.js"), css = read("css/site.css");
+function rowList(opt) {
+  let now = 1000, shown = true;
+  const played = [];
+  const row = (k) => ({ getAttribute: () => k, animate(frames, t) { const a = { k, frames, t, currentTime: null, finished: 0, finish() { a.finished++; } }; played.push(a); return a; } });
+  const root = { rows: [], animate: () => {}, getClientRects: () => (shown ? [1] : []), querySelectorAll: () => root.rows };
+  const sandbox = {
+    window: { matchMedia: () => ({ matches: !!(opt && opt.calm) }) },
+    document: { addEventListener() {}, documentElement: {}, querySelectorAll: () => [root] },
+    performance: { now: () => now },
+    getComputedStyle: () => ({ getPropertyValue: (k) => ({ "--dur-drop": "200ms", "--stagger": "30ms", "--ease-out": "ease-out", "--ease-in-out": "ease-in-out" })[k] }),
+    WeakMap, Object, Math, Array, parseFloat,
+  };
+  vm.createContext(sandbox);
+  vm.runInContext(util.slice(util.indexOf("// ---------- opening and closing (CC-227"), util.indexOf("// ---------- the masthead (CC-137)")), sandbox);
+  const paint = (n, from) => { root.rows = Array.from({ length: n }, (_, i) => row("e" + ((from || 0) + i))); played.length = 0; sandbox.rowsPainted(root); return played.slice(); };
+  return { g: sandbox, root, paint, played, wait: (ms) => { now += ms; }, hide: (h) => { shown = !h; } };
+}
+
+// a new list: in order, 30ms apart, easing out, and the rest with the tenth
+let l = rowList(), a = l.paint(300);
+assert.strictEqual(a.length, 300);
+assert.deepStrictEqual(a.slice(0, 4).map((x) => x.t.delay), [0, 30, 60, 90], "rows enter in order, 30ms apart");
+assert.strictEqual(a[9].t.delay, 270, "the tenth");
+assert.ok(a.slice(9).every((x) => x.t.delay === 270), "the rest come with it, so 300 rows don't take 9 seconds");
+assert.ok(a[299].t.delay + a[299].t.duration <= 500, "every row is readable within half a second");
+assert.strictEqual(a[0].t.easing, "ease-out");
+assert.strictEqual(a[0].t.fill, "backwards", "a waiting row stays out of sight, and an ended one is left to the page");
+assert.deepStrictEqual(Object.keys(a[0].frames[0]).sort(), ["opacity", "translate"], "nothing in the layout moves, and transform and scale stay free for the press and growth");
+
+// a repaint during the entrance carries on from where it was
+l.wait(100); let b = l.paint(300);
+assert.strictEqual(b.length, 300, "the new rows take over");
+assert.strictEqual(b[5].t.delay, 150); assert.strictEqual(b[5].currentTime, 100, "at the same moment");
+// once it's over, the same rows repainted don't move
+l.wait(1000); assert.strictEqual(l.paint(300).length, 0, "a saved plan or a late reply replays nothing");
+
+// Load more: only the new rows, from the top of the stagger
+l = rowList(); l.paint(24); l.wait(1000);
+l.root.rows = l.root.rows.concat([24, 25].map((i) => Object.assign({}, l.root.rows[0], { getAttribute: () => "e" + i }))); l.played.length = 0; l.g.rowsPainted(l.root);
+assert.strictEqual(l.played.length, 2); assert.strictEqual(l.played[0].t.delay, 0); assert.strictEqual(l.played[1].t.delay, 30);
+
+// a list in a hidden view is remembered, not played; opening the view plays it, and coming back doesn't (show's `still`)
+l = rowList(); l.hide(true);
+assert.strictEqual(l.paint(5).length, 0, "nothing plays out of sight");
+l.hide(false); l.played.length = 0; l.g.rowsShown(l.root);
+assert.strictEqual(l.played.length, 5, "the view opens and its rows come in");
+assert.ok(/function show\(name, focusId, still\)/.test(util) && /if \(!still\) lists\.forEach/.test(util), "show can leave the rows alone");
+assert.ok(/show\(from, null, true\);\s*window\.scrollTo\(0, EV\.y\)/.test(read("js/catalog.js")), "going back to a list doesn't replay it");
+
+// before the tile becomes the poster, what's still arriving lands
+l = rowList(); a = l.paint(3); l.g.rowsSettle();
+assert.ok(a.every((x) => x.finished === 1), "the view transition photographs rows at rest");
+assert.ok(/rowsSettle\(\); name\(true\)/.test(read("js/catalog.js")));
+
+// reduced motion: rows appear at once
+l = rowList({ calm: true });
+assert.strictEqual(l.paint(5).length, 0, "reduced motion: nothing plays");
+
+// the four lists, and the water
+const html = read("index.html");
+["home-list", "grid", "planner-week", "myplans-grid", "crew-list"].forEach((id) => {
+  assert.ok(new RegExp('id="' + id + '"[^>]*data-rows').test(html), id + " is a list whose rows arrive");
+});
+["catalog.js", "account.js", "crews.js"].forEach((f) => assert.ok(/rowsPainted\(/.test(read("js/" + f)), f + " tells it when it paints"));
+assert.ok(/--stagger: 30ms;/.test(css), "the token");
+assert.ok(!/\.tile[^{]*\{[^}]*animation/.test(css), "row tiles' water stays still");
 }
 
 console.log("motion: ok");

@@ -75,7 +75,7 @@ function renderHome() {
   $("way-crews-d").textContent = AUTH.user ? "Who’s going, and to what." : "The friends you go out with. Sign in to start one or join one."; // CC-103
   $("soon-list").innerHTML = SOON.map(lastHTML).join("");
   $("front-all").textContent = "All " + FACETS.current + " →";
-  $("home-list").innerHTML = listingsHTML(HOME_LIST, "opening"); paintWater($("home-list")); // CC-140: rows under day heads
+  $("home-list").innerHTML = listingsHTML(HOME_LIST, "opening"); paintWater($("home-list")); rowsPainted($("home-list")); // CC-140: rows under day heads
   $("foot").textContent = plural(FACETS.total, "event", "events") +
     " on the list, past and present. Dates and prices change, so check the event's page before you go.";
 }
@@ -183,7 +183,7 @@ function paintCatalog(focusFrom) {
     Object.keys(cat.picks).length ?
     '<div class="list-state"><p><strong>No picks match.</strong></p><p class="hint">Widen the other filters, or turn off the dolphin filters to see everything.</p></div>' :
     '<div class="list-state"><p><strong>Nothing matches those filters.</strong></p><p class="hint">Try a wider date range or a higher price limit.</p></div>';
-  paintWater($("grid"));
+  paintWater($("grid")); rowsPainted($("grid"));
   $("more-row").hidden = CAT_ITEMS.length >= CAT_TOTAL; $("more-btn").disabled = false;
   $("sheet-show").textContent = CAT_TOTAL ? "Show " + plural(CAT_TOTAL, "event", "events") : "No events match";
   if (focusFrom) { var first = $("grid").querySelectorAll(".listing-a")[focusFrom]; if (first) first.focus(); } // the first new row
@@ -527,7 +527,7 @@ function closeEvent() {
   // the row that opened it, unless a redraw replaced it since (a plan changed): then the same event's in that view
   if (!link || !link.isConnected || !$("view-" + from).contains(link)) link = document.querySelector('#view-' + from + ' [data-ev-open="' + id + '"]');
   posterMove(posterSource(link), true, function () {
-    show(from);
+    show(from, null, true);
     window.scrollTo(0, EV.y);
     if (link) link.focus({ preventScroll: true });
   });
@@ -563,7 +563,7 @@ function posterMove(src, back, swap) {
     name(false); root.classList.remove("vt-poster", "vt-back"); POSTER.moving = false;
     if (POSTER.redraw) { POSTER.redraw = false; renderEventView(); } // the event's details came back while it moved
   };
-  name(true); root.classList.add("vt-poster"); root.classList.toggle("vt-back", back); // .vt-poster names the poster (site.css)
+  rowsSettle(); name(true); root.classList.add("vt-poster"); root.classList.toggle("vt-back", back); // .vt-poster names the poster (site.css)
   document.startViewTransition(function () { swap(); POSTER.moving = true; }).finished.then(done, done);
 }
 
