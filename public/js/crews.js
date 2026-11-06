@@ -339,11 +339,11 @@ $("crew-list").addEventListener("click", function (ev) {
     var input = $("crew-link-" + c.id), said = $("crew-copied-" + c.id);
     var fallback = function () { input.focus(); input.select(); said.textContent = "Copy the link above."; };
     if (act === "share") { // the phone's share sheet; the person picks where it goes
-      navigator.share({ title: "Join " + c.name + " on Culture Crew", url: input.value }).then(function () { said.textContent = "Shared."; },
+      navigator.share({ title: "Join " + c.name + " on Culture Crew", url: input.value }).then(function () { said.textContent = "Shared."; pulse(b); },
         function (err) { if (!err || err.name !== "AbortError") fallback(); });
       return;
     }
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(input.value).then(function () { said.textContent = "Link copied."; }, fallback);
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(input.value).then(function () { said.textContent = "Link copied."; pulse(b); }, fallback);
     else fallback();
     return;
   }
@@ -390,7 +390,7 @@ $("crew-list").addEventListener("submit", function (ev) {
   if (!name) { err.textContent = checkThis("Give the crew a name."); crewMarkInvalid(input, true); input.focus(); return; }
   api("/crews/" + id, { method: "PATCH", body: { name: name, description: $("crew-edesc-" + id).value.trim() } }).then(readJSON).then(function (res) {
     if (!res.ok) { err.textContent = checkThis(errorText(res)); return; }
-    CREW_EDIT = null; loadCrews('#crew-h-' + id).then(function () { $("edit-live").textContent = "Saved " + name + "."; });
+    CREW_EDIT = null; loadCrews('#crew-h-' + id).then(function () { $("edit-live").textContent = "Saved " + name + "."; pulse($("crew-h-" + id)); });
   }, function () { err.textContent = checkThis(errorText(null)); });
 });
 $("crew-list").addEventListener("submit", function (ev) { // CC-59: invite by email
@@ -407,6 +407,7 @@ $("crew-list").addEventListener("submit", function (ev) { // CC-59: invite by em
     loadCrews('[data-crew-email="' + id + '"] input').then(function () {
       var m = document.querySelector('[data-crew-email="' + id + '"] .hint');
       if (m) m.textContent = res.body.message; $("edit-live").textContent = res.body.message;
+      pulse(document.querySelector('[data-crew-email="' + id + '"] button[type="submit"]'));
     });
   }, function () { btn.disabled = false; err.textContent = checkThis(errorText(null)); });
 });
@@ -507,7 +508,8 @@ document.addEventListener("click", function (ev) {
     $("myplan-live").textContent = (names.length ? "Shared with " + names.join(" and ") : "Not shared with any crew") + ": " + KNOWN[id].title;
     if (visible("crews")) loadCrews();
     var card = box.closest("[data-card]");
-    return pickerShut(box).then(function () { return redrawCards(id, card, "[data-crewshare-toggle]"); });
+    return pickerShut(box).then(function () { return redrawCards(id, card, "[data-crewshare-toggle]"); })
+      .then(function () { Array.prototype.forEach.call(document.querySelectorAll('[data-crewshare-toggle="' + id + '"]'), function (b) { pulse(b); }); }); // its new words say who
   }).catch(function (res) {
     t.disabled = false; err.textContent = res && res.status ? errorText(res) : "Couldn't save. Check your connection and try again.";
   });

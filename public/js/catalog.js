@@ -644,6 +644,6 @@ $("ev-body").addEventListener("click", function (ev) {
   var e = KNOWN[EV.id], url = evShareUrl(e), field = $("ev-share-url"), msg = $("ev-share-msg");
   var fallback = function () { field.value = url; field.hidden = false; field.focus(); field.select(); msg.textContent = "Copy the link above."; };
   if (navigator.share) { navigator.share({ title: e.title, url: url }).catch(function () {}); return; } // phones: the share sheet
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { msg.textContent = "Link copied."; }, fallback);
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { msg.textContent = "Link copied."; pulse(t); }, fallback);
   else fallback();
 });

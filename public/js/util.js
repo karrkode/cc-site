@@ -349,6 +349,15 @@ function motionTiming(leaving) {
   var root = getComputedStyle(document.documentElement);
   return { duration: parseFloat(root.getPropertyValue("--dur-drop")), easing: root.getPropertyValue(leaving ? "--ease-in-out" : "--ease-out").trim() };
 }
+// CC-231: the one pulse that confirms a success (brief section 6): a --stripe ring leaves the button or line, once. Call it only
+// once it worked, and only where words on the page say so, so success never rests on motion alone. The element's own inset
+// outline rides along, because an animated box-shadow replaces it. Fill is none, so it leaves nothing behind.
+function pulse(el) {
+  if (!el || !motionOn(el)) return;
+  var root = getComputedStyle(document.documentElement), own = getComputedStyle(el).boxShadow, rest = own && own !== "none" ? ", " + own : "";
+  el.animate({ boxShadow: ["0 0 0 0 " + root.getPropertyValue("--stripe").trim() + rest, "0 0 0 8px transparent" + rest] },
+    Object.assign(motionTiming(), { duration: parseFloat(root.getPropertyValue("--dur-pulse")) }));
+}
 function moveEl(el, frames, opening, done) {
   var m = MOVES.get(el);
   if (m) { // already moving: turn round from where it is, so a quick open and close never jumps or sticks

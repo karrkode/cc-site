@@ -404,7 +404,7 @@ $("res-body").addEventListener("click", function (ev) {
     field.value = url; field.hidden = false;
     var fallback = function () { field.focus(); field.select(); msg.textContent = "Copy the link below."; };
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(function () { msg.textContent = "Link copied."; }, fallback);
+      navigator.clipboard.writeText(url).then(function () { msg.textContent = "Link copied."; pulse(t); }, fallback);
     } else fallback();
   }
 });

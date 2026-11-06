@@ -608,6 +608,7 @@ document.addEventListener("submit", function (ev) {
     WENT_JOURNAL[id] = res.body; delete JOURNAL_DRAFT[id];
     form.elements.review.value = res.body.review; // as saved (trimmed)
     said.textContent = WENT_SHARE[id] && WENT_SHARE[id].shared ? "Saved, and updated on the event\u2019s page." : "Saved.";
+    pulse(btn);
     if (first) redrawShare(id); // CC-112: now it can be shared
   }, function () { btn.disabled = false; err.textContent = checkThis(errorText(null)); });
 });
@@ -746,7 +747,7 @@ $("qr-full").addEventListener("close", function () {
 $("invite-copy").addEventListener("click", function () {
   var field = $("invite-url"), msg = $("invite-msg");
   var fallback = function () { field.focus(); field.select(); msg.textContent = "Press Ctrl+C (or ⌘C) to copy the selected link."; };
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(field.value).then(function () { msg.textContent = "Link copied."; }, fallback);
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(field.value).then(function () { msg.textContent = "Link copied."; pulse($("invite-copy")); }, fallback);
   else fallback();
 });
 document.addEventListener("click", function (ev) { if (!$("me-wrap").contains(ev.target)) closeMeMenu(false); });
@@ -851,7 +852,7 @@ $("profile-form").addEventListener("submit", function (ev) {
     }
     AUTH.user = res.body;
     renderAccount(false); fillProfile(); paintMeMenu(); // a new name shows in the header (CC-105)
-    msg.textContent = "Saved.";
+    msg.textContent = "Saved."; pulse(btn);
   });
 });
 // ---------- email links, forgotten passwords (CC-44) ----------
@@ -928,7 +929,7 @@ $("forgot-form").addEventListener("submit", function (ev) {
   api("/auth/forgot-password", { method: "POST", body: { email: email } }).then(readJSON, function () { return null; }).then(function (res) {
     btn.disabled = false;
     if (!res || !res.ok) { msg.textContent = ""; err.textContent = checkThis(errorText(res)); return; }
-    msg.textContent = res.body.detail + " It expires in an hour.";
+    msg.textContent = res.body.detail + " It expires in an hour."; pulse(btn);
   });
 });
 var RESEND_WAIT = 60; // seconds before "Send again" can be used, so a slow email isn't sent five times
@@ -952,7 +953,7 @@ $("account-notice").addEventListener("click", function (ev) {
     if (res && res.ok) {
       $("account-notice").innerHTML = esc(res.body.detail) + " It can take a few minutes, so check your junk folder too. Didn't get it?" +
         resendButton("Send again");
-      resendCooldown();
+      resendCooldown(); pulse($("account-notice"));
     } else if (res && res.status === 400) { // confirmed in the meantime (e.g. on another device)
       $("account-notice").textContent = errorText(res) + ".";
       if (AUTH.user) AUTH.user.email_verified = true;
@@ -973,7 +974,7 @@ document.addEventListener("click", function (ev) {
   var b = ev.target.closest && ev.target.closest("[data-verify-send]"); if (!b) return;
   var box = b.parentNode; b.disabled = true;
   api("/auth/verify-email/send", { method: "POST" }).then(readJSON, function () { return null; }).then(function (res) {
-    if (res && res.ok) box.textContent = res.body.detail + " Open it, then try again. It can take a few minutes, so check your junk folder too.";
+    if (res && res.ok) { box.textContent = res.body.detail + " Open it, then try again. It can take a few minutes, so check your junk folder too."; pulse(box); }
     else if (res && res.status === 400) { box.textContent = errorText(res) + ". Try again now."; if (AUTH.user) AUTH.user.email_verified = true; }
     else { box.textContent = errorText(res); }
   });
@@ -1002,7 +1003,7 @@ $("password-form").addEventListener("submit", function (ev) {
       }
       setSession(res.body); // this tab's new session; every other one has been signed out
       clearPasswordForm();
-      msg.textContent = "Password changed. You're signed out on your other devices.";
+      msg.textContent = "Password changed. You're signed out on your other devices."; pulse(btn);
     });
 });
 function authForm(form, path, body, errEl) {

@@ -217,7 +217,7 @@ function showSubmitDone(e, head, text) {
   $("sd-when").textContent = e.b || e.n ? dateText(e) : "Not given. We'll look into it.";
   $("sd-where").textContent = placeText(e);
   SUBMIT_SENT = true; renderSubmit();
-  window.scrollTo(0, 0); $("sd-title").focus({ preventScroll: true });
+  window.scrollTo(0, 0); $("sd-title").focus({ preventScroll: true }); pulse($("sd-title"));
 }
 $("sd-another").addEventListener("click", function () {
   SUBMIT_SENT = false; renderSubmit(); // the form was emptied when it was sent

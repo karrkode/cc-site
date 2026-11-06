@@ -66,6 +66,7 @@
   --dur-press: 100ms;
   --dur-grow: 180ms;
   --stagger: 30ms;
+  --dur-pulse: 500ms; /* CC-231: the ring that confirms a success (pulse, util.js) */
   --grow: 2.5; /* CC-226: how many px a link grows on hover */
 }
 

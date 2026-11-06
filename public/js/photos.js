@@ -85,7 +85,9 @@ $("photo-form").addEventListener("submit", function (ev) {
     if (!res.ok) { $("ph-send").disabled = res.status === 422; $("ph-state").textContent = ""; $("ph-error").textContent = errorText(res); return; }
     WENT_PHOTO[was.e.id] = res.body;
     $("edit-live").textContent = "Photo sent. It's waiting for approval.";
-    redrawCards(was.e.id, was.opener.closest("[data-card],[data-journal]"), "[data-photo]");
+    redrawCards(was.e.id, was.opener.closest("[data-card],[data-journal]"), "[data-photo]").then(function () { // "Add a photo" now says "Your photo"
+      Array.prototype.forEach.call(document.querySelectorAll('[data-photo="' + was.e.id + '"]'), function (b) { pulse(b); });
+    });
     closeDialog($("photo-dialog"));
   }, function () { $("ph-send").disabled = false; $("ph-state").textContent = ""; $("ph-error").textContent = errorText(null); });
 });
