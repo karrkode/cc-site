@@ -205,9 +205,9 @@ function cardActionsHTML(e) {
     (WENT[e.id] ? "" : crewShareToggleHTML(e)) + // "Invite your Crew?": a plan, and crews to share it with (CC-75; crews.js)
     (isAdmin() ? editButtonHTML(e, "went") : "") + "</div>" + (WENT[e.id] ? "" : myplanHTML(e) + crewShareHTML(e));
 }
-// CC-139: a dolphin mark (the symbols in index.html; brief section 4). "host" is the admin's pick when they're going,
-// the dolphin through the gold ring, and "host-int" when they're interested, the ink dolphin (CC-162); "interested"
-// (lake) and "going" (ink) are your own, on buttons and cards. With a label it's an image; without one it's hidden, for
+// CC-139: a dolphin mark (the symbols in index.html; brief section 4). The kinds "host" and "host-int" are internal names
+// for the admin's picks: the dolphin through the gold ring when they're going, the ink dolphin when they're interested
+// (CC-162); "interested" (lake) and "going" (ink) are your own, on buttons and cards. With a label it's an image; without one it's hidden, for
 // when the words next to it already say it.
 function markHTML(kind, label) {
   var cls = { host: "mark-host", "host-int": "mark-host-int", interested: "mark-int", going: "mark-going" }[kind];

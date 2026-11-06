@@ -81,7 +81,7 @@ const past = ev({ begin_date: iso(g.add(g.T, -30)), end_date: iso(g.add(g.T, -2)
 html = g.eventViewHTML(past);
 has(html, "· Closed</p>"); has(html, "This run has closed."); lacks(html, "Tickets and showtimes", "no tickets once closed");
 
-// --- signed out: no plan buttons, a way to sign in; the host's pick still shows ---
+// --- signed out: no plan buttons, a way to sign in; the admin's pick still shows ---
 e = ev({ pick: { status: "interested", date: null, by: "The Culture Crew" } });
 html = g.eventViewHTML(e);
 lacks(html, "data-myplan-"); has(html, 'id="ev-signin-btn"');
@@ -147,14 +147,14 @@ g.CREWS.push({ id: 1 });
 html = g.eventViewHTML(ev({}));
 has(html, "Nobody from your crews has this on their list yet.");
 
-// --- CC-152: an owner's own plan is their pick; on the page it shows as their plan, not in the host's voice ---
+// --- CC-152: an owner's own plan is their pick; on the page it shows as their plan, not in the admin's voice ---
 g.AUTH.user = { id: 2, display_name: "Yours truly", role: "admin", dolphins: true };
 g.CREWS.length = 0;
 e = ev({ pick: { status: "interested", date: null, by: "Yours truly" } });
 g.MYPLANS[e.id] = { status: "interested", date: null, crews: [] };
 html = g.eventViewHTML(e);
 lacks(html, "Yours truly is interested", "your own pick isn't a line under Your crews");
-lacks(html, "mark-host", "nor the host's ring"); has(html, "Marked interested. ", "it shows as your plan");
+lacks(html, "mark-host", "nor the admin's ring"); has(html, "Marked interested. ", "it shows as your plan");
 has(html, "Start a crew to see who's going with you.", "in no crew: the hint, as for anyone");
 e.pick.by = "Another Owner";
 has(g.eventViewHTML(e), "Another Owner is interested in this one.", "another owner's pick still shows");
