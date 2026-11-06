@@ -45,10 +45,10 @@
   /* CC-139: the admin's ring and star, shaded as 3-D metal: highlight, gold, shade, deep. The same in both themes. */
   --gold-hi: #FFF3A6; --gold: #FFD700; --gold-shade: #F4C430; --gold-deep: #D4A20F;
   --dot-0: #9CD3EF; --dot-1: #F2C14E; --dot-2: #F4A99A; --dot-3: #B8E0C2; --dot-4: #D9C8F5; --dot-5: #F7D9A8;
-  /* Type (CC-136): Newsreader is the reading voice (titles, body, form text); Big Shoulders Text is the signage voice
+  /* Type (CC-136): Instrument Sans is the reading voice (titles, body, form text); Big Shoulders Text is the signage voice
      (navigation, labels, buttons, dates, prices), small, bold and condensed, in sentence case. */
-  --display: "Newsreader", Georgia, "Times New Roman", serif;
-  --body: "Newsreader", Georgia, "Times New Roman", serif;
+  --display: "Instrument Sans", system-ui, "Helvetica Neue", Arial, sans-serif;
+  --body: "Instrument Sans", system-ui, "Helvetica Neue", Arial, sans-serif;
   --sign: "Big Shoulders Text", "Arial Narrow", system-ui, sans-serif;
   --step--1: 1rem; /* 16px, the minimum for anything */
   --step-0: 1.125rem;
@@ -360,7 +360,7 @@ a.btn, a.textbtn { display: inline-block; }
 .cat-legend span { color: var(--text); font-weight: 600; }
 
 /* catalog */
-.view-head { padding-block: 40px 24px; display: grid; gap: 10px; } /* CC-149: a Newsreader title and an italic deck, no eyebrow */
+.view-head { padding-block: 40px 24px; display: grid; gap: 10px; } /* CC-149: a Instrument Sans title and an italic deck, no eyebrow */
 .view-head h1 { font-family: var(--display); font-weight: 500; font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1; letter-spacing: -0.025em; overflow-wrap: anywhere; }
 .view-head p { color: var(--muted); max-width: 60ch; }
 .view-head .lf-deck { font-style: italic; font-size: 1.3125rem; line-height: 1.4; }
@@ -709,7 +709,7 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .ev-cols > .ev-takes { grid-area: takes; }
 @media (max-width: 860px) { .ev-cols { grid-template-columns: minmax(0, 1fr); grid-template-areas: "main" "side" "takes"; } .ev-side { margin-top: 48px; } }
 
-/* the facts table: Big Shoulders keys, Newsreader values; a rule above and below, hairlines between */
+/* the facts table: Big Shoulders keys, Instrument Sans values; a rule above and below, hairlines between */
 .ev-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); margin: 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
 .ev-facts dt, .ev-facts dd { margin: 0; padding: 12px 0; border-top: 1px solid var(--line); }
 .ev-facts dt:first-of-type, .ev-facts dd:first-of-type { border-top: 0; }
@@ -924,7 +924,7 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .approval-photo button { position: absolute; }
 .approval-decide { display: grid; gap: 8px; margin-top: 8px; }
 
-/* CC-146: My week in Lakefront (design/lakefront-brief.md section 10). A Newsreader title and an italic deck; the week
+/* CC-146: My week in Lakefront (design/lakefront-brief.md section 10). A Instrument Sans title and an italic deck; the week
    bar with joined Previous and Next; the week (7) as one line a day in listings style beside Still deciding (5); the
    Cultural journal below at reading width, with only the entry being written open. On a phone: the week, Still
    deciding, then the journal. (CC-97's boxed days and CC-98's journal cards are gone.) */
@@ -1101,7 +1101,7 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .face-l { width: 40px; height: 40px; margin-left: 0; font-size: 15px; }
 .dots { display: inline-flex; flex: none; padding-left: 6px; }
 
-/* CC-145: the crews page in Lakefront (design/lakefront-brief.md section 10). A Newsreader title and an italic deck;
+/* CC-145: the crews page in Lakefront (design/lakefront-brief.md section 10). A Instrument Sans title and an italic deck;
    invites waiting on the pale blue band; the count and a secondary Start a crew on the section rule; then a row per
    crew. An open crew is 7/5, plans as event rows and members, with Manage crew under them, closed by default. */
 .crews-head { padding-block: 40px 0; }
@@ -1287,9 +1287,9 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
   .tally { padding-block: 12px 10px; }
 }
 /* CC-149: the rest of the site in Lakefront (design/lakefront-brief.md sections 5 and 10): Find an outing, Send us an
-   event, the admin pages and the dialogs they open. Under any "← Review" link, a Newsreader title and an italic deck
+   event, the admin pages and the dialogs they open. Under any "← Review" link, a Instrument Sans title and an italic deck
    (.view-head, above). Sections open on a rule, with a count where there is one. Lists are rows between hairlines,
-   never boxes, and statuses are words. Forms: Big Shoulders labels above 48px square fields in Newsreader with a 1.5px
+   never boxes, and statuses are words. Forms: Big Shoulders labels above 48px square fields in Instrument Sans with a 1.5px
    border; buttons are the event page's (48px; 44px inside a row). Notices sit on the pale blue band; errors on the
    pale red one, starting "Check this:" (never red text). Scoped to .lf-page and .editor so the other pages keep theirs. */
 .lf-back { margin-bottom: -2px; }
@@ -1498,11 +1498,11 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .lf-page .sent-facts dt { padding-right: 32px; font-family: var(--sign); font-weight: 700; font-size: 1.125rem; }
 .lf-page .sent-facts dd { font-size: 1.25rem; }
 
-/* CC-148: Account settings and the sign-in pages in Lakefront (design/lakefront-brief.md section 10). A Newsreader
+/* CC-148: Account settings and the sign-in pages in Lakefront (design/lakefront-brief.md section 10). A Instrument Sans
    title with an italic deck (signed in: who you are and Sign out instead); then two columns that stack on phones.
    Signed out: Sign in, and "New here? Make an account", side by side. Signed in, 7/5: your profile and password,
    beside the events you've sent us, your reports and photo approvals, as rows with their statuses in words. Forms:
-   Big Shoulders labels above 48px square fields in Newsreader; the field at fault gets the 2.5px ink border and the
+   Big Shoulders labels above 48px square fields in Instrument Sans; the field at fault gets the 2.5px ink border and the
    form the pale red band starting "Check this:". Confirming your email and choosing a new password use the same. */
 .acct-head { padding-block: 40px 0; }
 .acct-head h1 { font-family: var(--display); font-weight: 500; font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1; letter-spacing: -0.025em; overflow-wrap: anywhere; }

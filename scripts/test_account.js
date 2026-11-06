@@ -21,7 +21,7 @@ const fn = (src, name) => { const i = src.indexOf("function " + name + "("); ass
 const views = ["view-account", "view-verify", "view-reset"].map((id) => between(html, '<section class="view acct-view" id="' + id + '"', "\n    </section>"));
 const all = views.join("\n");
 
-// --- the page head: a Newsreader title and an italic deck, no eyebrow ---
+// --- the page head: a Instrument Sans title and an italic deck, no eyebrow ---
 lacks(all, 'class="eyebrow"', "no eyebrows");
 views.forEach((v) => has(v, '<div class="acct-head">'));
 has(views[0], '<p class="acct-deck" id="account-sub">', "signed out, an italic deck");

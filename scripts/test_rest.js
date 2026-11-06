@@ -1,5 +1,5 @@
 // Checks run in CI before the site deploys (CC-149): the rest of the site in Lakefront. Find an outing, Send us an
-// event, the admin pages and the 404 have a Newsreader title and an italic deck with no eyebrow; the admin pages are
+// event, the admin pages and the 404 have a Instrument Sans title and an italic deck with no eyebrow; the admin pages are
 // reached from an index on Review and lead back with "← Review"; statuses are words, counts are plain numbers, and
 // errors say "Check this:" on the pale red band, never in red.
 //
