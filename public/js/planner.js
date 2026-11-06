@@ -185,7 +185,7 @@ function priceSliderHTML(inWindow) {
   var unpriced = inWindow.filter(function (e) { return e.min === null; }).length, last = PLAN_STOPS.length - 1;
   return '<div class="price-pick">' +
     '<div class="price-now"><label for="plan-price" id="plan-price-text">' + esc(budgetText(plan.budget)) + '</label><span class="opt-n" id="plan-price-n" aria-live="polite"></span></div>' +
-    '<input type="range" id="plan-price" min="0" max="' + last + '" step="1" value="' + at + '"' + (last ? "" : " disabled") + ">" +
+    '<input type="range" id="plan-price" min="0" max="' + last + '" step="any" value="' + at + '"' + (last ? "" : " disabled") + ">" +
     '<div class="price-ends" aria-hidden="true"><span>' + esc(budgetText(PLAN_STOPS[0])) + "</span><span>" + (last ? esc(budgetText(PLAN_STOPS[last])) : "") + "</span></div>" +
     (unpriced ? '<p class="hint">' + plural(unpriced, "event has", "events have") + " no price posted yet. " + (unpriced === 1 ? "It's" : "They're") + " only included at Any price.</p>" : "") +
     "</div>";
@@ -195,11 +195,48 @@ function paintPrice() { // the label and the live count for the slider's price; 
   $("plan-price-text").textContent = text; $("plan-price-n").textContent = plural(n, "event", "events");
   var r = $("plan-price"); if (!r) return;
   r.setAttribute("aria-valuetext", text + ", " + plural(n, "event", "events"));
-  r.style.setProperty("--fill", (+r.max ? 100 * r.value / r.max : 100) + "%");
+  priceFill(r);
 }
-$("plan-opts").addEventListener("input", function (ev) {
-  if (ev.target.id !== "plan-price") return;
-  plan.budget = PLAN_STOPS[+ev.target.value]; paintPrice();
+function priceFill(r) { r.style.setProperty("--fill", (+r.max ? 100 * r.value / r.max : 100) + "%"); }
+// CC-229: stops are whole numbers and step is "any", so the thumb glides with the pointer between them. plan.budget is always
+// the nearest stop, so the label and count change as the thumb passes one, and on release the thumb settles onto it.
+var priceDrag = false, priceGlide = null;
+function priceMoved(r) {
+  var was = PLAN_STOPS.indexOf(plan.budget), last = +r.max, v = +r.value;
+  // Not a drag, so it's a key or a screen reader, and whatever size of nudge the browser gave it means one stop. Home and End land on an end.
+  if (!priceDrag) r.value = v === 0 || v === last ? v : Math.min(last, Math.max(0, was + (v > was ? 1 : -1)));
+  var at = Math.round(+r.value);
+  if (at === was) { priceFill(r); return; }
+  plan.budget = PLAN_STOPS[at]; paintPrice();
+}
+function priceGlideStop() { if (priceGlide) { priceGlide.cancel(); priceGlide = null; } }
+// A thumb can't take a CSS transition, so the frames set its value, read off an empty animation that carries the shared timing
+function priceSettle(r) {
+  var from = +r.value, to = PLAN_STOPS.indexOf(plan.budget);
+  if (from === to || !motionOn(r)) { r.value = to; priceFill(r); return; }
+  var glide = priceGlide = r.animate(null, motionTiming(true));
+  var frame = function () {
+    if (glide !== priceGlide) return; // grabbed again, or a key pressed
+    var p = r.isConnected ? glide.effect.getComputedTiming().progress : null; // null: it's over
+    if (p === null) { priceGlideStop(); r.value = to; } else r.value = from + (to - from) * p;
+    priceFill(r);
+    if (p !== null) requestAnimationFrame(frame);
+  };
+  frame();
+}
+$("plan-opts").addEventListener("input", function (ev) { if (ev.target.id === "plan-price") priceMoved(ev.target); });
+$("plan-opts").addEventListener("pointerdown", function (ev) {
+  if (ev.target.id === "plan-price" && ev.button === 0 && !ev.target.disabled) { priceGlideStop(); priceDrag = true; }
+});
+$("plan-opts").addEventListener("keydown", function (ev) { // a key counts from the stop, not from wherever the settling thumb has got to
+  if (ev.target.id === "plan-price" && priceGlide) { priceGlideStop(); ev.target.value = PLAN_STOPS.indexOf(plan.budget); }
+});
+["pointerup", "pointercancel"].forEach(function (type) { // on the document: the pointer can let go anywhere
+  document.addEventListener(type, function () {
+    if (!priceDrag) return;
+    priceDrag = false;
+    var r = $("plan-price"); if (r) priceSettle(r);
+  });
 });
 $("plan-opts").addEventListener("click", function (ev) {
   if (ev.target.id === "plan-date-go") {

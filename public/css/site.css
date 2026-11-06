@@ -441,6 +441,7 @@ a.btn, a.textbtn { display: inline-block; }
 /* drawn by hand so the thumb can be ink (--text) while the filled part of the track stays --lead; --fill is set by paintPrice() */
 .price-pick input[type="range"] {
   -webkit-appearance: none; appearance: none; width: 100%; height: 6px; margin: 10px 0; cursor: pointer;
+  touch-action: pan-y; /* CC-229: a sideways drag on a phone stays with the thumb, and an upward one still scrolls the page */
   background: linear-gradient(to right, var(--lead) var(--fill, 100%), var(--line) var(--fill, 100%));
 }
 .price-pick input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; background: var(--text); border: 0; }
