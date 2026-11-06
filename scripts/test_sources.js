@@ -1,4 +1,4 @@
-// Checks run in CI before the site deploys (CC-221): the Event sources grid in public/js/sourcegrid.js: the order of the
+// Checks run in CI before the site deploys (CC-221): the Source grid in public/js/sourcegrid.js: the order of the
 // blocks, where a panel goes, and the page's colours, options and motion.
 //
 //     node scripts/test_sources.js

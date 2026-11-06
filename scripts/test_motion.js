@@ -475,7 +475,7 @@ const all = ["util", "crews", "account", "admin", "found", "sourcing"].map((f) =
 const page = read("index.html");
 (page.match(/<details[\s\S]*?<\/details>/g) || []).forEach((d) => assert.ok(/<\/summary>\s*<div class="details-body">/.test(d), "a <details> needs a .details-body to slide: " + d.slice(0, 60)));
 
-// the grid's panel on Event sources keeps the same time, its wait with it, and no time with reduced motion
+// the panel on the Source grid keeps the same time, its wait with it, and no time with reduced motion
 const css = read("css/site.css"), grid = read("js/sourcegrid.js");
 assert.ok(/\.sg-panel \{[^}]*transition: grid-template-rows var\(--dur-drop\) var\(--ease-in-out\)/.test(css), "it shuts in --dur-drop");
 assert.ok(/\.sg-panel\.open \{[^}]*transition-timing-function: var\(--ease-out\)/.test(css), "and opens easing out");

@@ -753,6 +753,7 @@
       <div class="view-head">
         <h1 id="sourcing-title" tabindex="-1">Event Sourcing</h1>
         <p class="lf-deck">What's waiting on you, what it's costing, and what we've found.</p>
+        <div class="row"><button class="textbtn" type="button" data-go="sources">Source grid →</button></div>
       </div>
       <div class="hub">
         <p class="hint" id="sourcing-status" role="status"></p>
@@ -764,7 +765,7 @@
             <p class="hub-spend" id="budget-spent"></p>
             <p class="hint">An estimate from recorded use. The Anthropic Console has the real bill.</p>
             <p class="notice" id="budget-note" hidden></p>
-            <p><button class="textbtn hub-link" type="button" data-go="sources">Change the budget on Event sources</button></p>
+            <p><button class="textbtn hub-link" type="button" data-go="sources">Change the budget on the Source grid</button></p>
           </div>
           </div>
           <div class="section"><h2 id="graph-title">New events found</h2><div class="graph" id="found-graph"></div><p class="hint" id="week-recap"></p></div>
@@ -776,7 +777,6 @@
         <div class="section"><h2>Tools</h2>
           <div class="hub-tools">
             <button class="btn ghost" type="button" data-go="found">Found events</button>
-            <button class="btn ghost" type="button" data-go="sources">Event sources</button>
             <button class="btn ghost" type="button" data-hub="rules">Skip rules</button>
             <button class="btn ghost" type="button" data-hub="manual">Check by hand only</button>
             <button class="btn ghost" type="button" data-hub="withdrawn">Withdrawn</button>
@@ -819,7 +819,7 @@
         <p class="lf-back"><button class="textbtn" type="button" data-go="sourcing"><span aria-hidden="true">←</span>Event Sourcing</button></p>
         <h1 id="found-title" tabindex="-1">Found events</h1>
         <p class="lf-deck">Events the checker found on venues' own pages, and changes to events already listed. Approve to add one to the catalog; nothing goes live by itself.</p>
-        <div class="row"><button class="textbtn" type="button" data-go="sources">Event sources →</button></div>
+        <div class="row"><button class="textbtn" type="button" data-go="sources">Source grid →</button></div>
       </div>
       <p class="notice" id="found-unreadable"></p>
       <form class="found-filters" id="found-filters">
@@ -835,11 +835,11 @@
       <div class="section"><h2 id="rules-title" tabindex="-1">Skip rules</h2><p class="hint">Found events whose title contains one of these phrases are rejected quietly. Made with “Reject and skip similar”.</p><div class="queue" id="rules-list"></div></div>
     </section>
 
-    <!-- Event sources (admins, CC-70) -->
+    <!-- Source grid (admins, CC-70) -->
     <section class="view lf-page" id="view-sources" hidden>
       <div class="view-head">
         <p class="lf-back"><button class="textbtn" type="button" data-go="sourcing"><span aria-hidden="true">←</span>Event Sourcing</button></p>
-        <h1 id="sources-title" tabindex="-1">Event sources</h1>
+        <h1 id="sources-title" tabindex="-1">Source grid</h1>
         <p class="lf-deck">Venues and companies whose own pages are checked now and then for new events. What's found waits for your review; nothing goes live by itself. A bigger block means more approved events in the last year.</p>
       </div>
       <p class="hint" id="sources-status" role="status"></p>

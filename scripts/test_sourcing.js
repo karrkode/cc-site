@@ -52,14 +52,19 @@ const order = ["needs-section", "budget-gauge", "found-graph", "src-list", "hub-
 assert.ok(order.every((n, i) => n >= 0 && (!i || n > order[i - 1])), "the page runs Needs you, Budget, graph, Found events, the tools");
 assert.ok(/id="needs-section" hidden/.test(view), "Needs you starts hidden, heading included");
 ["This week", "week-figures", "left out", "Checks run"].forEach((s) => assert.ok(!view.includes(s), "gone from the page: " + s));
-["Found events", "Event sources", "Skip rules", "Check by hand only", "Withdrawn"].forEach((t) => assert.ok(view.includes(">" + t + "</button>"), "a tool: " + t));
+["Found events", "Skip rules", "Check by hand only", "Withdrawn"].forEach((t) => assert.ok(view.includes(">" + t + "</button>"), "a tool: " + t));
 assert.ok(view.includes("<h2>Tools</h2>"), "the section is called Tools");
 assert.ok(view.includes('data-hub="manual">Check by hand only</button>'), "Check by hand only opens on the sources checked by hand");
 const js = read("js/sourcing.js");
 assert.ok(js.includes('"#sources/manual"'), "so does Needs you's row");
 assert.ok(js.includes('"#source-" + bad[0].id : "#sources/unreadable"'), "CC-224: one unreadable source opens its Health panel, two or more open the filter");
 
-// --- Event sources: the filters ---
+// CC-234: the grid has its own name, and its link sits in the page head, not down among the tools
+const head = view.slice(0, view.indexOf('class="hub"'));
+assert.ok(head.includes('data-go="sources">Source grid →</button>'), "the Source grid link is at the top of Event Sourcing");
+assert.ok(!/>[^<]*Event sources[^<]*</.test(html), "no visible text calls the grid Event sources");
+
+// --- Source grid: the filters ---
 const admin = read("js/admin.js");
 const f = { SOURCES_HOW: "all", SOURCES_KIND: "all" };
 vm.createContext(f);
