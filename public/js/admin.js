@@ -710,7 +710,7 @@ $("va-add").addEventListener("submit", function (ev) {
   api("/venues", { method: "POST", body: { name: name, neighborhood: hood, address: place.address, city: place.city, zip_code: place.zip_code, website: $("vn-website").value.trim() } }).then(readJSON).then(function (res) {
     $("vn-go").disabled = false;
     if (!res.ok) { $("vn-error").textContent = errorText(res); return; }
-    $("va-add").reset(); vnForget(); $("vn-status").textContent = "Added " + venueLabel(res.body) + ".";
+    $("va-add").reset(); vnForget(); $("vn-status").textContent = "Added " + venueLabel(res.body) + "."; pulse($("vn-go"));
     if (VENUES) VENUES.push(res.body);
     loadVenues(res.body.id);
   }, function () { $("vn-go").disabled = false; $("vn-error").textContent = errorText(null); });
@@ -1125,7 +1125,7 @@ $("sources-how").addEventListener("change", function () { SOURCES_HOW = this.val
 $("sources-kind").addEventListener("change", function () { SOURCES_KIND = this.value; if (SOURCES) paintSources(SOURCES); });
 function loadSources(focusId) {
   $("sources-status").textContent = "Loading…";
-  api("/admin/discovery/sources").then(readJSON).then(function (res) {
+  return api("/admin/discovery/sources").then(readJSON).then(function (res) {
     if (!res.ok) { $("sources-status").textContent = errorText(res); return; }
     $("sources-status").textContent = ""; paintSources(res.body);
     var b = focusId && $("sources-list").querySelector(focusId); if (b) b.focus();

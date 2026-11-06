@@ -634,5 +634,49 @@ assert.ok(/--stagger: 30ms;/.test(css), "the token");
 assert.ok(!/\.tile[^{]*\{[^}]*animation/.test(css), "row tiles' water stays still");
 }
 
+// ---------- the success pulse (CC-231) ----------
+{
+const util = read("js/util.js"), css = read("css/site.css");
+const pulsing = (opt) => {
+  const played = [], shadow = (opt && opt.shadow) || "none";
+  const g = { window: { matchMedia: () => ({ matches: !!(opt && opt.calm) }) }, document: { documentElement: {} }, Object, parseFloat,
+    getComputedStyle: (el) => ({ boxShadow: shadow, getPropertyValue: (k) => ({ "--dur-pulse": "500ms", "--ease-out": "ease-out", "--stripe": "#9CD3EF" })[k] }) };
+  vm.createContext(g);
+  vm.runInContext(["var MOTION_CALM = window.matchMedia('');", util.match(/function motionOn.*\n/)[0], helper(util, "motionTiming"), helper(util, "pulse")].join("\n"), g);
+  return { g, played, el: { animate: (frames, timing) => { played.push({ frames, timing }); } } };
+};
+let p = pulsing();
+p.g.pulse(p.el);
+assert.strictEqual(p.played.length, 1, "it runs once");
+assert.strictEqual(p.played[0].timing.duration, 500);
+assert.strictEqual(p.played[0].timing.easing, "ease-out");
+assert.ok(!("fill" in p.played[0].timing) && !("iterations" in p.played[0].timing), "once, and it leaves nothing behind");
+assert.ok(/#9CD3EF/.test(p.played[0].frames.boxShadow[0]) && /transparent$/.test(p.played[0].frames.boxShadow[1]), "a stripe ring that fades out");
+p = pulsing({ shadow: "inset 0 0 0 1.5px red" });
+p.g.pulse(p.el);
+assert.ok(p.played[0].frames.boxShadow.every((f) => f.endsWith(", inset 0 0 0 1.5px red")), "a ghost button keeps its outline");
+p = pulsing({ calm: true });
+p.g.pulse(p.el);
+assert.strictEqual(p.played.length, 0, "reduced motion: no pulse");
+pulsing().g.pulse(null); // the button may have gone in a repaint
+
+assert.ok(/--dur-pulse: 500ms;/.test(css), "the token");
+// where it goes: each one beside the words that say it worked
+[["catalog.js", /msg\.textContent = "Link copied\."; pulse\(t\); \}, fallback/], ["planner.js", /msg\.textContent = "Link copied\."; pulse\(t\); \}, fallback/],
+  ["account.js", /msg\.textContent = "Link copied\."; pulse\(\$\("invite-copy"\)\); \}, fallback/], ["crews.js", /said\.textContent = "Link copied\."; pulse\(b\); \}, fallback/],
+  ["crews.js", /said\.textContent = "Shared\."; pulse\(b\); \}/], ["crews.js", /"Saved " \+ name \+ "\."; pulse\(\$\("crew-h-" \+ id\)\)/],
+  ["crews.js", /res\.body\.message;\n\s*pulse\(document\.querySelector\('\[data-crew-email/], ["crews.js", /redrawCards\(id, card, "\[data-crewshare-toggle\]"\); \}\)\n\s*\.then\(function \(\) \{ Array[^\n]*pulse\(b\)/],
+  ["account.js", /"Saved\.";\n\s*pulse\(btn\);/], ["account.js", /msg\.textContent = "Saved\."; pulse\(btn\);/], ["account.js", /other devices\."; pulse\(btn\);/],
+  ["account.js", /expires in an hour\."; pulse\(btn\);/], ["account.js", /resendCooldown\(\); pulse\(\$\("account-notice"\)\);/], ["account.js", /junk folder too\."; pulse\(box\); \}/],
+  ["photos.js", /"\[data-photo\]"\)\.then\(function \(\) \{[^\n]*\n[^\n]*pulse\(b\)/], ["issues.js", /pulse\(\$\("is-thanks"\)\)/], ["submit.js", /pulse\(\$\("sd-title"\)\)/],
+  ["admin.js", /"Added " \+ venueLabel\(res\.body\) \+ "\."; pulse\(\$\("vn-go"\)\)/], ["sourcegrid.js", /SG_SAID = "Saved\."; loadSources\("#sg-save"\)\.then\(function \(\) \{ pulse\(\$\("sg-save"\)\)/],
+].forEach(([f, re]) => assert.ok(re.test(read("js/" + f)), f + " pulses: " + re));
+// a failure never does, and the moments stay their own
+["account.js", "admin.js", "catalog.js", "crews.js", "issues.js", "photos.js", "planner.js", "sourcegrid.js", "submit.js"].forEach((f) => {
+  read("js/" + f).split("\n").forEach((line) => assert.ok(!/pulse\(/.test(line) || !/errorText|checkThis/.test(line.slice(0, line.indexOf("pulse("))) || /res\.ok\) \{ box/.test(line), f + " pulses beside a failure: " + line));
+});
+assert.ok(!/pulse\(/.test(read("js/catalog.js").match(/function evMotionCarry[\s\S]*?\n}\n/)[0]), "the Going leap is left alone");
+}
+
 console.log("motion: ok");
 })().catch((e) => { console.error(e); process.exit(1); });

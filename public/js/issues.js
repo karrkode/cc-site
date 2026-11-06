@@ -63,7 +63,7 @@ $("issue-form").addEventListener("submit", function (ev) {
     $("is-fields").hidden = true; $("is-done").hidden = false; $("is-heading").textContent = k.noun + " " + res.body.key + " sent";
     $("is-thanks").innerHTML = "Thanks! Your ticket number is <strong>" + esc(res.body.key) + "</strong>. " +
       (kind === "feature" ? "We'll think it over" : "We'll look into it") + ", and you can follow it under <strong>Your reports</strong> on your account page.";
-    $("is-close").focus();
+    $("is-close").focus(); pulse($("is-thanks"));
     $("edit-live").textContent = k.noun + " " + res.body.key + " sent. Thanks!";
     if (visible("account")) loadMyIssues();
     if (isAdmin()) updateIssuesCount();

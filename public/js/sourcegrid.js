@@ -132,7 +132,7 @@ function sgSave(s) {
   if (!steps.length) { $("sg-status").textContent = "Nothing to save."; return; }
   $("sg-save").disabled = true;
   (function next(i) {
-    if (i === steps.length) { SG_SAID = "Saved."; loadSources("#sg-save"); return; }
+    if (i === steps.length) { SG_SAID = "Saved."; loadSources("#sg-save").then(function () { pulse($("sg-save")); }); return; }
     api(steps[i][0], { method: "PATCH", body: steps[i][1] }).then(readJSON).then(function (res) {
       if (res.ok) { next(i + 1); return; }
       $("sg-save").disabled = false; $("sg-status").textContent = errorText(res);
