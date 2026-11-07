@@ -43,6 +43,13 @@ function stackPaint(d) {
     c.style.setProperty("--veil-k", stackMix(a.veil, b.veil, t));
   });
 }
+// The progress bar. A transform, not a width, so it glides without redrawing the page around it.
+function stackBar(i) {
+  var n = STACK.list.length, bar = $("stack-progress");
+  bar.setAttribute("aria-valuenow", i + 1);
+  bar.setAttribute("aria-valuetext", (i + 1) + " of " + n);
+  $("stack-fill").style.transform = "scaleX(" + ((i + 1) / n).toFixed(4) + ")";
+}
 // Who's in front: only that card takes the keyboard. The others stay in the list for screen readers.
 function stackSettle() {
   STACK.cards.forEach(function (c, i) {
@@ -50,10 +57,7 @@ function stackSettle() {
     c.classList.toggle("is-front", front);
     c.querySelector("a").tabIndex = front ? 0 : -1;
   });
-  var n = STACK.list.length, at = STACK.cur + 1, bar = $("stack-progress");
-  bar.setAttribute("aria-valuenow", at);
-  bar.setAttribute("aria-valuetext", at + " of " + n);
-  $("stack-fill").style.width = (at / n * 100).toFixed(2) + "%";
+  stackBar(STACK.cur);
 }
 function stackMove(d, ms, ease) {
   var st = $("stack"), seq = STACK.seq;
@@ -69,6 +73,7 @@ function stackStep(dir, ms) {
   var n = STACK.list.length;
   if (STACK.busy || n < 2) return Promise.resolve();
   STACK.busy = true;
+  stackBar((STACK.cur + dir + n) % n); // it sets off with the card, rather than after it lands
   var a = document.activeElement, focused = !!a && a.tagName === "A" && $("lead-slot").contains(a), left = dir > 0 ? STACK.cur : -1;
   var land = function (live) {
     if (!live) return; // the stack was redrawn meanwhile

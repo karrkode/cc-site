@@ -233,8 +233,9 @@ a.btn, a.textbtn { display: inline-block; }
 .stack-nav .btn { min-width: 48px; min-height: 48px; }
 /* How far through the picks you are. Square, in ink colours: category colour stays on the cards. */
 .stack-progress { flex: 0 1 240px; height: 6px; background: var(--line); }
-.stack-fill { display: block; height: 100%; background: var(--lead); }
-@media (prefers-reduced-motion: no-preference) { .stack-fill { transition: width var(--dur-drop) var(--ease-out); } }
+.stack-fill { display: block; height: 100%; background: var(--lead); transform-origin: 0 50%; }
+/* It leaves quickly and settles slowly into place: long enough for the ease-out's tail to show */
+@media (prefers-reduced-motion: no-preference) { .stack-fill { transition: transform 700ms var(--ease-out); } }
 /* The arrows are for desktop with a mouse. On a touch screen you swipe, or tap a back card. */
 @media (max-width: 700px), (pointer: coarse) {
   .stack-nav [data-stack-go] { display: none; }
