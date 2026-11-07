@@ -272,6 +272,7 @@
 <div class="wrap">
   <section class="invite-banner" id="invite-banner" hidden aria-label="Crew invites waiting for you"></section>
   <main>
+    <p class="notice" id="joined-note" role="status" hidden></p><!-- CC-237: a new account's first view (paintJoinedNote) -->
     <!-- Welcome -->
     <section class="view" id="view-home">
       <!-- CC-143: the front page (brief section 5). The masthead's tagline says what the site is (it took over CC-119's
@@ -621,8 +622,9 @@
       </div>
       <div class="panel" id="submit-signin" hidden>
         <p>You need an account to send us events, so we can follow up if anything's unclear.</p>
-        <div class="row"><button class="btn" type="button" data-go="account">Sign in or create an account</button></div>
+        <div class="row"><button class="btn" type="button" id="submit-signin-btn">Sign in or create an account</button></div>
       </div>
+      <p class="notice" id="submit-confirm" role="status" hidden></p><!-- CC-237: not confirmed yet (renderSubmit) -->
       <!-- CC-124: paste a link and the server fills in the form, or enter it by hand -->
       <div class="lf-form" id="submit-how" hidden>
         <fieldset class="publish how-choice" id="s-how"><legend>How do you want to add it?</legend>

@@ -331,6 +331,7 @@ function show(name, focusId, still) {
   // leaving the event view or the join page (CC-117, CC-121) included: Back comes back to them
   syncAddress(name);
   if (typeof paintPending === "function") paintPending(); // the crew-invite notice hides on the crews page (CC-59, CC-104)
+  paintJoinedNote(name); // CC-237
   var h = $(focusId || VIEWS[name]); if (h) h.focus({ preventScroll: true });
   if (!still) lists.forEach(function (root) { if (showing.indexOf(root) < 0 && rowsShowing(root)) rowsShown(root); });
   track("view", name);

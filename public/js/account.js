@@ -34,12 +34,7 @@ function onAuthChange() {
     return;
   }
   if (isAdmin()) { updateReviewCount(); updateFoundCount(); } // CC-206: the Review menu shows them from the start
-  var back = AFTER_SIGN_IN; AFTER_SIGN_IN = null; // signed in from the crews, planner or journal page: back to it (CC-104, CC-105, CC-159)
-  // CC-157: the sign-in page was pushed on the way: going back takes it off the history, and the popstate reopens that page
-  if (back && location.hash === "#account" && history.state && history.state.view === "account") history.back();
-  else if (back === "crews") openCrews(); else if (back === "planner") openPlanner(); else if (back === "journal") openJournal();
-  else if (back && back.indexOf("e/") === 0) openEvent(back.slice(2), false); // signed in from an event (CC-117)
-  else if (visible("account")) renderAccount(true);
+  returnAfterSignIn();
   if (visible("join") && $("jp-in").hidden) paintJoinPage(); // CC-121 (just joined: the welcome stays)
   if (visible("crews")) renderCrewsPage();
   if (visible("planner")) renderPlannerPage();
@@ -52,6 +47,17 @@ function onAuthChange() {
   loadCrews().then(function () { buildCrewFilter(); rerenderLists(); }); // crews to share plans with (CC-75)
   loadPending(true); // crew invites waiting for you (CC-59): the notice on sign-in
   if (isAdmin()) updateIssuesCount();
+}
+// Where signing in leads (AFTER_SIGN_IN): back to the page that asked (CC-104, CC-105, CC-117, CC-159, CC-237), or Home
+function returnAfterSignIn() {
+  var back = AFTER_SIGN_IN; AFTER_SIGN_IN = null;
+  if (back === "home") { ROUTE = location.hash; show("home"); return; } // CC-237: Home takes the sign-in page's place, so Back doesn't land on the account page
+  // CC-157: the sign-in page was pushed on the way: going back takes it off the history, and the popstate reopens that page
+  if (back && location.hash === "#account" && history.state && history.state.view === "account") history.back();
+  else if (back === "crews") openCrews(); else if (back === "planner") openPlanner(); else if (back === "journal") openJournal();
+  else if (back === "submit") openSubmit();
+  else if (back && back.indexOf("e/") === 0) openEvent(back.slice(2), false); // signed in from an event (CC-117)
+  else if (visible("account")) renderAccount(true);
 }
 function loadWent() {
   return api("/me/attended").then(readJSON).then(function (res) {
@@ -615,14 +621,14 @@ document.addEventListener("submit", function (ev) {
 
 // ---------- My week page (CC-105; renamed in CC-118) ----------
 // The week ahead, on its own page (#planner). Signed out, a word on what it's for and a way to sign in that comes back here.
-var AFTER_SIGN_IN = null; // "crews", "planner" or "journal": where to go once signed in from there
+var AFTER_SIGN_IN = null; // where to go once signed in: "crews", "planner", "journal", "submit", "e/<id>" or "home"
 function openPlanner() { renderPlannerPage(); show("planner"); }
 function renderPlannerPage() {
   var u = AUTH.user;
   $("planner-signin").hidden = !!u; $("planner-main").hidden = !u;
   if (u) renderPlanner();
 }
-$("planner-signin-btn").addEventListener("click", function () { AFTER_SIGN_IN = "planner"; openAccount(); });
+$("planner-signin-btn").addEventListener("click", function () { signInFrom("planner"); });
 // CC-159: the Cultural Journal, on its own page (#journal), from the you menu and My week's line to it. Signed out,
 // the same: a word on what it's for and a sign-in that comes back here.
 function openJournal() { renderJournalPage(); show("journal"); }
@@ -631,7 +637,7 @@ function renderJournalPage() {
   $("journal-signin").hidden = !!u; $("journal-main").hidden = !u;
   if (u) renderJournal();
 }
-$("journal-signin-btn").addEventListener("click", function () { AFTER_SIGN_IN = "journal"; openAccount(); });
+$("journal-signin-btn").addEventListener("click", function () { signInFrom("journal"); });
 
 // ---------- your name in the header, and its menu (CC-105) ----------
 // Signed in, the header shows your name (or "Your account"); it opens a menu: Crews, My week, Cultural journal (CC-159), Invite a friend, Account
@@ -758,9 +764,11 @@ document.addEventListener("click", function (ev) { if (!$("me-wrap").contains(ev
 // Errors are the pale red band starting "Check this:" (checkThis, crews.js), with the ink border on the field at fault.
 var NOTICE_SET = false; // a one-off message (e.g. "email confirmed") showing instead of the usual notice
 function openAccount(notice) {
+  AFTER_SIGN_IN = null; // CC-237: only a prompt sets a way back (signInFrom), so one left over from earlier can't lead a plain sign-in astray
   NOTICE_SET = !!notice; $("account-notice").textContent = notice || "";
   renderAccount(true); show("account");
 }
+function signInFrom(place) { openAccount(); AFTER_SIGN_IN = place; } // a "sign in" prompt: back to that place afterwards
 function renderAccount(withSubmissions) {
   var u = AUTH.user;
   $("signed-out").hidden = !!u; $("signed-in").hidden = !u;
@@ -889,7 +897,7 @@ function confirmEmail(token) {
 }
 var RESET_TOKEN = null;
 function openReset(token) {
-  RESET_TOKEN = token;
+  RESET_TOKEN = token; AFTER_SIGN_IN = null; // CC-237: the reset's own message is what they see next
   $("reset-form").reset(); acctClear($("reset-form"), $("reset-error"));
   show("reset", "reset-new");
 }
@@ -1014,10 +1022,24 @@ function authForm(form, path, body, errEl) {
     if (!res || !res.ok) { errEl.textContent = checkThis(errorText(res)); return; }
     form.reset();
     ["login", "register", "forgot"].forEach(function (f) { acctClear($(f + "-form"), $(f + "-error")); }); // nothing left over for next time
-    setSession(res.body);
-    renderAccount();
-    $("account-title").focus();
+    // CC-237: an invite's Join panel and a one-off message (a confirmation link that failed, say) are on this page, so stay
+    var stay = !!JOIN || NOTICE_SET;
+    if (!stay) {
+      AFTER_SIGN_IN = AFTER_SIGN_IN || "home";
+      if (path === "/auth/register") JOINED_VIEW = viewOf("#" + AFTER_SIGN_IN);
+    }
+    setSession(res.body); // onAuthChange takes them on from here
+    if (stay) { renderAccount(); $("account-title").focus(); }
   });
+}
+// CC-237: a new account no longer lands on the account page, so the word about confirming comes with it, on the view it
+// lands on and only until they move on. Submit an event says it for itself (renderSubmit).
+var JOINED_VIEW = null;
+function paintJoinedNote(name) {
+  var said = $("joined-note"), u = AUTH.user;
+  said.hidden = name !== JOINED_VIEW || name === "submit" || !u || u.email_verified;
+  said.innerHTML = said.hidden ? "" : 'Welcome! Check your email for a link to confirm your address. <button class="textbtn" type="button" data-verify-send>Send a new link</button>';
+  if (name !== JOINED_VIEW) JOINED_VIEW = null;
 }
 // CC-121: a sign-up in a visit that came by the join page says so, with where that visit came from, so Site stats
 // can count sign-ups by source. Only the source goes with it (never stored with the account), and not when visits

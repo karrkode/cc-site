@@ -164,5 +164,88 @@ async function check(name, fn) { await fn(); n++; console.log("ok  " + name); }
     assert.strictEqual(view(t), "join"); assert.strictEqual(addr(t), "/join?utm_source=x");
   });
 
+  // CC-237: where signing in or creating an account leads. authForm, signInFrom and returnAfterSignIn are the real ones;
+  // setSession stands in for onAuthChange, which calls returnAfterSignIn.
+  function signIn(t) {
+    const g = t.g;
+    if (!g.authForm) {
+      vm.runInContext("var AFTER_SIGN_IN = null, JOIN = null, NOTICE_SET = false, JOINED_VIEW = null;" +
+        "function openAccount(notice) { AFTER_SIGN_IN = null; NOTICE_SET = !!notice; show('account'); }" +
+        helper("account.js", "returnAfterSignIn") + helper("account.js", "authForm") +
+        read("account.js").match(/function signInFrom\(.*\n/)[0], g);
+      g.rendered = 0; g.renderAccountFocus = 0;
+      g.renderAccount = () => { g.rendered++; };
+      g.acctClear = () => {}; g.checkThis = (x) => x; g.errorText = () => "";
+      g.readJSON = (r) => r; g.$ = () => ({ focus() { g.renderAccountFocus++; } });
+      g.setSession = () => g.returnAfterSignIn();
+    }
+    return g;
+  }
+  const post = (t, path) => {
+    t.g.api = () => Promise.resolve({ ok: true, body: {} });
+    const form = { querySelector: () => ({}), reset() {} };
+    t.g.authForm(form, path || "/auth/login", {}, {});
+    return tick();
+  };
+  for (const [name, path] of [["signing in", "/auth/login"], ["creating an account", "/auth/register"]]) {
+    await check("the menu's Sign in, then " + name + ": Home takes the sign-in page's place in the history", async () => {
+      const t = tab("/"); signIn(t);
+      t.g.show("catalog"); t.g.openAccount();
+      await post(t, path);
+      assert.strictEqual(view(t), "home"); assert.strictEqual(addr(t), "/");
+      assert.strictEqual(t.g.rendered, 0);
+      t.history.back(); await tick();
+      assert.strictEqual(view(t), "catalog"); // Back goes to the listings, not to the account page
+    });
+    for (const [place, from, url] of [["e/5", "event", "/#e/5"], ["submit", "submit", "/#submit"], ["planner", "planner", "/#planner"],
+      ["journal", "journal", "/#journal"], ["crews", "crews", "/#crews"]]) {
+      await check("prompted on " + from + ", then " + name + ": back there, with the sign-in page off the history", async () => {
+        const t = tab("/"); signIn(t);
+        if (from === "event") t.g.openEvent("5", true); else t.g.show(from);
+        const entries = t.history.length;
+        t.g.signInFrom(place);
+        assert.strictEqual(addr(t), "/#account");
+        await post(t, path); await tick();
+        assert.strictEqual(view(t), from); assert.strictEqual(addr(t), url);
+        assert.strictEqual(t.g.AFTER_SIGN_IN, null);
+        assert.ok(t.history.length <= entries + 1);
+      });
+    }
+  }
+
+  await check("a new account's note is for the view it lands on", async () => {
+    let t = tab("/"); signIn(t); t.g.show("catalog"); t.g.openAccount(); await post(t, "/auth/register");
+    assert.strictEqual(t.g.JOINED_VIEW, "home");
+    t = tab("/"); signIn(t); t.g.openEvent("5", true); t.g.signInFrom("e/5"); await post(t, "/auth/register");
+    assert.strictEqual(t.g.JOINED_VIEW, "event");
+    t = tab("/"); signIn(t); t.g.show("catalog"); t.g.openAccount(); await post(t, "/auth/login");
+    assert.strictEqual(t.g.JOINED_VIEW, null);
+  });
+
+  await check("a prompt left behind doesn't lead the menu's Sign in astray", async () => {
+    const t = tab("/"); signIn(t);
+    t.g.openEvent("5", true); t.g.signInFrom("e/5");
+    t.g.show("catalog"); t.g.openAccount();
+    await post(t);
+    assert.strictEqual(view(t), "home");
+  });
+
+  await check("an invite's Join panel, or a one-off message, keeps them on the account page", async () => {
+    let t = tab("/"); signIn(t); t.g.openAccount(); t.g.JOIN = { token: "x" };
+    await post(t, "/auth/register");
+    assert.strictEqual(view(t), "account"); assert.ok(t.g.rendered > 0); assert.strictEqual(t.g.renderAccountFocus, 1);
+    assert.strictEqual(t.g.JOINED_VIEW, null);
+    t = tab("/"); signIn(t); t.g.openAccount("That confirmation link has expired or was already used. Sign in to send a new one.");
+    await post(t);
+    assert.strictEqual(view(t), "account"); assert.ok(t.g.rendered > 0);
+  });
+
+  await check("a session coming back on its own moves nobody: only the forms lead Home", async () => {
+    const t = tab("/#account"); signIn(t);
+    t.g.openFromHash(); await tick();
+    t.g.returnAfterSignIn();
+    assert.strictEqual(view(t), "account"); assert.ok(t.g.rendered > 0);
+  });
+
   console.log("\n" + n + " checks passed");
 })().catch((e) => { console.error(e); process.exit(1); });

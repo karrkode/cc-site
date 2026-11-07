@@ -31,7 +31,7 @@ function renderCrewsPage() {
   if (!u) { $("crew-list").innerHTML = ""; return; }
   paintCrews(); paintPending(); loadCrews(); loadPending();
 }
-$("crews-signin-btn").addEventListener("click", function () { AFTER_SIGN_IN = "crews"; openAccount(); });
+$("crews-signin-btn").addEventListener("click", function () { signInFrom("crews"); });
 function showCrewForm(open) {
   dropToggle($("crew-new"), open, open ? function () { $("crew-name").focus(); } : null); $("crew-start-btn").setAttribute("aria-expanded", String(open));
   if (!open) { $("crew-new-error").textContent = ""; crewMarkInvalid($("crew-name"), false); $("crew-start-btn").focus(); }
