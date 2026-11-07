@@ -1434,6 +1434,27 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .src-panel[hidden] { display: none; }
 .lf-page .src-panel .queue-item:last-child { border-bottom: 0; } /* the row below brings its own rule: never stack two */
 .src-rows .hub-go { min-width: 3em; text-align: right; }
+/* CC-208: batch review. The tick is 44px to touch; the bar stays in view while the list scrolls. */
+.src-by { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.src-pick, .src-all { display: inline-flex; align-items: center; min-height: 44px; cursor: pointer; }
+.src-pick { justify-content: flex-start; min-width: 44px; }
+.src-pick input, .src-all input { width: 22px; height: 22px; margin: 0; accent-color: var(--lead); }
+.src-all { gap: 10px; font-family: var(--sign); font-weight: 700; white-space: nowrap; }
+.queue-item.found.pickable { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; }
+.src-days { display: grid; gap: 20px; padding-top: 4px; }
+.src-day-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 0 16px; border-bottom: 1px solid var(--rule); }
+.src-day-head .listing-day-head { margin: 0; border-bottom: 0; flex: 1 1 auto; }
+.lf-page .src-day .queue-item:last-child { border-bottom: 0; }
+.src-batch { position: sticky; bottom: 0; z-index: 2; display: grid; gap: 8px; margin-top: 12px; padding: 12px 0 max(12px, env(safe-area-inset-bottom)); background: var(--page); border-top: 1.5px solid var(--rule); }
+.src-batch[hidden] { display: none; }
+.src-batch p { margin: 0; }
+.src-batch .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.src-batch .row[hidden] { display: none; }
+.src-batch .btn { padding-inline: 12px; } /* with Clear, one line on a phone */
+@media (max-width: 640px) {
+  .queue-item.found.pickable { grid-template-columns: 44px minmax(0, 1fr); }
+  .queue-item.found.pickable > .row { grid-column: 2; }
+}
 .hub-tools { display: flex; flex-wrap: wrap; gap: 8px; }
 .hub-tools .btn { padding-inline: 14px; } /* all five on one line on an iPad */
 

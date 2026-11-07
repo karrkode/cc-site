@@ -16,6 +16,22 @@ const g = { window: { addEventListener() {} }, document: { addEventListener() {}
 vm.createContext(g);
 vm.runInContext(read("js/sourcing.js"), g);
 
+// --- CC-208: what a batch says afterwards, and the day heads ---
+g.isoDate = () => "2026-11-06"; g.T = new Date("2026-11-06T12:00:00");
+assert.strictEqual(g.srcBatchWords("approve", { done: [1, 2], held: [] }), "Added 2 events to the catalog.");
+assert.strictEqual(g.srcBatchWords("approve", { done: [1], held: [{ id: 2, why: "new_venue" }, { id: 3, why: "new_venue" }, { id: 4, why: "duplicate" }] }),
+  "Added 1 event to the catalog. 3 stayed: 2 at a new venue, 1 possibly already listed. Use Edit/Approve on those.");
+assert.strictEqual(g.srcBatchWords("approve", { done: [], held: [{ id: 2, why: "date" }] }), "Nothing changed. 1 stayed: 1 with no date. Use Edit/Approve on those.");
+assert.strictEqual(g.srcBatchWords("reject", { done: [1], held: [{ id: 2, why: "gone" }] }), "Deleted 1 event. 1 event was already decided.");
+assert.strictEqual(g.srcBatchWords("hide", { done: [1, 2], held: [] }), "Hid 2 events.");
+assert.strictEqual(g.srcDayHead({ begin_date: null, end_date: null }), "No date");
+assert.strictEqual(g.srcDayHead({ begin_date: "2026-11-19", end_date: null }), "Opening Thursday, Nov 19");
+assert.strictEqual(g.srcDayHead({ begin_date: "2026-11-02", end_date: "2027-01-01" }), "Opened Monday, Nov 2");
+assert.strictEqual(g.srcDayHead({ begin_date: null, end_date: "2026-12-01" }), "Closing Tuesday, Dec 1");
+assert.strictEqual(g.srcDayHead({ begin_date: "2023-05-25", end_date: null }), "Opened Thursday, May 25, 2023", "another year says which");
+assert.ok(/data-src-by="source"[^>]*aria-pressed="true"/.test(html) && /data-src-by="day"[^>]*aria-pressed="false"/.test(html), "By source is the start");
+assert.ok(html.indexOf('id="src-list"') < html.indexOf('id="src-batch"'), "the bar sits after the list, to stick to the bottom of it");
+
 // --- the dial: the zone is the guard's, and the needle stops at the end ---
 const at = (share, state) => g.gaugeAt(share * 10, 10, state);
 assert.strictEqual(at(0.79, "ok").zone, "ok");
