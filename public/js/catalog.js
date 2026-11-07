@@ -629,7 +629,7 @@ $("ev-back").addEventListener("click", function () {
 });
 $("ev-body").addEventListener("click", function (ev) {
   var t = ev.target;
-  if (t.id === "ev-signin-btn") { AFTER_SIGN_IN = "e/" + EV.id; openAccount(); return; }
+  if (t.id === "ev-signin-btn") { signInFrom("e/" + EV.id); return; }
   var hide = t.closest("[data-take-hide]");
   if (hide) { // CC-112: an admin hides or unhides a take, then the view reloads with it marked
     hide.disabled = true;

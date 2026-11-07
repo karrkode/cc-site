@@ -9,6 +9,10 @@ function openSubmit() { SUBMIT_SENT = false; renderSubmit(); show("submit"); }
 function renderSubmit() {
   var signedIn = !!AUTH.user;
   $("submit-signin").hidden = signedIn; $("submit-how").hidden = !signedIn || SUBMIT_SENT; paintHow();
+  // CC-237: say so before they fill it in: sending needs a confirmed address (CC-186), and admins are never held up
+  var note = $("submit-confirm"), hold = signedIn && !AUTH.user.email_verified && !isAdmin() && !SUBMIT_SENT;
+  note.hidden = !hold;
+  if (!hold) note.textContent = ""; else if (!note.textContent) confirmFirst(note);
   $("submit-sub").textContent = isAdmin() ? "You're an admin: choose whether it goes live now, at a set time, or waits for review." :
     "Tell us about it. Someone from the crew checks each one before it goes on the list.";
   $("s-publish").hidden = !isAdmin();
@@ -33,6 +37,7 @@ function renderSubmit() {
 var LINK_OPEN = false, LINK_READ = 0, LINK_SET = {}, LINK_SLOW = null, LINK_MARKS = null; // LINK_READ: the latest read, so a late answer is dropped
 var MISSING_FIELDS = { title: ["s-title"], category: ["s-category"], venue: ["s-venue"], neighborhood: ["s-hood"],
   dates: ["s-begin", "s-end"], price: ["s-cost"] };
+$("submit-signin-btn").addEventListener("click", function () { signInFrom("submit"); }); // CC-237
 function howChoice() { var r = document.querySelector('input[name="s-how"]:checked'); return r ? r.value : "link"; }
 function paintHow() {
   var link = howChoice() === "link";

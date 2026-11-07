@@ -75,4 +75,34 @@ has(sandbox.acctRowHTML("", "x", "", "Withdrawn", true), 'class="acct-row-s quie
 lacks(account + issues, 'class="pill', "no pills");
 has(issues, "acctRowHTML(i.key", "your reports are rows too");
 
+// CC-237: every prompt sets its way back, and a new member hears about confirming wherever they land
+const submit = read("js/submit.js"), crewsJs = read("js/crews.js"), catalogJs = read("js/catalog.js");
+has(submit, 'signInFrom("submit")'); has(catalogJs, 'signInFrom("e/" + EV.id)'); has(crewsJs, 'signInFrom("crews")');
+has(account, 'signInFrom("planner")'); has(account, 'signInFrom("journal")');
+lacks(between(html, 'id="submit-signin"', "</div>\n      </div>"), 'data-go="account"', "the Submit prompt sets its way back");
+for (const src of [account, submit, crewsJs, catalogJs]) assert.ok(!/AFTER_SIGN_IN = "/.test(src), "only signInFrom and authForm set AFTER_SIGN_IN");
+has(fn(account, "openAccount"), "AFTER_SIGN_IN = null");
+has(fn(account, "openReset"), "AFTER_SIGN_IN = null", "a reset's message isn't lost to a prompt from earlier");
+has(fn(account, "onAuthChange"), "returnAfterSignIn()");
+assert.ok(!/AFTER_SIGN_IN \|\| "home"/.test(fn(account, "onAuthChange")), "Home is for the forms, not a session coming back on its own");
+has(html, 'id="submit-confirm"'); has(html, 'id="joined-note"');
+has(fn(submit, "renderSubmit"), "!isAdmin()", "admins are never held up");
+has(fn(submit, "renderSubmit"), "confirmFirst(note)");
+has(read("js/util.js"), "paintJoinedNote(name)");
+// Only until they move on, only unconfirmed, and never twice on Submit an event
+{
+  const g = { AUTH: { user: { email_verified: false } }, els: { "joined-note": { hidden: true, innerHTML: "" } } };
+  g.$ = (id) => g.els[id];
+  vm.createContext(g);
+  vm.runInContext("var JOINED_VIEW = null;" + fn(account, "paintJoinedNote"), g);
+  const note = g.els["joined-note"];
+  g.JOINED_VIEW = "home"; g.paintJoinedNote("home");
+  assert.strictEqual(note.hidden, false); has(note.innerHTML, "data-verify-send"); has(note.innerHTML, "confirm your address");
+  g.paintJoinedNote("catalog");
+  assert.strictEqual(note.hidden, true); assert.strictEqual(note.innerHTML, ""); assert.strictEqual(g.JOINED_VIEW, null);
+  g.paintJoinedNote("home"); assert.strictEqual(note.hidden, true);
+  g.JOINED_VIEW = "submit"; g.paintJoinedNote("submit"); assert.strictEqual(note.hidden, true);
+  g.AUTH.user.email_verified = true; g.JOINED_VIEW = "home"; g.paintJoinedNote("home"); assert.strictEqual(note.hidden, true);
+}
+
 console.log("account and sign-in: ok");
