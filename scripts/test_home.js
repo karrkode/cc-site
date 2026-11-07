@@ -1,5 +1,5 @@
 // Checks run in CI before the site deploys (CC-143): the home front page in public/js/catalog.js.
-// The lead pick follows the data rule (soonest "going", then soonest "interested", then none), its deck is built from
+// The admin's picks follow the data rule ("going", then "interested", soonest first, at most 10), a card's deck is built from
 // data, it's one link on its category field, and Last chance items say when they close.
 //
 //     node scripts/test_home.js
@@ -28,12 +28,12 @@ const g = {
   Intl, console,
 };
 vm.createContext(g);
-vm.runInContext("var AUTH = { user: null }; function $(id) { return document; }", g);
+vm.runInContext("var LEADS_MAX = 10, AUTH = { user: null }; function $(id) { return document; }", g);
 vm.runInContext(read("util.js"), g);
 vm.runInContext(read("water.js"), g);
 vm.runInContext(from("crews.js", ["initials", "crewTone"]), g);
 vm.runInContext(read("listings.js"), g);
-vm.runInContext(from("catalog.js", ["leadNext", "leadPick", "leadDeck", "leadHTML", "lastWhen", "lastHTML"]), g);
+vm.runInContext(from("catalog.js", ["leadNext", "leadPicks", "leadDeck", "leadHTML", "lastWhen", "lastHTML"]), g);
 
 const iso = (d) => g.isoDate(d);
 let n = 0;
@@ -48,18 +48,21 @@ function ev(over) {
 const going = (days, over) => ev(Object.assign({ pick: { status: "going", date: days === null ? null : iso(g.add(g.T, days)), by: "Andrew" } }, over));
 const interested = (over) => ev(Object.assign({ pick: { status: "interested", date: null, by: "Andrew" } }, over));
 
-// --- the data rule ---
+// --- the data rule (CC-238: the admin's picks, in order, at most 10) ---
+const ids = (list) => Array.from(list, (e) => e.id);
 const soon = going(3), later = going(9), gone = going(-2);
-assert.strictEqual(g.leadPick([later, gone, soon], []).id, soon.id, "the soonest day they're going; a day already past doesn't count");
+assert.deepStrictEqual(ids(g.leadPicks([later, gone, soon], [])), [soon.id, later.id], "soonest day they're going first; a day already past doesn't count");
 const undated = going(null, { begin_date: iso(g.add(g.T, 5)) });
-assert.strictEqual(g.leadPick([undated, later], []).id, undated.id, "going with no day: the day it next plays stands in");
+assert.deepStrictEqual(ids(g.leadPicks([undated, later], [])), [undated.id, later.id], "going with no day: the day it next plays stands in");
 const nextWeek = interested({ begin_date: iso(g.add(g.T, 7)) }), running = interested({});
-assert.strictEqual(g.leadPick([gone], [nextWeek, running]).id, running.id, "no upcoming going: the soonest interested (running now beats opening later)");
-assert.strictEqual(g.leadPick([soon], [running]).id, soon.id, "going comes first");
+assert.deepStrictEqual(ids(g.leadPicks([gone], [nextWeek, running])), [running.id, nextWeek.id], "interested: running now beats opening later");
+assert.deepStrictEqual(ids(g.leadPicks([later], [running])), [later.id, running.id], "going comes first, even when an interested one is sooner");
 const closed = interested({ begin_date: iso(g.add(g.T, -30)), end_date: iso(g.add(g.T, -1)) });
-assert.strictEqual(g.leadPick([], [closed]), null, "a closed run isn't a lead pick");
-assert.strictEqual(g.leadPick([], []), null, "neither: no lead pick");
-assert.strictEqual(g.leadPick([ev({})], [ev({})]), null, "only events the admin picked");
+assert.strictEqual(g.leadPicks([], [closed]).length, 0, "a closed run is never recommended");
+assert.strictEqual(g.leadPicks([], []).length, 0, "neither: no picks");
+assert.strictEqual(g.leadPicks([ev({})], [ev({})]).length, 0, "only events the admin picked");
+const many = Array.from({ length: 12 }, (_, i) => going(i + 1));
+assert.deepStrictEqual(ids(g.leadPicks(many, [running])), ids(many.slice(0, 10)), "at most 10, and the soonest ones");
 
 // --- the deck ---
 const run = going(3, { begin_date: iso(g.add(g.T, 2)), end_date: iso(g.add(g.T, 40)),

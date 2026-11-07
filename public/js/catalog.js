@@ -1,12 +1,12 @@
 // Culture Crew site: The home page's "Last chances" list and the catalog with its filters.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
+// Loaded by index.html in order (core, util, catalog, leadstack, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- home: the front page (CC-143) ----------
-// Three lists, each asked for on its own so one slow or failed request doesn't hold up the others: the lead pick,
+// Three lists, each asked for on its own so one slow or failed request doesn't hold up the others: the admin's picks,
 // Last chance (events running today, soonest to close; open runs come last, then fall back to anything) and the
 // first rows of the listings, opening soonest, as the catalog opens.
-var SOON = [], LEAD = null, HOME_LIST = [], HOME_ROWS = 8;
+var SOON = [], LEADS = [], LEADS_MAX = 10, HOME_LIST = [], HOME_ROWS = 8;
 function loadHome() {
   var t = isoDate(T);
   fetchEvents([["from", t], ["to", t], ["sort", "closing"], ["limit", 12]]).then(function (page) {
@@ -15,21 +15,21 @@ function loadHome() {
     return fetchEvents([["from", t], ["sort", "closing"], ["limit", 4]]).then(function (p) { return p.items; });
   }).then(function (soon) { SOON = soon; renderHome(); }, function () {});
   Promise.all([fetchEvents([["from", t], ["picks", "going"], ["limit", 100]]), fetchEvents([["from", t], ["picks", "interested"], ["limit", 100]])])
-    .then(function (r) { LEAD = leadPick(r[0].items, r[1].items); renderHome(); }, function () {});
+    .then(function (r) { LEADS = leadPicks(r[0].items, r[1].items); renderHome(); }, function () {});
   fetchEvents([["from", t], ["sort", "opening"], ["limit", HOME_ROWS]]).then(function (p) { HOME_LIST = p.items; renderHome(); }, function () {});
 }
 
-// The lead pick: the admin's soonest upcoming "going" event (by the day they're going), otherwise their soonest
-// "interested" one (by the day it's next on), otherwise none, and the column goes.
+// The admin's picks, for everyone (CC-238): their upcoming "going" events (by the day they're going), then their
+// "interested" ones (by the day each is next on), at most 10. Two or more show as the stack (leadstack.js), one as the
+// lead pick on its own, and with none the column goes.
 function leadNext(e) { return e.b && e.b > T ? e.b : T; }
-function leadPick(going, interested) {
+function leadPicks(going, interested) {
   var g = going.filter(function (e) { return e.pick && e.pick.status === "going" && !isPast(e) && (!e.pick.date || parseISO(e.pick.date) >= T); })
     .map(function (e) { return { e: e, d: e.pick.date ? parseISO(e.pick.date) : leadNext(e) }; });
   var i = interested.filter(function (e) { return e.pick && e.pick.status === "interested" && !isPast(e); })
     .map(function (e) { return { e: e, d: leadNext(e) }; });
-  var first = function (list) { return list.sort(function (a, b) { return a.d - b.d || byClosing(a.e, b.e); })[0]; };
-  var best = first(g) || first(i);
-  return best ? best.e : null;
+  var soonest = function (list) { return list.sort(function (a, b) { return a.d - b.d || byClosing(a.e, b.e); }); };
+  return soonest(g).concat(soonest(i)).slice(0, LEADS_MAX).map(function (x) { return x.e; });
 }
 // Its deck, built from data (a note from the admin is a later idea): where it is, then, signed in, who from your crews
 // is in on it. With no crew-mates in, the run says when.
@@ -68,9 +68,10 @@ function lastHTML(e) {
     '<span class="last-t">' + esc(e.title) + "</span>" + '<span class="last-where">' + esc(placeText(e) + " · " + costText(e)) + "</span></a></li>";
 }
 function renderHome() {
-  var slot = $("lead-slot"), html = LEAD ? leadHTML(LEAD) : "";
-  if (slot.getAttribute("data-html") !== html) { slot.innerHTML = html; slot.setAttribute("data-html", html); paintWater(slot); } // the water redraws only when it changes
-  slot.hidden = !LEAD; $("front").classList.toggle("no-lead", !LEAD); // with no lead pick, the other two share the width
+  var slot = $("lead-slot"), many = LEADS.length > 1, html = many ? stackHTML(LEADS) : LEADS.length ? leadHTML(LEADS[0]) : "";
+  slot.hidden = !LEADS.length; $("front").classList.toggle("no-lead", !LEADS.length); // with no picks, the other two share the width
+  $("front").classList.toggle("has-stack", many); // CC-238: the stack takes the whole row, and the other two share the row below
+  if (slot.getAttribute("data-html") !== html) { slot.innerHTML = html; slot.setAttribute("data-html", html); paintWater(slot); stackStart(many ? LEADS : []); } // the water redraws only when it changes
   $("way-catalog-d").textContent = plural(FACETS.current, "event", "events") + ", opening soonest first.";
   $("way-crews-d").textContent = AUTH.user ? "Who’s going, and to what." : "The friends you go out with. Sign in to start one or join one."; // CC-103
   $("soon-list").innerHTML = SOON.map(lastHTML).join("");
