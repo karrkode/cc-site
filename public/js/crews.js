@@ -356,8 +356,8 @@ $("crew-list").addEventListener("click", function (ev) {
     return;
   }
   // the ones that need a "yes" first
-  var asks = { leave: "Leave " + c.name + "? You'd need a new invite link to come back.", delete: "Dissolve " + c.name + " for everyone? This can't be undone.",
-    remove: who && "Remove " + who.name + " from " + c.name + "?", owner: who && "Make " + who.name + " the crew leader? You'll stay a member, and they'll lead the crew." };
+  var asks = { leave: "Leave " + c.name + "? Your invites stop working, and you'd need a new invite link to come back.", delete: "Dissolve " + c.name + " for everyone? This can't be undone.",
+    remove: who && "Remove " + who.name + " from " + c.name + "? Their invites stop working, and they can't come back unless you invite them by email.", owner: who && "Make " + who.name + " the crew leader? You'll stay a member, and they'll lead the crew." };
   var confirmed = { "leave-yes": "leave", "delete-yes": "delete", "remove-yes": "remove", "owner-yes": "owner" }[act];
   if (asks[act]) { CREW_ASK = { crew: c.id, act: act + "-yes", text: asks[act], user: user }; paintCrews(); var yes = document.querySelector('[data-crew-card="' + c.id + '"] .confirm .btn'); if (yes) yes.focus(); return; }
   b.disabled = true;
@@ -429,7 +429,7 @@ $("crew-new").addEventListener("submit", function (ev) {
 // ---------- joining from an invite link ----------
 function openJoin(token) {
   openAccount();
-  api("/crews/invite/" + encodeURIComponent(token)).then(readJSON).then(function (res) {
+  api("/crews/invite/preview", { method: "POST", body: { token: token } }).then(readJSON).then(function (res) { // CC-187: a POST keeps the token out of access logs
     if (!res.ok) { JOIN = null; $("join-panel").hidden = true; openAccount(errorText(res)); return; }
     JOIN = { token: token, preview: res.body }; paintJoin(true);
   }, function () { openAccount(errorText(null)); });
@@ -442,10 +442,10 @@ function paintJoin(focus) {
   $("join-title").textContent = "Join " + p.crew_name;
   $("join-text").textContent = p.invited_by + " invited you to " + p.crew_name + " (" + plural(p.members, "member", "members") + ")." +
     (p.description ? " " + p.description : "") +
-    (p.already_member ? " You're already in it." : p.full ? " It's full right now, so ask them to make room." : signedIn ? "" : " Sign in or create an account below, then join.");
+    (p.already_member ? " You're already in it." : p.removed ? " You were removed from this crew, so only its leader can invite you back." : p.full ? " It's full right now, so ask them to make room." : signedIn ? "" : " Sign in or create an account below, then join.");
   $("join-error").textContent = "";
-  $("join-yes").hidden = !signedIn || p.already_member || p.full; $("join-yes").disabled = false;
-  $("join-no").textContent = p.already_member || p.full ? "Close" : "Not now";
+  $("join-yes").hidden = !signedIn || p.already_member || p.removed || p.full; $("join-yes").disabled = false;
+  $("join-no").textContent = p.already_member || p.removed || p.full ? "Close" : "Not now";
   if (focus) $("join-title").focus();
 }
 $("join-yes").addEventListener("click", function () {

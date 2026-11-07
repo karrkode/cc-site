@@ -140,4 +140,10 @@ set("CREW_ASK = null;");
 assert.strictEqual(g.checkThis("Give the crew a name."), "Check this: Give the crew a name.");
 lacks(g.crewHTML(crew({ name: "<b>x</b>" })), "<b>x</b>", "a crew's name is text");
 
+// --- CC-187: an invite token goes in the body, never the URL, and a removed account isn't offered Join ---
+const source = read("crews.js");
+has(source, 'api("/crews/invite/preview", { method: "POST", body: { token: token } })');
+lacks(source, '"/crews/invite/" +', "no token in a path");
+has(source, '$("join-yes").hidden = !signedIn || p.already_member || p.removed || p.full;');
+
 console.log("ok: the crews page (CC-145)");
