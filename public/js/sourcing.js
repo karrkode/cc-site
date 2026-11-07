@@ -1,7 +1,8 @@
 // Culture Crew site: Event Sourcing (admins, CC-206, CC-207): what needs the admin, the budget dial, the graph of new
 // events found, and the found events themselves, by source. The numbers are the weekly recap's and the budget guard's,
 // from the same code (/admin/discovery/summary), so the page, the email and the guard agree. Found events (found.js)
-// stays the full tool, with its filters, proposed updates and history.
+// stays the full tool, with its filters, proposed updates and history. CC-208: the found events group by source or by
+// day, and several can be approved, deleted or hidden at once.
 "use strict";
 var SOURCING_REQ = 0; // replies to an older load are dropped
 function openSourcing() { if (!isAdmin()) { openAccount(); return; } show("sourcing"); updateFoundCount(); loadSourcing(); }
@@ -45,8 +46,10 @@ function paintSourcing(o) {
   $("week-recap").textContent = "The full recap goes out by email on " + chicagoDate(o.next_recap, { weekday: "long", month: "short", day: "numeric" }) + " at 10 AM.";
 
   SRC.rows = o.waiting_by_source.map(function (s) { return { key: String(s.id === null ? 0 : s.id), id: s.id === null ? 0 : s.id, name: s.name, n: s.n }; });
-  SRC.hidden = o.hidden; SRC.open = null; SRC.items = []; SRC.total = 0;
-  $("src-status").textContent = ""; paintSrc();
+  SRC.hidden = o.hidden; SRC.items = []; SRC.total = 0; srcUnpick();
+  $("src-status").textContent = "";
+  SRC.open = SRC.by === "day" ? "day" : null;
+  if (SRC.by === "day") srcLoad(false); else paintSrc();
 }
 document.addEventListener("click", function (ev) { // the tools that sit lower down another page
   var b = ev.target.closest("[data-hub]"); if (!b) return;
@@ -136,17 +139,47 @@ window.addEventListener("resize", function () { if (visible("sourcing")) paintGr
 // ---------- the found events list ----------
 // A row per source, then Hidden. One row is open at a time, so an event hidden or unhidden never has to appear in an
 // open list. Rows keep their order while the admin works, so the row in hand doesn't move; a reload puts the largest first.
-var SRC = { rows: [], hidden: 0, open: null, items: [], total: 0, loading: false, error: "", req: 0 };
+// CC-208: By day is one list of the new events under day heads, held as if a row called "day" were open. Hidden stays
+// with By source. A batch only covers ticked events, and only loaded ones can be ticked, so nothing goes unseen.
+var SRC = { rows: [], hidden: 0, open: null, items: [], total: 0, loading: false, error: "", req: 0, by: "source", picked: {}, asking: "", said: "", busy: false };
 function srcRow(key) { return SRC.rows.filter(function (r) { return r.key === key; })[0]; }
+function srcKey(i) { return String(i.source_id === null ? 0 : i.source_id); }
+function srcCountDown(i) { // a new event has left: its source's row follows
+  var row = srcRow(srcKey(i)); if (!row) return;
+  row.n -= 1; if (row.n <= 0) SRC.rows = SRC.rows.filter(function (r) { return r !== row; });
+}
 function srcActions(i) {
   var id = esc(i.id), title = esc(i.title), hidden = i.status === "hidden";
   return '<button class="btn" type="button" data-src-act="edit" aria-label="Edit and approve ' + title + '">Edit/Approve</button>' +
     '<button class="btn ghost" type="button" data-src-act="reject" aria-label="Delete ' + title + '">Delete</button>' +
     '<button class="btn ghost" type="button" data-src-act="' + (hidden ? "unhide" : "hide") + '" aria-label="' + (hidden ? "Unhide " : "Hide ") + title + '">' + (hidden ? "Unhide" : "Hide") + "</button>";
 }
+function srcItemHTML(i) {
+  var pick = i.status === "new" ? '<label class="src-pick"><input type="checkbox" data-src-pick' + (SRC.picked[i.id] ? " checked" : "") + ' aria-label="Select ' + esc(i.title) + '"></label>' : "";
+  return foundRowHTML(i, srcActions(i), pick);
+}
+function srcAllHTML(n, name) { return '<label class="src-all"><input type="checkbox" data-src-all aria-label="' + esc(name) + '"> Select all ' + n + "</label>"; }
+function srcDayHead(i) {
+  var day = i.begin_date || i.end_date; if (!day) return "No date";
+  var parts = { weekday: "long", month: "short", day: "numeric" };
+  if (day.slice(0, 4) !== isoDate(T).slice(0, 4)) parts.year = "numeric";
+  return (!i.begin_date ? "Closing " : i.begin_date < isoDate(T) ? "Opened " : "Opening ") + chicagoDate(day, parts);
+}
+function srcDaysHTML() { // the API sends them in day order, undated last
+  var days = [];
+  SRC.items.forEach(function (i) {
+    var head = srcDayHead(i), last = days[days.length - 1];
+    if (last && last.head === head) last.items.push(i); else days.push({ head: head, items: [i] });
+  });
+  return days.map(function (d) {
+    return '<div class="src-day" data-src-group><div class="src-day-head"><h3 class="listing-day-head">' + esc(d.head) + "</h3>" +
+      (d.items.length > 1 ? srcAllHTML(d.items.length, "Select all " + d.items.length + ": " + d.head) : "") + '</div><div class="queue">' + d.items.map(srcItemHTML).join("") + "</div></div>";
+  }).join("");
+}
 function srcPanelHTML() {
   if (SRC.error) return '<p class="form-error" role="alert">' + esc(SRC.error) + "</p>";
-  return '<div class="queue">' + SRC.items.map(function (i) { return foundRowHTML(i, srcActions(i)); }).join("") + "</div>" +
+  var all = SRC.open !== "hidden" && SRC.items.length > 1 ? srcAllHTML(SRC.items.length, "Select all " + SRC.items.length + " shown") : "";
+  return all + (SRC.by === "day" ? srcDaysHTML() : '<div class="queue">' + SRC.items.map(srcItemHTML).join("") + "</div>") +
     (SRC.items.length < SRC.total ? '<div class="row"><button class="btn ghost" type="button" data-src-more' + (SRC.loading ? " disabled" : "") + ">Show more</button>" +
       '<span class="hint">Showing ' + SRC.items.length + " of " + SRC.total + "</span></div>" : "");
 }
@@ -162,10 +195,16 @@ function paintSrc() {
   var waiting = SRC.rows.reduce(function (n, r) { return n + r.n; }, 0);
   $("src-n").textContent = waiting ? String(waiting) : "";
   dropRepaint($("src-list"), function () {
+    var none = '<li><p class="hint">Nothing waiting. New finds show up here after each check.</p></li>';
+    if (SRC.by === "day") {
+      $("src-list").innerHTML = !waiting ? none : SRC.loading && !SRC.items.length ? '<li><p class="hint">Loading…</p></li>' : '<li class="src-days">' + srcPanelHTML() + "</li>";
+      return;
+    }
     $("src-list").innerHTML = SRC.rows.map(function (r) { return srcRowHTML(r.key, r.n, r.name, ""); }).join("") +
       (SRC.hidden ? srcRowHTML("hidden", SRC.hidden, "Hidden", "Not sure yet. They stay here until you decide.") : "");
-    if (!waiting && !SRC.hidden) $("src-list").innerHTML = '<li><p class="hint">Nothing waiting. New finds show up here after each check.</p></li>';
+    if (!waiting && !SRC.hidden) $("src-list").innerHTML = none;
   });
+  srcPickSync();
   if (key) srcFocusRow(key);
 }
 function srcFocusRow(key) {
@@ -176,7 +215,7 @@ function srcLoad(more) {
   var key = SRC.open, req = ++SRC.req, offset = more ? SRC.items.length : 0;
   SRC.loading = true; SRC.error = ""; if (!more) SRC.items = [];
   paintSrc();
-  var query = key === "hidden" ? [["show", "hidden"]] : [["show", "new"], ["source", srcRow(key).id]];
+  var query = key === "hidden" ? [["show", "hidden"]] : key === "day" ? [["show", "new"], ["order", "day"]] : [["show", "new"], ["source", srcRow(key).id]];
   api("/admin/discovery/items?" + qs(query.concat([["limit", FOUND_PAGE], ["offset", offset]]))).then(readJSON).then(function (res) {
     if (req !== SRC.req) return;
     SRC.loading = false;
@@ -187,7 +226,7 @@ function srcLoad(more) {
   }, function () { if (req === SRC.req) { SRC.loading = false; SRC.error = errorText(null); paintSrc(); } });
 }
 function srcToggle(key) {
-  SRC.req++; SRC.loading = false; SRC.error = ""; SRC.items = []; SRC.total = 0;
+  SRC.req++; SRC.loading = false; SRC.error = ""; SRC.items = []; SRC.total = 0; srcUnpick();
   if (SRC.open === key) { SRC.open = null; paintSrc(); return; }
   SRC.open = key; srcLoad(false);
 }
@@ -195,14 +234,14 @@ function srcToggle(key) {
 function srcDone(i, said, moved) {
   var at = SRC.items.map(function (x) { return x.id; }).indexOf(i.id), next = SRC.items[at + 1] || SRC.items[at - 1], key = SRC.open;
   SRC.items = SRC.items.filter(function (x) { return x.id !== i.id; }); SRC.total -= 1;
-  if (key === "hidden") SRC.hidden -= 1;
-  else { var row = srcRow(key); row.n -= 1; if (row.n <= 0) SRC.rows = SRC.rows.filter(function (r) { return r !== row; }); }
+  delete SRC.picked[i.id]; SRC.asking = ""; paintBatch();
+  if (key === "hidden") SRC.hidden -= 1; else srcCountDown(i);
   if (moved === "hide") SRC.hidden += 1;
   if (moved === "unhide") {
-    var to = String(i.source_id === null ? 0 : i.source_id), there = srcRow(to);
+    var to = srcKey(i), there = srcRow(to);
     if (there) there.n += 1; else SRC.rows.push({ key: to, id: Number(to), name: i.source_id === null ? "Deleted source" : i.source_name, n: 1 });
   }
-  if (!SRC.total) SRC.open = null;
+  if (!SRC.total && key !== "day") SRC.open = null;
   $("edit-live").textContent = said; updateFoundCount();
   if (!SRC.items.length && SRC.total > 0) { srcLoad(false); srcFocusRow(key); return; } // all those loaded are done: the next part
   paintSrc();
@@ -223,4 +262,94 @@ $("src-list").addEventListener("click", function (ev) {
     if (!res.ok) { foundBusy(row, false); $("src-status").textContent = errorText(res); return; }
     srcDone(i, (act === "reject" ? "Deleted " : act === "hide" ? "Hid " : "Unhid ") + i.title + ".", act);
   }, function () { foundBusy(row, false); $("src-status").textContent = errorText(null); });
+});
+
+// ---------- several at once (CC-208) ----------
+// The API decides what a batch approval may add; batch_hold is its answer ahead of time, so the bar can say how many are
+// ready. Approving goes live and deleting can't be undone, so those two ask first. What stays is said, with why.
+var SRC_HOLDS = { duplicate: "possibly already listed", new_venue: "at a new venue", type: "with no type", date: "with no date", show_days: "with no show days",
+  type_differs: "whose type needs a look", short_run: "missing a time", form: "to check in the form" };
+function srcPicked() { return SRC.items.filter(function (i) { return SRC.picked[i.id]; }); }
+function srcUnpick() { SRC.picked = {}; SRC.asking = ""; SRC.said = ""; paintBatch(); }
+function paintBatch() {
+  var picked = srcPicked(), n = picked.length, ready = picked.filter(function (i) { return !i.batch_hold; }).length, off = SRC.busy ? " disabled" : "";
+  $("src-batch").hidden = !n && !SRC.said;
+  $("src-batch-said").textContent = SRC.said; $("src-batch-said").hidden = !SRC.said;
+  $("src-batch-n").hidden = !n;
+  $("src-batch-n").textContent = SRC.asking === "approve" ? "Add " + plural(ready, "event", "events") + " to the catalog? " + (ready === 1 ? "It goes" : "They go") + " live now." :
+    SRC.asking === "reject" ? "Delete " + plural(n, "event", "events") + "? " + (n === 1 ? "It won't" : "They won't") + " come back." : plural(n, "event", "events") + " selected, " + ready + " ready to approve.";
+  $("src-batch-tools").hidden = !n;
+  $("src-batch-tools").innerHTML = SRC.asking ? '<button class="btn" type="button" data-batch="' + SRC.asking + '" data-batch-yes' + off + ">Yes, " + (SRC.asking === "approve" ? "approve " + ready : "delete " + n) + "</button>" +
+      '<button class="btn ghost" type="button" data-batch="cancel"' + off + ">Cancel</button>" :
+    '<button class="btn" type="button" data-batch="approve"' + (ready ? off : " disabled") + ">Approve " + ready + "</button>" +
+    '<button class="btn ghost" type="button" data-batch="reject"' + off + ">Delete " + n + "</button>" +
+    '<button class="btn ghost" type="button" data-batch="hide"' + off + ">Hide " + n + "</button>" +
+    '<button class="textbtn" type="button" data-batch="clear"' + off + ">Clear</button>";
+}
+function srcPickSync() { // each Select all shows what's ticked in its group: all, some or none
+  Array.prototype.forEach.call($("src-list").querySelectorAll("[data-src-all]"), function (all) {
+    var boxes = (all.closest("[data-src-group]") || $("src-list")).querySelectorAll("[data-src-pick]"), on = 0;
+    Array.prototype.forEach.call(boxes, function (b) { if (b.checked) on += 1; });
+    all.checked = on === boxes.length; all.indeterminate = on > 0 && on < boxes.length;
+  });
+}
+function srcBatchWords(action, o) {
+  var done = o.done.length, gone = 0, why = {}, stayed = 0;
+  o.held.forEach(function (h) { if (h.why === "gone") gone += 1; else { why[h.why] = (why[h.why] || 0) + 1; stayed += 1; } });
+  var said = !done ? "Nothing changed." : action === "approve" ? "Added " + plural(done, "event", "events") + " to the catalog." : (action === "reject" ? "Deleted " : "Hid ") + plural(done, "event", "events") + ".";
+  if (stayed) said += " " + stayed + " stayed: " + Object.keys(why).map(function (k) { return why[k] + " " + (SRC_HOLDS[k] || "to check in the form"); }).join(", ") + ". Use Edit/Approve on those.";
+  if (gone) said += " " + plural(gone, "event was", "events were") + " already decided.";
+  return said;
+}
+function srcBatchDone(action, o) {
+  var left = {}; o.done.forEach(function (id) { left[id] = true; });
+  o.held.forEach(function (h) { if (h.why === "gone") left[h.id] = true; });
+  SRC.items.forEach(function (i) { if (left[i.id]) { srcCountDown(i); SRC.total -= 1; } });
+  SRC.items = SRC.items.filter(function (i) { return !left[i.id]; });
+  if (action === "hide") SRC.hidden += o.done.length;
+  if (action === "approve" && o.done.length) reloadEvents();
+  SRC.picked = {}; SRC.asking = ""; SRC.said = srcBatchWords(action, o);
+  $("edit-live").textContent = SRC.said; updateFoundCount();
+  if (!SRC.total && SRC.open !== "day") SRC.open = null;
+  paintBatch();
+  if (!SRC.items.length && SRC.total > 0) { srcLoad(false); $("src-title").focus(); return; } // all those loaded are done: the next part
+  paintSrc();
+  ($("src-list").querySelector("[data-src-pick]") || $("src-title")).focus();
+}
+function srcBatchSend(action) {
+  var ids = srcPicked().map(function (i) { return i.id; }), stop = function (res) { SRC.busy = false; SRC.asking = ""; SRC.said = errorText(res); paintBatch(); };
+  SRC.busy = true; paintBatch();
+  api("/admin/discovery/items/batch", { method: "POST", body: { action: action, ids: ids } }).then(readJSON).then(function (res) {
+    if (!res.ok) { stop(res); return; }
+    SRC.busy = false; srcBatchDone(action, res.body);
+  }, function () { stop(null); });
+}
+function srcGroupBy(by) {
+  if (SRC.by === by) return;
+  SRC.by = by; SRC.req++; SRC.loading = false; SRC.error = ""; SRC.items = []; SRC.total = 0; srcUnpick();
+  Array.prototype.forEach.call(document.querySelectorAll("[data-src-by]"), function (b) {
+    var on = b.getAttribute("data-src-by") === by; b.setAttribute("aria-pressed", String(on)); b.classList.toggle("ghost", !on);
+  });
+  SRC.open = by === "day" ? "day" : null;
+  if (by === "day") srcLoad(false); else paintSrc();
+}
+document.addEventListener("click", function (ev) { var b = ev.target.closest("[data-src-by]"); if (b) srcGroupBy(b.getAttribute("data-src-by")); });
+$("src-list").addEventListener("change", function (ev) {
+  var t = ev.target, all = t.hasAttribute("data-src-all");
+  if (!all && !t.hasAttribute("data-src-pick")) return;
+  var boxes = all ? (t.closest("[data-src-group]") || $("src-list")).querySelectorAll("[data-src-pick]") : [t];
+  Array.prototype.forEach.call(boxes, function (b) {
+    b.checked = t.checked;
+    var id = b.closest("[data-found]").getAttribute("data-found");
+    if (t.checked) SRC.picked[id] = true; else delete SRC.picked[id];
+  });
+  SRC.asking = ""; SRC.said = ""; srcPickSync(); paintBatch();
+});
+$("src-batch").addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-batch]"); if (!b) return;
+  var act = b.getAttribute("data-batch"), first = function () { $("src-batch-tools").querySelector("button:not([disabled])").focus(); };
+  if (act === "clear") { srcUnpick(); paintSrc(); $("src-title").focus(); return; }
+  if (act === "cancel") { SRC.asking = ""; paintBatch(); first(); return; }
+  if (act === "hide" || b.hasAttribute("data-batch-yes")) { srcBatchSend(act); return; }
+  SRC.asking = act; paintBatch(); first();
 });

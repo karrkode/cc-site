@@ -76,10 +76,10 @@ function changeValue(field, v) {
   return v;
 }
 function foundItemHTML(i) { return foundRowHTML(i, foundActions(i, esc(i.id), esc(i.title))); }
-function foundRowHTML(i, actions) { // CC-207: Event Sourcing's list shows the same row, with its own buttons
+function foundRowHTML(i, actions, pick) { // CC-207: Event Sourcing's list shows the same row, with its own buttons (CC-208: and a tick box)
   var id = esc(i.id), title = esc(i.title), state = i.status === "hidden" && actions.indexOf("data-src-act") >= 0 ? "" : FOUND_STATES[i.status];
   var where = i.venue_name + (i.neighborhood ? " · " + i.neighborhood : i.venue_id ? "" : " · new venue");
-  var html = '<div class="queue-item found" data-found="' + id + '"><div class="alt-text">' +
+  var html = '<div class="queue-item found' + (pick ? " pickable" : "") + '" data-found="' + id + '">' + (pick || "") + '<div class="alt-text">' +
     '<p class="kind">' + esc(foundType(i).category ? typeLabel(foundType(i).category, foundType(i).opera) : FOUND_KINDS[i.kind] || "Event") + (i.needs ? ' <span class="state needs">' + esc(FOUND_NEEDS[i.needs]) + "</span>" : "") + (state ? ' <span class="state' + (i.status === "rejected" ? " rejected" : i.status === "approved" ? " approved" : "") + '">' + esc(state) + "</span>" : "") + "</p>" +
     '<p class="alt-title">' + (i.url ? '<a href="' + esc(safeUrl(i.url)) + '" target="_blank" rel="noopener">' + title + "</a>" : title) + "</p>" +
     '<p class="alt-meta">' + esc(where) + " · " + esc(foundDates(i)) + " · " + esc(i.cost_text || "Price not posted") + "</p>" +

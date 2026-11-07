@@ -770,8 +770,17 @@
           </div>
           <div class="section"><h2 id="graph-title">New events found</h2><div class="graph" id="found-graph"></div><p class="hint" id="week-recap"></p></div>
           <div class="section"><h2 id="src-title" tabindex="-1">Found events <span class="lf-n" id="src-n"></span></h2>
+            <div class="src-by" role="group" aria-label="Group found events">
+              <button class="btn" type="button" data-src-by="source" aria-pressed="true">By source</button>
+              <button class="btn ghost" type="button" data-src-by="day" aria-pressed="false">By day</button>
+            </div>
             <p class="hint" id="src-status" role="status"></p>
             <ul class="hub-rows src-rows" id="src-list" aria-labelledby="src-title"></ul>
+            <div class="src-batch" id="src-batch" hidden>
+              <p id="src-batch-said"></p>
+              <p id="src-batch-n"></p>
+              <div class="row" id="src-batch-tools"></div>
+            </div>
           </div>
         </div>
         <div class="section"><h2>Tools</h2>
