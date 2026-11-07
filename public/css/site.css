@@ -580,7 +580,7 @@ a.btn, a.textbtn { display: inline-block; }
 .how-choice legend { grid-column: 1 / -1; }
 .link-form { display: grid; gap: 12px; }
 .field.missing input, .field.missing select { border-style: dashed; border-color: var(--lead); }
-.miss-tag { display: inline-block; white-space: nowrap; margin-left: 6px; padding: 1px 6px; background: var(--info-soft); color: var(--text); font-family: var(--sign); font-size: 1rem; font-weight: 700; }
+.miss-tag, .fill-tag { display: inline-block; white-space: nowrap; margin-left: 6px; padding: 1px 6px; background: var(--info-soft); color: var(--text); font-family: var(--sign); font-size: 1rem; font-weight: 700; }
 .queue-item { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: 14px 16px; }
 .queue-item .alt-text a { text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .state { font-size: 1rem; font-weight: 700; font-family: var(--sign); padding: 2px 8px; background: var(--info-soft); }
@@ -1342,7 +1342,8 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .editor .field select[size] { padding: 4px; }
 .lf-page .field input[aria-invalid="true"], .lf-page .field select[aria-invalid="true"] { border: 2.5px solid var(--text); padding-inline: 11px; } /* the field at fault: never red */
 .lf-page .field.missing :is(input, select) { border-style: dashed; border-color: var(--lead); }
-.lf-page .miss-tag { padding: 0; background: none; color: var(--muted); }
+.lf-page .miss-tag, .lf-page .fill-tag { padding: 0; background: none; color: var(--muted); }
+.lf-page .field.filled :is(input, select) { background: var(--info-soft); color: var(--on-info-soft); } /* CC-215: for a few seconds after a read */
 .editor .hours-row :is(select, input), .lf-page .hours-row :is(select, input), .editor .weeks-of select, .lf-page .weeks-of select, .run-date input {
   min-height: 44px; padding: 0 10px; background-color: var(--page); color: var(--text); border: 1.5px solid var(--field-line); border-radius: 0; font-family: var(--body); font-size: 1.0625rem;
 }

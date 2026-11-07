@@ -27,19 +27,21 @@ function renderSubmit() {
   }
 }
 // ---------- CC-124: suggest by link ----------
-// "Paste a link" (the default) shows the form only once a page has filled it in; "Enter it myself" is the form as it was.
-var LINK_FILLED = false;
+// "Paste a link" (the default) shows the form once a read starts; "Enter it myself" is the form as it was.
+// CC-215: the member can type while the page is read. A field they've typed in stays: only an empty one, or one the last read
+// filled and nobody changed, takes a new value (the same rule as Add a venue, CC-222). LINK_SET holds what the last read set.
+var LINK_OPEN = false, LINK_READ = 0, LINK_SET = {}, LINK_SLOW = null, LINK_MARKS = null; // LINK_READ: the latest read, so a late answer is dropped
 var MISSING_FIELDS = { title: ["s-title"], category: ["s-category"], venue: ["s-venue"], neighborhood: ["s-hood"],
   dates: ["s-begin", "s-end"], price: ["s-cost"] };
 function howChoice() { var r = document.querySelector('input[name="s-how"]:checked'); return r ? r.value : "link"; }
 function paintHow() {
   var link = howChoice() === "link";
   $("s-link-form").hidden = !link;
-  $("submit-form").hidden = !AUTH.user || SUBMIT_SENT || (link && !LINK_FILLED);
+  $("submit-form").hidden = !AUTH.user || SUBMIT_SENT || (link && !LINK_OPEN);
   $("submit-done").hidden = !AUTH.user || !SUBMIT_SENT;
 }
 $("s-how").addEventListener("change", function () {
-  if (howChoice() === "manual") { $("s-filled").textContent = ""; clearMissing(); }
+  if (howChoice() === "manual") { linkStop(); $("s-filled").textContent = ""; clearMissing(); linkUnmark(); }
   paintHow();
 });
 function clearMissing() {
@@ -58,55 +60,115 @@ function markMissing(names) {
 $("submit-form").addEventListener("input", function (ev) { // a field the member fills in is no longer missing
   var field = ev.target.closest && ev.target.closest(".field.missing");
   if (field && ev.target.value) { field.classList.remove("missing"); var t = field.querySelector(".miss-tag"); if (t) t.remove(); }
+  var mark = ev.target.closest && ev.target.closest(".filled"); if (mark) linkUnmarkOne(mark); // it's theirs now
 });
 function resetSubmitForm() {
   $("submit-form").reset(); delete $("s-category").dataset.chosen; $("s-publish-at-field").hidden = true;
-  setShowDays("s", {}); setRun("s", []); clearMissing(); $("s-filled").textContent = "";
+  setShowDays("s", {}); setRun("s", []); clearMissing(); linkUnmark(); $("s-filled").textContent = ""; LINK_SET = {};
+}
+function linkFree(id) { var v = $(id).value; return !v.trim() || v === LINK_SET[id]; }
+function linkPut(id, value, said) {
+  var now = $(id).value;
+  if (!linkFree(id)) { if (value && value !== now) said.kept = true; return; }
+  $(id).value = value;
+  if (value) { LINK_SET[id] = value; if (value !== now) said.filled.push(id); } else delete LINK_SET[id];
+}
+function linkPutCategory(d, said) {
+  var c = $("s-category");
+  if (c.dataset.chosen && c.value !== LINK_SET["s-category"]) { if (d.category && d.category !== c.value) said.kept = true; return; }
+  delete c.dataset.chosen; delete LINK_SET["s-category"];
+  if (d.category) { c.value = d.category; c.dataset.chosen = "1"; LINK_SET["s-category"] = d.category; said.filled.push("s-category"); }
+  else { c.insertAdjacentHTML("afterbegin", '<option value="">Choose a type</option>'); c.value = ""; }
+  c.dispatchEvent(new Event("change"));
+}
+// "When is it on?" follows a read unless the member chose a fixed run or "Don't know", or changed the dates a read gave
+function linkPutWhen(d, said) {
+  var run = d.run_dates || [], ours = !datesUnknown("s") && (!isFixedRun("s") || JSON.stringify(RUN.s) === LINK_SET.run);
+  if (run.length && !(ours && linkFree("s-begin") && linkFree("s-end"))) { said.kept = true; }
+  else if (run.length) {
+    linkPut("s-begin", "", said); linkPut("s-end", "", said);
+    setRun("s", run); LINK_SET.run = JSON.stringify(RUN.s); said.filled.push("s-run");
+  } else if (!ours) { if (d.begin_date || d.end_date) said.kept = true; }
+  else { setRun("s", []); delete LINK_SET.run; linkPut("s-begin", d.begin_date || "", said); linkPut("s-end", d.end_date || "", said); }
+  var days = JSON.stringify(SHOW_DAYS.s.days), weekly = run.length ? {} : d.weekly || {}, some = Object.keys(weekly).length;
+  if (days !== "{}" && days !== LINK_SET.days) { if (some) said.kept = true; return; }
+  setShowDays("s", weekly, d.weeks); delete LINK_SET.days;
+  if (some) { LINK_SET.days = JSON.stringify(SHOW_DAYS.s.days); said.filled.push("s-sched"); }
+}
+function linkStillMissing(n) { // what the member typed, or a known venue filled in, isn't missing any more
+  if (n === "dates") return !$("s-begin").value && !$("s-end").value && !isFixedRun("s") && !datesUnknown("s");
+  return !(MISSING_FIELDS[n] || []).some(function (id) { return $(id).value.trim(); });
+}
+function linkMark(ids) { // briefly: the tag says it in words, the tint only helps the eye find them
+  ids.forEach(function (id) {
+    var box = $(id).closest(".field, fieldset"), head = box.querySelector("label, legend");
+    box.classList.add("filled"); head.insertAdjacentHTML("beforeend", '<span class="fill-tag">Filled in</span>');
+  });
+  LINK_MARKS = setTimeout(linkUnmark, 6000);
+}
+function linkUnmarkOne(box) { box.classList.remove("filled"); var t = box.querySelector(".fill-tag"); if (t) t.remove(); }
+function linkUnmark() {
+  clearTimeout(LINK_MARKS);
+  document.querySelectorAll("#submit-form .filled").forEach(linkUnmarkOne);
 }
 function fillFromDraft(d) {
-  resetSubmitForm();
-  $("s-title").value = d.title || "";
-  if (d.category) { $("s-category").value = d.category; $("s-category").dataset.chosen = "1"; }
-  else { $("s-category").insertAdjacentHTML("afterbegin", '<option value="">Choose a type</option>'); $("s-category").value = ""; }
-  $("s-category").dispatchEvent(new Event("change"));
-  $("s-hood").value = d.neighborhood || "";
-  $("s-venue").value = d.venue || ""; $("s-venue").dispatchEvent(new Event("change")); // a known venue's neighborhood and type
-  if (d.run_dates && d.run_dates.length) setRun("s", d.run_dates);
-  else {
-    $("s-begin").value = d.begin_date || ""; $("s-end").value = d.end_date || "";
-    if (d.weekly) setShowDays("s", d.weekly, d.weeks);
-  }
-  $("s-cost").value = d.cost_text || ""; $("s-url").value = d.url || "";
-  var missing = (d.missing || []).filter(function (n) { // what a known venue filled in isn't missing any more
-    return !(n === "neighborhood" && $("s-hood").value.trim()) && !(n === "category" && $("s-category").value);
-  });
-  markMissing(missing);
-  $("s-filled").textContent = (missing.length ? "We filled in what the page says. Check it, and add what's marked." :
-    "We filled this in from the page. Check it, then send it in.") +
+  clearMissing(); linkUnmark();
+  var said = { filled: [], kept: false };
+  linkPut("s-title", d.title || "", said);
+  linkPutCategory(d, said);
+  linkPut("s-hood", d.neighborhood || "", said);
+  linkPut("s-venue", d.venue || "", said);
+  var hood = $("s-hood").value, type = $("s-category").value;
+  $("s-venue").dispatchEvent(new Event("change")); // a known venue's neighborhood and type
+  if (!hood && $("s-hood").value) { LINK_SET["s-hood"] = $("s-hood").value; said.filled.push("s-hood"); }
+  if (!type && $("s-category").value) said.filled.push("s-category");
+  linkPutWhen(d, said);
+  linkPut("s-cost", d.cost_text || "", said); linkPut("s-url", d.url || "", said);
+  var missing = (d.missing || []).filter(linkStillMissing), found = said.filled.length;
+  markMissing(missing); linkMark(said.filled);
+  $("s-filled").textContent = (!found ? (said.kept ? "We left what you typed as it is. Check it, then send it in." :
+      "We couldn't find the details on that page, so fill in what you know. We kept the link.") :
+    (missing.length ? "We filled in what the page says. Check it, and add what's marked." : "We filled this in from the page. Check it, then send it in.") +
+    (said.kept ? " We left what you typed as it is." : "")) +
     (d.other_events ? " The page lists more than one event, so make sure this is the one you meant." : "");
 }
-$("s-link-form").addEventListener("input", function () { $("s-link-error").textContent = ""; $("s-link-msg").textContent = ""; crewMarkInvalid($("s-link"), false); });
-$("s-link-form").addEventListener("submit", function (ev) {
-  ev.preventDefault();
-  var url = $("s-link").value.trim(), err = $("s-link-error"), msg = $("s-link-msg"), btn = $("s-link-btn");
-  if (!/^https?:\/\/\S+\.\S+/i.test(url)) { err.textContent = "Paste the event's web address, starting with https://"; crewMarkInvalid($("s-link"), true); $("s-link").focus(); return; }
-  btn.disabled = true; err.textContent = ""; msg.textContent = "Reading the page…";
+function linkStop() { // the read in progress no longer counts: its answer will be dropped
+  LINK_READ++; clearTimeout(LINK_SLOW); $("s-link-btn").disabled = false; $("s-link-msg").textContent = "";
+}
+function linkLooksRight(url) { return /^https?:\/\/\S+\.\S+/i.test(url); }
+function linkRead(url) {
+  var err = $("s-link-error"), msg = $("s-link-msg"), mine;
+  linkStop(); mine = LINK_READ;
+  $("s-link-btn").disabled = true; err.textContent = ""; msg.textContent = "Reading the page…";
+  // The API sends one reply, so this says only that it's taking a while, not what the server is doing
+  LINK_SLOW = setTimeout(function () { msg.textContent = "Still reading…"; }, 4000);
+  $("s-filled").textContent = ""; clearMissing(); linkUnmark();
+  linkPut("s-url", url, { filled: [] }); LINK_OPEN = true; paintHow();
   api("/events/from-link", { method: "POST", body: { url: url } }).then(readJSON, function () { return null; }).then(function (res) {
-    btn.disabled = false; msg.textContent = "";
+    if (mine !== LINK_READ) return;
+    linkStop();
     if (res && res.ok) {
-      fillFromDraft(res.body); LINK_FILLED = true; paintHow();
-      var first = document.querySelector("#submit-form .field.missing input, #submit-form .field.missing select");
-      (first || $("s-title")).focus();
+      fillFromDraft(res.body);
+      var now = document.activeElement; // someone typing in the form keeps their place
+      if (now === document.body || $("s-link-form").contains(now)) {
+        (document.querySelector("#submit-form .field.missing input, #submit-form .field.missing select") || $("s-title")).focus();
+      }
       return;
     }
     if (unconfirmed(res)) { confirmFirst(err); return; }
     if (!res || res.status === 429 || res.status === 401) { err.textContent = errorText(res); return; }
-    // the page couldn't be read: say so, and open the form with the link kept
-    resetSubmitForm(); $("s-url").value = url;
-    document.querySelector('input[name="s-how"][value="manual"]').checked = true; paintHow();
-    $("s-filled").textContent = errorText(res) + " Enter it yourself below; we kept the link.";
-    $("s-title").focus();
+    err.textContent = errorText(res) + " Enter it yourself below; we kept the link."; // the page couldn't be read
   });
+}
+$("s-link-form").addEventListener("input", function () { linkStop(); $("s-link-error").textContent = ""; crewMarkInvalid($("s-link"), false); });
+$("s-link-form").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var url = $("s-link").value.trim();
+  if (!linkLooksRight(url)) { $("s-link-error").textContent = "Paste the event's web address, starting with https://"; crewMarkInvalid($("s-link"), true); $("s-link").focus(); return; }
+  linkRead(url);
+});
+$("s-link").addEventListener("paste", function () { // the pasted text is there after this event
+  setTimeout(function () { var url = $("s-link").value.trim(); if (linkLooksRight(url)) linkRead(url); }, 0);
 });
 $("s-venue").addEventListener("change", function () {
   // Fill in the neighborhood when every known venue with this name agrees on one. Venues saved
@@ -196,7 +258,7 @@ $("submit-form").addEventListener("submit", function (ev) {
     btn.disabled = false;
     if (unconfirmed(res)) { msg.textContent = ""; confirmFirst(err); return; }
     if (!res || !res.ok) { msg.textContent = ""; err.textContent = errorText(res); return; }
-    resetSubmitForm(); $("s-link").value = ""; LINK_FILLED = false; msg.textContent = "";
+    linkStop(); resetSubmitForm(); $("s-link").value = ""; LINK_OPEN = false; msg.textContent = "";
     var made = fromApi(res.body), head, text;
     if (made.status === "approved" && made.publishAt) {
       head = "Scheduled"; text = "It goes live " + WHEN.format(made.publishAt) + ".";
