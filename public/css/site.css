@@ -17,6 +17,7 @@
   --danger-soft: #FBE9E7; --on-danger-soft: #0E2A40;
   --focus: #0F5E8C;
   --cat-theater: #B9472E; --cat-music: #5B3E9E; --cat-art: #2F7A5B;
+  --veil: .18; /* CC-238: how much of the page colour lies over a card at the back of the home stack */
   --gauge-ok: #1B8258; --gauge-warn: #B3730A; --gauge-stop: #C8102E; /* CC-207: the budget dial's zones, and nothing else */
   --src-ok: #BFE6D2; --src-nothing: #FBEFB0; --src-error: #F9CFCB; --src-manual: #F9BE7C; --src-new: #DFE6EB; --on-src: #0E2A40; /* CC-221: the Source grid blocks */
   --src-ok-deep: #8FD1B0; --src-nothing-deep: #F3DC6B; --src-error-deep: #F2A9A2; --src-manual-deep: #F2A251; --src-new-deep: #C3CFD7; /* hovered or clicked */
@@ -33,6 +34,7 @@
   --danger-soft: #3A1C22; --on-danger-soft: #EAF2F7;
   --focus: #9CD3EF;
   --cat-theater: #B9472E; --cat-music: #7A5AD0; --cat-art: #2F7A5B; /* music is lighter at night, so tiles don't vanish */
+  --veil: .11; /* the veil is the page colour, so at night less of it does the same job */
   --gauge-ok: #4FB08A; --gauge-warn: #E3A73C; --gauge-stop: #FF5C70;
   --src-ok: #24604A; --src-nothing: #5E5316; --src-error: #7E3F47; --src-manual: #84501A; --src-new: #2E4356; --on-src: #EAF2F7;
   --src-ok-deep: #174A38; --src-nothing-deep: #483F0E; --src-error-deep: #662E36; --src-manual-deep: #693E12; --src-new-deep: #223443;
@@ -191,7 +193,8 @@ a.btn, a.textbtn { display: inline-block; }
    the lead pick, three ways in, last chance. With no lead pick the other two share the width. Then the 3px double
    rule (the only one on the site) and "The listings" as rows. The columns stack on a phone. */
 .front { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 3fr) minmax(0, 3fr); padding-top: 32px; }
-.front.no-lead { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.front.no-lead, .front.has-stack { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.front.has-stack { row-gap: 40px; }
 .front-h { font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; line-height: 1.2; color: var(--muted); }
 
 /* The lead pick: one of colour's four places. Its water fills the top of the field; the words sit on the solid field
@@ -208,6 +211,38 @@ a.btn, a.textbtn { display: inline-block; }
 .lead-pick .mark-host { width: 34px; height: 33px; --mark-bg: var(--cat); --dol-body: #fff; --dol-belly: #fff; --dol-mouth: var(--cat); } /* on a field the dolphin is white and the gold carries it */
 .lead-pick .mark-host-int { width: 39px; height: 26px; --dol-body: #fff; --dol-belly: #fff; --dol-mouth: var(--cat); } /* CC-162: interested, no ring */
 
+/* CC-238: the admin's picks as the pier (leadstack.js). The cards are lead picks: the front one faces you, and the next two
+   turn away to the right. The whole row is the stack's, so a few cards can show. Cards overlap and shadows are out, so
+   a 3px edge in the page colour parts them, even two of one category. The veil is flat page colour, and it's the only
+   thing that dims a back card: its large title stays near 3:1 in light, and everything is full contrast in front.
+   will-change stays off: a held layer would soften the text (CC-235). */
+.has-stack .lead-slot { grid-column: 1 / -1; display: block; min-width: 0; margin-right: 0; }
+.stack { position: relative; --card-w: 50%; }
+.stack-cards { position: relative; height: 430px; margin: 4px 0 0; padding: 0; list-style: none; touch-action: pan-y; perspective: 1500px; perspective-origin: 25% 50%; }
+.sc { position: absolute; top: 0; left: 0; width: var(--card-w); height: 100%; transform-origin: 0 50%; background: var(--page); box-shadow: 0 0 0 3px var(--page); -webkit-user-select: none; user-select: none; }
+.sc:not(.is-front) { cursor: pointer; }
+.sc:not(.is-front) .lead-pick { pointer-events: none; }
+.sc .lead-pick { height: 100%; min-height: 0; -webkit-user-drag: none; }
+.sc .lead-sea { flex: 1 1 60px; min-height: 60px; }
+.sc .lead-in { gap: 12px; padding: 0 24px 22px; }
+.sc .lead-t { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; padding-bottom: 2px; font-size: 46px; --fs: 46; }
+.sc .lead-deck { font-size: 19px; }
+.sc-veil { position: absolute; inset: 0; z-index: 2; background: var(--page); opacity: calc(var(--veil) * var(--veil-k, 0)); pointer-events: none; }
+.stack.moving .sc, .stack.moving .sc-veil { transition: transform var(--stack-dur) var(--stack-ease), opacity var(--stack-dur) var(--stack-ease); }
+.stack-nav { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
+.stack-nav .btn { min-width: 48px; min-height: 48px; }
+/* How far through the picks you are. Square, in ink colours: category colour stays on the cards. */
+.stack-progress { flex: 0 1 240px; height: 6px; background: var(--line); }
+.stack-fill { display: block; height: 100%; background: var(--lead); transform-origin: 0 50%; }
+/* It leaves quickly and settles slowly into place: long enough for the ease-out's tail to show */
+@media (prefers-reduced-motion: no-preference) { .stack-fill { transition: transform 700ms var(--ease-out); } }
+/* The arrows are for desktop with a mouse. On a touch screen you swipe, or tap a back card. */
+@media (max-width: 700px), (pointer: coarse) {
+  .stack-nav [data-stack-go] { display: none; }
+  .stack-nav { margin-top: 16px; }
+  .stack-progress { flex: 1 1 auto; }
+}
+
 /* Three ways in: stacked links, hairlines between. CC-103's rise stays: 600ms, 120ms apart, first load only. */
 .ways { padding-right: 24px; border-right: 1px solid var(--rule); }
 .way { display: grid; gap: 4px; width: 100%; min-height: 44px; padding: 16px 0; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--text); text-align: left; cursor: pointer; font: inherit; }
@@ -221,8 +256,8 @@ a.btn, a.textbtn { display: inline-block; }
 
 /* Last chance: soonest to close. "Today only!" is one of red's two jobs (the other is the star). */
 .last-col { padding-left: 24px; }
-.no-lead .ways { padding-right: 32px; }
-.no-lead .last-col { padding-left: 32px; }
+.no-lead .ways, .has-stack .ways { padding-right: 32px; }
+.no-lead .last-col, .has-stack .last-col { padding-left: 32px; }
 .lasts { list-style: none; margin: 0; padding: 0; }
 .last { display: grid; gap: 2px; padding: 14px 0; border-bottom: 1px solid var(--line); color: var(--text); text-decoration: none; }
 .last-w { font-family: var(--sign); font-weight: 700; font-size: 1.0625rem; color: var(--star); font-variant-numeric: tabular-nums; }
@@ -243,13 +278,19 @@ a.btn, a.textbtn { display: inline-block; }
   .lead-pick { min-height: 380px; }
 }
 @media (max-width: 700px) {
-  .front, .front.no-lead { grid-template-columns: minmax(0, 1fr); padding-top: 20px; }
+  .front, .front.no-lead, .front.has-stack { grid-template-columns: minmax(0, 1fr); padding-top: 20px; }
   .lead-pick { min-height: 340px; }
   .lead-in { padding: 0 20px 20px; }
   .lead-t { font-size: 40px; --fs: 40; }
-  .ways, .no-lead .ways { padding-right: 0; border-right: 0; }
-  .last-col, .no-lead .last-col { padding-left: 0; }
+  .ways, .no-lead .ways, .has-stack .ways { padding-right: 0; border-right: 0; }
+  .last-col, .no-lead .last-col, .has-stack .last-col { padding-left: 0; }
   .front-list-head h2 { font-size: 32px; }
+  /* The stack runs out to the screen edges, so the third card can leave the page with no sideways scroll */
+  .stack { --card-w: 72%; margin-inline: calc(-1 * clamp(16px, 4vw, 40px)); padding-inline: clamp(16px, 4vw, 40px); overflow-x: clip; }
+  .stack-cards { height: 400px; margin-top: 12px; }
+  .sc .lead-in { gap: 10px; padding: 0 18px 18px; }
+  .sc .lead-t { font-size: 36px; --fs: 36; }
+  .sc .lead-deck { font-size: 18px; }
 }
 
 .textbtn { background: none; border: 0; padding: 0; cursor: pointer; font-family: var(--sign); font-weight: 700; color: var(--lead); text-decoration: underline; text-underline-offset: 3px; }
