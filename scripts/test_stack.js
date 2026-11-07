@@ -24,7 +24,8 @@ function page(opts) {
   };
   const cards = Array.from({ length: opts.n === undefined ? 5 : opts.n }, (_, i) => card(i));
   const slot = el({ offsetParent: opts.hidden ? null : {}, contains: () => false, setPointerCapture() {}, addEventListener(t, f) { on[t] = f; } });
-  const ids = { "lead-slot": slot, stack: el(), "stack-count": el(), "stack-live": el() };
+  const bar = el({ attrs: {}, setAttribute(k, v) { bar.attrs[k] = v; } });
+  const ids = { "lead-slot": slot, stack: el(), "stack-progress": bar, "stack-fill": el(), "stack-live": el() };
   const g = {
     window: { matchMedia: () => ({ matches: !!opts.phone }) },
     document: { activeElement: null, querySelectorAll: () => cards },
@@ -60,11 +61,13 @@ const tick = () => new Promise((r) => setImmediate(r));
     assert.deepStrictEqual(front(p), [0]);
     assert.strictEqual(p.cards[0].style.transform, "none", "at rest the front has no transform, so its text stays sharp (CC-235)");
     assert.strictEqual(p.cards[0].link.tabIndex, 0); assert.strictEqual(p.cards[1].link.tabIndex, -1, "only the front card takes the keyboard");
-    assert.strictEqual(p.ids["stack-count"].textContent, "1 of 5");
+    assert.strictEqual(p.ids["stack-progress"].attrs["aria-valuetext"], "1 of 5", "the bar says where you are");
+    assert.strictEqual(p.ids["stack-fill"].style.width, "20.00%", "the first of five fills a fifth of the bar");
     assert.strictEqual(p.ids["stack-live"].textContent, "", "nothing is announced until it changes");
     await p.g.stackStep(1);
     assert.deepStrictEqual(front(p), [1]);
     assert.strictEqual(p.ids["stack-live"].textContent, "2 of 5: Event 2", "the new event and its place are announced");
+    assert.strictEqual(p.ids["stack-fill"].style.width, "40.00%", "the bar moves with it");
     await p.g.stackStep(-1); await p.g.stackStep(-1);
     assert.deepStrictEqual(front(p), [4], "before the first comes the last");
     await p.g.stackStep(1);
@@ -124,6 +127,7 @@ const tick = () => new Promise((r) => setImmediate(r));
     const html = g.stackHTML(events(3));
     assert.ok(/<ol class="stack-cards"[^>]*role="list">/.test(html), "an ordered list for screen readers");
     assert.strictEqual((html.match(/<li class="sc"/g) || []).length, 3);
+    assert.ok(/role="progressbar"[^>]*aria-valuemax="3"/.test(html), "a progress bar, not a count");
     assert.ok(/aria-live="polite"/.test(html) && /aria-label="Next event"/.test(html) && /aria-label="Previous event"/.test(html));
   }
   // --- the rules in site.css ---

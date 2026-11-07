@@ -50,7 +50,10 @@ function stackSettle() {
     c.classList.toggle("is-front", front);
     c.querySelector("a").tabIndex = front ? 0 : -1;
   });
-  $("stack-count").textContent = (STACK.cur + 1) + " of " + STACK.list.length;
+  var n = STACK.list.length, at = STACK.cur + 1, bar = $("stack-progress");
+  bar.setAttribute("aria-valuenow", at);
+  bar.setAttribute("aria-valuetext", at + " of " + n);
+  $("stack-fill").style.width = (at / n * 100).toFixed(2) + "%";
 }
 function stackMove(d, ms, ease) {
   var st = $("stack"), seq = STACK.seq;
@@ -100,7 +103,7 @@ function stackHTML(list) {
   return '<section class="stack" id="stack" aria-label="Yours Truly’s recommendations"><ol class="stack-cards" id="stack-cards" role="list">' +
     list.map(function (e, i) { return '<li class="sc" data-i="' + i + '">' + leadHTML(e) + '<span class="sc-veil" aria-hidden="true"></span></li>'; }).join("") + "</ol>" +
     '<div class="stack-nav"><button class="btn ghost" type="button" data-stack-go="-1" aria-label="Previous event">←</button>' +
-    '<span class="stack-count" id="stack-count"></span>' +
+    '<span class="stack-progress" id="stack-progress" role="progressbar" aria-label="Where you are in the recommendations" aria-valuemin="1" aria-valuemax="' + list.length + '"><span class="stack-fill" id="stack-fill"></span></span>' +
     '<button class="btn ghost" type="button" data-stack-go="1" aria-label="Next event">→</button></div>' +
     '<p class="sr-only" aria-live="polite" id="stack-live"></p></section>';
 }

@@ -231,12 +231,15 @@ a.btn, a.textbtn { display: inline-block; }
 .stack.moving .sc, .stack.moving .sc-veil { transition: transform var(--stack-dur) var(--stack-ease), opacity var(--stack-dur) var(--stack-ease); }
 .stack-nav { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
 .stack-nav .btn { min-width: 48px; min-height: 48px; }
-.stack-count { min-width: 3.6em; font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; font-variant-numeric: tabular-nums; color: var(--muted); text-align: center; }
+/* How far through the picks you are. Square, in ink colours: category colour stays on the cards. */
+.stack-progress { flex: 0 1 240px; height: 6px; background: var(--line); }
+.stack-fill { display: block; height: 100%; background: var(--lead); }
+@media (prefers-reduced-motion: no-preference) { .stack-fill { transition: width var(--dur-drop) var(--ease-out); } }
 /* The arrows are for desktop with a mouse. On a touch screen you swipe, or tap a back card. */
 @media (max-width: 700px), (pointer: coarse) {
   .stack-nav [data-stack-go] { display: none; }
-  .stack-nav { margin-top: 12px; }
-  .stack-count { min-width: 0; text-align: left; }
+  .stack-nav { margin-top: 16px; }
+  .stack-progress { flex: 1 1 auto; }
 }
 
 /* Three ways in: stacked links, hairlines between. CC-103's rise stays: 600ms, 120ms apart, first load only. */
