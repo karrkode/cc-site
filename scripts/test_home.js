@@ -85,7 +85,7 @@ assert.ok(html.startsWith('<a class="lead-pick water-field cat-theater" href="#e
 assert.strictEqual((html.match(/<a /g) || []).length, 1);
 assert.ok(!/<button|<input/.test(html), "no controls inside the link");
 assert.match(html, /<span class="lead-sea"><canvas class="water" aria-hidden="true" data-water="poster"/, "the water sits in its own patch, above the words");
-assert.match(html, /<span class="lead-k">Curated by Yours Truly · Theater<\/span><h2 class="lead-t">Event \d+<\/h2>/);
+assert.match(html, /<span class="lead-k">Yours Truly · Theater<\/span><h2 class="lead-t">Event \d+<\/h2>/);
 assert.match(html, /class="mark mark-host" role="img" aria-label="Andrew is committed to seeing this on \w+day, \w+ \d+\."/);
 assert.match(html, /<span>Going \w{3}, \w{3} \d+ · \w{3} \d+ – \w{3} \d+ · \$28–\$98<\/span>/);
 const fallback = g.leadHTML(interested({ title: "A <b>" }));

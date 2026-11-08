@@ -52,7 +52,7 @@ function leadHTML(e) {
   var by = [going ? "Going" + (p.date ? " " + goingDay(p.date) : "") : "Interested", dateText(e), costText(e)].join(" · ");
   return '<a class="lead-pick water-field' + catClass(e.type) + '" href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '" data-lead="' + esc(e.id) + '">' +
     '<span class="lead-sea">' + waterHTML(e, "poster") + "</span>" +
-    '<span class="lead-in"><span class="lead-k">Curated by Yours Truly · ' + esc(e.label) + "</span>" +
+    '<span class="lead-in"><span class="lead-k">Yours Truly · ' + esc(e.label) + "</span>" +
     '<h2 class="lead-t">' + esc(e.title) + "</h2>" +
     '<span class="lead-deck">' + esc(leadDeck(e)) + "</span>" +
     '<span class="lead-by">' + pickMarkHTML(p, pickText(p)) + "<span>" + esc(by) + "</span></span></span></a>";
