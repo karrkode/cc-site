@@ -830,9 +830,38 @@
           <li><button class="hub-row" type="button" data-go="issues"><span class="hub-n" id="issues-count"></span><span class="hub-text"><span class="hub-name">Issues</span><span class="hub-sub">New reports and feature requests</span></span><span class="hub-go" aria-hidden="true">→</span></button></li>
           <li><button class="hub-row" type="button" data-go="approvals"><span class="hub-n" id="approvals-count"></span><span class="hub-text"><span class="hub-name">Photo approvals</span><span class="hub-sub">"I've been" photos waiting</span></span><span class="hub-go" aria-hidden="true">→</span></button></li>
           <li><button class="hub-row" type="button" data-go="stats"><span class="hub-n"></span><span class="hub-text"><span class="hub-name">Site stats</span><span class="hub-sub">Visits, sign-ups and what people mark</span></span><span class="hub-go" aria-hidden="true">→</span></button></li>
+          <li><button class="hub-row" type="button" data-go="health"><span class="hub-n"></span><span class="hub-text"><span class="hub-name">Site health</span><span class="hub-sub">Is the API up, how fast it answers, and the database</span></span><span class="hub-go" aria-hidden="true">→</span></button></li>
           <li><button class="hub-row" type="button" data-go="card"><span class="hub-n"></span><span class="hub-text"><span class="hub-name">QR card</span><span class="hub-sub">The card to print or show</span></span><span class="hub-go" aria-hidden="true">→</span></button></li>
         </ul>
       </div></div>
+    </section>
+
+    <!-- CC-244: Site health (health.js) -->
+    <section class="view lf-page" id="view-health" hidden>
+      <div class="view-head">
+        <h1 id="health-title" tabindex="-1">Site health</h1>
+        <p class="lf-deck">Whether the API is answering, how fast, and how the database is doing.</p>
+        <p class="lf-back"><button class="textbtn" type="button" data-go="engagement"><span aria-hidden="true">←</span>Engagement</button></p>
+      </div>
+      <div class="hub">
+        <div class="src-by" role="group" aria-label="How far back">
+          <button class="btn ghost" type="button" data-hl-hours="1" aria-pressed="false">Last hour</button>
+          <button class="btn" type="button" data-hl-hours="24" aria-pressed="true">24 hours</button>
+          <button class="btn ghost" type="button" data-hl-hours="168" aria-pressed="false">7 days</button>
+          <button class="btn ghost" type="button" data-hl-hours="720" aria-pressed="false">30 days</button>
+        </div>
+        <p class="hint" id="health-status" role="status"></p>
+        <div id="health-live" hidden>
+          <p class="hl-state" id="hl-state"></p>
+          <div class="section"><h2>API</h2><dl class="hl-grid" id="hl-api"></dl>
+            <h3>Recent server errors</h3><ul class="hl-list" id="hl-errors"></ul></div>
+          <div class="section"><h2>Call times</h2><dl class="hl-grid" id="hl-times"></dl>
+            <h3>Slowest routes</h3><ul class="hl-list" id="hl-slow"></ul></div>
+          <div class="section"><h2>Database</h2><dl class="hl-grid" id="hl-db"></dl></div>
+          <div class="section"><h2>Responses other than 200</h2><div class="hl-pie" id="hl-pie"></div></div>
+          <p class="hint">The API notes each request's route, status and time, never who sent it or what it held, and keeps them 30 days. A 200 is a plain success; 201 and 204 are successes too.</p>
+        </div>
+      </div>
     </section>
 
     <section class="view lf-page" id="view-people" hidden>
@@ -1090,6 +1119,7 @@
 <script src="js/approvals.js?v=dev"></script>
 <script src="js/hubs.js?v=dev"></script>
 <script src="js/sourcing.js?v=dev"></script>
+<script src="js/health.js?v=dev"></script>
 <script src="js/start.js?v=dev"></script>
 </body>
 </html>

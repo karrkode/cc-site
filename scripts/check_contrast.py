@@ -65,6 +65,13 @@ PAIRS = [  # (foreground, background, minimum, where it's used)
     ("gauge-ok", "page", NON_TEXT, "the budget dial, under 80%"),
     ("gauge-warn", "page", NON_TEXT, "the budget dial, from 80%"),
     ("gauge-stop", "page", NON_TEXT, "the budget dial, at the limit"),
+    ("pie-1", "page", NON_TEXT, "the Site health pie (CC-244)"),
+    ("pie-2", "page", NON_TEXT, "the Site health pie"),
+    ("pie-3", "page", NON_TEXT, "the Site health pie"),
+    ("pie-4", "page", NON_TEXT, "the Site health pie"),
+    ("pie-5", "page", NON_TEXT, "the Site health pie"),
+    ("pie-6", "page", NON_TEXT, "the Site health pie, Other"),
+    ("on-danger-soft", "danger-soft", TEXT, "Site health, when there's trouble"),
     # CC-221: a venue's name on its Source grid block, and the block's outline when it's turned off
     ("on-src", "src-ok", TEXT, "a source reading fine"),
     ("on-src", "src-nothing", TEXT, "a source that finds nothing"),
