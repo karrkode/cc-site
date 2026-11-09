@@ -19,6 +19,7 @@
   --cat-theater: #B9472E; --cat-music: #5B3E9E; --cat-art: #2F7A5B;
   --veil: .18; /* CC-238: how much of the page colour lies over a card at the back of the home stack */
   --gauge-ok: #1B8258; --gauge-warn: #B3730A; --gauge-stop: #C8102E; /* CC-207: the budget dial's zones, and nothing else */
+  --pie-1: #0E3A5B; --pie-2: #B3730A; --pie-3: #C8102E; --pie-4: #2F7A5B; --pie-5: #5B3E9E; --pie-6: #6F8796; /* CC-244: the Site health pie, most common first */
   --src-ok: #BFE6D2; --src-nothing: #FBEFB0; --src-error: #F9CFCB; --src-manual: #F9BE7C; --src-new: #DFE6EB; --on-src: #0E2A40; /* CC-221: the Source grid blocks */
   --src-ok-deep: #8FD1B0; --src-nothing-deep: #F3DC6B; --src-error-deep: #F2A9A2; --src-manual-deep: #F2A251; --src-new-deep: #C3CFD7; /* hovered or clicked */
   color-scheme: light;
@@ -36,6 +37,7 @@
   --cat-theater: #B9472E; --cat-music: #7A5AD0; --cat-art: #2F7A5B; /* music is lighter at night, so tiles don't vanish */
   --veil: .11; /* the veil is the page colour, so at night less of it does the same job */
   --gauge-ok: #4FB08A; --gauge-warn: #E3A73C; --gauge-stop: #FF5C70;
+  --pie-1: #9CD3EF; --pie-2: #E3A73C; --pie-3: #FF5C70; --pie-4: #4FB08A; --pie-5: #A68BEA; --pie-6: #8FA7B8;
   --src-ok: #24604A; --src-nothing: #5E5316; --src-error: #7E3F47; --src-manual: #84501A; --src-new: #2E4356; --on-src: #EAF2F7;
   --src-ok-deep: #174A38; --src-nothing-deep: #483F0E; --src-error-deep: #662E36; --src-manual-deep: #693E12; --src-new-deep: #223443;
   color-scheme: dark;
@@ -1779,6 +1781,32 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 @media (max-width: 520px) { .sg-size4 { grid-column: span 2; } .sg-size4 .sg-name { font-size: 1.75rem; } }
 @media (prefers-reduced-motion: reduce) { .sg-panel, .sg-opts, .sg-block { transition: none; } }
 
+/* ---------- CC-244: Site health (health.js) ---------- */
+.hl-state { display: flex; align-items: center; gap: 12px; margin: 24px 0 0; padding: 12px 16px; font-family: var(--display); font-weight: 600; font-size: 1.3125rem; background: var(--surface); border-left: 6px solid var(--gauge-ok); }
+.hl-state.trouble { background: var(--danger-soft); color: var(--on-danger-soft); border-left-color: var(--gauge-stop); }
+.hl-grid + h3, .hl-grid + h3 + .hl-list { margin-top: 24px; } .hl-grid + h3 + .hl-list { margin-top: 4px; }
+.hl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 16px 24px; margin: 8px 0 0; }
+.hl-grid div { margin: 0; }
+.hl-grid dt { color: var(--muted); font-size: 1rem; }
+.hl-grid dd { margin: 0; font-family: var(--sign); font-weight: 700; font-size: 2rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.hl-grid dd small { white-space: nowrap; font-family: var(--body); font-weight: 400; font-size: 1rem; color: var(--muted); }
+.hl-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.hl-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.hl-list li:first-child { border-top: 0; }
+.hl-route { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1rem; overflow-wrap: anywhere; }
+.hl-num { font-family: var(--sign); font-weight: 700; font-size: 1.25rem; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.hl-sub { grid-column: 1 / -1; color: var(--muted); font-size: 1rem; }
+.hl-pie { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 32px; margin-top: 8px; }
+.hl-pie svg { flex: 0 0 auto; width: 180px; height: 180px; display: block; }
+.hl-pie .slice { stroke: var(--page); stroke-width: 2; }
+.hl-pie .s1 { fill: var(--pie-1); } .hl-pie .s2 { fill: var(--pie-2); } .hl-pie .s3 { fill: var(--pie-3); }
+.hl-pie .s4 { fill: var(--pie-4); } .hl-pie .s5 { fill: var(--pie-5); } .hl-pie .s6 { fill: var(--pie-6); }
+.hl-key { list-style: none; margin: 0; padding: 0; flex: 1 1 14rem; min-width: 0; }
+.hl-key li { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 0; }
+.hl-key i { width: 16px; height: 16px; display: block; }
+.hl-key i.s1 { background: var(--pie-1); } .hl-key i.s2 { background: var(--pie-2); } .hl-key i.s3 { background: var(--pie-3); }
+.hl-key i.s4 { background: var(--pie-4); } .hl-key i.s5 { background: var(--pie-5); } .hl-key i.s6 { background: var(--pie-6); }
+
 /* CC-126: the invite QR code fills the screen to be scanned from the admin's phone. CC-147: always paper-white, in
    both themes, under a small flag band: the code is deep lake ink on white, which any phone can scan. The colours are
    fixed here, not tokens, so "Lights down" doesn't reach them. */
@@ -1812,3 +1840,4 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
    for its backdrop. The script sets its box. */
 dialog.dialog-leaving { display: block; position: fixed; z-index: 101; margin: 0; max-width: none; max-height: none; box-sizing: border-box; }
 .dialog-scrim { position: fixed; inset: 0; z-index: 100; }
+
