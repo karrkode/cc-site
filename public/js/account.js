@@ -825,6 +825,14 @@ function acctBad(errEl, input, text) {
   errEl.textContent = checkThis(text);
   if (input) { crewMarkInvalid(input, true); input.focus(); }
 }
+// CC-191: the server refuses a new password that's too common (or too long) as a 422 on the password field. Those
+// errors go on the password box itself, so it's clear which box to change. Returns the words, or null for other errors.
+function passwordRefused(res) {
+  var d = res && res.status === 422 && res.body && res.body.detail, loc = Array.isArray(d) && d[0] && d[0].loc;
+  if (!loc || ["password", "new_password"].indexOf(loc[loc.length - 1]) < 0) return null;
+  var msg = String(d[0].msg || "").replace(/^Value error, /, "");
+  return msg.charAt(0).toUpperCase() + msg.slice(1) + ".";
+}
 function acctClear(form, errEl) { // typing in a form clears its error and the fields' borders
   errEl.textContent = "";
   Array.prototype.forEach.call(form.querySelectorAll('[aria-invalid="true"]'), function (i) { crewMarkInvalid(i, false); });
@@ -913,6 +921,7 @@ $("reset-form").addEventListener("submit", function (ev) {
     .then(readJSON, function () { return null; }).then(function (res) {
       btn.disabled = false;
       if (!res || !res.ok) {
+        if (passwordRefused(res)) { acctBad(err, $("reset-new"), passwordRefused(res)); return; }
         err.textContent = checkThis(res && res.status === 400 ?
           "That reset link has expired or was already used. Ask for a new one from the sign-in page." : errorText(res));
         return;
@@ -1006,7 +1015,9 @@ $("password-form").addEventListener("submit", function (ev) {
       btn.disabled = false;
       if (!res || !res.ok) {
         msg.textContent = "";
-        if (res && res.status === 403) { $("pw-current").value = ""; acctBad(err, $("pw-current"), errorText(res)); } else err.textContent = checkThis(errorText(res));
+        if (res && res.status === 403) { $("pw-current").value = ""; acctBad(err, $("pw-current"), errorText(res)); }
+        else if (passwordRefused(res)) acctBad(err, $("pw-new"), passwordRefused(res));
+        else err.textContent = checkThis(errorText(res));
         return;
       }
       setSession(res.body); // this tab's new session; every other one has been signed out
@@ -1019,7 +1030,10 @@ function authForm(form, path, body, errEl) {
   errEl.textContent = ""; btn.disabled = true;
   api(path, { method: "POST", body: body, cookies: true }).then(readJSON, function () { return null; }).then(function (res) {
     btn.disabled = false;
-    if (!res || !res.ok) { errEl.textContent = checkThis(errorText(res)); return; }
+    if (!res || !res.ok) {
+      if (passwordRefused(res)) { acctBad(errEl, form.querySelector('input[autocomplete="new-password"]'), passwordRefused(res)); return; }
+      errEl.textContent = checkThis(errorText(res)); return;
+    }
     form.reset();
     ["login", "register", "forgot"].forEach(function (f) { acctClear($(f + "-form"), $(f + "-error")); }); // nothing left over for next time
     // CC-237: an invite's Join panel and a one-off message (a confirmation link that failed, say) are on this page, so stay
@@ -1118,7 +1132,7 @@ $("jp-form").addEventListener("submit", function (ev) {
   api("/auth/register", { method: "POST", body: registerBody(email, pw, $("jp-name").value.trim()), cookies: true })
     .then(readJSON, function () { return null; }).then(function (res) {
       $("jp-go").disabled = false;
-      if (!res || !res.ok) { err.textContent = checkThis(errorText(res)); return; }
+      if (!res || !res.ok) { if (passwordRefused(res)) bad($("jp-password"), passwordRefused(res)); else err.textContent = checkThis(errorText(res)); return; }
       form.reset(); setSession(res.body); paintJoinPage(true); $("jp-in-title").focus();
     });
 });

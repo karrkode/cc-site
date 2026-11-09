@@ -105,4 +105,20 @@ has(read("js/util.js"), "paintJoinedNote(name)");
   g.AUTH.user.email_verified = true; g.JOINED_VIEW = "home"; g.paintJoinedNote("home"); assert.strictEqual(note.hidden, true);
 }
 
+// --- CC-191: a refused new password (too common, too long) goes on the password box, with the server's words ---
+{
+  const g = {}; vm.createContext(g); vm.runInContext(fn(account, "passwordRefused"), g);
+  const refused = (field, msg) => ({ status: 422, body: { detail: [{ loc: ["body", field], msg: "Value error, " + msg }] } });
+  assert.strictEqual(g.passwordRefused(refused("password", "That password is too common. Choose one that's harder to guess")),
+    "That password is too common. Choose one that's harder to guess.");
+  assert.strictEqual(g.passwordRefused(refused("new_password", "password must be at most 72 bytes")), "Password must be at most 72 bytes.");
+  assert.strictEqual(g.passwordRefused(refused("email", "not an email")), null, "other fields keep the usual message");
+  assert.strictEqual(g.passwordRefused({ status: 429, body: { detail: "Too many tries" } }), null);
+  assert.strictEqual(g.passwordRefused(null), null, "no answer at all");
+  ["reset-new", "pw-new", "jp-password"].forEach((id) => has(account, '$("' + id + '"), passwordRefused(res)', id + " is marked when refused"));
+  has(account, "form.querySelector('input[autocomplete=\"new-password\"]'), passwordRefused(res)", "sign-up marks its password box");
+  ["jp-password-hint", "reg-password-hint", "pw-hint", "reset-hint"].forEach((id) =>
+    has(html, 'id="' + id + '">At least 8 characters, and not a common one.', id + " says common ones are refused"));
+}
+
 console.log("account and sign-in: ok");
