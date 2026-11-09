@@ -379,6 +379,7 @@ a.btn, a.textbtn { display: inline-block; }
 
 /* CC-250: Neighborhood Notes cards in the catalog. The home listings keep their row layout. */
 .catalog-cards .listings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.catalog-cards .listing-day-head + .listings > li:only-child { grid-column: 1 / -1; }
 .catalog-cards .listing-day > .listings:first-child { padding-top: 12px; }
 .catalog-cards .listing {
   --media-col: 1; --copy-col: 2; --card-radius: 12px;
