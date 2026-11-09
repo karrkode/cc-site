@@ -27,7 +27,7 @@ var REVIEW_JUMP = null, REVIEW_JUMP_WAIT = 0;
 function reviewListIn() { if (REVIEW_JUMP && !--REVIEW_JUMP_WAIT) { $(REVIEW_JUMP).focus(); REVIEW_JUMP = null; } }
 function openReview(jump) { if (!isAdmin()) { openAccount(); return; } REVIEW_JUMP = jump || null; REVIEW_JUMP_WAIT = 2; renderReview(); updateFoundCount(); show("review"); }
 function updateReviewCount(n) {
-  if (n !== undefined) { $("review-count").textContent = $("review-n").textContent = $("rv-review-count").textContent = n ? String(n) : ""; return; } // CC-149: also on the Waiting rule
+  if (n !== undefined) { $("review-count").textContent = $("review-n").textContent = $("rv-review-count").textContent = $("rv-head-count").textContent = n ? String(n) : ""; return; } // CC-149: also on the Waiting rule
   api("/admin/events?limit=1").then(readJSON).then(function (res) { if (res.ok) updateReviewCount(res.body.total); }, function () {});
 }
 var EMPTY = { "review-list": "Nothing waiting for review.", "scheduled-list": "Nothing scheduled.", "withdrawn-list": "Nothing withdrawn.",

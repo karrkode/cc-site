@@ -69,6 +69,8 @@ jobs:
         run: node scripts/test_routing.js
       - name: The theme button says Lights down in the light theme and Lights up in the dark one, from the first paint
         run: node scripts/test_theme.js
+      - name: On a phone, Review and your name are bars in the menu, and the masthead shrinks as the page scrolls
+        run: node scripts/test_mast.js
       - name: Asset links can be stamped for deploy
         run: python3 scripts/stamp_assets.py
       - name: JavaScript syntax

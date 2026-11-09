@@ -3,18 +3,18 @@
 
 // ---------- the Review menu ----------
 // It works like the you menu (account.js): arrow keys, Home and End move through it; Escape or Tab closes it and
-// returns to Review. On a phone it sits open in the masthead's sheet, as a plain list under "Review". The items are
+// returns to Review. On a phone it sits in the masthead's sheet, as a plain list under a "Review" bar that opens it (CC-242). The items are
 // data-go links, so choosing one is handled with every other link; here it only closes the menu.
 function rvItems() { return Array.prototype.slice.call($("rv-menu").querySelectorAll("[data-me]")); }
 function paintRvMode() {
   var sheet = MAST_PHONE.matches, menu = $("rv-menu");
   $("nav-review").hidden = sheet; $("rv-head").hidden = !sheet;
   menu.setAttribute("role", sheet ? "group" : "menu");
-  menu.setAttribute("aria-labelledby", sheet ? "rv-head" : "nav-review");
+  menu.setAttribute("aria-labelledby", sheet ? "rv-head-name" : "nav-review");
   rvItems().forEach(function (it) { // in the sheet each item is a plain button that Tab reaches
     if (sheet) { it.removeAttribute("role"); it.removeAttribute("tabindex"); } else { it.setAttribute("role", "menuitem"); it.setAttribute("tabindex", "-1"); }
   });
-  moveStop(menu); menu.hidden = !sheet; $("nav-review").setAttribute("aria-expanded", "false");
+  moveStop(menu); menu.hidden = true; $("nav-review").setAttribute("aria-expanded", "false"); $("rv-head").setAttribute("aria-expanded", "false"); // CC-242: the bar starts shut
 }
 MAST_PHONE.addEventListener("change", paintRvMode);
 paintRvMode();
