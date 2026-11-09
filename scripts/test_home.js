@@ -22,7 +22,7 @@ function stub() {
   });
 }
 const g = {
-  window: { devicePixelRatio: 1, matchMedia: () => stub() },
+  window: { devicePixelRatio: 1, matchMedia: () => stub(), addEventListener() {} },
   matchMedia: () => stub(),
   document: stub(), localStorage: stub(), location: stub(), history: stub(), navigator: stub(),
   Intl, console,

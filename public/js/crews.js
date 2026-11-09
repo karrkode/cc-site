@@ -544,7 +544,7 @@ function paintPending() {
   // CC-91: the admin's offer to approve photos waits here too, before the crew invites (approvals.js)
   var offer = AUTH.user && AUTH.user.approver_offered ? [approverOfferHTML()] : [];
   var n = AUTH.user ? PENDING.length + offer.length : 0;
-  $("crews-count").textContent = $("account-count").textContent = n ? String(n) : ""; // on your name, and on Crews in its menu (CC-105)
+  $("crews-count").textContent = $("account-count").textContent = $("me-head-count").textContent = n ? String(n) : ""; // on your name, and on Crews in its menu (CC-105)
   $("pending-invites").hidden = !n;
   $("pending-invites").innerHTML = n ? '<h2 id="pending-title">Waiting for you</h2>' + offer.join("") + PENDING.map(function (p) { return pendingItemHTML(p, "list"); }).join("") : "";
   var banner = $("invite-banner");

@@ -556,6 +556,7 @@ function paintMast(name) {
     if (b.getAttribute("data-me") === RV_GROUP[name]) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
   });
   closeMastSheet(false);
+  measureMast(); // CC-242: full or compact may have changed
 }
 function mastSheetOpen() { return $("mast-burger").getAttribute("aria-expanded") === "true"; } // .open stays on through the exit
 function closeMastSheet(refocus) {
@@ -566,8 +567,61 @@ function closeMastSheet(refocus) {
 }
 $("mast-burger").addEventListener("click", function () {
   if (mastSheetOpen()) { closeMastSheet(false); return; }
+  shutSheetBars();
   $("mast").classList.add("open"); $("mast-burger").setAttribute("aria-expanded", "true"); dropOpen($("mast-nav"));
 });
+// CC-242: in the sheet, Review and your name are bars (aria-expanded) that open and shut their list, so the open sheet
+// stays short. They start shut each time the sheet opens. On a wide screen the bars are hidden and the lists are menus.
+var SHEET_BARS = [["rv-head", "rv-menu"], ["me-head", "me-menu"]];
+function shutSheetBars() {
+  if (!MAST_PHONE.matches) return;
+  SHEET_BARS.forEach(function (b) { $(b[0]).setAttribute("aria-expanded", "false"); moveStop($(b[1])); $(b[1]).hidden = true; });
+}
+SHEET_BARS.forEach(function (b) {
+  $(b[0]).addEventListener("click", function () {
+    var open = $(b[0]).getAttribute("aria-expanded") !== "true";
+    $(b[0]).setAttribute("aria-expanded", String(open)); dropToggle($(b[1]), open);
+  });
+});
+
+// CC-242: on a phone the masthead is pinned, and the full one shrinks to the compact one over the first MAST_CUT px of
+// scroll (its full height less its compact height, measured). site.css draws it from --shrink, 0 to 1. Its bottom margin
+// gives back the height it has lost, so the page under it never moves and its bottom keeps pace with the content until
+// it's compact. With reduced motion there's no in-between: full at the top, compact as soon as the page moves.
+var MAST_CUT = 0, MAST_FULL_H = 0, MAST_WATER_H = 0, MAST_TICK = 0;
+function mastShrink(y, cut, calm) {
+  if (!(cut > 0) || !(y > 0)) return 0;
+  return calm ? 1 : Math.min(1, y / cut);
+}
+function measureMast() {
+  var m = $("mast"), tag = m.querySelector(".mast-tag"), brand = $("brand");
+  ["--shrink", "--tag-h", "--brand-in", "--mast-full-h", "--mast-cut"].forEach(function (k) { m.style.removeProperty(k); });
+  m.style.marginBottom = ""; m.classList.remove("mast-small"); MAST_CUT = 0;
+  if (!MAST_PHONE.matches || !m.classList.contains("mast-full")) return;
+  var words = document.createRange(); words.selectNodeContents(brand); // the wordmark itself, centred in the band
+  m.style.setProperty("--tag-h", tag.getBoundingClientRect().height + "px");
+  m.style.setProperty("--brand-in", Math.max(0, (brand.clientWidth - words.getBoundingClientRect().width) / 2) + "px");
+  MAST_FULL_H = m.getBoundingClientRect().height;
+  MAST_WATER_H = m.clientHeight; m.style.setProperty("--mast-full-h", MAST_WATER_H + "px");
+  m.style.setProperty("--shrink", "1");
+  MAST_CUT = MAST_FULL_H - m.getBoundingClientRect().height;
+  paintShrink();
+}
+function paintShrink() {
+  MAST_TICK = 0;
+  if (!MAST_CUT) return;
+  var m = $("mast"), s = mastShrink(window.scrollY, MAST_CUT, MOTION_CALM.matches);
+  m.style.setProperty("--shrink", String(s));
+  var h = m.getBoundingClientRect().height;
+  m.style.marginBottom = (MAST_FULL_H - h) + "px";
+  m.style.setProperty("--mast-cut", (MAST_WATER_H - m.clientHeight) + "px"); // the water keeps its full height, clipped to the band
+  m.classList.toggle("mast-small", s === 1);
+}
+window.addEventListener("scroll", function () { if (MAST_CUT && !MAST_TICK) MAST_TICK = requestAnimationFrame(paintShrink); }, { passive: true });
+window.addEventListener("resize", measureMast);
+MAST_PHONE.addEventListener("change", measureMast);
+MOTION_CALM.addEventListener("change", paintShrink);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(measureMast); // the wordmark's width needs its font
 document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && mastSheetOpen()) closeMastSheet(true); });
 document.addEventListener("click", function (ev) { if (!$("mast").contains(ev.target)) closeMastSheet(false); });
 $("mast").addEventListener("focusout", function (ev) { if (ev.relatedTarget && !$("mast").contains(ev.relatedTarget)) closeMastSheet(false); });

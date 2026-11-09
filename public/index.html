@@ -227,7 +227,8 @@
 </svg>
 
 <!-- CC-137: the masthead is the Chicago flag on the lake. Home (and the join page) get the full one: the date, the
-     wordmark between two stripes, and the tagline. Every other view gets the compact one. On a phone the nav is a sheet. -->
+     wordmark between two stripes, and the tagline. Every other view gets the compact one. On a phone the nav is a sheet.
+     CC-242: on a phone it's pinned to the top, and the full one shrinks to the compact one as the page scrolls. -->
 <header class="mast mast-full" id="mast">
   <canvas class="water" aria-hidden="true" data-water="mast" data-seed="5" data-kind="theater"></canvas><!-- CC-138: the lake's water, behind the masthead -->
   <div class="wrap mast-in">
@@ -238,10 +239,11 @@
       <button class="navlink" type="button" data-go="catalog" id="nav-catalog">Catalog</button>
       <button class="navlink" type="button" data-go="plan" id="nav-plan">Find an outing</button>
       <button class="navlink" type="button" data-go="submit" id="nav-submit">Submit an event</button>
-      <!-- CC-206: the admin's pages, as a menu like the you menu. In the phone sheet it's a plain list under "Review". -->
+      <!-- CC-206: the admin's pages, as a menu like the you menu. CC-242: in the phone sheet, Review and your name are bars
+           that open their list, so the open sheet stays short. -->
       <span class="me-wrap" id="rv-wrap" hidden>
         <button class="navlink me-btn" type="button" id="nav-review" aria-haspopup="menu" aria-controls="rv-menu" aria-expanded="false">Review<span class="count" id="review-count"></span><svg class="me-caret" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg></button>
-        <span class="me-head" id="rv-head" hidden>Review</span>
+        <button class="me-head" type="button" id="rv-head" aria-expanded="false" aria-controls="rv-menu" hidden><span id="rv-head-name">Review</span><span class="count" id="rv-head-count"></span><svg class="me-caret" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg></button>
         <span class="me-menu" id="rv-menu" role="menu" aria-labelledby="nav-review" hidden>
           <button type="button" role="menuitem" tabindex="-1" data-me="review" data-go="review">Waiting for review<span class="count" id="rv-review-count"></span></button>
           <button type="button" role="menuitem" tabindex="-1" data-me="sourcing" data-go="sourcing">Event Sourcing<span class="count" id="found-count"></span></button>
@@ -251,7 +253,7 @@
       </span>
       <span class="me-wrap" id="me-wrap">
         <button class="navlink me-btn" type="button" id="nav-account"><span id="me-name">Sign in</span><span class="count" id="account-count"></span><svg class="me-caret" viewBox="0 0 12 12" aria-hidden="true" hidden><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg></button>
-        <span class="me-head" id="me-head" hidden></span><!-- in the phone sheet, your name heads the you menu (CC-137) -->
+        <button class="me-head" type="button" id="me-head" aria-expanded="false" aria-controls="me-menu" hidden><span id="me-head-name"></span><span class="count" id="me-head-count"></span><svg class="me-caret" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg></button><!-- in the phone sheet, your name heads the you menu (CC-137) -->
         <span class="me-menu" id="me-menu" role="menu" aria-labelledby="nav-account" hidden>
           <button type="button" role="menuitem" tabindex="-1" data-me="crews">Crews<span class="count" id="crews-count"></span></button>
           <button type="button" role="menuitem" tabindex="-1" data-me="planner">My week</button>

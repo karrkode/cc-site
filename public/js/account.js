@@ -642,7 +642,8 @@ $("journal-signin-btn").addEventListener("click", function () { signInFrom("jour
 // ---------- your name in the header, and its menu (CC-105) ----------
 // Signed in, the header shows your name (or "Your account"); it opens a menu: Crews, My week, Cultural journal (CC-159), Invite a friend, Account
 // settings, Sign out. Arrow keys, Home and End move through it; Escape or Tab closes it and returns to your name.
-// CC-137: on a phone the menu sits open in the masthead's sheet instead, as a plain list under your name.
+// CC-137: on a phone the menu sits in the masthead's sheet instead, as a plain list under your name. CC-242: your name
+// is a bar there that opens and shuts the list (sheetBar, util.js).
 function meName() { var n = AUTH.user && (AUTH.user.display_name || "").trim(); return n || "Your account"; }
 function paintMeMenu() {
   var u = AUTH.user, b = $("nav-account");
@@ -657,13 +658,13 @@ function meInSheet() { return MAST_PHONE.matches && !!AUTH.user; }
 function paintMeMode() {
   var sheet = meInSheet(), menu = $("me-menu");
   $("nav-account").hidden = sheet;
-  $("me-head").hidden = !sheet; $("me-head").textContent = sheet ? meName() : "";
+  $("me-head").hidden = !sheet; $("me-head-name").textContent = sheet ? meName() : "";
   menu.setAttribute("role", sheet ? "group" : "menu");
-  menu.setAttribute("aria-labelledby", sheet ? "me-head" : "nav-account");
+  menu.setAttribute("aria-labelledby", sheet ? "me-head-name" : "nav-account");
   meItems().forEach(function (it) { // in the sheet each item is a plain button that Tab reaches
     if (sheet) { it.removeAttribute("role"); it.removeAttribute("tabindex"); } else { it.setAttribute("role", "menuitem"); it.setAttribute("tabindex", "-1"); }
   });
-  moveStop(menu); menu.hidden = !sheet;
+  moveStop(menu); menu.hidden = true; $("me-head").setAttribute("aria-expanded", "false"); // CC-242: the bar starts shut
   if (!sheet && AUTH.user) $("nav-account").setAttribute("aria-expanded", "false");
 }
 MAST_PHONE.addEventListener("change", paintMeMode);

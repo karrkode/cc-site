@@ -186,6 +186,29 @@ a.btn, a.textbtn { display: inline-block; }
   .mast.open .navlink[aria-current="page"], .mast.open .me-menu [aria-current="page"] { font-weight: 800; text-decoration: underline 3px var(--stripe); }
   .mast.open .count:not(:empty) { color: var(--muted); }
 }
+/* CC-242: on a phone the masthead is pinned to the top. The full one (home, join) shrinks to the compact one over the first
+   stretch of scroll: --shrink runs 0 to 1 (util.js, mastShrink), the date and tagline fold away, the wordmark slides from
+   the middle to the left and takes the compact size, and the stripe moves from under the wordmark to under the band. The
+   hamburger sits in the corner throughout. util.js gives back the height it loses as a bottom margin, so the page never
+   moves; the water stays its full height and is clipped, so it isn't redrawn on every frame. */
+@media (max-width: 960px) {
+  html { scroll-padding-top: 72px; } /* a heading jumped to lands below the pinned band */
+  .mast { position: sticky; top: 0; }
+  .mast-full { --s: var(--shrink, 0); border-bottom: calc(6px * var(--s)) solid var(--stripe); }
+  .mast-full .mast-in { position: relative; grid-template-columns: minmax(0, 1fr); grid-template-areas: "date" "brand" "tag"; padding-block: 6px calc(6px + 12px * (1 - var(--s))); }
+  .mast-full .burger { position: absolute; top: 6px; right: calc(clamp(16px, 4vw, 40px) - 10px); margin: 0; }
+  .mast-full .mast-date { display: flex; align-items: center; height: calc(44px * (1 - var(--s))); overflow: hidden; opacity: max(0, 1 - 2 * var(--s)); }
+  .mast-full .mast-tag { height: calc((1 - var(--s)) * var(--tag-h)); margin-top: calc(10px * (1 - var(--s))); overflow: hidden; opacity: max(0, 1 - 2 * var(--s)); }
+  .mast-full .brand {
+    justify-content: flex-start; margin-top: calc(6px * (1 - var(--s))); padding: calc(10px * (1 - var(--s))) 0 calc(8px * (1 - var(--s))) calc((1 - var(--s)) * var(--brand-in, 0px));
+    border-block-width: calc(6px * (1 - var(--s))); gap: calc(12px - 5px * var(--s));
+    font-size: calc(clamp(2.75rem, 7vw, 5rem) * (1 - var(--s)) + 1.625rem * var(--s));
+  }
+  .mast-full .brand .star { width: calc(0.475em + 0.085em * var(--s)); height: calc(0.475em + 0.085em * var(--s)); }
+  .mast-full .water { height: var(--mast-full-h, 100%); bottom: auto; clip-path: inset(0 0 var(--mast-cut, 0px) 0); }
+  .mast-small .brand { justify-self: start; } /* compact: only the wordmark goes home, not the band's width */
+  .mast-small .mast-date, .mast-small .mast-tag { visibility: hidden; }
+}
 
 .lede { max-width: 54ch; font-size: 1.125rem; color: var(--muted); }
 
@@ -1285,11 +1308,21 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .me-menu [data-me]:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
 .me-menu [aria-current="page"] { font-weight: 800; }
 .me-menu .count:not(:empty) { color: var(--muted); }
-.me-head { display: block; padding: 18px max(16px, env(safe-area-inset-left)) 6px; border-bottom: 1px solid var(--rule); font-family: var(--sign); font-weight: 700; font-size: 1.0625rem; color: var(--muted); }
+/* CC-242: in the phone sheet, Review and your name are bars that open and shut their list (sheetBar, util.js) */
+.me-head {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
+  background: none; border: 0; border-bottom: 1px solid var(--line); cursor: pointer; text-align: left;
+  font-family: var(--sign); font-weight: 700; font-size: 1.25rem; --fs: 20; color: var(--text);
+}
+.me-head .count:not(:empty) { margin-left: 0; }
+.me-head .me-caret { width: 14px; height: 14px; margin-left: auto; }
+.me-head[aria-expanded="true"] .me-caret { transform: rotate(180deg); }
+.me-head:hover { background: var(--surface); }
 .me-head[hidden] { display: none; }
 @media (max-width: 960px) {
   .mast.open .me-wrap { display: grid; }
   .mast.open .me-menu { position: static; width: auto; max-width: none; border: 0; }
+  .mast.open .me-menu [data-me] { /* CC-242: an open bar's list sits a step in, under its bar */ padding-left: max(32px, env(safe-area-inset-left)); font-size: 1.125rem; --fs: 18; }
   .mast.open .me-menu [data-me="account"], .mast.open .me-menu [data-me="people"] { border-bottom: 1px solid var(--line); }
   .mast.open .me-menu [data-me="review"] { border-bottom-color: var(--line); }
   .mast.open .me-menu [data-me="signout"] { border-top: 0; }
