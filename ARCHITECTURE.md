@@ -67,7 +67,7 @@ The site has these views:
 - Site stats (admins only)
 - Source grid (admins only, `public/js/sourcegrid.js`, CC-221): a grid of blocks, one per source, with just the venue's name. Largest first, ties A to Z, and turned-off sources last. A block's colour is the API's `state`: green reads fine, pale yellow reads fine but has never found an event, light red can't be read, orange is checked by hand, grey hasn't been read yet, and an outline is turned off. Its size is one of four steps for the approved events at its venues, dated from 12 months ago onward (0–2, 3–9, 10–24, 25+). Hover, keyboard focus or a tap shows Events, Health and Settings. Each opens a panel under the block's row and pushes the rest down. `#source-<id>` opens that block's Health panel. A venue's website (Venue URL) and the pages read (Sourcing URL) are separate, and Settings edits both. `scripts/test_sources.js` checks this in CI.
 - Found events (admins only)
-- Issues (admins only)
+- Issues (admins only). Each report has "Create Jira ticket" (CC-241). It opens a draft with a type, a priority, a summary and a description, with personal details taken out. The admin edits it and sends it, and the server makes one ticket in the CC project and links it to the report. The row then shows the ticket and its status in Jira. "Done" in Jira means deployed, not checked, so the report's own Fixed is still set by hand.
 - Members and Photo approvals (admins; approvers see Photo approvals too)
 - QR card (admins only)
 
@@ -115,7 +115,7 @@ The API has these groups of routes:
 | `/admin/discovery` | Event sources, found events, skip rules, the CSV download, the monthly budget | Admins only |
 | `/venues` | Show, rename, merge and delete venues. Set opening hours, show times, the website and the street address. Suggested websites and addresses to confirm or dismiss (CC-213, CC-218). Reading a venue's website for the Add a venue form (CC-222). What is left out of town, for the clean-up (CC-217). | All users can read (without the website). Admins can change. |
 | `/crews` | Start a crew, make invite links, invite by email, accept or decline an invite, join, leave. The owner renames, removes members, hands over or deletes. | Signed-in users. Only a crew's members can see it. |
-| `/issues` | Report a problem with the site. Admins see the reports at `/admin/issues`, set a status and add a note. | Signed-in users report. Admins review. |
+| `/issues` | Report a problem with the site. Admins see the reports at `/admin/issues`, set a status and add a note, and can make a Jira ticket from one (`/admin/issues/{id}/jira`, `/admin/jira-status`, CC-241). Only the server talks to Jira (`app/jira.py`), with credentials from Parameter Store. | Signed-in users report. Admins review. |
 | `/e/{id}-{title}`, `/sitemap.xml`, `/robots.txt` | Plain HTML event pages with schema.org Event data, the sitemap of live events, and robots.txt (CC-108). Public details only. | Anyone, through chiculturecrew.com |
 | `/chicago/`, `/chicago/{slug}` | Plain HTML roundup pages (CC-109), each with an intro admins edit on the Review page (`/admin/roundups`). | Anyone, through chiculturecrew.com. Intros: admins only |
 | `/traffic` | Count a page view, a click to an event's page, or a planned outing, and where the visit came from (a tagged link or the referring site's domain). No cookies. | All visitors (the site sends it) |
@@ -143,7 +143,7 @@ The database has these main tables:
 - `attended_shares`: which crews see an "I've been" mark: the crews that the plan was shared with when its owner marked it. The crew's plans show who has been and how many added an approved photo ("Three others have been, 1 with a photo."). A closed event stays on the crew's plans for 2 weeks while someone has been. On the crews page (CC-120) each crew is a summary that opens, one at a time, into its plans and members; invites, Rename, Leave and Dissolve sit under Manage crew. Since CC-145 the plans are event rows that open the event view (`#e/<id>`), and `scripts/test_crews.js` checks the page in CI.
 - `discovery_sources`, `discovered_items`, `discovery_checks` and `discovery_skip_rules`: event discovery (section 5).
 - `traffic_counts`, `traffic_visitors`, `traffic_visitor_days`, `traffic_source_visits`, `traffic_source_counts`, `traffic_join_visits`, `traffic_join_signups` and `user_active_days`: the counts for Site stats. The join tables (CC-121) keep the join page's visits and sign-ups by source. A sign-up counts for the join page when the visit came by `/join`. The count is not connected to the account. These tables do not keep names or IP addresses, and a referring site is kept as its domain only.
-- `issue_reports`: problems that members reported, with a status and an optional note for the member.
+- `issue_reports`: problems that members reported, with a status and an optional note for the member, and the Jira ticket made from it (`jira_key`, CC-241).
 - `app_settings`: settings that an admin can change, for example the discovery budget and the roundup intros (CC-109).
 - `sheet_syncs`: the history of the old Google Sheet sync. Nothing writes to this table now.
 
