@@ -179,7 +179,7 @@ function paintCatalog(focusFrom) {
     (CAT_ITEMS.length < CAT_TOTAL ? ", showing " + CAT_ITEMS.length : "");
   syncMineChips();
   // CC-140: rows under day heads for Opening soonest and Closing soonest; already closed and the other sorts have none
-  $("grid").innerHTML = CAT_ITEMS.length ? listingsHTML(CAT_ITEMS, cat.when === "past" ? "" : cat.sort) : cat.crews ?
+  $("grid").innerHTML = CAT_ITEMS.length ? listingsHTML(CAT_ITEMS, cat.when === "past" ? "" : cat.sort, true) : cat.crews ?
     '<div class="list-state"><p><strong>Nothing from your crews matches.</strong></p><p class="hint">No crew-mate has marked an event like this as interested, committed or been. Widen the other filters, or turn off Your Crews Catalog to see everything.</p></div>' :
     Object.keys(cat.picks).length ?
     '<div class="list-state"><p><strong>No picks match.</strong></p><p class="hint">Widen the other filters, or turn off the dolphin filters to see everything.</p></div>' :

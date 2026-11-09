@@ -29,7 +29,7 @@ function load() {
     window: { devicePixelRatio: 1, matchMedia: () => stub(), addEventListener() {} },
     matchMedia: () => stub(),
     document: stub(), localStorage: stub(), location: stub(), history: stub(), navigator: stub(),
-    Intl, console,
+    Intl, URL, console,
   };
   vm.createContext(sandbox);
   vm.runInContext("var AUTH = { user: null }; function $(id) { return document; }", sandbox);
@@ -104,6 +104,16 @@ assert.match(row, /Dawoud Bey &lt;Street&gt;/, "titles are escaped");
 assert.match(row, /Steppenwolf · Lincoln Park/);
 assert.match(row, /<span class="listing-cost">Free<\/span>/);
 assert.ok(!/crewline|mark-int|mark-going/.test(row), "signed out: no crew line and no plans of your own");
+// CC-250: the optional catalog image and the default category water share a visual slot.
+const photo = ev({ image_url: "https://example.com/art.jpg?w=320&h=180" });
+const cards = g.listingsHTML([art, photo, ev({ image_url: "javascript:alert(1)" })], "price", true);
+assert.match(cards, /class="listing cat-theater listing-flip"/);
+assert.match(cards, /class="listing-kind">Visual Art<\/span>/);
+assert.match(cards, /class="listing-image" src="https:\/\/example\.com\/art\.jpg\?w=320&amp;h=180"/);
+assert.strictEqual((cards.match(/class="listing-image"/g) || []).length, 1, "missing or unsafe images use the water");
+assert.strictEqual((cards.match(/data-water="tile"/g) || []).length, 3, "every card has category water");
+assert.doesNotMatch(g.listingHTML(photo), /class="listing-image"/, "home keeps its category tile");
+
 // CC-162: the admin interested: the ink dolphin, not the ring
 row = g.listingHTML(ev({ pick: { status: "interested", date: null, by: "Andrew" } }));
 assert.match(row, /data-row-pick aria-label="Andrew is interested in this one\."><svg class="mark mark-host-int" aria-hidden="true"><use href="#dolphin">/, "the ink dolphin says what it means");
