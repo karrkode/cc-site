@@ -1076,6 +1076,16 @@ function signOut() {
   });
 }
 $("sign-out").addEventListener("click", signOut);
+// CC-203: every session for the account ends at once, this tab's included, so it comes back to Sign in.
+function signOutEverywhere() {
+  var b = $("sign-out-everywhere"), err = $("everywhere-error"); b.disabled = true; err.textContent = "";
+  api("/auth/logout-everywhere", { method: "POST", cookies: true, refreshable: true }).then(readJSON, function () { return null; }).then(function (res) {
+    b.disabled = false;
+    if (!res || !res.ok) { err.textContent = checkThis(errorText(res)); return; }
+    setSession(null); openAccount("You're signed out on every device, this one too.");
+  });
+}
+$("sign-out-everywhere").addEventListener("click", signOutEverywhere);
 
 // ---------- the join page (CC-121) ----------
 // chiculturecrew.com/join: one question, a sign-up box, and the catalog under it. Production serves a copy of the
