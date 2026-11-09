@@ -963,6 +963,15 @@
         <div class="field"><label for="issues-kind">Type</label><select id="issues-kind"><option value="">All</option><option value="issue">Issues</option><option value="feature">Feature requests</option></select></div>
         <div class="field"><label for="issues-show">Show</label><select id="issues-show"></select></div>
       </form>
+      <!-- CC-245: the dashboard, for the type chosen above; its counts are the list's -->
+      <div class="isd" id="issues-dash" hidden>
+        <h2 class="acct-sub">Dashboard</h2>
+        <dl class="hl-grid" id="isd-status"></dl>
+        <h3>How long the open ones have waited</h3><dl class="hl-grid" id="isd-age"></dl>
+        <h3>New each week</h3><ol class="isd-weeks" id="isd-weeks"></ol>
+        <h3>Time to fix</h3><dl class="hl-grid" id="isd-fix"></dl>
+        <h3>Open ones in Jira</h3><dl class="hl-grid" id="isd-jira"></dl><p class="hint" id="isd-jira-note"></p>
+      </div>
       <p class="hint" id="issues-status" role="status"></p>
       <div class="queue" id="issues-list"></div>
     </section>

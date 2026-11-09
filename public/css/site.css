@@ -1801,6 +1801,17 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .hl-pie .slice { stroke: var(--page); stroke-width: 2; }
 .hl-pie .s1 { fill: var(--pie-1); } .hl-pie .s2 { fill: var(--pie-2); } .hl-pie .s3 { fill: var(--pie-3); }
 .hl-pie .s4 { fill: var(--pie-4); } .hl-pie .s5 { fill: var(--pie-5); } .hl-pie .s6 { fill: var(--pie-6); }
+/* CC-245: the Issues dashboard, above the list (it borrows the Site health tiles) */
+.isd { margin: 24px 0 8px; padding-bottom: 32px; border-bottom: 1px solid var(--line); }
+.isd .hl-grid div { display: grid; grid-row: span 2; grid-template-rows: subgrid; row-gap: 0; } /* a label that wraps keeps the numbers in its row level */
+.isd h3 { margin: 24px 0 0; }
+.isd .hint:empty { display: none; }
+.isd-weeks { list-style: none; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; align-items: end; height: 9rem; margin: 8px 0 0; padding: 0; }
+.isd-weeks li { display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; height: 100%; min-width: 0; text-align: center; }
+.isd-col { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: flex-end; min-height: 0; }
+.isd-bar { display: block; background: var(--pie-1); }
+.isd-n { font-family: var(--sign); font-weight: 700; font-variant-numeric: tabular-nums; }
+.isd-wk { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.875rem; white-space: nowrap; }
 .hl-key { list-style: none; margin: 0; padding: 0; flex: 1 1 14rem; min-width: 0; }
 .hl-key li { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 0; }
 .hl-key i { width: 16px; height: 16px; display: block; }
