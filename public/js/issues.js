@@ -7,6 +7,8 @@
 // filled in for them, the page they were on, their browser, screen size and the site's version. Admins set a status
 // and can add a note the member sees. No screenshots yet.
 // CC-95: or a feature request, numbered apart (FR-0002). Requests have the same statuses, in their own words.
+// CC-241: admins can make a Jira ticket from a report (once), and see the ticket's status in Jira. A ticket that's done
+// in Jira is deployed, not checked: the report's own Fixed is still set by hand.
 var ISSUE_STATUS = { new: "New", looking: "Looking into it", fixed: "Fixed", wont_fix: "Won't fix" };
 var REQUEST_STATUS = { new: "New", looking: "Considering", fixed: "Done", wont_fix: "Not planned" };
 var ISSUE_KINDS = {
@@ -88,7 +90,7 @@ function loadMyIssues() {
 }
 
 // ---------- Issues (admins) ----------
-var ISSUES_SHOW = "", ISSUES_KIND = "", ISSUES_Q = "", ISSUES_REQ = 0, ISSUES_TIMER = null;
+var ISSUES_SHOW = "", ISSUES_KIND = "", ISSUES_Q = "", ISSUES_REQ = 0, ISSUES_TIMER = null, ISSUES_ITEMS = {}, JIRA_REPORT = null;
 function openIssues(q) { // q: a ticket number to look up (the recap links to #issues/ISS-0007)
   if (!isAdmin()) { openAccount(); return; }
   if (q !== undefined) { ISSUES_Q = q; ISSUES_SHOW = ""; ISSUES_KIND = ""; }
@@ -124,13 +126,18 @@ function loadIssues(focusSel) {
         (i.expected ? '<p class="alt-meta">' + (i.kind === "feature" ? "How it'd help: " : "Expected: ") + esc(i.expected) + "</p>" : "") +
         '<p class="alt-meta">From ' + who + " · " + esc(i.browser || "browser not given") + (i.screen ? " · " + esc(i.screen) : "") +
           (i.site_version ? " · site " + esc(i.site_version) : "") + "</p>" +
+        (i.jira_key ? '<p class="alt-meta issue-jira" data-jira-for="' + id + '">Jira: <a href="' + esc(i.jira_url) + '" target="_blank" rel="noopener">' +
+          esc(i.jira_key) + '</a> <span class="state" data-jira-state>Checking Jira…</span></p>' : "") +
         '<form class="issue-edit" data-issue-form="' + id + '" novalidate><div class="fields">' +
         '<div class="field"><label for="issue-status-' + id + '">Status</label><select id="issue-status-' + id + '">' + Object.keys(ISSUE_STATUS).map(function (k) {
           return '<option value="' + k + '"' + (k === i.status ? " selected" : "") + ">" + esc(statusWord(i.kind, k)) + "</option>"; }).join("") + "</select></div>" +
         '<div class="field"><label for="issue-note-' + id + '">Note to the member <span class="opt-label">(optional)</span></label>' +
         '<input id="issue-note-' + id + '" type="text" maxlength="500" value="' + esc(i.admin_note) + '" placeholder="Fixed, thanks for telling us!"></div></div>' +
-        '<div class="row"><button class="btn neutral" type="submit">Save</button></div></form></div></div>';
+        '<div class="row"><button class="btn neutral" type="submit">Save</button>' +
+        (i.jira_key ? "" : '<button class="btn ghost" type="button" data-jira-make="' + id + '">Create Jira ticket</button>') + "</div></form></div></div>";
     }).join("");
+    ISSUES_ITEMS = {}; res.body.items.forEach(function (i) { ISSUES_ITEMS[i.id] = i; });
+    loadJiraStates(req, res.body.items.filter(function (i) { return i.jira_key; }));
     var f = focusSel && document.querySelector(focusSel); if (f) f.focus();
   }, function () { $("issues-status").textContent = errorText(null); });
 }
@@ -150,4 +157,61 @@ $("issues-list").addEventListener("submit", function (ev) {
       $("edit-live").textContent = "Saved: " + statusWord(res.body.kind, res.body.status) + ".";
       loadIssues('[data-issue-form="' + id + '"] button');
     }, function () { btn.disabled = false; $("issues-status").textContent = errorText(null); });
+});
+
+// ---------- CC-241: Jira tickets from reports (admins) ----------
+function jiraStateText(t, i) { // Jira's word, plus what "done" means for the report
+  if (t.category !== "done") return t.status + " in Jira";
+  return i.status === "fixed" || i.status === "wont_fix" ? t.status + " in Jira" : t.status + " in Jira: deployed. Check it, then set " + statusWord(i.kind, "fixed") + ".";
+}
+function loadJiraStates(req, linked) {
+  if (!linked.length) return;
+  api("/admin/jira-status?" + qs(linked.map(function (i) { return ["ids", i.id]; }))).then(readJSON).then(function (res) {
+    if (req !== ISSUES_REQ) return;
+    linked.forEach(function (i) {
+      var line = document.querySelector('[data-jira-for="' + i.id + '"]'); if (!line) return;
+      var st = line.querySelector("[data-jira-state]"), t = res.ok && res.body[i.id];
+      if (t) {
+        st.textContent = jiraStateText(t, i); st.className = "state" + (t.category === "done" ? " approved" : "");
+        var a = line.querySelector("a"); a.href = t.url; a.textContent = t.key; // the ticket may have moved
+      } else {
+        st.textContent = res.ok ? "Not found in Jira" : "Jira status unavailable"; st.className = "state needs";
+        if (!res.ok) st.title = errorText(res);
+      }
+    });
+  }, function () {
+    linked.forEach(function (i) { var st = document.querySelector('[data-jira-for="' + i.id + '"] [data-jira-state]'); if (st) { st.textContent = "Jira status unavailable"; st.className = "state needs"; } });
+  });
+}
+$("issues-list").addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-jira-make]"); if (!b) return;
+  var i = ISSUES_ITEMS[b.getAttribute("data-jira-make")]; if (!i) return;
+  b.disabled = true;
+  api("/admin/issues/" + i.id + "/jira").then(readJSON).then(function (res) {
+    b.disabled = false;
+    if (!res.ok) { $("issues-status").textContent = errorText(res); return; }
+    var d = res.body; JIRA_REPORT = i;
+    $("jr-heading").textContent = "Create a Jira ticket for " + i.key;
+    $("jr-type").value = d.issue_type; $("jr-priority").value = d.priority; $("jr-summary").value = d.summary;
+    $("jr-description").value = d.description; $("jr-reference").textContent = d.reference;
+    $("jr-offline").hidden = d.connected; $("jr-error").textContent = ""; $("jr-send").disabled = false;
+    openDialog($("jira-dialog"), b); $("jr-summary").focus();
+  }, function () { b.disabled = false; $("issues-status").textContent = errorText(null); });
+});
+$("jr-cancel").addEventListener("click", function () { closeDialog($("jira-dialog")); });
+$("jira-form").addEventListener("input", function () { $("jr-error").textContent = ""; });
+$("jira-form").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var i = JIRA_REPORT; if (!i) return;
+  if ($("jr-summary").value.trim().length < 3) { $("jr-error").textContent = "Give the ticket a summary."; $("jr-summary").focus(); return; }
+  $("jr-send").disabled = true; $("jr-send").textContent = "Creating…";
+  var body = { issue_type: $("jr-type").value, priority: $("jr-priority").value, summary: $("jr-summary").value, description: $("jr-description").value };
+  function done() { $("jr-send").disabled = false; $("jr-send").textContent = "Create ticket in Jira"; }
+  api("/admin/issues/" + i.id + "/jira", { method: "POST", body: body }).then(readJSON).then(function (res) {
+    done();
+    if (!res.ok) { $("jr-error").textContent = errorText(res); return; }
+    closeDialog($("jira-dialog"));
+    $("edit-live").textContent = i.key + " is now " + res.body.jira_key + " in Jira.";
+    loadIssues('[data-jira-for="' + i.id + '"] a');
+  }, function () { done(); $("jr-error").textContent = errorText(null); });
 });
