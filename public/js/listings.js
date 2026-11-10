@@ -34,12 +34,13 @@ function listingCrewHTML(e) {
   }).join("") + "</span>" + names.length + " from your crew</span>";
 }
 
-// CC-250: the catalog can show optional artwork while keeping water as the default.
+// CC-250: the catalog shows the event's photo, with its water as the default. The API gives the photo's address on
+// the site itself (https in production, http://localhost:4173 locally); anything else is ignored.
 function listingImageHTML(value) {
-  if (typeof value !== "string" || !/^https:\/\//i.test(value.trim())) return "";
+  if (typeof value !== "string" || !value.trim()) return "";
   try {
     var url = new URL(value.trim());
-    if (url.username || url.password) return "";
+    if (url.username || url.password || !(url.protocol === "https:" || url.origin === location.origin)) return "";
     return '<img class="listing-image" src="' + esc(url.href) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">';
   } catch (err) { return ""; }
 }
@@ -104,14 +105,15 @@ document.addEventListener("scroll", function () { if (ROW_TIP.by) rowTip(null); 
 // Rows under their heads. Events with the same head are next to each other in every sort that has heads, so a new
 // head starts whenever it changes.
 function listingsHTML(items, by, cards) {
-  var html = "", head = null;
+  var html = "", head = null, n = 0;
   items.forEach(function (e, i) {
     var h = listingHead(e, by);
     if (i === 0 || h !== head) {
       html += (i ? "</ul></section>" : "") + '<section class="listing-day">' + (h ? '<h3 class="listing-day-head">' + esc(h) + "</h3>" : "") + '<ul class="listings">';
-      head = h;
+      head = h; n = 0;
     }
-    html += "<li>" + listingHTML(e, cards, i % 2 === 1) + "</li>";
+    // CC-250: cards alternate within each day, so every day's first card has its photo on the left
+    html += "<li>" + listingHTML(e, cards, n++ % 2 === 1) + "</li>";
   });
   return items.length ? html + "</ul></section>" : "";
 }
