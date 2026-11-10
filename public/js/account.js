@@ -18,7 +18,8 @@ function onAuthChange() {
   paintApproverRow(); // Photo approvals, for approvers and admins (CC-91; approvals.js)
   paintMeMenu(); // your name and its menu, or Sign in (CC-105)
   $("rv-wrap").hidden = !isAdmin();
-  WENT = {}; WENT_LIST = []; WENT_PHOTO = {}; WENT_JOURNAL = {}; JOURNAL_DRAFT = {}; WENT_SHARE = {}; MYPLANS = {}; MYPLAN_LIST = [];
+  WENT = {}; WENT_LIST = []; WENT_PHOTO = {}; WENT_JOURNAL = {}; JOURNAL_DRAFT = {}; WENT_SHARE = {}; WENT_AT = {}; MYPLANS = {}; MYPLAN_LIST = [];
+  OWN_LIST = []; OWN_CATS = []; OWN_STATE = "loading"; OWN_OPEN = null; OWN_DRAFT = {}; OWN_SAID = {}; OWN_CATS_OPEN = false; OWN_NEW_PHOTO = null; // CC-248
   PLANS_STATE = "loading"; WENT_STATE = "loading"; JOURNAL_OPEN = null; // CC-146: My week waits for them
   if (!AUTH.user) {
     NOTICE_SET = false; $("account-notice").textContent = "";
@@ -43,7 +44,7 @@ function onAuthChange() {
   if (visible("review")) renderReview();
   rerenderLists();
   loadHome(); // CC-143: the lead pick's deck and the rows' crew lines need your crews' plans
-  loadWent(); loadMyPlans().then(rerenderLists);
+  loadWent(); loadOwn(); loadMyPlans().then(rerenderLists);
   loadCrews().then(function () { buildCrewFilter(); rerenderLists(); }); // crews to share plans with (CC-75)
   loadPending(true); // crew invites waiting for you (CC-59): the notice on sign-in
   if (isAdmin()) updateIssuesCount();
@@ -63,8 +64,9 @@ function loadWent() {
   return api("/me/attended").then(readJSON).then(function (res) {
     if (!res.ok) { if (WENT_STATE !== "ready") WENT_STATE = "error"; if (visible("journal")) renderJournalPage(); return; }
     WENT_STATE = "ready";
-    WENT = {}; WENT_PHOTO = {}; WENT_JOURNAL = {}; WENT_SHARE = {}; WENT_LIST = res.body.map(function (row) {
+    WENT = {}; WENT_PHOTO = {}; WENT_JOURNAL = {}; WENT_SHARE = {}; WENT_AT = {}; WENT_LIST = res.body.map(function (row) {
       var e = toEvent(row.event); if (row.photo) WENT_PHOTO[e.id] = row.photo; // your photos (CC-76)
+      WENT_AT[e.id] = row.created_at; // CC-248: when you marked it, to mix it by date with your own events
       WENT_JOURNAL[e.id] = { words: row.words || "", review: row.review || "", recommend: !!row.recommend }; // CC-98
       WENT_SHARE[e.id] = { shared: !!row.shared, anonymous: !!row.anonymous }; // CC-112
       return e;
@@ -263,11 +265,11 @@ function weekRowHTML(e, d) {
 }
 // One day: its name, then its plans as rows, or "Nothing yet…" and Find something (the list opens under it).
 function weekDayHTML(day) {
-  var now = same(day.d, T), whole = (now ? "Today, " : "") + dayName(day.d), iso = isoDate(day.d);
+  var now = same(day.d, T), whole = (now ? "Today, " : "") + dayName(day.d), iso = isoDate(day.d), own = day.own || [], n = day.items.length + own.length;
   return '<section class="wk-day' + (now ? " today" : "") + '" data-row="' + iso + '" aria-label="' + esc(whole) + '">' + // CC-230: on My week the row that arrives is the day
     '<div class="wk-day-h"><h3 class="wk-day-t">' + esc((now ? "Today, " : "") + listingDay(day.d)) + "</h3>" +
-    (day.items.length ? "" : '<span class="wk-none">Nothing yet\u2026</span>' + dayFindHTML(iso, dayName(day.d))) + "</div>" +
-    (day.items.length ? '<ul class="wk-rows">' + day.items.map(function (e) { return weekRowHTML(e, day.d); }).join("") + "</ul>" :
+    (n ? "" : '<span class="wk-none">Nothing yet\u2026</span>' + dayFindHTML(iso, dayName(day.d))) + "</div>" +
+    (n ? '<ul class="wk-rows">' + day.items.map(function (e) { return weekRowHTML(e, day.d); }).join("") + own.map(ownWeekRowHTML).join("") + "</ul>" :
       '<div class="day-found" id="find-' + iso + '" aria-live="polite"' + (FIND_DAY_OPEN[iso] ? "" : " hidden") + ">" + (FIND_DAY_OPEN[iso] ? dayFoundHTML(iso) : "") + "</div>") +
     "</section>";
 }
@@ -283,8 +285,10 @@ function weekRangeText(ws, we) { // "Oct 30 – Nov 5", "Nov 6 – 12", and the 
 }
 function renderPlanner() {
   var start = PLANNER_WEEK * 7, days = [], ahead = goingAhead(), ready = PLANS_STATE === "ready";
-  for (var i = 0; i < 7; i++) days.push({ d: add(T, start + i), items: [] });
+  for (var i = 0; i < 7; i++) days.push({ d: add(T, start + i), items: [], own: [] });
   ahead.forEach(function (x) { if (x.n >= start && x.n < start + 7) days[x.n - start].items.push(x.e); });
+  var ownAhead = OWN_LIST.filter(function (o) { return o.date >= isoDate(T); }); // CC-248: your own events on their day
+  ownAhead.forEach(function (o) { var n = diff(parseISO(o.date), T); if (n >= start && n < start + 7) days[n - start].own.unshift(o); });
   var deciding = MYPLAN_LIST.filter(function (e) { var mine = MYPLANS[e.id]; return !(mine && mine.status === "going" && parseISO(mine.date) >= T); });
   var next = ahead.filter(function (x) { return x.n >= start + 7; })[0], planned = ahead.filter(function (x) { return x.n >= start && x.n < start + 7; }).length;
   $("week-range").textContent = (PLANNER_WEEK === 0 ? "This week · " : "") + weekRangeText(days[0].d, days[6].d);
@@ -296,10 +300,11 @@ function renderPlanner() {
   $("week-state").hidden = ready;
   $("week-state").innerHTML = ready ? "" : PLANS_STATE === "error" ? '<p class="week-error" role="alert">' + esc(checkThis("your plans couldn\u2019t be loaded. Reload the page to try again.")) + "</p>" :
     '<p class="week-hint" role="status">Finding your plans\u2026</p>';
+  planned += days.reduce(function (t, day) { return t + day.own.length; }, 0);
   $("week-n").textContent = ready ? plural(planned, "plan", "plans") : "";
   $("deciding-n").textContent = ready ? String(deciding.length) : "";
   $("planner-week").innerHTML = !ready ? "" : days.map(weekDayHTML).join("") +
-    (ahead.length ? "" : '<p class="week-hint">Commit to a day on any event and it shows up here.</p>');
+    (ahead.length || ownAhead.length ? "" : '<p class="week-hint">Commit to a day on any event and it shows up here.</p>');
   days.forEach(function (day) { paintFindDay(isoDate(day.d)); });
   $("myplans-grid").innerHTML = ready ? deciding.map(function (e) { return weekRowHTML(e); }).join("") : "";
   $("deciding-undo").innerHTML = ready ? withdrawnHTML() : "";
@@ -555,12 +560,19 @@ document.addEventListener("change", function (ev) {
   }, function () { redrawShare(id, focusName); document.querySelector('[data-share="' + id + '"] [data-share-error]').textContent = errorText(null); });
 });
 function renderJournal() {
-  var shown = WENT_LIST.slice(0, JOURNAL_SHOWN), open = journalOpenId(shown);
+  // CC-248: your own events mixed in by date, the ones still to come above, and Add an event at the top
+  var items = journalItems(), shown = items.past.filter(function (x) { return x.went; }).map(function (x) { return x.went; });
+  var open = OWN_OPEN !== null ? "" : journalOpenId(shown);
+  var row = function (x) { return x.went ? journalEntryHTML(x.went, x.went.id === open) : ownEntryHTML(x.own, String(OWN_OPEN) === String(x.own.id)); };
   dropRepaint($("went-grid"), function () { // CC-228: the entry that opens and the one that folds both slide
-    $("went-grid").innerHTML = shown.length ? shown.map(function (e) { return journalEntryHTML(e, e.id === open); }).join("") :
+    $("went-grid").innerHTML = ownBarHTML() +
+      (OWN_STATE === "error" ? '<p class="week-error" role="alert">' + esc(checkThis("your own events couldn\u2019t be loaded. Reload the page to try again.")) + "</p>" : "") +
+      (items.coming.length ? '<h2 class="journal-sub">Coming up</h2>' + items.coming.map(function (o) { return row({ own: o }); }).join("") +
+        '<h2 class="journal-sub">Where you\u2019ve been</h2>' : "") +
+      (items.past.length ? items.past.map(row).join("") :
       WENT_STATE === "loading" ? '<p class="week-hint" role="status">Finding your journal\u2026</p>' :
       WENT_STATE === "error" ? '<p class="week-error" role="alert">' + esc(checkThis("your journal couldn\u2019t be loaded. Reload the page to try again.")) + "</p>" :
-      '<p class="week-hint">Mark events with \u201cI\u2019ve been\u201d and they\u2019ll show up here, ready for your notes.</p>';
+      '<p class="week-hint">Mark events with \u201cI\u2019ve been\u201d, or add your own, and they\u2019ll show up here, ready for your notes.</p>');
   });
   paintWater($("went-grid"));
 }
@@ -568,7 +580,7 @@ function renderJournal() {
 document.addEventListener("click", function (ev) {
   var b = ev.target.closest && ev.target.closest("[data-journal-open]"); if (!b) return;
   var id = b.getAttribute("data-journal-open"), opening = b.getAttribute("aria-expanded") !== "true";
-  JOURNAL_OPEN = opening ? id : ""; renderJournal();
+  JOURNAL_OPEN = opening ? id : ""; OWN_OPEN = null; renderJournal(); // CC-248: one open entry at a time
   var entry = document.querySelector('[data-journal="' + id + '"]');
   var to = entry && (opening ? entry.querySelector('input[name="word"]') : entry.querySelector("[data-journal-open]")); if (to) to.focus();
 });
@@ -618,6 +630,293 @@ document.addEventListener("submit", function (ev) {
     if (first) redrawShare(id); // CC-112: now it can be shared
   }, function () { btn.disabled = false; err.textContent = checkThis(errorText(null)); });
 });
+
+// ---------- Your own events and categories in the journal (CC-248) ----------
+// Events that aren't in the catalog, added by you and private to you: never shared, never shown to crews. Each has a
+// title and a date (past or future), and a venue, a category, your three words, a review, "Would you recommend?" and a
+// photo when you like (no approver: only you see it). They're mixed in by date with the events you've been to, marked
+// "Added by you", and ones still to come sit above under "Coming up" and show in My week on their day. A category is
+// one of the catalog's three or one of your own; deleting your own keeps its events, with no category.
+var OWN_LIST = [], OWN_CATS = [], OWN_STATE = "loading", OWN_OPEN = null, OWN_DRAFT = {}, OWN_CATS_OPEN = false, OWN_SAID = {};
+var OWN_TITLE_MAX = 120, OWN_VENUE_MAX = 120, OWN_CAT_MAX = 30, OWN_CATALOG = ["Theater", "Music", "Visual Art"];
+function loadOwn() {
+  return Promise.all([api("/me/own-events").then(readJSON), api("/me/categories").then(readJSON)]).then(function (r) {
+    if (!r[0].ok || !r[1].ok) { if (OWN_STATE !== "ready") OWN_STATE = "error"; }
+    else { OWN_STATE = "ready"; OWN_LIST = r[0].body; OWN_CATS = r[1].body; }
+    ownRepaint();
+  }, function () { if (OWN_STATE !== "ready") OWN_STATE = "error"; ownRepaint(); });
+}
+function ownRepaint() { if (visible("journal")) renderJournal(); if (visible("planner")) renderPlanner(); }
+function ownById(id) { return OWN_LIST.filter(function (o) { return String(o.id) === String(id); })[0]; }
+function ownSort() { OWN_LIST.sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : b.id - a.id; }); }
+function ownComing(o) { return o.date > isoDate(T); }
+// The journal's two lists: still to come (soonest first), and the five latest you've been to, catalog and your own
+// mixed by date (a catalog event's date is the day you marked it "I've been").
+function journalItems() {
+  var today = isoDate(T);
+  var past = WENT_LIST.map(function (e) { return { went: e, on: WENT_AT[e.id] ? isoDate(new Date(WENT_AT[e.id])) : today }; })
+    .concat(OWN_LIST.filter(function (o) { return !ownComing(o); }).map(function (o) { return { own: o, on: o.date }; }));
+  past.sort(function (a, b) { return a.on < b.on ? 1 : a.on > b.on ? -1 : 0; });
+  return { coming: OWN_LIST.filter(ownComing).slice().reverse(), past: past.slice(0, JOURNAL_SHOWN) };
+}
+function ownTileHTML(o, thumb) {
+  var cat = OWN_CATALOG.indexOf(o.category) >= 0 ? o.category : "";
+  return '<span class="tile water-field' + catClass(cat) + '">' + waterHTML({ id: "own-" + o.id, type: cat }, "tile") +
+    '<span class="tile-k">' + esc(o.category_name || "Yours") + "</span>" + (thumb && o.photo_url ? '<img class="journal-thumb" src="' + esc(API + o.photo_url) + '" alt="">' : "") + "</span>";
+}
+function ownWhereText(o) { return [o.venue, goingDay(o.date)].filter(Boolean).join(" · "); }
+function ownWordsHTML(words) {
+  return '<p class="journal-words">' + esc(words.split(" ").map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(". ")) + ".</p>";
+}
+function ownEntryHTML(o, open) {
+  var id = esc(o.id), k = "o-" + id, coming = ownComing(o);
+  var head = '<div class="journal-row"><div class="journal-a own-a">' + ownTileHTML(o, true) +
+    '<span class="listing-t" id="' + k + '-h">' + esc(o.title) + "</span>" + '<span class="wk-where">' + esc(ownWhereText(o)) + "</span></div>" +
+    (open ? "" : o.words ? ownWordsHTML(o.words) : '<p class="week-hint journal-nowords">' + (coming ? "Coming up. Your three words can wait until you’ve been." : "No three words yet.") + "</p>") +
+    '<div class="journal-meta"><span>Added by you</span>' + (o.recommend ? "<span>Recommended</span>" : "") +
+    '<button type="button" class="week-tbtn" data-own-open="' + id + '" aria-expanded="' + open + '" aria-label="' +
+    esc((open ? "Close " : "Edit ") + o.title) + '">' + (open ? "Close" : "Edit") + "</button></div></div>";
+  if (!open) return '<article class="journal-entry own" data-own="' + id + '" aria-labelledby="' + k + '-h">' + head + "</article>";
+  return '<article class="journal-entry own open" data-own="' + id + '" aria-labelledby="' + k + '-h">' + head +
+    '<div class="journal-body">' + ownFormHTML(o) + ownPhotoHTML(o) + "</div></article>";
+}
+// The form, for a new event (o null) or one of yours. What you type is a draft until you save, as with the journal.
+function ownCatOptionsHTML(sel) {
+  var opt = function (v, text) { return '<option value="' + esc(v) + '"' + (v === sel ? " selected" : "") + ">" + esc(text) + "</option>"; };
+  return opt("", "No category") + '<optgroup label="Culture Crew’s">' + OWN_CATALOG.map(function (c) { return opt("c:" + c, c); }).join("") + "</optgroup>" +
+    (OWN_CATS.length ? '<optgroup label="Yours">' + OWN_CATS.map(function (c) { return opt("o:" + c.id, c.name); }).join("") + "</optgroup>" : "") +
+    (OWN_CATS.length < 20 ? opt("new", "New category…") : "");
+}
+function ownValues(o) {
+  var key = o ? String(o.id) : "new";
+  if (OWN_DRAFT[key]) return OWN_DRAFT[key];
+  return o ? { title: o.title, date: o.date, venue: o.venue, cat: o.category_id ? "o:" + o.category_id : o.category ? "c:" + o.category : "", newcat: "",
+    words: o.words, review: o.review, recommend: o.recommend } : { title: "", date: isoDate(T), venue: "", cat: "", newcat: "", words: "", review: "", recommend: false };
+}
+function ownFormHTML(o) {
+  var key = o ? String(o.id) : "new", v = ownValues(o), k = "of-" + esc(key), words = v.words ? v.words.split(" ") : [];
+  return '<form class="journal-form own-form" data-own-form="' + esc(key) + '" novalidate>' +
+    '<div class="fields">' +
+    '<div class="field own-title"><label for="' + k + '-title">What was it?</label><input id="' + k + '-title" name="title" type="text" maxlength="' + OWN_TITLE_MAX + '" required autocomplete="off" value="' + esc(v.title) + '"></div>' +
+    '<div class="field"><label for="' + k + '-date">When</label><input id="' + k + '-date" name="date" type="date" required min="1950-01-01" max="' + isoDate(add(T, 730)) + '" value="' + esc(v.date) + '"></div>' +
+    '<div class="field"><label for="' + k + '-venue">Where (optional)</label><input id="' + k + '-venue" name="venue" type="text" maxlength="' + OWN_VENUE_MAX + '" autocomplete="off" value="' + esc(v.venue) + '"></div>' +
+    '<div class="field"><label for="' + k + '-cat">Category (optional)</label><select id="' + k + '-cat" name="cat">' + ownCatOptionsHTML(v.cat) + "</select></div>" +
+    '<div class="field"' + (v.cat === "new" ? "" : " hidden") + ' data-own-newcat><label for="' + k + '-newcat">Name your category</label><input id="' + k + '-newcat" name="newcat" type="text" maxlength="' + OWN_CAT_MAX + '" autocomplete="off" value="' + esc(v.newcat) + '"></div>' +
+    "</div>" +
+    '<fieldset class="field three-words"><legend>Three words (optional for now)</legend><div class="row">' + [0, 1, 2].map(function (i) {
+      return '<input name="word" type="text" maxlength="' + WORD_MAX + '" autocomplete="off" spellcheck="true" aria-label="Word ' + (i + 1) + '" value="' + esc(words[i] || "") + '">';
+    }).join("") + "</div></fieldset>" +
+    '<div class="field"><label for="' + k + '-review">Your review (optional)</label><textarea id="' + k + '-review" name="review" rows="3" maxlength="' + REVIEW_MAX + '">' + esc(v.review) + "</textarea></div>" +
+    '<label class="radio"><input type="checkbox" name="recommend"' + (v.recommend ? " checked" : "") + "> Would you recommend it?</label>" +
+    '<p class="hint small">Only you can see this. It isn’t shared with your crews or anyone else.</p>' +
+    (o ? "" : ownNewPhotoHTML()) +
+    '<div class="row own-row">' + ownPhotoPickHTML(key, o ? !!o.photo_url : !!OWN_NEW_PHOTO) + // CC-248: the photo first, left of Save
+    '<button class="btn" type="submit">' + (o ? "Save" : "Add it") + "</button>" + (o ? "" : '<button class="btn ghost" type="button" data-own-cancel>Cancel</button>') +
+    '<span class="week-said" data-own-said role="status">' + esc(OWN_SAID[key] || "") + "</span></div>" +
+    '<p class="week-error" role="alert" data-own-error></p></form>';
+}
+// Add a photo is a button beside Save; on a new event the photo waits (shown) and is sent once the event is added.
+var OWN_NEW_PHOTO = null; // { blob, url } chosen on the Add an event form
+function ownPhotoPickHTML(key, has) {
+  var k = "op-" + esc(key);
+  return '<label class="btn ghost own-photo-btn" for="' + k + '">' + (has ? "Change photo" : "Add a photo") + "</label>" +
+    '<input class="own-photo-in" id="' + k + '" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" data-own-photo="' + esc(key) + '">';
+}
+function ownNewPhotoHTML() {
+  return OWN_NEW_PHOTO ? '<figure class="journal-photo"><img src="' + esc(OWN_NEW_PHOTO.url) + '" alt="The photo you chose"><figcaption>Sent when you add the event.</figcaption></figure>' : "";
+}
+function ownPhotoHTML(o) {
+  var id = esc(o.id);
+  return (o.photo_url ? '<figure class="journal-photo"><img src="' + esc(API + o.photo_url) + '" alt="Your photo from ' + esc(o.title) + '"></figure>' : "") +
+    '<div class="card-actions wk-acts own-acts">' +
+    (o.photo_url ? '<button type="button" class="went" data-own-photo-remove="' + id + '">Remove photo</button>' : "") +
+    '<button type="button" class="went" data-own-delete="' + id + '">Delete this event</button></div>' +
+    '<p class="week-error" role="alert" data-own-photo-error="' + id + '"></p>';
+}
+function ownDropNewPhoto() { if (OWN_NEW_PHOTO) URL.revokeObjectURL(OWN_NEW_PHOTO.url); OWN_NEW_PHOTO = null; }
+// Above the lists: Add an event (its form opens in place) and Your categories (rename or delete them).
+function ownBarHTML() {
+  var adding = OWN_OPEN === "new";
+  return '<div class="own-bar"><button type="button" class="btn ghost" data-own-open="new" aria-expanded="' + adding + '">Add an event</button>' +
+    '<button type="button" class="week-tbtn" data-own-cats aria-expanded="' + OWN_CATS_OPEN + '" aria-controls="own-cats">Your categories</button>' +
+    '<p class="hint small own-bar-hint">For anything that isn’t in the catalog. Only you see it.</p></div>' +
+    (OWN_CATS_OPEN ? ownCatsHTML() : "") +
+    (adding ? '<article class="journal-entry own open" data-own="new" aria-labelledby="of-new-h"><h2 class="own-new-h" id="of-new-h" tabindex="-1">Add an event</h2>' + ownFormHTML(null) + "</article>" : "");
+}
+function ownCatsHTML() {
+  var rows = OWN_CATS.map(function (c) {
+    var id = esc(c.id);
+    return '<li class="own-cat"><form class="own-cat-f" data-own-cat="' + id + '" novalidate><label class="sr-only" for="oc-' + id + '">Name</label>' +
+      '<input id="oc-' + id + '" name="name" type="text" maxlength="' + OWN_CAT_MAX + '" value="' + esc(c.name) + '">' +
+      '<button class="week-tbtn" type="submit">Rename</button><button class="week-tbtn" type="button" data-own-cat-delete="' + id + '">Delete</button>' +
+      '<span class="hint small">' + esc(plural(c.events, "event", "events")) + "</span></form></li>";
+  }).join("");
+  return '<section class="own-cats" id="own-cats" aria-label="Your categories">' +
+    (rows ? '<ul class="own-cat-list">' + rows + "</ul>" : '<p class="week-hint">No categories of your own yet. Choose New category… when you add an event.</p>') +
+    '<p class="week-error" role="alert" id="own-cats-error"></p></section>';
+}
+function readOwnForm(form) {
+  var words = Array.prototype.map.call(form.querySelectorAll('input[name="word"]'), function (w) { return w.value.trim(); }).filter(Boolean);
+  var el = form.elements;
+  return { title: el.title.value, date: el.date.value, venue: el.venue.value, cat: el.cat.value, newcat: el.newcat.value,
+    words: words.join(" "), review: el.review.value, recommend: el.recommend.checked, n: words.length };
+}
+function ownFocus(sel) { var el = document.querySelector(sel); if (el) el.focus(); }
+document.addEventListener("click", function (ev) {
+  var t = ev.target.closest && ev.target.closest("[data-own-open],[data-own-cancel],[data-own-cats],[data-own-delete],[data-own-photo-remove],[data-own-cat-delete],[data-own-go]");
+  if (!t) return;
+  if (t.hasAttribute("data-own-go")) { ev.preventDefault(); OWN_OPEN = t.getAttribute("data-own-go"); JOURNAL_OPEN = ""; openJournal(); ownFocus('[data-own="' + OWN_OPEN + '"] input[name="title"]'); return; }
+  if (t.hasAttribute("data-own-cats")) { OWN_CATS_OPEN = !OWN_CATS_OPEN; renderJournal(); ownFocus("[data-own-cats]"); return; }
+  if (t.hasAttribute("data-own-cancel")) { delete OWN_DRAFT["new"]; ownDropNewPhoto(); OWN_OPEN = null; JOURNAL_OPEN = ""; renderJournal(); ownFocus('[data-own-open="new"]'); return; }
+  if (t.hasAttribute("data-own-open")) {
+    var id = t.getAttribute("data-own-open"), opening = t.getAttribute("aria-expanded") !== "true";
+    OWN_OPEN = opening ? id : null; JOURNAL_OPEN = ""; OWN_SAID = {}; renderJournal();
+    ownFocus(opening ? (id === "new" ? "#of-new-h" : '[data-own="' + id + '"] input[name="title"]') : '[data-own-open="' + id + '"]');
+    return;
+  }
+  if (t.hasAttribute("data-own-delete")) {
+    var o = ownById(t.getAttribute("data-own-delete")); if (!o) return;
+    if (!window.confirm("Delete “" + o.title + "” from your journal? Your notes and photo for it go too.")) return;
+    t.disabled = true;
+    api("/me/own-events/" + encodeURIComponent(o.id), { method: "DELETE" }).then(function (r) {
+      if (!r.ok) throw r;
+      OWN_LIST = OWN_LIST.filter(function (x) { return x.id !== o.id; }); delete OWN_DRAFT[o.id]; OWN_OPEN = null;
+      OWN_CATS.forEach(function (c) { if (c.id === o.category_id) c.events -= 1; });
+      $("edit-live").textContent = "Deleted " + o.title + " from your journal.";
+      renderJournal(); ownFocus('[data-own-open="new"]');
+    }).catch(function (r) { t.disabled = false; document.querySelector('[data-own-photo-error="' + o.id + '"]').textContent = checkThis(errorText(r && r.status ? r : null)); });
+    return;
+  }
+  if (t.hasAttribute("data-own-photo-remove")) {
+    var p = ownById(t.getAttribute("data-own-photo-remove")); if (!p) return;
+    t.disabled = true;
+    api("/me/own-events/" + encodeURIComponent(p.id) + "/photo", { method: "DELETE" }).then(readJSON).then(function (res) {
+      if (!res.ok) throw res;
+      ownReplace(res.body); $("edit-live").textContent = "Photo removed."; renderJournal(); ownFocus('[data-own="' + p.id + '"] .own-photo-in');
+    }).catch(function (r) { t.disabled = false; document.querySelector('[data-own-photo-error="' + p.id + '"]').textContent = checkThis(errorText(r && r.status ? r : null)); });
+    return;
+  }
+  if (t.hasAttribute("data-own-cat-delete")) {
+    var c = OWN_CATS.filter(function (x) { return String(x.id) === t.getAttribute("data-own-cat-delete"); })[0]; if (!c) return;
+    var note = c.events === 1 ? " 1 of your events is in it. It stays in your journal, with no category." :
+      c.events ? " " + c.events + " of your events are in it. They stay in your journal, with no category." : "";
+    if (!window.confirm("Delete your category “" + c.name + "”?" + note)) return;
+    t.disabled = true;
+    api("/me/categories/" + encodeURIComponent(c.id), { method: "DELETE" }).then(function (r) {
+      if (!r.ok) throw r;
+      OWN_CATS = OWN_CATS.filter(function (x) { return x.id !== c.id; });
+      OWN_LIST.forEach(function (o) { if (o.category_id === c.id) { o.category_id = null; o.category_name = ""; } });
+      $("edit-live").textContent = "Deleted your category " + c.name + ".";
+      renderJournal(); ownFocus("[data-own-cats]");
+    }).catch(function (r) { t.disabled = false; $("own-cats-error").textContent = checkThis(errorText(r && r.status ? r : null)); });
+  }
+});
+function ownReplace(o) {
+  var i = OWN_LIST.map(function (x) { return x.id; }).indexOf(o.id);
+  if (i >= 0) OWN_LIST[i] = o; else OWN_LIST.push(o);
+  ownSort();
+}
+document.addEventListener("input", function (ev) {
+  var form = ev.target.closest && ev.target.closest("[data-own-form]"); if (!form) return;
+  if (ev.target.name === "word" && /\s/.test(ev.target.value)) ev.target.value = ev.target.value.replace(/\s+/g, ""); // one word a box
+  var key = form.getAttribute("data-own-form");
+  OWN_DRAFT[key] = readOwnForm(form); delete OWN_SAID[key]; form.querySelector("[data-own-said]").textContent = "";
+  if (ev.target.getAttribute("aria-invalid")) crewMarkInvalid(ev.target, false);
+});
+document.addEventListener("change", function (ev) {
+  var form = ev.target.closest && ev.target.closest("[data-own-form]");
+  if (form && !ev.target.hasAttribute("data-own-photo")) {
+    OWN_DRAFT[form.getAttribute("data-own-form")] = readOwnForm(form);
+    if (ev.target.name === "cat") { var box = form.querySelector("[data-own-newcat]"); box.hidden = ev.target.value !== "new"; if (!box.hidden) form.elements.newcat.focus(); }
+    return;
+  }
+  var input = ev.target.closest && ev.target.closest("[data-own-photo]"); if (!input) return;
+  var key = input.getAttribute("data-own-photo"), o = ownById(key), file = input.files && input.files[0], err = form.querySelector("[data-own-error]");
+  if (!file || (!o && key !== "new")) return;
+  err.textContent = "";
+  if (file.size > PHOTO_MAX_ORIGINAL) { err.textContent = checkThis("that photo is over 5 MB. Choose a smaller one."); return; }
+  if (key === "new") { // kept until the event is added
+    OWN_DRAFT["new"] = readOwnForm(form);
+    shrinkPhoto(file).then(function (blob) {
+      ownDropNewPhoto(); OWN_NEW_PHOTO = { blob: blob, url: URL.createObjectURL(blob) };
+      $("edit-live").textContent = "Photo ready. It\u2019s sent when you add the event."; renderJournal(); ownFocus("#op-new");
+    }, function () { err.textContent = checkThis("this browser can\u2019t open that kind of photo. Try a JPEG or PNG."); });
+    return;
+  }
+  $("edit-live").textContent = "Sending your photo…";
+  shrinkPhoto(file).then(function (blob) {
+    return api("/me/own-events/" + encodeURIComponent(o.id) + "/photo", { method: "PUT", raw: blob }).then(readJSON);
+  }, function () { throw { shrink: true }; }).then(function (res) {
+    if (unconfirmed(res)) { confirmFirst(err); return; }
+    if (!res.ok) { err.textContent = checkThis(errorText(res)); return; }
+    ownReplace(res.body); $("edit-live").textContent = "Photo added."; renderJournal(); ownFocus('[data-own="' + o.id + '"] .own-photo-in');
+  }).catch(function (x) { err = document.querySelector('[data-own-form="' + key + '"] [data-own-error]') || err; err.textContent = checkThis(x && x.shrink ? "this browser can’t open that kind of photo. Try a JPEG or PNG." : errorText(null)); });
+});
+document.addEventListener("submit", function (ev) {
+  var catForm = ev.target.closest && ev.target.closest("[data-own-cat]");
+  if (catForm) {
+    ev.preventDefault();
+    var cid = catForm.getAttribute("data-own-cat"), name = catForm.elements.name.value.replace(/\s+/g, " ").trim();
+    if (!name) { $("own-cats-error").textContent = checkThis("give your category a name."); catForm.elements.name.focus(); return; }
+    api("/me/categories/" + encodeURIComponent(cid), { method: "PUT", body: { name: name } }).then(readJSON).then(function (res) {
+      if (!res.ok) { $("own-cats-error").textContent = checkThis(errorText(res)); return; }
+      OWN_CATS = OWN_CATS.map(function (c) { return c.id === res.body.id ? res.body : c; });
+      OWN_LIST.forEach(function (o) { if (o.category_id === res.body.id) o.category_name = res.body.name; });
+      $("edit-live").textContent = "Renamed it " + res.body.name + "."; renderJournal(); ownFocus("#oc-" + cid);
+    }, function () { $("own-cats-error").textContent = checkThis(errorText(null)); });
+    return;
+  }
+  var form = ev.target.closest && ev.target.closest("[data-own-form]"); if (!form) return;
+  ev.preventDefault();
+  var key = form.getAttribute("data-own-form"), v = readOwnForm(form), err = form.querySelector("[data-own-error]"), btn = form.querySelector('button[type="submit"]');
+  err.textContent = "";
+  var bad = !v.title.trim() ? ["title", "give it a name."] : !v.date ? ["date", "choose the day."] : v.cat === "new" && !v.newcat.trim() ? ["newcat", "name your new category."] :
+    v.n && v.n < 3 ? ["word", "give all three words, or none for now."] : null;
+  if (bad) { var f = bad[0] === "word" ? Array.prototype.filter.call(form.querySelectorAll('input[name="word"]'), function (w) { return !w.value.trim(); })[0] : form.elements[bad[0]]; crewMarkInvalid(f, true); err.textContent = checkThis(bad[1]); f.focus(); return; }
+  btn.disabled = true;
+  var madeCat = false;
+  var made = v.cat !== "new" ? Promise.resolve(null) : api("/me/categories", { method: "POST", body: { name: v.newcat } }).then(readJSON).then(function (res) {
+    if (!res.ok) throw res;
+    OWN_CATS.push(res.body); OWN_CATS.sort(function (a, b) { return a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1; });
+    madeCat = true; v.cat = "o:" + res.body.id; if (OWN_DRAFT[key]) { OWN_DRAFT[key].cat = v.cat; OWN_DRAFT[key].newcat = ""; }
+    return res.body;
+  });
+  made.then(function () {
+    var body = { title: v.title, date: v.date, venue: v.venue, words: v.words, review: v.review, recommend: v.recommend,
+      category: v.cat.indexOf("c:") === 0 ? v.cat.slice(2) : null, category_id: v.cat.indexOf("o:") === 0 ? Number(v.cat.slice(2)) : null };
+    return api(key === "new" ? "/me/own-events" : "/me/own-events/" + encodeURIComponent(key), { method: key === "new" ? "POST" : "PUT", body: body }).then(readJSON);
+  }).then(function (res) {
+    btn.disabled = false;
+    if (!res.ok) throw res;
+    var was = key === "new" ? null : ownById(key);
+    OWN_CATS.forEach(function (c) { if (was && c.id === was.category_id) c.events -= 1; if (c.id === res.body.category_id) c.events += 1; });
+    ownReplace(res.body); delete OWN_DRAFT[key];
+    if (key === "new") {
+      var added = res.body, photo = OWN_NEW_PHOTO; OWN_NEW_PHOTO = null;
+      OWN_OPEN = null; $("edit-live").textContent = "Added " + added.title + " to your journal" + (ownComing(added) ? ". It’s in My week on its day." : ".");
+      renderJournal(); ownFocus('[data-own-open="' + added.id + '"]'); pulse(document.querySelector('[data-own="' + added.id + '"]') || document.body);
+      if (photo) api("/me/own-events/" + encodeURIComponent(added.id) + "/photo", { method: "PUT", raw: photo.blob }).then(readJSON).then(function (r2) {
+        URL.revokeObjectURL(photo.url);
+        if (r2.ok) { ownReplace(r2.body); renderJournal(); return; }
+        OWN_OPEN = String(added.id); renderJournal(); // open it, so the photo can be tried again from there
+        var e3 = document.querySelector('[data-own-form="' + added.id + '"] [data-own-error]');
+        if (e3) { if (unconfirmed(r2)) confirmFirst(e3); else e3.textContent = checkThis("the event was added, but its photo wasn\u2019t: " + errorText(r2)); }
+      }, function () { URL.revokeObjectURL(photo.url); });
+    } else { OWN_SAID[key] = "Saved."; renderJournal(); ownFocus('[data-own-form="' + key + '"] button[type="submit"]'); }
+  }).catch(function (res) {
+    btn.disabled = false;
+    var msg = checkThis(errorText(res && res.status ? res : null));
+    if (madeCat) renderJournal(); // the new category is in the list now, chosen
+    var e2 = document.querySelector('[data-own-form="' + key + '"] [data-own-error]'); if (e2) e2.textContent = msg;
+  });
+});
+// My week: an own event still to come shows on its day, a row that opens it in the journal.
+function ownWeekRowHTML(o) {
+  var id = esc(o.id);
+  return '<li class="wk-row own" data-own-day="' + id + '"><a class="wk-row-a" href="#journal" data-own-go="' + id + '">' + ownTileHTML(o, false) +
+    '<span class="listing-t">' + esc(o.title) + "</span>" + '<span class="wk-where">' + esc(o.venue || "") + "</span>" +
+    '<span class="wk-when"><span>Added by you</span></span></a></li>';
+}
 
 // ---------- My week page (CC-105; renamed in CC-118) ----------
 // The week ahead, on its own page (#planner). Signed out, a word on what it's for and a way to sign in that comes back here.
