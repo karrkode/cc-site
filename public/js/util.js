@@ -72,7 +72,7 @@ function fromApi(e) {
     id: String(e.id), sourceId: e.source_id, title: e.title, venue: e.venue.name, hood: e.venue.neighborhood,
     area: AREA_NAMES[e.venue.area] || "City", begin: e.begin_date, end: e.end_date, openRun: e.open_run,
     beginTbd: !e.begin_date, cost: usual ? usual.standard_cost : e.cost_text || "TBD", min: usual ? usual.standard_min_price : e.min_price,
-    costUsual: !!usual, type: e.category, url: e.url, imageUrl: e.image_url, opera: !!e.opera, label: typeLabel(e.category, e.opera),
+    costUsual: !!usual, type: e.category, url: e.url, imageUrl: e.image_url, imageCredit: e.image_credit_url || "", opera: !!e.opera, label: typeLabel(e.category, e.opera),
     venueId: e.venue.id, costRaw: e.cost_text, // for the admin edit form (CC-56)
     address: e.venue.full_address || "", mapUrl: e.venue.map_url || "", // CC-218: "" when the venue has none
     status: e.status, publishAt: e.publish_at ? new Date(e.publish_at) : null,
@@ -159,6 +159,12 @@ function byClosing(a, b) { return (a.n ? a.n.getTime() : Infinity) - (b.n ? b.n.
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 function safeUrl(u) { return /^https?:\/\//i.test(u) ? u : "#"; }
+// CC-246: "Photo from venue.example", linking to the page an event's photo was copied from; "" when it has none
+function photoCreditHTML(e) {
+  if (!e.imageUrl || !/^https?:\/\//i.test(e.imageCredit)) return "";
+  var host = (e.imageCredit.split("/")[2] || "").split("@").pop().split(":")[0].replace(/^www\./i, "");
+  return host ? '<p class="credit">Photo from <a href="' + esc(safeUrl(e.imageCredit)) + '" target="_blank" rel="noopener">' + esc(host) + " ↗</a></p>" : "";
+}
 // A list that stops at the height of its first n items and scrolls for the rest (CC-87), measured from the real
 // items so it fits them exactly. A list that scrolls can be focused, so it can be scrolled from the keyboard.
 function capList(list, n, label) {

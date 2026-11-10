@@ -446,7 +446,7 @@ function eventViewHTML(e) {
     '<dl class="ev-facts">' + facts.map(function (f) {
       return "<dt>" + esc(f[0]) + "</dt><dd>" + esc(f[1]) + (f[2] ? ' <a class="ev-map" href="' + esc(safeUrl(f[2])) + '" target="_blank" rel="noopener">Map ↗</a>' : "") + "</dd>";
     }).join("") + "</dl>" +
-    (e.suggestedBy ? '<p class="credit">Suggested by ' + esc(e.suggestedBy) + "</p>" : "") +
+    (e.suggestedBy ? '<p class="credit">Suggested by ' + esc(e.suggestedBy) + "</p>" : "") + photoCreditHTML(e) +
     '<div class="ev-actions">' +
       (e.url && !past ? '<a class="btn" href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">Tickets and showtimes ↗</a>' : "") +
       '<button class="btn ghost" type="button" id="ev-share">Share</button>' +

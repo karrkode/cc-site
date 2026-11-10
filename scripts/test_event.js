@@ -175,6 +175,15 @@ g.refreshPick(e.id).then(function () {
   console.log("event page: own plan and Clear plan (CC-152): ok");
 }).catch(function (err) { console.error(err); process.exit(1); });
 
+// --- CC-246: a photo's credit, linking to the page it came from; none without a photo ---
+html = g.eventViewHTML(ev({ image_url: "https://chiculturecrew.com/event-images/1/ab.webp", image_credit_url: "https://www.steppenwolf.org/shows/x" }));
+has(html, 'Photo from <a href="https://www.steppenwolf.org/shows/x" target="_blank" rel="noopener">steppenwolf.org ↗</a>');
+lacks(g.eventViewHTML(ev({ image_url: null, image_credit_url: null })), "Photo from", "no photo, no credit");
+lacks(g.eventViewHTML(ev({ image_url: "https://chiculturecrew.com/event-images/1/ab.webp", image_credit_url: "" })), "Photo from", "a photo with no page");
+lacks(g.eventViewHTML(ev({ image_url: "x.webp", image_credit_url: "javascript:alert(1)" })), "Photo from", "only web addresses");
+has(g.eventViewHTML(ev({ image_url: "x.webp", image_credit_url: 'https://a.example/"><b>' })), "a.example ↗</a>", "the host alone is shown");
+lacks(g.eventViewHTML(ev({ image_url: "x.webp", image_credit_url: 'https://a.example/"><b>' })), '"><b>', "and the address is escaped");
+
 // --- names and text are escaped ---
 html = g.eventViewHTML(ev({ title: "<b>Bold</b>" }));
 lacks(html, "<b>Bold</b>"); has(html, "&lt;b&gt;Bold&lt;/b&gt;");
