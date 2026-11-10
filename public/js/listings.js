@@ -34,12 +34,32 @@ function listingCrewHTML(e) {
   }).join("") + "</span>" + names.length + " from your crew</span>";
 }
 
-function listingHTML(e) {
+// CC-250: the catalog shows the event's photo, with its water as the default. The API gives the photo's address on
+// the site itself (https in production, http://localhost:4173 locally); anything else is ignored.
+function listingImageHTML(value) {
+  if (typeof value !== "string" || !value.trim()) return "";
+  try {
+    var url = new URL(value.trim());
+    if (url.username || url.password || !(url.protocol === "https:" || url.origin === location.origin)) return "";
+    return '<img class="listing-image" src="' + esc(url.href) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">';
+  } catch (err) { return ""; }
+}
+$("grid").addEventListener("load", function (ev) {
+  if (ev.target.matches(".listing-image")) ev.target.classList.add("is-loaded");
+}, true);
+$("grid").addEventListener("error", function (ev) {
+  if (ev.target.matches(".listing-image")) ev.target.remove();
+}, true);
+
+function listingHTML(e, card, flip) {
   var mine = AUTH.user ? MYPLANS[e.id] : null, going = !!mine && mine.status === "going";
+  var layout = card ? catClass(e.type) + (flip ? " listing-flip" : "") : "";
+  var kind = '<span class="' + (card ? "listing-kind" : "tile-k") + '">' + esc(e.label) + "</span>";
+  var visual = card ? listingImageHTML(e.imageUrl) : kind;
   // CC-162: a dolphin on a row is only ever the admin's pick; your own plan shows as "Going Fri" under the date
-  return '<div class="listing" data-listing="' + esc(e.id) + '" data-row="' + esc(e.id) + '">' +
-    '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + '<span class="tile-k">' + esc(e.label) + "</span></span>" +
-    '<span class="listing-main"><span class="listing-t"><a class="listing-a" href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '">' +
+  return '<div class="listing' + layout + '" data-listing="' + esc(e.id) + '" data-row="' + esc(e.id) + '">' +
+    '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + visual + "</span>" +
+    '<span class="listing-main">' + (card ? kind : "") + '<span class="listing-t"><a class="listing-a" href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '">' +
     esc(e.title) + "</a>" + listingPickHTML(e) + "</span>" +
     '<span class="listing-where">' + esc(placeText(e)) + "</span>" +
     (e.suggestedBy ? '<span class="listing-where">Suggested by ' + esc(e.suggestedBy) + "</span>" : "") + listingCrewHTML(e) + "</span>" +
@@ -84,15 +104,16 @@ document.addEventListener("scroll", function () { if (ROW_TIP.by) rowTip(null); 
 
 // Rows under their heads. Events with the same head are next to each other in every sort that has heads, so a new
 // head starts whenever it changes.
-function listingsHTML(items, by) {
-  var html = "", head = null;
+function listingsHTML(items, by, cards) {
+  var html = "", head = null, n = 0;
   items.forEach(function (e, i) {
     var h = listingHead(e, by);
     if (i === 0 || h !== head) {
       html += (i ? "</ul></section>" : "") + '<section class="listing-day">' + (h ? '<h3 class="listing-day-head">' + esc(h) + "</h3>" : "") + '<ul class="listings">';
-      head = h;
+      head = h; n = 0;
     }
-    html += "<li>" + listingHTML(e) + "</li>";
+    // CC-250: cards alternate within each day, so every day's first card has its photo on the left
+    html += "<li>" + listingHTML(e, cards, n++ % 2 === 1) + "</li>";
   });
   return items.length ? html + "</ul></section>" : "";
 }
