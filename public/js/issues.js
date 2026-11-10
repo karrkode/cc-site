@@ -9,6 +9,8 @@
 // CC-95: or a feature request, numbered apart (FR-0002). Requests have the same statuses, in their own words.
 // CC-241: admins can make a Jira ticket from a report (once), and see the ticket's status in Jira. A ticket that's done
 // in Jira is deployed, not checked: the report's own Fixed is still set by hand.
+// CC-245: a dashboard above the list: open reports by status and age, new ones each week, the time to fix, and where
+// the open ones stand in Jira. It follows the Type filter, and is counted from the same rows as the list.
 var ISSUE_STATUS = { new: "New", looking: "Looking into it", fixed: "Fixed", wont_fix: "Won't fix" };
 var REQUEST_STATUS = { new: "New", looking: "Considering", fixed: "Done", wont_fix: "Not planned" };
 var ISSUE_KINDS = {
@@ -94,11 +96,14 @@ var ISSUES_SHOW = "", ISSUES_KIND = "", ISSUES_Q = "", ISSUES_REQ = 0, ISSUES_TI
 function openIssues(q) { // q: a ticket number to look up (the recap links to #issues/ISS-0007)
   if (!isAdmin()) { openAccount(); return; }
   if (q !== undefined) { ISSUES_Q = q; ISSUES_SHOW = ""; ISSUES_KIND = ""; }
-  $("issues-q").value = ISSUES_Q; $("issues-kind").value = ISSUES_KIND; show("issues"); loadIssues();
+  $("issues-q").value = ISSUES_Q; $("issues-kind").value = ISSUES_KIND; show("issues"); ISD.stale = true; loadIssues();
 }
 function updateIssuesCount(counts) {
   if (counts) { $("issues-count").textContent = counts["new"] ? String(counts["new"]) : ""; paintEngagementCount(); return; }
   api("/admin/issues?show=new").then(readJSON).then(function (res) { if (res.ok) updateIssuesCount(res.body.counts); }, function () {});
+}
+function issuesStatusWord(k) { // in the words of the type shown; both words when it's every type
+  return ISSUES_KIND ? statusWord(ISSUES_KIND, k) : ISSUE_STATUS[k] === REQUEST_STATUS[k] ? ISSUE_STATUS[k] : ISSUE_STATUS[k] + " / " + REQUEST_STATUS[k];
 }
 function loadIssues(focusSel) {
   var req = ++ISSUES_REQ; // replies to older searches are dropped
@@ -108,12 +113,13 @@ function loadIssues(focusSel) {
     if (!res.ok) { $("issues-status").textContent = errorText(res); return; }
     var c = res.body.counts, all = Object.keys(c).reduce(function (n, k) { return n + c[k]; }, 0);
     if (ISSUES_KIND) updateIssuesCount(); else updateIssuesCount(c); // the Engagement count is every new report, of both kinds
+    if (ISD.stale || ISD.kind !== ISSUES_KIND) loadIssueStats(); // a search doesn't change the dashboard
     var kinds = res.body.kinds || {};
     $("issues-kind").innerHTML = [["", "All"], ["issue", "Issues"], ["feature", "Feature requests"]].map(function (o) {
       return '<option value="' + o[0] + '">' + o[1] + (o[0] ? " (" + (kinds[o[0]] || 0) + " open)" : "") + "</option>"; }).join("");
     $("issues-kind").value = ISSUES_KIND;
     $("issues-show").innerHTML = '<option value="">Everything (' + all + ")</option>" + Object.keys(ISSUE_STATUS).map(function (k) {
-      var word = ISSUES_KIND ? statusWord(ISSUES_KIND, k) : ISSUE_STATUS[k] === REQUEST_STATUS[k] ? ISSUE_STATUS[k] : ISSUE_STATUS[k] + " / " + REQUEST_STATUS[k];
+      var word = issuesStatusWord(k);
       return '<option value="' + k + '">' + esc(word) + " (" + (c[k] || 0) + ")</option>"; }).join("");
     $("issues-show").value = ISSUES_SHOW;
     $("issues-status").textContent = res.body.items.length ? (ISSUES_Q.trim() ? plural(res.body.items.length, "ticket", "tickets") + " found." : "") :
@@ -155,9 +161,47 @@ $("issues-list").addEventListener("submit", function (ev) {
       btn.disabled = false;
       if (!res.ok) { $("issues-status").textContent = errorText(res); return; }
       $("edit-live").textContent = "Saved: " + statusWord(res.body.kind, res.body.status) + ".";
+      ISD.stale = true;
       loadIssues('[data-issue-form="' + id + '"] button');
     }, function () { btn.disabled = false; $("issues-status").textContent = errorText(null); });
 });
+
+// ---------- CC-245: the dashboard ----------
+var ISD = { kind: null, stale: true, req: 0 };
+function isdDays(d) { return d === null || d === undefined ? "–" : d < 1 ? "<1 day" : Math.round(d) === 1 ? "1 day" : Math.round(d) + " days"; }
+function isdWeekLabel(iso) { var p = iso.split("-"); return +p[1] + "/" + +p[2]; } // its Monday, 11/2
+function loadIssueStats() {
+  var req = ++ISD.req, kind = ISSUES_KIND;
+  ISD.kind = kind; ISD.stale = false;
+  api("/admin/issue-stats?" + qs([["kind", kind]])).then(readJSON).then(function (res) {
+    if (req !== ISD.req) return;
+    if (!res.ok) { $("issues-dash").hidden = true; return; } // the list still says what's wrong
+    paintIssueStats(res.body);
+  }, function () { if (req === ISD.req) $("issues-dash").hidden = true; });
+}
+function paintIssueStats(o) {
+  $("issues-dash").hidden = false;
+  var c = o.counts;
+  $("isd-status").innerHTML = hlStat("Open", hlCount(o.open), ISSUES_KIND ? "" : "issues " + (o.open_by_kind.issue || 0) + " · requests " + (o.open_by_kind.feature || 0)) +
+    Object.keys(ISSUE_STATUS).map(function (k) { return hlStat(issuesStatusWord(k), hlCount(c[k] || 0)); }).join("");
+  var a = o.age;
+  $("isd-age").innerHTML = hlStat("Median age", isdDays(a.median_days)) + hlStat("Oldest", a.oldest ? isdDays(a.oldest.days) : "–", a.oldest ? a.oldest.key : "") +
+    hlStat("Under a week", hlCount(a.under_week)) + hlStat("1 to 4 weeks", hlCount(a.one_to_four_weeks)) + hlStat("Over 4 weeks", hlCount(a.over_four_weeks));
+  var most = Math.max.apply(null, o.weeks.map(function (w) { return w.count; }).concat([1]));
+  $("isd-weeks").innerHTML = o.weeks.map(function (w, n) {
+    var label = n === o.weeks.length - 1 ? "This week" : "Week of " + isdWeekLabel(w.week);
+    return '<li aria-label="' + esc(label + ": " + plural(w.count, "new report", "new reports")) + '"><span class="isd-col" aria-hidden="true"><span class="isd-n">' + w.count +
+      '</span><span class="isd-bar" style="height:' + (w.count ? Math.max(3, Math.round(80 * w.count / most)) : 0) + '%"></span></span>' +
+      '<span class="isd-wk" aria-hidden="true">' + (n === o.weeks.length - 1 ? "Now" : esc(isdWeekLabel(w.week))) + "</span></li>";
+  }).join("");
+  var f = o.fix_time;
+  $("isd-fix").innerHTML = hlStat("Median time to fix", isdDays(f.median_days), f.fixed ? "of " + plural(f.fixed, "fixed report", "fixed reports") : "") +
+    hlStat("Fixed in the last 30 days", hlCount(f.last_30_days));
+  var j = o.jira;
+  $("isd-jira").innerHTML = hlStat("No ticket", hlCount(j.no_ticket)) + (j.available ? hlStat("To do", hlCount(j.to_do)) + hlStat("In progress", hlCount(j.in_progress)) +
+    hlStat("Done in Jira", hlCount(j.done), j.done ? "not marked fixed yet" : "") + (j.not_found ? hlStat("Ticket gone", hlCount(j.not_found)) : "") : "");
+  $("isd-jira-note").textContent = j.available ? "" : "Jira status unavailable: " + j.message;
+}
 
 // ---------- CC-241: Jira tickets from reports (admins) ----------
 function jiraStateText(t, i) { // Jira's word, plus what "done" means for the report
