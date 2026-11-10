@@ -112,6 +112,7 @@ var WENT = {}, WENT_LIST = [], WENT_PHOTO = {}; // WENT_PHOTO: your photos from 
 var WENT_JOURNAL = {}, JOURNAL_DRAFT = {};
 // CC-112: whether each entry is shared on its event's page, by event: { shared, anonymous }.
 var WENT_SHARE = {};
+var WENT_AT = {}; // CC-248: when you marked each event "I've been", by event (the journal mixes them by date with your own)
 // Your plans (CC-55; "Oh the places you'll go" on the account page): MYPLANS[id] = { status: "interested" | "going", date: "YYYY-MM-DD" | null }.
 var MYPLANS = {}, MYPLAN_LIST = [], MYPLAN_SEQ = 0;
 var TYPE_PLURAL = { "Theater": "theater", "Music": "music", "Visual Art": "visual art" };
