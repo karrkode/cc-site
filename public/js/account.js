@@ -19,7 +19,7 @@ function onAuthChange() {
   paintMeMenu(); // your name and its menu, or Sign in (CC-105)
   $("rv-wrap").hidden = !isAdmin();
   WENT = {}; WENT_LIST = []; WENT_PHOTO = {}; WENT_JOURNAL = {}; JOURNAL_DRAFT = {}; WENT_SHARE = {}; WENT_AT = {}; MYPLANS = {}; MYPLAN_LIST = [];
-  OWN_LIST = []; OWN_CATS = []; OWN_STATE = "loading"; OWN_OPEN = null; OWN_DRAFT = {}; OWN_SAID = {}; OWN_CATS_OPEN = false; // CC-248
+  OWN_LIST = []; OWN_CATS = []; OWN_STATE = "loading"; OWN_OPEN = null; OWN_DRAFT = {}; OWN_SAID = {}; OWN_CATS_OPEN = false; OWN_NEW_PHOTO = null; // CC-248
   PLANS_STATE = "loading"; WENT_STATE = "loading"; JOURNAL_OPEN = null; // CC-146: My week waits for them
   if (!AUTH.user) {
     NOTICE_SET = false; $("account-notice").textContent = "";
@@ -709,20 +709,31 @@ function ownFormHTML(o) {
     '<div class="field"><label for="' + k + '-review">Your review (optional)</label><textarea id="' + k + '-review" name="review" rows="3" maxlength="' + REVIEW_MAX + '">' + esc(v.review) + "</textarea></div>" +
     '<label class="radio"><input type="checkbox" name="recommend"' + (v.recommend ? " checked" : "") + "> Would you recommend it?</label>" +
     '<p class="hint small">Only you can see this. It isn’t shared with your crews or anyone else.</p>' +
-    '<div class="row"><button class="btn" type="submit">' + (o ? "Save" : "Add it") + "</button>" + (o ? "" : '<button class="btn ghost" type="button" data-own-cancel>Cancel</button>') +
+    (o ? "" : ownNewPhotoHTML()) +
+    '<div class="row own-row">' + ownPhotoPickHTML(key, o ? !!o.photo_url : !!OWN_NEW_PHOTO) + // CC-248: the photo first, left of Save
+    '<button class="btn" type="submit">' + (o ? "Save" : "Add it") + "</button>" + (o ? "" : '<button class="btn ghost" type="button" data-own-cancel>Cancel</button>') +
     '<span class="week-said" data-own-said role="status">' + esc(OWN_SAID[key] || "") + "</span></div>" +
     '<p class="week-error" role="alert" data-own-error></p></form>';
 }
+// Add a photo is a button beside Save; on a new event the photo waits (shown) and is sent once the event is added.
+var OWN_NEW_PHOTO = null; // { blob, url } chosen on the Add an event form
+function ownPhotoPickHTML(key, has) {
+  var k = "op-" + esc(key);
+  return '<label class="btn ghost own-photo-btn" for="' + k + '">' + (has ? "Change photo" : "Add a photo") + "</label>" +
+    '<input class="own-photo-in" id="' + k + '" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" data-own-photo="' + esc(key) + '">';
+}
+function ownNewPhotoHTML() {
+  return OWN_NEW_PHOTO ? '<figure class="journal-photo"><img src="' + esc(OWN_NEW_PHOTO.url) + '" alt="The photo you chose"><figcaption>Sent when you add the event.</figcaption></figure>' : "";
+}
 function ownPhotoHTML(o) {
-  var id = esc(o.id), k = "op-" + id;
+  var id = esc(o.id);
   return (o.photo_url ? '<figure class="journal-photo"><img src="' + esc(API + o.photo_url) + '" alt="Your photo from ' + esc(o.title) + '"></figure>' : "") +
     '<div class="card-actions wk-acts own-acts">' +
-    '<label class="went own-photo-btn" for="' + k + '">' + (o.photo_url ? "Change photo" : "Add a photo") + "</label>" +
-    '<input class="own-photo-in" id="' + k + '" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" data-own-photo="' + id + '">' +
     (o.photo_url ? '<button type="button" class="went" data-own-photo-remove="' + id + '">Remove photo</button>' : "") +
     '<button type="button" class="went" data-own-delete="' + id + '">Delete this event</button></div>' +
     '<p class="week-error" role="alert" data-own-photo-error="' + id + '"></p>';
 }
+function ownDropNewPhoto() { if (OWN_NEW_PHOTO) URL.revokeObjectURL(OWN_NEW_PHOTO.url); OWN_NEW_PHOTO = null; }
 // Above the lists: Add an event (its form opens in place) and Your categories (rename or delete them).
 function ownBarHTML() {
   var adding = OWN_OPEN === "new";
@@ -756,7 +767,7 @@ document.addEventListener("click", function (ev) {
   if (!t) return;
   if (t.hasAttribute("data-own-go")) { ev.preventDefault(); OWN_OPEN = t.getAttribute("data-own-go"); JOURNAL_OPEN = ""; openJournal(); ownFocus('[data-own="' + OWN_OPEN + '"] input[name="title"]'); return; }
   if (t.hasAttribute("data-own-cats")) { OWN_CATS_OPEN = !OWN_CATS_OPEN; renderJournal(); ownFocus("[data-own-cats]"); return; }
-  if (t.hasAttribute("data-own-cancel")) { delete OWN_DRAFT["new"]; OWN_OPEN = null; JOURNAL_OPEN = ""; renderJournal(); ownFocus('[data-own-open="new"]'); return; }
+  if (t.hasAttribute("data-own-cancel")) { delete OWN_DRAFT["new"]; ownDropNewPhoto(); OWN_OPEN = null; JOURNAL_OPEN = ""; renderJournal(); ownFocus('[data-own-open="new"]'); return; }
   if (t.hasAttribute("data-own-open")) {
     var id = t.getAttribute("data-own-open"), opening = t.getAttribute("aria-expanded") !== "true";
     OWN_OPEN = opening ? id : null; JOURNAL_OPEN = ""; OWN_SAID = {}; renderJournal();
@@ -814,16 +825,24 @@ document.addEventListener("input", function (ev) {
 });
 document.addEventListener("change", function (ev) {
   var form = ev.target.closest && ev.target.closest("[data-own-form]");
-  if (form) {
+  if (form && !ev.target.hasAttribute("data-own-photo")) {
     OWN_DRAFT[form.getAttribute("data-own-form")] = readOwnForm(form);
     if (ev.target.name === "cat") { var box = form.querySelector("[data-own-newcat]"); box.hidden = ev.target.value !== "new"; if (!box.hidden) form.elements.newcat.focus(); }
     return;
   }
   var input = ev.target.closest && ev.target.closest("[data-own-photo]"); if (!input) return;
-  var o = ownById(input.getAttribute("data-own-photo")), file = input.files && input.files[0], err = document.querySelector('[data-own-photo-error="' + input.getAttribute("data-own-photo") + '"]');
-  if (!o || !file) return;
+  var key = input.getAttribute("data-own-photo"), o = ownById(key), file = input.files && input.files[0], err = form.querySelector("[data-own-error]");
+  if (!file || (!o && key !== "new")) return;
   err.textContent = "";
   if (file.size > PHOTO_MAX_ORIGINAL) { err.textContent = checkThis("that photo is over 5 MB. Choose a smaller one."); return; }
+  if (key === "new") { // kept until the event is added
+    OWN_DRAFT["new"] = readOwnForm(form);
+    shrinkPhoto(file).then(function (blob) {
+      ownDropNewPhoto(); OWN_NEW_PHOTO = { blob: blob, url: URL.createObjectURL(blob) };
+      $("edit-live").textContent = "Photo ready. It\u2019s sent when you add the event."; renderJournal(); ownFocus("#op-new");
+    }, function () { err.textContent = checkThis("this browser can\u2019t open that kind of photo. Try a JPEG or PNG."); });
+    return;
+  }
   $("edit-live").textContent = "Sending your photo…";
   shrinkPhoto(file).then(function (blob) {
     return api("/me/own-events/" + encodeURIComponent(o.id) + "/photo", { method: "PUT", raw: blob }).then(readJSON);
@@ -831,7 +850,7 @@ document.addEventListener("change", function (ev) {
     if (unconfirmed(res)) { confirmFirst(err); return; }
     if (!res.ok) { err.textContent = checkThis(errorText(res)); return; }
     ownReplace(res.body); $("edit-live").textContent = "Photo added."; renderJournal(); ownFocus('[data-own="' + o.id + '"] .own-photo-in');
-  }).catch(function (x) { err.textContent = checkThis(x && x.shrink ? "this browser can’t open that kind of photo. Try a JPEG or PNG." : errorText(null)); });
+  }).catch(function (x) { err = document.querySelector('[data-own-form="' + key + '"] [data-own-error]') || err; err.textContent = checkThis(x && x.shrink ? "this browser can’t open that kind of photo. Try a JPEG or PNG." : errorText(null)); });
 });
 document.addEventListener("submit", function (ev) {
   var catForm = ev.target.closest && ev.target.closest("[data-own-cat]");
@@ -873,8 +892,16 @@ document.addEventListener("submit", function (ev) {
     OWN_CATS.forEach(function (c) { if (was && c.id === was.category_id) c.events -= 1; if (c.id === res.body.category_id) c.events += 1; });
     ownReplace(res.body); delete OWN_DRAFT[key];
     if (key === "new") {
-      OWN_OPEN = null; $("edit-live").textContent = "Added " + res.body.title + " to your journal" + (ownComing(res.body) ? ". It’s in My week on its day." : ".");
-      renderJournal(); ownFocus('[data-own-open="' + res.body.id + '"]'); pulse(document.querySelector('[data-own="' + res.body.id + '"]') || document.body);
+      var added = res.body, photo = OWN_NEW_PHOTO; OWN_NEW_PHOTO = null;
+      OWN_OPEN = null; $("edit-live").textContent = "Added " + added.title + " to your journal" + (ownComing(added) ? ". It’s in My week on its day." : ".");
+      renderJournal(); ownFocus('[data-own-open="' + added.id + '"]'); pulse(document.querySelector('[data-own="' + added.id + '"]') || document.body);
+      if (photo) api("/me/own-events/" + encodeURIComponent(added.id) + "/photo", { method: "PUT", raw: photo.blob }).then(readJSON).then(function (r2) {
+        URL.revokeObjectURL(photo.url);
+        if (r2.ok) { ownReplace(r2.body); renderJournal(); return; }
+        OWN_OPEN = String(added.id); renderJournal(); // open it, so the photo can be tried again from there
+        var e3 = document.querySelector('[data-own-form="' + added.id + '"] [data-own-error]');
+        if (e3) { if (unconfirmed(r2)) confirmFirst(e3); else e3.textContent = checkThis("the event was added, but its photo wasn\u2019t: " + errorText(r2)); }
+      }, function () { URL.revokeObjectURL(photo.url); });
     } else { OWN_SAID[key] = "Saved."; renderJournal(); ownFocus('[data-own-form="' + key + '"] button[type="submit"]'); }
   }).catch(function (res) {
     btn.disabled = false;

@@ -1150,8 +1150,9 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .own-form .field input, .own-form .field select { min-height: 48px; border-radius: 0; border-width: 1.5px; }
 .own-form .field[hidden] { display: none; }
 .own-photo-in { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
-.own-acts .own-photo-btn { cursor: pointer; }
-.own-acts:has(.own-photo-in:focus-visible) .own-photo-btn { outline: 2px solid var(--focus, var(--text)); outline-offset: 2px; }
+.own-row { position: relative; }
+.own-photo-btn { cursor: pointer; }
+.own-row:has(.own-photo-in:focus-visible) .own-photo-btn { outline: 2px solid var(--focus); outline-offset: 2px; }
 .own-cats { padding: 12px 0 16px; border-bottom: 1px solid var(--line); }
 .own-cat-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .own-cat-f { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }

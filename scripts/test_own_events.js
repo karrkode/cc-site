@@ -76,7 +76,9 @@ has(html, '<option value="o:4" selected>Spoken word</option>', "your category ch
 has(html, '<option value="c:Theater">Theater</option>'); has(html, '<option value="new">New category…</option>');
 has(html, "Three words (optional for now)"); lacks(html, " required aria-label=\"Word", "the words aren't required");
 has(html, 'value="fierce"'); has(html, "Only you can see this.");
-has(html, "Add a photo"); has(html, 'data-own-delete="1"');
+has(html, 'class="btn ghost own-photo-btn" for="op-1">Add a photo</label>', "Add a photo is a button");
+assert.ok(html.indexOf(">Add a photo<") < html.indexOf(">Save</button>"), "Add a photo sits left of Save");
+has(html, 'data-own-delete="1"');
 lacks(html, "Share publicly", "own events are never shared");
 html = g.ownEntryHTML(own({ id: 5, photo_url: "/photos/own/5?exp=1&sig=x" }), true);
 has(html, "Change photo"); has(html, 'data-own-photo-remove="5"'); has(html, 'src="/photos/own/5?exp=1&amp;sig=x"');
@@ -88,6 +90,7 @@ has(html, 'data-own-open="new" aria-expanded="false">Add an event</button>'); la
 set("OWN_OPEN = 'new';");
 html = g.ownBarHTML();
 has(html, 'data-own-form="new"'); has(html, ">Add it</button>"); has(html, "data-own-cancel");
+assert.ok(html.indexOf(">Add a photo<") >= 0 && html.indexOf(">Add a photo<") < html.indexOf(">Add it</button>"), "a new event can take a photo, left of Add it");
 has(html, 'value="' + iso(g.T) + '"', "the date starts as today");
 set("OWN_OPEN = null; OWN_CATS_OPEN = true;");
 html = g.ownBarHTML();
