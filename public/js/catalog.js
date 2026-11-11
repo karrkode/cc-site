@@ -50,7 +50,7 @@ function leadDeck(e) {
 // CC-253: it's a catalog card (CC-250): the event's photo, letterboxed on its water, above the words on the card's tint.
 function leadHTML(e) {
   var p = e.pick, going = p.status === "going";
-  var by = [going ? "Going" + (p.date ? " " + goingDay(p.date) : "") : "Interested", dateText(e), costText(e)].join(" · ");
+  var by = [going ? "Going" + (p.date ? " " + goWhen(p.date, p.time) : "") : "Interested", dateText(e), costText(e)].join(" · ");
   return '<a class="lead-pick' + catClass(e.type) + '" href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '" data-lead="' + esc(e.id) + '">' +
     '<span class="lead-sea water-field' + catClass(e.type) + '">' + waterHTML(e, "poster") + listingImageHTML(e.imageUrl) + "</span>" +
     '<span class="lead-in"><span class="lead-k">Yours Truly · ' + esc(e.label) + "</span>" +
@@ -418,10 +418,11 @@ function evPlanHTML(e) {
   var going = "";
   var first = range ? firstGoDay(e) : ""; // CC-260: Going takes the first day it's on, and the field offers only those days
   if (first) {
-    var one = same(range[0], range[1]), on = !!mine && mine.status === "going", field = on && !one;
+    // CC-264: a one-day run shows its field too once you're going, when that day has two or more shows to choose between
+    var one = same(range[0], range[1]), on = !!mine && mine.status === "going", field = on && (!one || goTimes(e, first).length > 1);
     going = '<button class="btn ghost" type="button" data-myplan-going="' + id + '"' + (field ? "" : ' data-date="' + first + '"') +
       ' aria-pressed="' + on + '">' + markHTML("going") + "Going</button>" +
-      (field ? goDayFieldHTML(e, 'id="ev-going-day" aria-label="The day you’re going"', mine.date || first) : "");
+      (field ? goDayFieldHTML(e, 'id="ev-going-day" aria-label="The day you’re going"', mine.date || first, mine.time) : "");
   }
   return '<div class="ev-plan myplan" role="group" aria-label="Your plan for ' + esc(e.title) + '"><div class="row">' +
     '<button class="btn ghost" type="button" data-myplan-set="' + id + '" aria-pressed="' + (!!mine && mine.status === "interested") + '">' +
