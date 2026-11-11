@@ -233,7 +233,7 @@ document.addEventListener("keydown", function (ev) { // Escape closes the picker
 // A week at a time from today, one line per day in listings style (design brief, section 10): the events you're going
 // to that day as event rows (CC-140) with Change plan and Tell a crew, or, on an empty day, one "Find something →"
 // line (CC-131). Previous and Next step a week at a time (never before this week; at most two years out, as far as a
-// plan can go), and "Skip to" jumps to the week of your next plan after the one showing. Beside it, Still deciding:
+// plan can go), and "Skip to" jumps to the week of your next plan after the one showing. Beside it, Events you're interested in:
 // interested plans, with no day yet, and going plans for a day that's passed, where "I've been" is.
 var PLANNER_LISTS = ["planner-week", "myplans-grid"], PLANNER_WEEK = 0, PLANNER_MAX = 104;
 var PLANS_STATE = "loading", WENT_STATE = "loading"; // until /me/plans and /me/attended first answer: then "ready", or "error"
@@ -249,7 +249,7 @@ function weekCrewHTML(e) {
     "</span><span>" + esc(note) + "</span></p>";
 }
 // An event row: the tile, name, venue and time are one link to the event page; the buttons follow,
-// since they can't sit inside a link. d is the day it's planned for; without one it's a Still deciding row.
+// since they can't sit inside a link. d is the day it's planned for; without one it's a row in Events you're interested in.
 function weekRowHTML(e, d) {
   var mine = MYPLANS[e.id] || {}, going = mine.status === "going", id = esc(e.id);
   var when = d ? dayTimesText(e, d) : going ? "Going " + goingDay(mine.date) : dateText(e);
@@ -257,13 +257,13 @@ function weekRowHTML(e, d) {
     myplanToggleHTML(e, goingRange(e) ? "Pick a day" : "Change plan") + wentHTML(e) + crewShareToggleHTML(e, "Tell a crew") + // closed: no day left to pick
     (going ? "" : '<button type="button" class="went" data-plan-withdraw="' + id + '">Withdraw interest</button>'); // CC-160: undone from the line above
   return '<li class="wk-row" data-day-item="' + id + '"' + (d ? "" : ' data-row="' + id + '"') + '><a class="wk-row-a" href="#e/' + id + '" data-ev-open="' + id + '">' +
-    eventTileHTML(e) +
+    eventTileHTML(e, "", !!d) + // CC-261: a day's rows go without the category tag
     '<span class="listing-t">' + esc(e.title) + (e.pick ? pickMarkHTML(e.pick, pickText(e.pick)) : "") + "</span>" +
     '<span class="wk-where">' + esc(placeText(e)) + "</span>" +
     '<span class="wk-when">' + (when ? "<span>" + esc(when) + "</span>" : "") + "</span></a>" +
     weekCrewHTML(e) + '<div class="card-actions wk-acts">' + acts + "</div>" + myplanHTML(e, d ? undefined : weekPickHTML(e)) + crewShareHTML(e) + "</li>";
 }
-// CC-260: Still deciding's Pick a day offers the days of the shown week you can actually go (canGoOn, planner.js), one button
+// CC-260: Pick a day in Events you're interested in offers the days of the shown week you can actually go (canGoOn, planner.js), one button
 // each. With none it says so, and offers the next day that fits, a button that steps the week to it.
 function weekPickHTML(e) {
   if (!goingRange(e)) return "";
@@ -338,7 +338,7 @@ function renderPlanner() {
   paintWater($("planner-main")); rowsPainted($("planner-week")); rowsPainted($("myplans-grid")); // the two columns arrive side by side
 }
 // CC-160: Withdraw interest clears the plan (and so its sharing with crews, server side) at once, and a line at the top
-// of Still deciding offers Undo, which puts back the plan and the crews it was shared with. Only an interested plan has
+// of Events you're interested in offers Undo, which puts back the plan and the crews it was shared with. Only an interested plan has
 // it: a going plan for a day that's passed couldn't be put back. WITHDRAWN keeps the last one until it's undone or
 // marked again some other way.
 var WITHDRAWN = null; // { id, title, mine, error }
@@ -354,7 +354,7 @@ function withdrawPlan(id, b) {
   api("/me/plans/" + encodeURIComponent(id), { method: "DELETE" }).then(readJSON).then(function (res) {
     if (!res.ok) throw res;
     WITHDRAWN = { id: id, title: KNOWN[id].title, mine: mine }; delete MYPLANS[id];
-    $("myplan-live").textContent = "Withdrew your interest: " + KNOWN[id].title + ". Undo is at the top of Still deciding.";
+    $("myplan-live").textContent = "Withdrew your interest: " + KNOWN[id].title + ". Undo is at the top of Events you\u2019re interested in.";
     return redrawCards(id).then(function () { if ($("deciding-undo-btn")) $("deciding-undo-btn").focus(); });
   }).catch(function (res) {
     b.disabled = false;
@@ -374,7 +374,7 @@ function undoWithdraw(b) {
     });
   }).then(function () {
     WITHDRAWN = null;
-    $("myplan-live").textContent = "Back in Still deciding: " + w.title;
+    $("myplan-live").textContent = "Back in Events you\u2019re interested in: " + w.title;
     if (visible("crews")) loadCrews();
     return redrawCards(w.id).then(function () {
       var row = $("myplans-grid").querySelector('[data-day-item="' + w.id + '"] [data-plan-withdraw]');

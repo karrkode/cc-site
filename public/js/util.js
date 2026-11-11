@@ -270,7 +270,7 @@ function goingRange(e) {
   var lo = e.b && e.b > T ? e.b : T, far = add(T, 730), hi = e.n && e.n < far ? e.n : far;
   return lo <= hi ? [lo, hi] : null;
 }
-function myplanToggleHTML(e, label) { // label: what it says once you have a plan (My week's Still deciding: "Pick a day", CC-146)
+function myplanToggleHTML(e, label) { // label: what it says once you have a plan (My week's Events you're interested in: "Pick a day", CC-146)
   var mine = MYPLANS[e.id];
   if (!mine && !goingRange(e)) return ""; // closed: nothing left to plan
   MYPLAN_SEQ += 1;
@@ -285,7 +285,7 @@ function calendarLinkHTML(e, mine) {
   return '<a class="textbtn cal-link" href="' + esc(API + "/events/" + encodeURIComponent(e.id) + "/calendar.ics?date=" + encodeURIComponent(mine.date)) +
     '" aria-label="Add ' + esc(e.title) + ' to your calendar">Add to calendar</a>';
 }
-// days: in place of the Going row, My week's own (Still deciding's days of the shown week, CC-260)
+// days: in place of the Going row, My week's own (the days, in Events you're interested in, of the shown week, CC-260)
 function myplanHTML(e, days) {
   var mine = MYPLANS[e.id], range = goingRange(e), n = MYPLAN_SEQ, id = esc(e.id);
   if (!mine && !range) return "";

@@ -1072,9 +1072,9 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 .approval-decide { display: grid; gap: 8px; margin-top: 8px; }
 
 /* CC-146: My week in Lakefront (design/lakefront-brief.md section 10). A Instrument Sans title and an italic deck; the week
-   bar with joined Previous and Next; the week (7) as one line a day in listings style beside Still deciding (5); the
-   Cultural journal below at reading width, with only the entry being written open. On a phone: the week, Still
-   deciding, then the journal. (CC-97's boxed days and CC-98's journal cards are gone.) */
+   bar with joined Previous and Next; the week (7) as one line a day in listings style beside Events you're interested in (5); the
+   Cultural journal below at reading width, with only the entry being written open. On a phone: the week, Events
+   you're interested in, then the journal. (CC-97's boxed days and CC-98's journal cards are gone.) */
 .week-head { padding-block: 40px 0; }
 .week-head h1 { font-family: var(--display); font-weight: 500; font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1; letter-spacing: -0.025em; }
 .week-deck { margin-top: 10px; max-width: 60ch; font-style: italic; font-size: 1.3125rem; line-height: 1.4; color: var(--muted); }
@@ -1101,7 +1101,7 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 .week-error:empty { display: none; }
 .week-said { font-family: var(--sign); font-weight: 700; font-size: 1.0625rem; }
 
-/* 7/5: the week ahead and Still deciding, each opening on a rule with its count */
+/* 7/5: the week ahead and Events you're interested in, each opening on a rule with its count */
 .week-cols { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 40px 48px; align-items: start; margin-top: 20px; }
 .week-col { min-width: 0; container: weekcol / inline-size; } /* rows fit their column, not the window */
 .week-sub { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--rule);
@@ -1109,7 +1109,7 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 .week-sub-n { color: var(--muted); font-size: 1.0625rem; }
 .week-state { padding: 14px 0; }
 #planner-week > .week-hint, #deciding-hint { margin-top: 10px; }
-/* CC-160: after Withdraw interest, a line with Undo at the top of Still deciding, ruled off like a row */
+/* CC-160: after Withdraw interest, a line with Undo at the top of Events you're interested in, ruled off like a row */
 .week-undo-box:empty { display: none; }
 .week-undo-box { display: grid; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
 .week-undo { font-size: 1.0625rem; }
@@ -1149,7 +1149,7 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
   font-size: 1.0625rem; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px; }
 .wk-acts .went[aria-pressed="true"] { background: none; color: var(--text); }
 .wk-row .myplan { top: calc(100% - 8px); left: 92px; right: auto; width: min(380px, calc(100% - 92px)); }
-/* a narrow column (Still deciding beside the week, or any phone): the time and dolphin go under the venue, so the
+/* a narrow column (Events you're interested in beside the week, or any phone): the time and dolphin go under the venue, so the
    name and venue keep the full width */
 @container weekcol (max-width: 460px) {
   .wk-row-a { grid-template-columns: minmax(0, 1fr); }
@@ -1236,7 +1236,7 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 
 @media (max-width: 700px) {
   .week-head { padding-top: 24px; }
-  .week-cols { grid-template-columns: minmax(0, 1fr); } /* the week, then Still deciding */
+  .week-cols { grid-template-columns: minmax(0, 1fr); } /* the week, then Events you're interested in */
   .journal-row { grid-template-columns: minmax(0, 1fr); }
   .journal-a .listing-t { font-size: 1.3125rem; --fs: 21; }
   .journal-words { font-size: 1.375rem; }
