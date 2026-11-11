@@ -57,9 +57,9 @@ document.addEventListener("error", function (ev) {
 }, true);
 // CC-253: an event's small tile (My week, crews, the journal, Find an outing): the category field, its water, its photo
 // over the water when it has one (letterboxed, as on the cards), then the category's name. extra goes on top of all that.
-function eventTileHTML(e, extra) {
+function eventTileHTML(e, extra, bare) { // bare: no category tag (CC-261: My week's committed rows)
   return '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + listingImageHTML(e.imageUrl) +
-    '<span class="tile-k">' + esc(e.label) + "</span>" + (extra || "") + "</span>";
+    (bare ? "" : '<span class="tile-k">' + esc(e.label) + "</span>") + (extra || "") + "</span>";
 }
 
 function listingHTML(e, card, flip) {

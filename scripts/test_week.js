@@ -1,6 +1,6 @@
 // Checks run in CI before the site deploys (CC-146): My week in Lakefront, in public/js/account.js.
 // One line a day in listings style: plans as event rows with Change plan and Tell a crew, an empty day as one
-// "Find something →" line; Still deciding beside it with Pick a day and I've been; the journal (its own page at
+// "Find something →" line; Events you're interested in beside it with Pick a day and I've been; the journal (its own page at
 // #journal since CC-159) with only the entry being written open, a finished one folded to its three words; errors say "Check this:".
 //
 //     node scripts/test_week.js
@@ -110,7 +110,7 @@ has(row, ">Change plan</button>"); has(row, ">Tell a crew</button>");
 lacks(row, "Pick a day"); lacks(row, "I've been", "not before the day");
 has(row, 'class="myplan"', "the picker is there to open");
 
-// --- Still deciding: Pick a day and I've been; a closed event can only change its plan ---
+// --- Events you're interested in: Pick a day and I've been; a closed event can only change its plan ---
 const maybe = ev({ title: "Matt & Ben" });
 plan(maybe, "interested");
 html = g.weekRowHTML(maybe);
@@ -234,7 +234,7 @@ const oneDay = ev({ title: "One day", begin_date: iso(week[2]), end_date: iso(we
 html = g.myplanHTML(oneDay);
 has(html, 'data-time="11:00" aria-pressed="false">'); has(html, "Commit to " + g.goingDay(iso(week[2])) + " · 4 PM</button>");
 
-// --- CC-160: Withdraw interest on an interested plan, with Undo at the top of Still deciding ---
+// --- CC-160: Withdraw interest on an interested plan, with Undo at the top of Events you're interested in ---
 has(g.weekRowHTML(maybe), 'class="went" data-plan-withdraw="' + maybe.id + '">Withdraw interest</button>', "a fourth option");
 const past = ev({ title: "Past going" });
 plan(past, "going", iso(g.add(g.T, -1)));
@@ -294,11 +294,36 @@ html = g.journalEntryHTML(fresh, true);
 has(html, '<img class="journal-thumb" src="/p/1.jpg" alt="">', "your photo on the tile");
 // CC-253: the event's own photo sits on journal and week tiles; yours covers it
 const shot = ev({ title: "Shot", image_url: "https://example.com/a.webp" });
-assert.match(g.weekRowHTML(shot), /<img class="listing-image" src="https:\/\/example\.com\/a\.webp"[^>]*><span class="tile-k">/, "Still deciding rows have the photo");
+assert.match(g.weekRowHTML(shot), /<img class="listing-image" src="https:\/\/example\.com\/a\.webp"[^>]*><span class="tile-k">/, "interested rows have the photo, with the category tag");
 plan(shot, "going", iso(day));
 has(g.weekDayHTML({ d: day, items: [shot] }), 'class="listing-image"', "and so do a day's rows");
+// CC-261: committed rows in the week ahead go without the category tag
+assert.doesNotMatch(g.weekDayHTML({ d: day, items: [shot] }), /tile-k/, "no category tag on a day's rows");
 set("WENT_PHOTO[" + JSON.stringify(shot.id) + "] = { status: 'approved', url: '/p/2.jpg' };");
 assert.match(g.journalEntryHTML(shot, false), /class="listing-image"[^>]*><span class="tile-k">[^<]*<\/span><img class="journal-thumb" src="\/p\/2\.jpg"/, "your photo goes over the event's");
 has(html, "<figcaption>Waiting for approval</figcaption>", "its state in words");
 
-console.log("ok: My week (CC-146, CC-156, CC-160)");
+// CC-261: an event that's over, or a going plan's day that's passed, drops out of the list unless you've been
+const over = ev({ title: "Over", begin_date: iso(g.add(g.T, -20)), end_date: iso(g.add(g.T, -2)) });
+const onNow = ev({ title: "On now" });
+const wentTo = ev({ title: "Went", begin_date: iso(g.add(g.T, -20)), end_date: iso(g.add(g.T, -2)) });
+const goneDay = ev({ title: "Gone day", begin_date: iso(g.add(g.T, -20)), end_date: iso(g.add(g.T, -2)) });
+const ahead = ev({ title: "Ahead" });
+set("MYPLANS = {}; WENT = {}; MYPLAN_LIST = [" + [over, onNow, wentTo, goneDay, ahead].map((e) => "KNOWN[" + JSON.stringify(e.id) + "]").join(", ") + "];");
+[over, onNow, wentTo].forEach((e) => plan(e, "interested"));
+plan(goneDay, "going", iso(g.add(g.T, -3)));
+plan(ahead, "going", iso(g.add(g.T, 2)));
+set("WENT[" + JSON.stringify(wentTo.id) + "] = true;");
+assert.deepStrictEqual(Array.from(g.interestedList(), (e) => e.title), ["On now", "Went"],
+  "over and not been, or a passed going day not been: gone; on now, or been: kept; a going day ahead: in the week");
+set("WENT[" + JSON.stringify(goneDay.id) + "] = true;");
+assert.deepStrictEqual(Array.from(g.interestedList(), (e) => e.title), ["On now", "Went", "Gone day"], "a passed going day you've been to stays");
+// CC-261: "Still deciding" is now "Events you're interested in", in the heading, the deck and the live messages
+const page = fs.readFileSync(path.join(__dirname, "..", "public", "index.html"), "utf8");
+has(page, '<span id="deciding-title" tabindex="-1">Events you\'re interested in</span>', "the new heading");
+has(page, "and the events you're interested in.</p>", "and the deck");
+assert.ok(!/still deciding/i.test(page + read("account.js") + read("util.js")), "the old name is gone");
+has(read("account.js"), "Undo is at the top of Events you\\u2019re interested in.", "Withdraw's live message");
+has(read("account.js"), '"Back in Events you\\u2019re interested in: "', "and Undo's");
+
+console.log("ok: My week (CC-146, CC-156, CC-160, CC-261)");
