@@ -159,11 +159,12 @@ function byClosing(a, b) { return (a.n ? a.n.getTime() : Infinity) - (b.n ? b.n.
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 function safeUrl(u) { return /^https?:\/\//i.test(u) ? u : "#"; }
-// CC-246: "Photo from venue.example", linking to the page an event's photo was copied from; "" when it has none
+// CC-246: "Photo: venue.example ↗", linking to the page an event's photo was copied from; "" when it has none.
+// It sits small in the photo's corner on the event page's poster.
 function photoCreditHTML(e) {
   if (!e.imageUrl || !/^https?:\/\//i.test(e.imageCredit)) return "";
   var host = (e.imageCredit.split("/")[2] || "").split("@").pop().split(":")[0].replace(/^www\./i, "");
-  return host ? '<p class="credit">Photo from <a href="' + esc(safeUrl(e.imageCredit)) + '" target="_blank" rel="noopener">' + esc(host) + " ↗</a></p>" : "";
+  return host ? '<a class="photo-credit" href="' + esc(safeUrl(e.imageCredit)) + '" target="_blank" rel="noopener" aria-label="Photo from ' + esc(host) + '">Photo: ' + esc(host) + " ↗</a>" : "";
 }
 // A list that stops at the height of its first n items and scrolls for the rest (CC-87), measured from the real
 // items so it fits them exactly. A list that scrolls can be focused, so it can be scrolled from the keyboard.

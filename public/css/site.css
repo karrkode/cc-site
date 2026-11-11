@@ -812,6 +812,20 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
   color: inherit; overflow-wrap: anywhere; text-wrap: balance; }
 .poster-where { font-size: 1.5rem; line-height: 1.25; } /* 24px: large text across the lines */
 @media (max-width: 560px) { .poster { min-height: 300px; } }
+/* CC-246: with a photo, the words keep the water on the left and the photo fills the right, edge to edge; on a phone
+   the photo goes on top at a share image's shape. The credit sits small in the photo's bottom-right corner. */
+.poster.has-photo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 46%); padding: 0; }
+.has-photo .poster-in { align-self: end; padding: clamp(20px, 4vw, 40px); }
+.poster-photo { position: relative; margin: 0; min-height: 100%; background: #000; }
+.poster-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.photo-credit { position: absolute; right: 8px; bottom: 8px; display: inline-flex; align-items: center; min-height: 24px;
+  padding: 2px 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.62); color: #fff; font-size: 0.8125rem; line-height: 1.2;
+  text-decoration: none; max-width: calc(100% - 16px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.photo-credit:hover, .photo-credit:focus-visible { background: rgba(0, 0, 0, 0.82); }
+@media (max-width: 720px) {
+  .poster.has-photo { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .has-photo .poster-photo { order: -1; aspect-ratio: 1.91 / 1; min-height: 0; }
+}
 
 .ev-cols { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); grid-template-areas: "main side" "takes side";
   column-gap: clamp(32px, 5vw, 64px); margin-top: 32px; align-items: start; }

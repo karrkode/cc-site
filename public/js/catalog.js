@@ -428,6 +428,12 @@ function evPlanHTML(e) {
     (mine ? '<p class="ev-said">' + esc(myplanSaid(mine)) + '. <button class="textbtn" type="button" data-myplan-clear="' + id + '">Clear plan</button></p>' : "") +
     '<p class="form-error" role="alert"></p></div>';
 }
+// CC-246: the event's photo beside the poster's words, on the water (under them on a phone), credited in its corner.
+// No photo, or one that fails to load (catalog's error listener below), and the poster is the water alone.
+function posterPhotoHTML(e) {
+  var src = listingImageSrc(e.imageUrl);
+  return src ? '<figure class="poster-photo"><img src="' + esc(src) + '" alt="" decoding="async" referrerpolicy="no-referrer">' + photoCreditHTML(e) + "</figure>" : "";
+}
 // The page: "← The listings", the poster, then the facts and actions (and takes) beside your crews. The poster is one
 // element, data-poster="<id>", for CC-144's tile-becomes-poster transition.
 function eventViewHTML(e) {
@@ -435,10 +441,11 @@ function eventViewHTML(e) {
   var times = e.runDates.length ? runDatesText(e) : SHOW_TYPES[e.type] && !oneNight(e) && !past ? showDaysText(e.sched.weekly, e.sched.weeks) : "";
   if (times) facts.splice(1, 0, ["Shows", times]);
   if (e.address) facts.push(["Address", e.address, e.mapUrl]); // CC-218: neither the address nor the link when there's none
-  var html = '<div class="poster water-field' + catClass(e.type) + '" data-poster="' + esc(e.id) + '">' + waterHTML(e, "poster") +
+  var photo = posterPhotoHTML(e);
+  var html = '<div class="poster water-field' + catClass(e.type) + (photo ? " has-photo" : "") + '" data-poster="' + esc(e.id) + '">' + waterHTML(e, "poster") +
     '<div class="poster-in"><p class="poster-k">' + esc(e.label) + " · " + esc(st.label) + "</p>" +
     '<h1 id="event-title" tabindex="-1">' + esc(e.title) + "</h1>" +
-    '<p class="poster-where">' + esc(placeText(e)) + "</p></div></div>";
+    '<p class="poster-where">' + esc(placeText(e)) + "</p></div>" + photo + "</div>";
   // data-card: the card buttons (I've been, crew sharing, a photo, Edit) find their event, and redraw it, the same way
   // here; .ev-panel keeps account.js from swapping it for a card
   var main = '<div class="ev-main ev-panel" data-card="' + esc(e.id) + '">' +
@@ -446,7 +453,7 @@ function eventViewHTML(e) {
     '<dl class="ev-facts">' + facts.map(function (f) {
       return "<dt>" + esc(f[0]) + "</dt><dd>" + esc(f[1]) + (f[2] ? ' <a class="ev-map" href="' + esc(safeUrl(f[2])) + '" target="_blank" rel="noopener">Map ↗</a>' : "") + "</dd>";
     }).join("") + "</dl>" +
-    (e.suggestedBy ? '<p class="credit">Suggested by ' + esc(e.suggestedBy) + "</p>" : "") + photoCreditHTML(e) +
+    (e.suggestedBy ? '<p class="credit">Suggested by ' + esc(e.suggestedBy) + "</p>" : "") +
     '<div class="ev-actions">' +
       (e.url && !past ? '<a class="btn" href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">Tickets and showtimes ↗</a>' : "") +
       '<button class="btn ghost" type="button" id="ev-share">Share</button>' +
@@ -628,6 +635,10 @@ $("ev-back").addEventListener("click", function () {
   try { history.replaceState(null, "", to === "home" || to === "join" ? location.pathname + location.search : "/" + location.search + "#" + to); } catch (err) {}
   closeEvent();
 });
+$("ev-body").addEventListener("error", function (ev) { // CC-246: a photo that won't load leaves the water
+  var fig = ev.target.closest && ev.target.closest(".poster-photo");
+  if (fig) { fig.parentNode.classList.remove("has-photo"); fig.remove(); }
+}, true);
 $("ev-body").addEventListener("click", function (ev) {
   var t = ev.target;
   if (t.id === "ev-signin-btn") { signInFrom("e/" + EV.id); return; }

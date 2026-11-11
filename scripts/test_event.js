@@ -28,7 +28,7 @@ function load() {
     window: { devicePixelRatio: 1, matchMedia: () => stub(), addEventListener() {} },
     matchMedia: () => stub(),
     document: stub(), localStorage: stub(), location: stub(), history: stub(), navigator: stub(),
-    Intl, console,
+    Intl, console, URL,
   };
   vm.createContext(sandbox);
   vm.runInContext("var AUTH = { user: null }; function $(id) { return document; }" +
@@ -175,14 +175,21 @@ g.refreshPick(e.id).then(function () {
   console.log("event page: own plan and Clear plan (CC-152): ok");
 }).catch(function (err) { console.error(err); process.exit(1); });
 
-// --- CC-246: a photo's credit, linking to the page it came from; none without a photo ---
-html = g.eventViewHTML(ev({ image_url: "https://chiculturecrew.com/event-images/1/ab.webp", image_credit_url: "https://www.steppenwolf.org/shows/x" }));
-has(html, 'Photo from <a href="https://www.steppenwolf.org/shows/x" target="_blank" rel="noopener">steppenwolf.org ↗</a>');
-lacks(g.eventViewHTML(ev({ image_url: null, image_credit_url: null })), "Photo from", "no photo, no credit");
-lacks(g.eventViewHTML(ev({ image_url: "https://chiculturecrew.com/event-images/1/ab.webp", image_credit_url: "" })), "Photo from", "a photo with no page");
-lacks(g.eventViewHTML(ev({ image_url: "x.webp", image_credit_url: "javascript:alert(1)" })), "Photo from", "only web addresses");
-has(g.eventViewHTML(ev({ image_url: "x.webp", image_credit_url: 'https://a.example/"><b>' })), "a.example ↗</a>", "the host alone is shown");
-lacks(g.eventViewHTML(ev({ image_url: "x.webp", image_credit_url: 'https://a.example/"><b>' })), '"><b>', "and the address is escaped");
+// --- CC-246: the poster shows the event's photo, credited in its corner; none without a photo ---
+const IMG = "https://chiculturecrew.com/event-images/1/ab.webp";
+html = g.eventViewHTML(ev({ image_url: IMG, image_credit_url: "https://www.steppenwolf.org/shows/x" }));
+has(html, " has-photo\" data-poster=", "the poster makes room for the photo");
+has(html, '<figure class="poster-photo"><img src="' + IMG + '"', "the photo is on the poster");
+has(html, '<a class="photo-credit" href="https://www.steppenwolf.org/shows/x" target="_blank" rel="noopener" aria-label="Photo from steppenwolf.org">Photo: steppenwolf.org ↗</a></figure>', "credited on the photo");
+lacks(html, '<p class="credit">Photo', "and not in the facts");
+html = g.eventViewHTML(ev({ image_url: null, image_credit_url: null }));
+lacks(html, "poster-photo", "no photo, the water alone"); lacks(html, "has-photo"); lacks(html, "Photo:");
+html = g.eventViewHTML(ev({ image_url: IMG, image_credit_url: "" }));
+has(html, "poster-photo", "a photo with no page still shows"); lacks(html, "photo-credit", "uncredited");
+lacks(g.eventViewHTML(ev({ image_url: "http://evil.example/a.jpg" })), "poster-photo", "only https or the site's own");
+lacks(g.eventViewHTML(ev({ image_url: IMG, image_credit_url: "javascript:alert(1)" })), "photo-credit", "only web addresses");
+has(g.eventViewHTML(ev({ image_url: IMG, image_credit_url: 'https://a.example/"><b>' })), "Photo: a.example ↗</a>", "the host alone is shown");
+lacks(g.eventViewHTML(ev({ image_url: IMG, image_credit_url: 'https://a.example/"><b>' })), '"><b>', "and the address is escaped");
 
 // --- names and text are escaped ---
 html = g.eventViewHTML(ev({ title: "<b>Bold</b>" }));
