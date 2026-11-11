@@ -969,15 +969,31 @@ function renderPlannerPage() {
   if (u) renderPlanner();
 }
 $("planner-signin-btn").addEventListener("click", function () { signInFrom("planner"); });
-// CC-159: the Cultural Journal, on its own page (#journal), from the you menu and My week's line to it. Signed out,
-// the same: a word on what it's for and a sign-in that comes back here.
+// CC-159: the Cultural Journal, on its own page (#journal), from the you menu, My week's line to it and the front page's
+// ways in (CC-252). CC-252: a welcome box heads it. Signed out it takes the sign-in panel's place and leads to making an
+// account, then back here; signed in it can be put away, for good in this browser (localStorage, not the account, so a new
+// device shows it again). Putting it away squeezes it shut (dropClose); with reduced motion it goes at once.
+var JW_KEY = "cc_journal_welcome", JW_OFF = false; // JW_OFF: storage may be blocked, so it stays away until the page closes
+function journalWelcomeOff() {
+  if (JW_OFF) return true;
+  try { return localStorage.getItem(JW_KEY) === "off"; } catch (e) { return false; }
+}
 function openJournal() { renderJournalPage(); show("journal"); }
 function renderJournalPage() {
-  var u = AUTH.user;
-  $("journal-signin").hidden = !!u; $("journal-main").hidden = !u;
+  var u = AUTH.user, box = $("journal-welcome"), off = !!u && journalWelcomeOff();
+  if (box.hidden !== off) { moveStop(box); box.hidden = off; } // signing in or out: drawn as it stands, no squeeze
+  $("journal-welcome-out").hidden = !!u; $("journal-welcome-x").hidden = !u;
+  $("journal-main").hidden = !u;
   if (u) renderJournal();
 }
-$("journal-signin-btn").addEventListener("click", function () { signInFrom("journal"); });
+function registerFrom(place) { signInFrom(place); $("reg-name").focus(); } // CC-252: straight to New here? Make an account
+$("journal-register").addEventListener("click", function () { registerFrom("journal"); });
+$("journal-welcome-x").addEventListener("click", function () {
+  JW_OFF = true;
+  try { localStorage.setItem(JW_KEY, "off"); } catch (e) {}
+  $("journal-title").focus({ preventScroll: true }); // the button is leaving with the box
+  dropClose($("journal-welcome"));
+});
 
 // ---------- your name in the header, and its menu (CC-105) ----------
 // Signed in, the header shows your name (or "Your account"); it opens a menu: Crews, My week, Cultural journal (CC-159), Invite a friend, Account

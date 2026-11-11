@@ -53,7 +53,7 @@ The browser runs the JavaScript.
 The JavaScript gets the data from the API.
 
 The site has these views:
-- Home: a front page (CC-143). It has the full masthead, then the admin's picks. With two or more (up to 10), they form a swipeable stack across the row (CC-238, `leadstack.js`), with three ways in and Last chances (sorted by closing date) side by side below it. With one, it is the lead pick in three columns beside them. "The listings" follow as the catalog's cards (CC-253), and each pick in the stack is one of those cards too. On a phone, the columns stack.
+- Home: a front page (CC-143). It has the full masthead, then the admin's picks. With two or more (up to 10), they form a swipeable stack across the row (CC-238, `leadstack.js`), with four ways in (CC-252: Find an outing, the crews, the cultural journal and the listings) and Last chances (sorted by closing date) side by side below it. With one, it is the lead pick in three columns beside them. "The listings" follow as the catalog's cards (CC-253), and each pick in the stack is one of those cards too. On a phone, the columns stack.
 - Join page (`/join`), and the invite page (`/invite`)
 - Catalog
 - Find an outing
@@ -81,7 +81,7 @@ The theme button names the change it will make (CC-161): it says "Lights down" i
 
 The design brief is "Lakefront" (epic CC-135). The brief is not in this repository.
 - **Tokens and type (CC-136):** the colours, the type and the corners are tokens at the top of `public/css/site.css`, one block for each theme. Instrument Sans is the reading type. Big Shoulders Text is the signage type. Corners are square except on the Neighborhood Notes cards (CC-250, CC-253). Only people get circles.
-- **Masthead (CC-137):** the Chicago flag on the lake. Home and the join page show the full masthead: the date, the wordmark between two stripes, and the tagline. The other views show a compact masthead. On a phone, the nav is a sheet.
+- **Masthead (CC-137):** the Chicago flag on the lake. Home and the join page show the full masthead: the date, the wordmark between two stripes, and the tagline. Since CC-252 the wordmark is "Chi ★ Culture Crew" and the tagline is "Choose an event. Commit with your crew. Communicate your thoughts." The other views show a compact masthead. On a phone, the nav is a sheet.
 - **Water (CC-138):** each event has its own pattern of water. `water.js` draws the pattern on a canvas from the event's id. Thus, the same event always gets the same water. The pattern shows on the listing rows, the event poster, the home stack and lead pick, and the masthead.
 - **Dolphins (CC-139):** one SVG drawing in `index.html`, in three looks: the admin's pick (the dolphin through a gold ring, with a gold star), Interested (the lake dolphin) and Going (the ink dolphin).
 - **Catalog (CC-250):** Neighborhood Notes cards alternate between left and right image slots within the existing date groups. A soft category tint, label and bottom border carry the category. The card shows the event's photo (`image_url`, see the database section) and the category water when there's none or it fails to load. The event's `url` still points to the venue or ticket page. CC-253: the home page's listings and its picks are the same cards, and every other event tile (Find an outing, My week, crew pages, the journal) shows the photo too, letterboxed under the category's name (`eventTileHTML` in `listings.js`).

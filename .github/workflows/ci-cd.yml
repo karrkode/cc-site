@@ -75,6 +75,8 @@ jobs:
         run: node scripts/test_theme.js
       - name: On a phone, Review and your name are bars in the menu, and the masthead shrinks as the page scrolls
         run: node scripts/test_mast.js
+      - name: The masthead's words, four ways in, and the journal's welcome box (CC-252)
+        run: node scripts/test_journal_welcome.js
       - name: Asset links can be stamped for deploy
         run: python3 scripts/stamp_assets.py
       - name: JavaScript syntax
@@ -137,7 +139,7 @@ jobs:
       - name: Check the live site
         run: |
           for _ in $(seq 1 20); do
-            if curl -fsS -o /dev/null https://chiculturecrew.com/ && curl -fsS https://chiculturecrew.com/ | grep -q '<title>Culture Crew' &&
+            if curl -fsS -o /dev/null https://chiculturecrew.com/ && curl -fsS https://chiculturecrew.com/ | grep -q '<title>Chi Culture Crew' &&
                curl -fsS https://chiculturecrew.com/join | grep -q 'og:url" content="https://chiculturecrew.com/join"' &&
                curl -fsS https://chiculturecrew.com/invite | grep -q 'og:url" content="https://chiculturecrew.com/invite"'; then
               echo "chiculturecrew.com, /join and /invite are up"; exit 0

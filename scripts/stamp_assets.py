@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = ROOT / "public"
 OUT = ROOT / "build" / "site"
 
-JOIN_TITLE = "Ready to join the culture crew? · Culture Crew"
+JOIN_TITLE = "Ready to join the culture crew? · Chi Culture Crew"
 JOIN_DESCRIPTION = ("Chicago theater, music and art, and the people you go with. "
                     "Join in one step, and look around the catalog first.")
 JOIN_URL = "https://chiculturecrew.com/join"
