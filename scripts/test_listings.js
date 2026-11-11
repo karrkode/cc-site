@@ -112,7 +112,7 @@ assert.match(cards, /class="listing-kind">Visual Art<\/span>/);
 assert.match(cards, /class="listing-image" src="https:\/\/example\.com\/art\.jpg\?w=320&amp;h=180"/);
 assert.strictEqual((cards.match(/class="listing-image"/g) || []).length, 1, "missing or unsafe images use the water");
 assert.strictEqual((cards.match(/data-water="tile"/g) || []).length, 3, "every card has category water");
-assert.doesNotMatch(g.listingHTML(photo), /class="listing-image"/, "home keeps its category tile");
+assert.doesNotMatch(g.listingHTML(photo), /class="listing-image"/, "a row (not a card) keeps its category tile");
 assert.match(g.listingsHTML([art, art], "price", true), /<li><div class="listing cat-art" .*<li><div class="listing cat-art listing-flip"/s, "cards alternate");
 // every day starts with its photo on the left, whatever the day before ended with
 const days = g.listingsHTML([ev({ begin_date: iso(g.add(g.T, 3)) }), ev({ begin_date: iso(g.add(g.T, 4)) })], "opening", true);
@@ -120,6 +120,10 @@ assert.strictEqual(sections(days), 2);
 assert.strictEqual((days.match(/listing-flip/g) || []).length, 0, "each day's first card is not flipped");
 assert.strictEqual(g.listingImageHTML("http://elsewhere.example/a.webp"), "", "plain http from another site is ignored");
 assert.strictEqual(g.listingImageHTML("https://u:p@example.com/a.webp"), "", "no credentials in photo links");
+// CC-253: the small tiles elsewhere (week, crews, journal, Find an outing): water, then the photo, then the name, then extra
+assert.match(g.eventTileHTML(photo), /^<span class="tile water-field cat-theater"><canvas class="water"[^>]*><\/canvas><img class="listing-image" src="https:\/\/example\.com\/art\.jpg\?w=320&amp;h=180"[^>]*><span class="tile-k">Theater<\/span><\/span>$/);
+assert.doesNotMatch(g.eventTileHTML(art), /listing-image/, "no photo: the water alone");
+assert.match(g.eventTileHTML(art, "<i>x</i>"), /<span class="tile-k">Visual Art<\/span><i>x<\/i><\/span>$/, "extra goes last");
 
 // CC-162: the admin interested: the ink dolphin, not the ring
 row = g.listingHTML(ev({ pick: { status: "interested", date: null, by: "Andrew" } }));

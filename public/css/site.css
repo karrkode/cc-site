@@ -230,19 +230,21 @@ a.btn, a.textbtn { display: inline-block; }
 .front.has-stack { row-gap: 40px; }
 .front-h { font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; line-height: 1.2; color: var(--muted); }
 
-/* The lead pick: one of colour's four places. Its water fills the top of the field; the words sit on the solid field
-   below it, because white 21px italic across a 24% line is under 4.5:1. The whole field is one link to the event, and
-   it's the element CC-144 gives the poster's view-transition-name. */
+/* The lead pick: one of colour's four places. The whole card is one link to the event, and it's the element CC-144 gives
+   the poster's view-transition-name. CC-253: it's a catalog card (CC-250): the category's tint, a rounded edge and the
+   category's bar along the bottom. The event's photo, letterboxed on its water, fills the top, and the words sit below. */
 .lead-slot { display: flex; margin-right: 28px; }
-.lead-pick { flex: 1; display: flex; flex-direction: column; min-height: 430px; text-decoration: none; }
-.lead-sea { position: relative; flex: 1 1 120px; min-height: 120px; }
-.lead-in { display: grid; gap: 14px; padding: 0 28px 28px; }
-.lead-k { font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; line-height: 1.2; }
+.lead-pick { --card-radius: 12px; flex: 1; display: flex; flex-direction: column; min-height: 430px; overflow: hidden; color: var(--text); text-decoration: none;
+  background: var(--surface); background: color-mix(in srgb, var(--cat, var(--line)) 13%, var(--page));
+  border: 1px solid var(--line); border-bottom: 5px solid var(--cat, var(--line)); border-radius: var(--card-radius); }
+.lead-sea { position: relative; flex: 1 1 45%; min-height: 120px; }
+.lead-in { display: grid; gap: 14px; padding: 18px 28px 22px; }
+.lead-k { justify-self: start; padding: 2px 8px; background: var(--cat, var(--lake)); color: var(--on-cat); font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; line-height: 1.3; }
 .lead-t { font-family: var(--display); font-weight: 500; font-size: 58px; --fs: 58; line-height: 1; letter-spacing: -0.02em; overflow-wrap: anywhere; margin-top: -6px; }
 .lead-deck { font-size: 21px; font-style: italic; line-height: 1.4; max-width: 34ch; }
-.lead-by { display: flex; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid currentColor; font-family: var(--sign); font-weight: 700; font-size: 1.125rem; line-height: 1.25; font-variant-numeric: tabular-nums; }
-.lead-pick .mark-host { width: 34px; height: 33px; --mark-bg: var(--cat); --dol-body: #fff; --dol-belly: #fff; --dol-mouth: var(--cat); } /* on a field the dolphin is white and the gold carries it */
-.lead-pick .mark-host-int { width: 39px; height: 26px; --dol-body: #fff; --dol-belly: #fff; --dol-mouth: var(--cat); } /* CC-162: interested, no ring */
+.lead-by { display: flex; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); font-family: var(--sign); font-weight: 700; font-size: 1.125rem; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.lead-pick .mark-host { width: 34px; height: 33px; }
+.lead-pick .mark-host-int { width: 39px; height: 26px; } /* CC-162: interested, no ring */
 
 /* CC-238: the admin's picks as the pier (leadstack.js). The cards are lead picks: the front one faces you, and the next two
    turn away to the right. The whole row is the stack's, so a few cards can show. Cards overlap and shadows are out, so
@@ -252,15 +254,15 @@ a.btn, a.textbtn { display: inline-block; }
 .has-stack .lead-slot { grid-column: 1 / -1; display: block; min-width: 0; margin-right: 0; }
 .stack { position: relative; --card-w: 50%; }
 .stack-cards { position: relative; height: 430px; margin: 4px 0 0; padding: 0; list-style: none; touch-action: pan-y; perspective: 1500px; perspective-origin: 25% 50%; }
-.sc { position: absolute; top: 0; left: 0; width: var(--card-w); height: 100%; transform-origin: 0 50%; background: var(--page); box-shadow: 0 0 0 3px var(--page); -webkit-user-select: none; user-select: none; }
+.sc { position: absolute; top: 0; left: 0; width: var(--card-w); height: 100%; transform-origin: 0 50%; border-radius: 12px; background: var(--page); box-shadow: 0 0 0 3px var(--page); -webkit-user-select: none; user-select: none; }
 .sc:not(.is-front) { cursor: pointer; }
 .sc:not(.is-front) .lead-pick { pointer-events: none; }
 .sc .lead-pick { height: 100%; min-height: 0; -webkit-user-drag: none; }
-.sc .lead-sea { flex: 1 1 60px; min-height: 60px; }
-.sc .lead-in { gap: 12px; padding: 0 24px 22px; }
-.sc .lead-t { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; padding-bottom: 2px; font-size: 46px; --fs: 46; }
+.sc .lead-sea { flex: 1 1 45%; min-height: 110px; }
+.sc .lead-in { gap: 10px; padding: 14px 24px 18px; }
+.sc .lead-t { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; padding-bottom: 2px; font-size: 38px; --fs: 38; }
 .sc .lead-deck { font-size: 19px; }
-.sc-veil { position: absolute; inset: 0; z-index: 2; background: var(--page); opacity: calc(var(--veil) * var(--veil-k, 0)); pointer-events: none; }
+.sc-veil { position: absolute; inset: 0; z-index: 2; border-radius: inherit; background: var(--page); opacity: calc(var(--veil) * var(--veil-k, 0)); pointer-events: none; }
 .stack.moving .sc, .stack.moving .sc-veil { transition: transform var(--stack-dur) var(--stack-ease), opacity var(--stack-dur) var(--stack-ease); }
 .stack-nav { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
 .stack-nav .btn { min-width: 48px; min-height: 48px; }
@@ -313,7 +315,7 @@ a.btn, a.textbtn { display: inline-block; }
 @media (max-width: 700px) {
   .front, .front.no-lead, .front.has-stack { grid-template-columns: minmax(0, 1fr); padding-top: 20px; }
   .lead-pick { min-height: 340px; }
-  .lead-in { padding: 0 20px 20px; }
+  .lead-in { padding: 16px 20px 18px; }
   .lead-t { font-size: 40px; --fs: 40; }
   .ways, .no-lead .ways, .has-stack .ways { padding-right: 0; border-right: 0; }
   .last-col, .no-lead .last-col, .has-stack .last-col { padding-left: 0; }
@@ -321,8 +323,8 @@ a.btn, a.textbtn { display: inline-block; }
   /* The stack runs out to the screen edges, so the third card can leave the page with no sideways scroll */
   .stack { --card-w: 72%; margin-inline: calc(-1 * clamp(16px, 4vw, 40px)); padding-inline: clamp(16px, 4vw, 40px); overflow-x: clip; }
   .stack-cards { height: 400px; margin-top: 12px; }
-  .sc .lead-in { gap: 10px; padding: 0 18px 18px; }
-  .sc .lead-t { font-size: 36px; --fs: 36; }
+  .sc .lead-in { gap: 8px; padding: 12px 16px 14px; }
+  .sc .lead-t { font-size: 28px; --fs: 28; }
   .sc .lead-deck { font-size: 18px; }
 }
 
@@ -385,7 +387,7 @@ a.btn, a.textbtn { display: inline-block; }
   .listing-when .going-day { display: inline; margin: 0 0 0 6px; }
 }
 
-/* CC-250: Neighborhood Notes cards in the catalog. The home listings keep their row layout. */
+/* CC-250: Neighborhood Notes cards in the catalog, and (CC-253) in the home page's listings. */
 .catalog-cards .listings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .catalog-cards .listing-day-head + .listings > li:only-child { grid-column: 1 / -1; }
 .catalog-cards .listing-day > .listings:first-child { padding-top: 12px; }

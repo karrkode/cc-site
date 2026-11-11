@@ -24,12 +24,13 @@ const g = {
   window: { devicePixelRatio: 1, matchMedia: () => stub(), addEventListener: () => {} },
   matchMedia: () => stub(),
   document: stub(), localStorage: stub(), location: stub(), history: stub(), navigator: stub(),
-  Intl, console,
+  Intl, URL, console,
 };
 vm.createContext(g);
 vm.runInContext("var AUTH = { user: null }, MYPLANS = {}; function $(id) { return document; }", g);
 vm.runInContext(read("util.js"), g);
 vm.runInContext(read("water.js"), g);
+vm.runInContext(read("listings.js"), g); // CC-253: eventTileHTML
 vm.runInContext(read("crews.js"), g);
 vm.runInContext("CREW_OPEN = null; CREW_MANAGE = null; CREW_ASK = null; CREW_EDIT = null; CREW_SHARE = false; CREW_LINKS = {};", g);
 const set = (code) => vm.runInContext(code, g);
@@ -97,6 +98,11 @@ has(link, 'href="#e/' + c.plans[0].event.id + '" data-ev-open="' + c.plans[0].ev
 has(link, '<span class="tile water-field cat-theater">', "with its tile, which grows into the poster (CC-144)");
 has(link, '<span class="listing-t">Heroes of the Fourth Turning</span>', "and the title the poster's takes over");
 lacks(link, "<button", "no buttons inside a link");
+lacks(link, "listing-image", "no photo: the water");
+// CC-253: an event's photo sits on its tile, under the category's name
+const shot = g.crewHTML(crew({ plans: [{ event: raw({ title: "Shot", image_url: "https://example.com/a.webp" }), been: [], people: [] }] }));
+has(shot, '<span class="tile water-field cat-theater"><canvas class="water"', "the water stays as the fallback");
+assert.match(shot, /<img class="listing-image" src="https:\/\/example\.com\/a\.webp"[^>]*><span class="tile-k">/, "the photo, then the name over it");
 has(rows[0], 'class="mark mark-going" aria-hidden="true"', "the ink dolphin when anyone's going");
 has(rows[0], "<b><i>Two</i></b></button> others are going!", "who's in, in the product owner's words");
 has(rows[1], 'class="mark mark-int" aria-hidden="true"', "the lake dolphin when they're only interested");

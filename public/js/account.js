@@ -139,7 +139,7 @@ function redrawCardsNow(id, from, focusOn) {
   var list = from && from.parentElement.closest("[id]"), listId = list ? list.id : null; // the grid this card was in
   Array.prototype.forEach.call(document.querySelectorAll('[data-card="' + id + '"]:not(.ev-panel)'), function (c) { c.outerHTML = cardHTML(KNOWN[id]); });
   Array.prototype.forEach.call(document.querySelectorAll('[data-listing="' + id + '"]'), function (r) { // CC-140: its rows' marks
-    var li = r.parentElement; r.outerHTML = listingHTML(KNOWN[id]); paintWater(li);
+    var li = r.parentElement; r.outerHTML = listingHTML(KNOWN[id], !!r.closest(".catalog-cards"), r.classList.contains("listing-flip")); paintWater(li); // CC-253: a card stays a card
   });
   return loadMyPlans().then(function () {
     if (visible("event")) renderEventView(); // CC-117: the event view's buttons, redrawn as a view, not a card
@@ -257,7 +257,7 @@ function weekRowHTML(e, d) {
     myplanToggleHTML(e, goingRange(e) ? "Pick a day" : "Change plan") + wentHTML(e) + crewShareToggleHTML(e, "Tell a crew") + // closed: no day left to pick
     (going ? "" : '<button type="button" class="went" data-plan-withdraw="' + id + '">Withdraw interest</button>'); // CC-160: undone from the line above
   return '<li class="wk-row" data-day-item="' + id + '"' + (d ? "" : ' data-row="' + id + '"') + '><a class="wk-row-a" href="#e/' + id + '" data-ev-open="' + id + '">' +
-    '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + '<span class="tile-k">' + esc(e.label) + "</span></span>" +
+    eventTileHTML(e) +
     '<span class="listing-t">' + esc(e.title) + (e.pick ? pickMarkHTML(e.pick, pickText(e.pick)) : "") + "</span>" +
     '<span class="wk-where">' + esc(placeText(e)) + "</span>" +
     '<span class="wk-when">' + (when ? "<span>" + esc(when) + "</span>" : "") + "</span></a>" +
@@ -501,7 +501,7 @@ function journalEntryHTML(e, open) {
   var thumb = hasPhoto ? '<img class="journal-thumb" src="' + esc(API + p.url) + '" alt="">' : ""; // the tile shows if it won't load
   var notes = [saved.recommend ? "Recommended" : "", (WENT_SHARE[e.id] || {}).shared ? "Shared" : ""].filter(Boolean);
   var head = '<div class="journal-row"><a class="journal-a" href="#e/' + id + '" data-ev-open="' + id + '">' +
-    '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + '<span class="tile-k">' + esc(e.label) + "</span>" + thumb + "</span>" +
+    eventTileHTML(e, thumb) + // your own photo covers the event's
     '<span class="listing-t" id="' + k + '-h">' + esc(e.title) + "</span>" + '<span class="wk-where">' + esc(placeText(e)) + "</span></a>" +
     (open ? "" : saved.words ? '<p class="journal-words">' + esc(saved.words.split(" ").map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(". ")) + ".</p>" : '<p class="week-hint journal-nowords">No three words yet.</p>') +
     '<div class="journal-meta">' + notes.map(function (n) { return "<span>" + n + "</span>"; }).join("") + (photoState ? "<span>Photo " + esc(photoState.toLowerCase()) + "</span>" : "") +
