@@ -1957,3 +1957,13 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 dialog.dialog-leaving { display: block; position: fixed; z-index: 101; margin: 0; max-width: none; max-height: none; box-sizing: border-box; }
 .dialog-scrim { position: fixed; inset: 0; z-index: 100; }
 
+
+
+/* CC-265: admin image changes use the same category water and contained artwork as catalog cards. */
+.editor .ed-picture-layout { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px; }
+.editor .ed-picture-preview { flex: 0 0 168px; max-width: 100%; }
+.editor .ed-picture-preview .tile { width: 168px; max-width: 100%; height: 112px; border: 1.5px solid var(--rule); border-radius: var(--r-ctl); }
+.editor .ed-picture-actions { flex: 1 1 220px; display: grid; gap: 12px; min-width: 0; }
+.editor .ed-picture-actions .field input[type="file"] { display: block; max-width: 100%; font: inherit; color: var(--text); }
+.editor .ed-picture-actions .row { gap: 8px; }
+.editor #ed-image-undo[hidden], .editor #ed-picture-controls[hidden] { display: none; }
