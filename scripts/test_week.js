@@ -131,6 +131,58 @@ set("CREWS = [];");
 lacks(g.weekRowHTML(maybe), "Tell a crew", "no crews, nobody to tell");
 set("CREWS = [{ id: 7, name: 'Thursday Theater' }];");
 
+// --- CC-260: Pick a day offers only days you can go: a fixed run's dates, else the event's show days, else its venue's
+// hours by the venue's category, else any day of the run; a week with none says so and offers the next ---
+const DOW = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+const week = [0, 1, 2, 3, 4, 5, 6].map((i) => g.add(g.T, i)); // the week My week shows first
+const ok = (e) => week.filter((d) => g.canGoOn(e, d)).map(iso);
+const sched = (over) => Object.assign({ dates: [], weekly: {}, weekly_from: "", weeks: {}, hours: {} }, over);
+const venue = (category) => ({ id: 2, name: "Lakeside Hall", neighborhood: "Old Town", area: "city", region: "north", category: category });
+// 1. a fixed run: its dates only, even where the venue has show times
+const run = ev({ schedule: sched({ dates: [{ date: iso(week[2]), time: "19:30" }, { date: iso(week[5]), time: null }],
+  weekly: { [DOW[week[0].getDay()]]: ["19:30"] }, weekly_from: "venue" }), venue: venue("Theater") });
+assert.deepStrictEqual(ok(run), [iso(week[2]), iso(week[5])], "a fixed run: its listed dates");
+// 2. its own show days, by weekday (and not the venue's hours)
+const own = ev({ schedule: sched({ weekly: { [DOW[week[1].getDay()]]: ["20:00"], [DOW[week[4].getDay()]]: ["14:00"] }, weekly_from: "event",
+  hours: { [DOW[week[3].getDay()]]: ["10:00", "17:00"] } }), venue: venue("Visual Art") });
+assert.deepStrictEqual(ok(own), [iso(week[1]), iso(week[4])], "its own show days");
+// 3. the venue's: a theater by its show times, a gallery by its opening hours (Closed is out), no category by either
+const venueShows = { [DOW[week[3].getDay()]]: ["19:30"] }, venueHours = { [DOW[week[0].getDay()]]: null, [DOW[week[6].getDay()]]: null };
+const both = { weekly: venueShows, weekly_from: "venue", hours: venueHours };
+assert.deepStrictEqual(ok(ev({ schedule: sched(both), venue: venue("Theater") })), [iso(week[3])], "a theater: its show times");
+assert.deepStrictEqual(ok(ev({ schedule: sched(both), venue: venue("Music") })), [iso(week[3])], "a music venue: its show times");
+assert.deepStrictEqual(ok(ev({ category: "Visual Art", schedule: sched(both), venue: venue("Visual Art") })), week.slice(1, 6).map(iso),
+  "a gallery: the days it's open (a day not filled in counts as open)");
+const boxOffice = Object.fromEntries(DOW.map((k) => [k, null])); boxOffice[DOW[week[1].getDay()]] = ["12:00", "18:00"];
+assert.deepStrictEqual(ok(ev({ schedule: sched({ weekly: venueShows, weekly_from: "venue", hours: boxOffice }), venue: venue(null) })),
+  [iso(week[1]), iso(week[3])], "no category: a day it's open, or a day with a show");
+assert.deepStrictEqual(ok(ev({ schedule: sched({ hours: venueHours }), venue: venue(null) })), week.slice(1, 6).map(iso), "no category, hours only");
+assert.deepStrictEqual(ok(ev({ schedule: sched({ hours: venueHours }), venue: venue("Theater") })), week.map(iso),
+  "a theater with only opening hours: nothing known about its shows, so any day");
+// 4. nothing known: every day of the run, from today (or its opening) to its closing
+const open = ev({ begin_date: iso(week[2]), end_date: iso(week[4]) });
+assert.deepStrictEqual(ok(open), [iso(week[2]), iso(week[3]), iso(week[4])], "nothing known: the run");
+// the picker: a button a day, each saving that date; none this week says so, and offers the next one
+plan(run, "interested");
+html = g.weekRowHTML(run);
+has(html, 'data-myplan-going="' + run.id + '" data-date="' + iso(week[2]) + '" aria-pressed="false">');
+has(html, ">" + g.goingDay(iso(week[5])) + "</button>");
+lacks(html, 'type="date"', "no date field to pick a day it isn't on");
+lacks(html, 'data-date="' + iso(week[0]) + '"');
+const later = ev({ schedule: sched({ dates: [{ date: iso(g.add(g.T, 16)), time: "19:30" }] }) });
+plan(later, "interested");
+html = g.weekRowHTML(later);
+has(html, "No shows this week."); lacks(html, "data-myplan-going=\"" + later.id + "\" data-date");
+has(html, 'data-pick-week="2">Next: ' + g.goingDay(iso(g.add(g.T, 16))) + " →</button>", "the next day that fits, in its week");
+set("PLANNER_WEEK = 2;");
+has(g.weekRowHTML(later), 'data-date="' + iso(g.add(g.T, 16)) + '"', "that week offers it");
+set("PLANNER_WEEK = 0;");
+const shut = ev({ category: "Visual Art", schedule: sched({ hours: Object.fromEntries(DOW.map((k) => [k, null])) }), venue: venue("Visual Art") });
+plan(shut, "interested");
+html = g.weekRowHTML(shut);
+has(html, "Not open this week."); lacks(html, "Next:", "never open: nothing to skip to");
+has(html, ">Pick a day</button>", "still a plan to change");
+
 // --- CC-160: Withdraw interest on an interested plan, with Undo at the top of Still deciding ---
 has(g.weekRowHTML(maybe), 'class="went" data-plan-withdraw="' + maybe.id + '">Withdraw interest</button>', "a fourth option");
 const past = ev({ title: "Past going" });

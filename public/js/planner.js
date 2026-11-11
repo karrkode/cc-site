@@ -65,6 +65,23 @@ function hoursOn(e, d) { // [opens, closes, known] or null when closed
   if (!Object.prototype.hasOwnProperty.call(h, k)) return [USUAL[0], USUAL[1], false];
   return h[k] ? [h[k][0], h[k][1], true] : null;
 }
+// CC-260: can you go on day d (My week's Pick a day)? In this order: a fixed run's listed dates (and, up to the last of them,
+// the dates read from its venue's site); else the event's own show days; else its venue's, by the venue's category (CC-258's
+// rule): Visual Art by its opening hours (a day marked Closed is out; a day not filled in counts as open, as above),
+// Theater and Music by its usual show times, a venue with no category by either; with nothing known, any day of its run.
+var VENUE_SHOWS = ["Theater", "Music"], VENUE_HOURS = ["Visual Art"];
+function canGoOn(e, d) {
+  var range = goingRange(e); if (!range || d < range[0] || d > range[1]) return false;
+  var s = e.sched, k = DOW[d.getDay()];
+  var iso = isoDate(d), dates = s.dates;
+  if (e.runDates.length || (dates.length && iso <= dates[dates.length - 1].date)) return dates.some(function (p) { return p.date === iso; });
+  if (s.weekly_from === "event") return onWeekOf(s.weeks, d) && !!(s.weekly[k] || []).length;
+  var shows = s.weekly_from === "venue" ? s.weekly || {} : {}, hours = s.hours || {};
+  var byShows = Object.keys(shows).length > 0 && VENUE_HOURS.indexOf(e.venueType) < 0;
+  var byHours = Object.keys(hours).length > 0 && VENUE_SHOWS.indexOf(e.venueType) < 0;
+  if (!byShows && !byHours) return true;
+  return (byShows && !!(shows[k] || []).length) || (byHours && hours[k] !== null);
+}
 function stillOpen(o, c, now) { return c < o ? true : now < c; } // closing before opening = after midnight
 function onDay(e, d, slot) {
   if (!overlaps(e, d, d)) return false;
