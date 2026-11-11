@@ -179,8 +179,8 @@ g.refreshPick(e.id).then(function () {
 const IMG = "https://chiculturecrew.com/event-images/1/ab.webp";
 html = g.eventViewHTML(ev({ image_url: IMG, image_credit_url: "https://www.steppenwolf.org/shows/x" }));
 has(html, " has-photo\" data-poster=", "the poster makes room for the photo");
-has(html, '<figure class="poster-photo"><img src="' + IMG + '"', "the photo is on the poster");
-has(html, '<a class="photo-credit" href="https://www.steppenwolf.org/shows/x" target="_blank" rel="noopener" aria-label="Photo from steppenwolf.org">Photo: steppenwolf.org ↗</a></figure>', "credited on the photo");
+has(html, '<figure class="poster-photo"><span class="poster-frame"><img src="' + IMG + '"', "the photo is on the poster");
+has(html, '<a class="photo-credit" href="https://www.steppenwolf.org/shows/x" target="_blank" rel="noopener" aria-label="Photo from steppenwolf.org">Photo: steppenwolf.org ↗</a></span></figure>', "credited on the photo");
 lacks(html, '<p class="credit">Photo', "and not in the facts");
 html = g.eventViewHTML(ev({ image_url: null, image_credit_url: null }));
 lacks(html, "poster-photo", "no photo, the water alone"); lacks(html, "has-photo"); lacks(html, "Photo:");

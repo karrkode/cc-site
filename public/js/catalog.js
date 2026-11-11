@@ -428,11 +428,13 @@ function evPlanHTML(e) {
     (mine ? '<p class="ev-said">' + esc(myplanSaid(mine)) + '. <button class="textbtn" type="button" data-myplan-clear="' + id + '">Clear plan</button></p>' : "") +
     '<p class="form-error" role="alert"></p></div>';
 }
-// CC-246: the event's photo beside the poster's words, on the water (under them on a phone), credited in its corner.
+// CC-246: the event's photo, whole and never cropped, beside the poster's words on the water (above them on a phone),
+// credited in its own corner: .poster-frame is the photo's exact size, so the credit sits on the picture.
 // No photo, or one that fails to load (catalog's error listener below), and the poster is the water alone.
 function posterPhotoHTML(e) {
   var src = listingImageSrc(e.imageUrl);
-  return src ? '<figure class="poster-photo"><img src="' + esc(src) + '" alt="" decoding="async" referrerpolicy="no-referrer">' + photoCreditHTML(e) + "</figure>" : "";
+  return src ? '<figure class="poster-photo"><span class="poster-frame"><img src="' + esc(src) + '" alt="" decoding="async" referrerpolicy="no-referrer">' +
+    photoCreditHTML(e) + "</span></figure>" : "";
 }
 // The page: "← The listings", the poster, then the facts and actions (and takes) beside your crews. The poster is one
 // element, data-poster="<id>", for CC-144's tile-becomes-poster transition.
