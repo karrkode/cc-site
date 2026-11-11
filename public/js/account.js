@@ -202,8 +202,8 @@ document.addEventListener("click", function (ev) {
   var on = back && t.getAttribute("aria-pressed") !== "true"; // CC-144: turning one on, on the event page, moves its dolphin
   if (t.hasAttribute("data-myplan-set")) { if (on) evNod(t, t.getAttribute("data-myplan-set")); return saveMyPlan(t.getAttribute("data-myplan-set"), { status: "interested" }, box, back); }
   if (t.hasAttribute("data-myplan-clear")) return saveMyPlan(t.getAttribute("data-myplan-clear"), null, box, back);
-  var input = box.querySelector('input[type="date"]'), day = t.getAttribute("data-date") || (input && input.value);
-  if (input && (!day || day < input.min || day > input.max)) {
+  var input = box.querySelector('input[type="date"], select.go-day'), day = t.getAttribute("data-date") || (input && input.value);
+  if (input && (!day || (input.min && (day < input.min || day > input.max)))) { // CC-260: a drop-down holds only days it's on
     box.querySelector(".form-error").textContent = !day ? "Choose a date." :
       "Choose a date from " + goingDay(input.min) + " to " + goingDay(input.max) + ".";
     input.focus(); return;
@@ -215,7 +215,7 @@ document.addEventListener("click", function (ev) {
 document.addEventListener("change", function (ev) {
   var input = ev.target; if (input.id !== "ev-going-day" || !AUTH.user) return;
   var box = input.closest(".myplan"), day = input.value, id = box.querySelector("[data-myplan-going]").getAttribute("data-myplan-going");
-  if (!day || day < input.min || day > input.max) {
+  if (!day || (input.min && (day < input.min || day > input.max))) {
     box.querySelector(".form-error").textContent = !day ? "Choose a date." :
       "Choose a date from " + goingDay(input.min) + " to " + goingDay(input.max) + ".";
     return;

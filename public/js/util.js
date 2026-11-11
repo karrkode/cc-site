@@ -284,15 +284,15 @@ function myplanHTML(e, days) {
   if (!mine && !range) return "";
   var going = "";
   if (days !== undefined) going = days;
-  else if (range && same(range[0], range[1])) {
-    going = '<button type="button" class="went" data-myplan-going="' + id + '" data-date="' + isoDate(range[0]) + '" aria-pressed="' +
-      !!(mine && mine.status === "going") + '">' + markHTML("going") + "Commit to " + esc(goingDay(isoDate(range[0]))) + "</button>";
-  } else if (range) {
-    var value = mine && mine.date ? mine.date : isoDate(range[0]);
-    going = '<button type="button" class="went" data-myplan-going="' + id + '" aria-pressed="' + !!(mine && mine.status === "going") +
-      '" aria-describedby="myplan-date-' + n + '">' + markHTML("going") + "Commit to</button>" +
-      '<input type="date" id="myplan-date-' + n + '" aria-label="Date for ' + esc(e.title) + '" min="' + isoDate(range[0]) +
-      '" max="' + isoDate(range[1]) + '" value="' + esc(value) + '">';
+  else if (range) { // CC-260: only days it's on
+    var first = firstGoDay(e), field = first ? goDayFieldHTML(e, 'id="myplan-date-' + n + '" aria-label="Date for ' + esc(e.title) + '"', mine && mine.date ? mine.date : first) : "";
+    if (field && same(range[0], range[1])) {
+      going = '<button type="button" class="went" data-myplan-going="' + id + '" data-date="' + first + '" aria-pressed="' +
+        !!(mine && mine.status === "going") + '">' + markHTML("going") + "Commit to " + esc(goingDay(first)) + "</button>";
+    } else if (field) {
+      going = '<button type="button" class="went" data-myplan-going="' + id + '" aria-pressed="' + !!(mine && mine.status === "going") +
+        '" aria-describedby="myplan-date-' + n + '">' + markHTML("going") + "Commit to</button>" + field;
+    }
   }
   return '<div class="myplan" id="myplan-' + n + '" role="group" aria-label="Your plan for ' + esc(e.title) + '" hidden>' +
     '<div class="row"><button type="button" class="went" data-myplan-set="' + id + '" aria-pressed="' + !!(mine && mine.status === "interested") +

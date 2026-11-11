@@ -140,8 +140,13 @@ const sched = (over) => Object.assign({ dates: [], weekly: {}, weekly_from: "", 
 const venue = (category) => ({ id: 2, name: "Lakeside Hall", neighborhood: "Old Town", area: "city", region: "north", category: category });
 // 1. a fixed run: its dates only, even where the venue has show times
 const run = ev({ schedule: sched({ dates: [{ date: iso(week[2]), time: "19:30" }, { date: iso(week[5]), time: null }],
-  weekly: { [DOW[week[0].getDay()]]: ["19:30"] }, weekly_from: "venue" }), venue: venue("Theater") });
+  weekly: { [DOW[week[0].getDay()]]: ["19:30"] }, weekly_from: "venue" }), venue: venue("Theater"),
+  run_dates: [{ date: iso(week[2]), time: "19:30" }, { date: iso(week[5]), time: null }] });
 assert.deepStrictEqual(ok(run), [iso(week[2]), iso(week[5])], "a fixed run: its listed dates");
+const listed = ev({ end_date: iso(g.add(g.T, 20)), schedule: sched({ dates: [{ date: iso(week[2]), time: "19:30" }], weekly: { [DOW[week[0].getDay()]]: ["19:30"] }, weekly_from: "venue" }),
+  venue: venue("Theater") });
+assert.deepStrictEqual(ok(listed), [iso(week[2])], "dates read from the venue's site: only those, up to the last of them");
+assert.ok(g.canGoOn(listed, g.add(week[0], 7)), "after them, the venue's show times");
 // 2. its own show days, by weekday (and not the venue's hours)
 const own = ev({ schedule: sched({ weekly: { [DOW[week[1].getDay()]]: ["20:00"], [DOW[week[4].getDay()]]: ["14:00"] }, weekly_from: "event",
   hours: { [DOW[week[3].getDay()]]: ["10:00", "17:00"] } }), venue: venue("Visual Art") });
@@ -182,6 +187,13 @@ plan(shut, "interested");
 html = g.weekRowHTML(shut);
 has(html, "Not open this week."); lacks(html, "Next:", "never open: nothing to skip to");
 has(html, ">Pick a day</button>", "still a plan to change");
+
+// CC-260: a card's Commit to: a drop-down of the days it's on; a run where any day will do keeps the date field
+delete g.MYPLANS[run.id]; set("MYPLAN_SEQ = 0;");
+html = g.myplanHTML(run);
+has(html, '<select class="go-day" id="myplan-date-0"'); lacks(html, 'type="date"');
+assert.deepStrictEqual([...html.matchAll(/<option value="([\d-]+)"/g)].map((m) => m[1]), [iso(week[2]), iso(week[5])], "a fixed run: its dates");
+has(g.myplanHTML(open), '<input type="date"', "nothing known: every day, so the date field");
 
 // --- CC-160: Withdraw interest on an interested plan, with Undo at the top of Still deciding ---
 has(g.weekRowHTML(maybe), 'class="went" data-plan-withdraw="' + maybe.id + '">Withdraw interest</button>', "a fourth option");
