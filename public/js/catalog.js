@@ -416,12 +416,12 @@ function evPlanHTML(e) {
   var mine = MYPLANS[e.id], range = goingRange(e), id = esc(e.id);
   if (WENT[e.id] || (!mine && !range)) return ""; // been already, or closed with nothing planned
   var going = "";
-  if (range) {
+  var first = range ? firstGoDay(e) : ""; // CC-260: Going takes the first day it's on, and the field offers only those days
+  if (first) {
     var one = same(range[0], range[1]), on = !!mine && mine.status === "going", field = on && !one;
-    going = '<button class="btn ghost" type="button" data-myplan-going="' + id + '"' + (field ? "" : ' data-date="' + isoDate(range[0]) + '"') +
+    going = '<button class="btn ghost" type="button" data-myplan-going="' + id + '"' + (field ? "" : ' data-date="' + first + '"') +
       ' aria-pressed="' + on + '">' + markHTML("going") + "Going</button>" +
-      (field ? '<input type="date" id="ev-going-day" aria-label="The day you’re going" min="' + isoDate(range[0]) + '" max="' + isoDate(range[1]) +
-        '" value="' + esc(mine.date || isoDate(range[0])) + '">' : "");
+      (field ? goDayFieldHTML(e, 'id="ev-going-day" aria-label="The day you’re going"', mine.date || first) : "");
   }
   return '<div class="ev-plan myplan" role="group" aria-label="Your plan for ' + esc(e.title) + '"><div class="row">' +
     '<button class="btn ghost" type="button" data-myplan-set="' + id + '" aria-pressed="' + (!!mine && mine.status === "interested") + '">' +

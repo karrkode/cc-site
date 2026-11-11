@@ -74,6 +74,7 @@ function fromApi(e) {
     beginTbd: !e.begin_date, cost: usual ? usual.standard_cost : e.cost_text || "TBD", min: usual ? usual.standard_min_price : e.min_price,
     costUsual: !!usual, type: e.category, url: e.url, imageUrl: e.image_url, imageCredit: e.image_credit_url || "", opera: !!e.opera, label: typeLabel(e.category, e.opera),
     venueId: e.venue.id, costRaw: e.cost_text, // for the admin edit form (CC-56)
+    venueType: e.venue.category || "", // CC-260: the venue's category, which says whether its hours or its show times count
     address: e.venue.full_address || "", mapUrl: e.venue.map_url || "", // CC-218: "" when the venue has none
     status: e.status, publishAt: e.publish_at ? new Date(e.publish_at) : null,
     submitter: e.submitted_by, // only the admin routes send this (undefined elsewhere; null = none on record)
@@ -277,24 +278,26 @@ function myplanToggleHTML(e, label) { // label: what it says once you have a pla
     (mine ? label || "Change plan" : "Interested?") + "</button>";
 }
 // The picker under a card: Interested, Going on a date (one-night events need no date field), or Clear.
-function myplanHTML(e) {
+// days: in place of the Going row, My week's own (Still deciding's days of the shown week, CC-260)
+function myplanHTML(e, days) {
   var mine = MYPLANS[e.id], range = goingRange(e), n = MYPLAN_SEQ, id = esc(e.id);
   if (!mine && !range) return "";
   var going = "";
-  if (range && same(range[0], range[1])) {
-    going = '<button type="button" class="went" data-myplan-going="' + id + '" data-date="' + isoDate(range[0]) + '" aria-pressed="' +
-      !!(mine && mine.status === "going") + '">' + markHTML("going") + "Commit to " + esc(goingDay(isoDate(range[0]))) + "</button>";
-  } else if (range) {
-    var value = mine && mine.date ? mine.date : isoDate(range[0]);
-    going = '<button type="button" class="went" data-myplan-going="' + id + '" aria-pressed="' + !!(mine && mine.status === "going") +
-      '" aria-describedby="myplan-date-' + n + '">' + markHTML("going") + "Commit to</button>" +
-      '<input type="date" id="myplan-date-' + n + '" aria-label="Date for ' + esc(e.title) + '" min="' + isoDate(range[0]) +
-      '" max="' + isoDate(range[1]) + '" value="' + esc(value) + '">';
+  if (days !== undefined) going = days;
+  else if (range) { // CC-260: only days it's on
+    var first = firstGoDay(e), field = first ? goDayFieldHTML(e, 'id="myplan-date-' + n + '" aria-label="Date for ' + esc(e.title) + '"', mine && mine.date ? mine.date : first) : "";
+    if (field && same(range[0], range[1])) {
+      going = '<button type="button" class="went" data-myplan-going="' + id + '" data-date="' + first + '" aria-pressed="' +
+        !!(mine && mine.status === "going") + '">' + markHTML("going") + "Commit to " + esc(goingDay(first)) + "</button>";
+    } else if (field) {
+      going = '<button type="button" class="went" data-myplan-going="' + id + '" aria-pressed="' + !!(mine && mine.status === "going") +
+        '" aria-describedby="myplan-date-' + n + '">' + markHTML("going") + "Commit to</button>" + field;
+    }
   }
   return '<div class="myplan" id="myplan-' + n + '" role="group" aria-label="Your plan for ' + esc(e.title) + '" hidden>' +
     '<div class="row"><button type="button" class="went" data-myplan-set="' + id + '" aria-pressed="' + !!(mine && mine.status === "interested") +
     '">' + markHTML("interested") + "Interested</button>" + (mine ? '<button type="button" class="textbtn" data-myplan-clear="' + id + '">Clear plan</button>' : "") + "</div>" +
-    (going ? '<div class="row">' + going + "</div>" : "") +
+    (going && days !== undefined ? going : going ? '<div class="row">' + going + "</div>" : "") +
     '<p class="form-error" role="alert"></p></div>';
 }
 function wentHTML(e) {

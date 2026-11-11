@@ -686,9 +686,11 @@ a.btn, a.textbtn { display: inline-block; }
 }
 .myplan .row { gap: 8px; }
 .myplan .row + .row { flex-wrap: nowrap; }
-.myplan input[type="date"] { flex: 1 1 auto; min-width: 0; background: var(--page); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 5px 8px; }
+.myplan input[type="date"], .myplan select.go-day { flex: 1 1 auto; min-width: 0; background: var(--page); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 5px 8px; }
 .myplan .went { padding: 6px 12px; }
 .myplan .form-error { font-size: 1rem; }
+.myplan .row.pick-days { flex-wrap: wrap; } /* CC-260: Pick a day's days of the week */
+.pick-days-h { margin: 0; font-weight: 700; }
 .queue { display: grid; gap: 10px; }
 .publish { border: 1px solid var(--line); border-radius: var(--r-card); padding: 12px 16px 14px; margin: 0; display: grid; gap: 10px; }
 .publish legend { padding: 0 6px; font-size: 1rem; font-weight: 700; font-family: var(--sign); color: var(--muted); }
@@ -868,7 +870,7 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .ev-plan .btn[aria-pressed="true"] .mark-int { --dol-edge: var(--page); }
 .ev-plan .btn[aria-pressed="true"] .mark-going { --dol-body: var(--page); --dol-mouth: var(--text); }
 .ev-plan .mark { --mark-bg: var(--page); }
-.ev-plan input[type="date"] { min-height: 48px; padding: 0 12px; background: var(--page); color: var(--text); border: 1.5px solid var(--field-line); border-radius: 0;
+.ev-plan input[type="date"], .ev-plan select.go-day { min-height: 48px; padding: 0 12px; background: var(--page); color: var(--text); border: 1.5px solid var(--field-line); border-radius: 0;
   font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; }
 .ev-said { font-family: var(--sign); font-weight: 700; font-size: 1.125rem; }
 .ev-said .textbtn { min-height: 44px; margin-left: 8px; }

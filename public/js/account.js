@@ -202,8 +202,8 @@ document.addEventListener("click", function (ev) {
   var on = back && t.getAttribute("aria-pressed") !== "true"; // CC-144: turning one on, on the event page, moves its dolphin
   if (t.hasAttribute("data-myplan-set")) { if (on) evNod(t, t.getAttribute("data-myplan-set")); return saveMyPlan(t.getAttribute("data-myplan-set"), { status: "interested" }, box, back); }
   if (t.hasAttribute("data-myplan-clear")) return saveMyPlan(t.getAttribute("data-myplan-clear"), null, box, back);
-  var input = box.querySelector('input[type="date"]'), day = t.getAttribute("data-date") || (input && input.value);
-  if (input && (!day || day < input.min || day > input.max)) {
+  var input = box.querySelector('input[type="date"], select.go-day'), day = t.getAttribute("data-date") || (input && input.value);
+  if (input && (!day || (input.min && (day < input.min || day > input.max)))) { // CC-260: a drop-down holds only days it's on
     box.querySelector(".form-error").textContent = !day ? "Choose a date." :
       "Choose a date from " + goingDay(input.min) + " to " + goingDay(input.max) + ".";
     input.focus(); return;
@@ -215,7 +215,7 @@ document.addEventListener("click", function (ev) {
 document.addEventListener("change", function (ev) {
   var input = ev.target; if (input.id !== "ev-going-day" || !AUTH.user) return;
   var box = input.closest(".myplan"), day = input.value, id = box.querySelector("[data-myplan-going]").getAttribute("data-myplan-going");
-  if (!day || day < input.min || day > input.max) {
+  if (!day || (input.min && (day < input.min || day > input.max))) {
     box.querySelector(".form-error").textContent = !day ? "Choose a date." :
       "Choose a date from " + goingDay(input.min) + " to " + goingDay(input.max) + ".";
     return;
@@ -261,8 +261,33 @@ function weekRowHTML(e, d) {
     '<span class="listing-t">' + esc(e.title) + (e.pick ? pickMarkHTML(e.pick, pickText(e.pick)) : "") + "</span>" +
     '<span class="wk-where">' + esc(placeText(e)) + "</span>" +
     '<span class="wk-when">' + (when ? "<span>" + esc(when) + "</span>" : "") + "</span></a>" +
-    weekCrewHTML(e) + '<div class="card-actions wk-acts">' + acts + "</div>" + myplanHTML(e) + crewShareHTML(e) + "</li>";
+    weekCrewHTML(e) + '<div class="card-actions wk-acts">' + acts + "</div>" + myplanHTML(e, d ? undefined : weekPickHTML(e)) + crewShareHTML(e) + "</li>";
 }
+// CC-260: Still deciding's Pick a day offers the days of the shown week you can actually go (canGoOn, planner.js), one button
+// each. With none it says so, and offers the next day that fits, a button that steps the week to it.
+function weekPickHTML(e) {
+  if (!goingRange(e)) return "";
+  var mine = MYPLANS[e.id] || {}, id = esc(e.id), start = PLANNER_WEEK * 7, days = [], next = null, i;
+  for (i = 0; i < 7; i++) if (canGoOn(e, add(T, start + i))) days.push(add(T, start + i));
+  if (days.length) {
+    return '<p class="pick-days-h">Commit to a day</p><div class="row pick-days">' + days.map(function (d) {
+      var iso = isoDate(d);
+      return '<button type="button" class="went" data-myplan-going="' + id + '" data-date="' + iso + '" aria-pressed="' + (mine.status === "going" && mine.date === iso) + '">' +
+        markHTML("going") + esc(goingDay(iso)) + "</button>";
+    }).join("") + "</div>";
+  }
+  for (i = start + 7; i <= (PLANNER_MAX + 1) * 7 && !next; i++) if (canGoOn(e, add(T, i))) next = add(T, i);
+  return '<p class="pick-days-h">' + (isExhibit(e) && !e.sched.weekly_from ? "Not open this week." : "No shows this week.") + "</p>" +
+    (next ? '<div class="row pick-days"><button type="button" class="week-tbtn" data-pick-week="' + Math.floor(diff(next, T) / 7) + '">Next: ' +
+      esc(goingDay(isoDate(next))) + " \u2192</button></div>" : "");
+}
+document.addEventListener("click", function (ev) { // CC-260: "Next: Fri, Nov 20 →" shows that week
+  var b = ev.target.closest && ev.target.closest("[data-pick-week]"); if (!b) return;
+  var row = b.closest("[data-row]"), id = row && row.getAttribute("data-row");
+  showWeek(Number(b.getAttribute("data-pick-week")), "week-next");
+  var again = id && $("myplans-grid").querySelector('[data-row="' + id + '"] [data-myplan-toggle]'); // back on its Pick a day
+  if (again) again.focus();
+});
 // One day: its name, then its plans as rows, or "Nothing yet…" and Find something (the list opens under it).
 function weekDayHTML(day) {
   var now = same(day.d, T), whole = (now ? "Today, " : "") + dayName(day.d), iso = isoDate(day.d), own = day.own || [], n = day.items.length + own.length;

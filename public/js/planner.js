@@ -65,6 +65,50 @@ function hoursOn(e, d) { // [opens, closes, known] or null when closed
   if (!Object.prototype.hasOwnProperty.call(h, k)) return [USUAL[0], USUAL[1], false];
   return h[k] ? [h[k][0], h[k][1], true] : null;
 }
+// CC-260: can you go on day d (Pick a day in My week, and every Going picker)? In this order: a fixed run's listed dates (and, up to the last of them,
+// the dates read from its venue's site); else the event's own show days; else its venue's, by the venue's category (CC-258's
+// rule): Visual Art by its opening hours (a day marked Closed is out; a day not filled in counts as open, as above),
+// Theater and Music by its usual show times, a venue with no category by either; with nothing known, any day of its run.
+var VENUE_SHOWS = ["Theater", "Music"], VENUE_HOURS = ["Visual Art"];
+function canGoOn(e, d) {
+  var range = goingRange(e); if (!range || d < range[0] || d > range[1]) return false;
+  var s = e.sched, k = DOW[d.getDay()], iso = isoDate(d), dates = s.dates;
+  if (byListedDates(e, iso)) return dates.some(function (p) { return p.date === iso; });
+  if (s.weekly_from === "event") return onWeekOf(s.weeks, d) && !!(s.weekly[k] || []).length;
+  return venueDayOK(e, k);
+}
+function byListedDates(e, iso) { var dates = e.sched.dates; return !!e.runDates.length || (!!dates.length && iso <= dates[dates.length - 1].date); }
+function venueDayOK(e, k) { // the venue's step, for weekday k
+  var s = e.sched, shows = s.weekly_from === "venue" ? s.weekly || {} : {}, hours = s.hours || {};
+  var byShows = Object.keys(shows).length > 0 && VENUE_HOURS.indexOf(e.venueType) < 0;
+  var byHours = Object.keys(hours).length > 0 && VENUE_SHOWS.indexOf(e.venueType) < 0;
+  if (!byShows && !byHours) return true;
+  return (byShows && !!(shows[k] || []).length) || (byHours && hours[k] !== null);
+}
+// Every day of its run counts (nothing known, or a venue open every day): a date field shows the truth, so the pickers keep it
+function goAnyDay(e) {
+  if (byListedDates(e, isoDate(T)) || e.sched.weekly_from === "event") return false;
+  return DOW.every(function (k) { return venueDayOK(e, k); });
+}
+// The days you can go, soonest first, at most max of them (the event page's and the cards' drop-down)
+var GO_DAYS_MAX = 60;
+function goDays(e, max) {
+  var range = goingRange(e), out = []; if (!range) return out;
+  for (var d = range[0]; d <= range[1] && out.length < (max || GO_DAYS_MAX); d = add(d, 1)) if (canGoOn(e, d)) out.push(d);
+  return out;
+}
+// The day field of a Going picker: the browser's date field when any day of the run will do, else a drop-down of the
+// days it's on (a date field can't leave days out). attrs: its id and label. "" when there's no day left to go.
+function goDayFieldHTML(e, attrs, value) {
+  var range = goingRange(e); if (!range) return "";
+  if (goAnyDay(e)) return '<input type="date" ' + attrs + ' min="' + isoDate(range[0]) + '" max="' + isoDate(range[1]) + '" value="' + esc(value || isoDate(range[0])) + '">';
+  var days = goDays(e).map(isoDate); if (!days.length) return "";
+  if (value && days.indexOf(value) < 0) days.unshift(value); // a day already chosen stays shown
+  return '<select class="go-day" ' + attrs + ">" + days.map(function (iso) {
+    return '<option value="' + iso + '"' + (iso === value ? " selected" : "") + ">" + esc(goingDay(iso)) + "</option>";
+  }).join("") + "</select>";
+}
+function firstGoDay(e) { var d = goDays(e, 1)[0]; return d ? isoDate(d) : ""; } // what Going takes, with no day chosen yet
 function stillOpen(o, c, now) { return c < o ? true : now < c; } // closing before opening = after midnight
 function onDay(e, d, slot) {
   if (!overlaps(e, d, d)) return false;

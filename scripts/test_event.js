@@ -42,6 +42,7 @@ function load() {
     helper("account.js", "isAdmin") + helper("account.js", "myplanSaid"), sandbox);
   vm.runInContext(read("listings.js"), sandbox);
   vm.runInContext(read("catalog.js"), sandbox);
+  vm.runInContext(read("planner.js"), sandbox); // CC-260: the days it's on (canGoOn), as on the page
   return sandbox;
 }
 
@@ -125,6 +126,24 @@ const tonight = ev({ begin_date: iso(g.T), end_date: iso(g.T) });
 html = g.eventViewHTML(tonight);
 has(html, 'data-myplan-going="' + tonight.id + '" data-date="' + iso(g.T) + '"', "one night: Going needs no date");
 lacks(html, 'type="date"');
+
+// --- CC-260: Going and its field offer only days it's on: a weekend show takes its next Saturday or Sunday ---
+const DOWS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+const wkend = ev({ end_date: iso(g.add(g.T, 30)), schedule: { dates: [], weekly: { sat: ["11:00"], sun: ["13:00"] }, weekly_from: "event", weeks: {}, hours: {} } });
+const onDays = [...Array(31).keys()].map((i) => g.add(g.T, i)).filter((d) => d.getDay() === 0 || d.getDay() === 6).map(iso);
+html = g.eventViewHTML(wkend);
+has(html, 'data-myplan-going="' + wkend.id + '" data-date="' + onDays[0] + '"', "Going takes its next show day, not today");
+g.MYPLANS[wkend.id] = { status: "going", date: onDays[1], crews: [] };
+html = g.eventViewHTML(wkend);
+has(html, '<select class="go-day" id="ev-going-day"', "a drop-down: a date field can't leave days out");
+lacks(html, 'type="date"');
+assert.deepStrictEqual([...html.matchAll(/<option value="([\d-]+)"/g)].map((m) => m[1]), onDays, "only its show days");
+has(html, '<option value="' + onDays[1] + '" selected>', "your day chosen");
+delete g.MYPLANS[wkend.id];
+const shut = ev({ schedule: { dates: [], weekly: {}, weekly_from: "", weeks: {}, hours: Object.fromEntries(DOWS.map((k) => [k, null])) },
+  category: "Visual Art", venue: Object.assign({}, e.venue_raw || {}, { id: 3, name: "Shut Gallery", neighborhood: "Loop", area: "city", region: "downtown", category: "Visual Art" }) });
+lacks(g.eventViewHTML(shut), "data-myplan-going", "never open: no day to be going");
+has(g.eventViewHTML(shut), "data-myplan-set", "but still Interested");
 
 html = g.eventViewHTML(past);
 lacks(html, "data-myplan-", "closed, nothing planned: no plan buttons"); has(html, "data-went", "but I've been");
