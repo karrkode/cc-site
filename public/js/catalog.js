@@ -46,12 +46,13 @@ function leadDeck(e) {
   if (oneNight(e)) return where + " on " + dateText(e) + ".";
   return where + (e.openRun || !e.b || !e.n ? "." : ", " + dateText(e).replace(" – ", " to ") + ".");
 }
-// The whole field is one link to the event. CC-144: .lead-pick is the element to give the poster's view-transition-name.
+// The whole card is one link to the event. CC-144: .lead-pick is the element to give the poster's view-transition-name.
+// CC-253: it's a catalog card (CC-250): the event's photo, letterboxed on its water, above the words on the card's tint.
 function leadHTML(e) {
   var p = e.pick, going = p.status === "going";
   var by = [going ? "Going" + (p.date ? " " + goingDay(p.date) : "") : "Interested", dateText(e), costText(e)].join(" · ");
-  return '<a class="lead-pick water-field' + catClass(e.type) + '" href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '" data-lead="' + esc(e.id) + '">' +
-    '<span class="lead-sea">' + waterHTML(e, "poster") + "</span>" +
+  return '<a class="lead-pick' + catClass(e.type) + '" href="#e/' + esc(e.id) + '" data-ev-open="' + esc(e.id) + '" data-lead="' + esc(e.id) + '">' +
+    '<span class="lead-sea water-field' + catClass(e.type) + '">' + waterHTML(e, "poster") + listingImageHTML(e.imageUrl) + "</span>" +
     '<span class="lead-in"><span class="lead-k">Yours Truly · ' + esc(e.label) + "</span>" +
     '<h2 class="lead-t">' + esc(e.title) + "</h2>" +
     '<span class="lead-deck">' + esc(leadDeck(e)) + "</span>" +
@@ -76,7 +77,7 @@ function renderHome() {
   $("way-crews-d").textContent = AUTH.user ? "Who’s going, and to what." : "The friends you go out with. Sign in to start one or join one."; // CC-103
   $("soon-list").innerHTML = SOON.map(lastHTML).join("");
   $("front-all").textContent = "All " + FACETS.current + " →";
-  $("home-list").innerHTML = listingsHTML(HOME_LIST, "opening"); paintWater($("home-list")); rowsPainted($("home-list")); // CC-140: rows under day heads
+  $("home-list").innerHTML = listingsHTML(HOME_LIST, "opening", true); paintWater($("home-list")); rowsPainted($("home-list")); // CC-253: the catalog's cards, under day heads
   $("foot").textContent = plural(FACETS.total, "event", "events") +
     " on the list, past and present. Dates and prices change, so check the event's page before you go.";
 }
@@ -415,12 +416,12 @@ function evPlanHTML(e) {
   var mine = MYPLANS[e.id], range = goingRange(e), id = esc(e.id);
   if (WENT[e.id] || (!mine && !range)) return ""; // been already, or closed with nothing planned
   var going = "";
-  if (range) {
+  var first = range ? firstGoDay(e) : ""; // CC-260: Going takes the first day it's on, and the field offers only those days
+  if (first) {
     var one = same(range[0], range[1]), on = !!mine && mine.status === "going", field = on && !one;
-    going = '<button class="btn ghost" type="button" data-myplan-going="' + id + '"' + (field ? "" : ' data-date="' + isoDate(range[0]) + '"') +
+    going = '<button class="btn ghost" type="button" data-myplan-going="' + id + '"' + (field ? "" : ' data-date="' + first + '"') +
       ' aria-pressed="' + on + '">' + markHTML("going") + "Going</button>" +
-      (field ? '<input type="date" id="ev-going-day" aria-label="The day you’re going" min="' + isoDate(range[0]) + '" max="' + isoDate(range[1]) +
-        '" value="' + esc(mine.date || isoDate(range[0])) + '">' : "");
+      (field ? goDayFieldHTML(e, 'id="ev-going-day" aria-label="The day you’re going"', mine.date || first) : "");
   }
   return '<div class="ev-plan myplan" role="group" aria-label="Your plan for ' + esc(e.title) + '"><div class="row">' +
     '<button class="btn ghost" type="button" data-myplan-set="' + id + '" aria-pressed="' + (!!mine && mine.status === "interested") + '">' +

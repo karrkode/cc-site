@@ -3,7 +3,7 @@
 // under day heads ("Opening Friday, Oct 30"), each with its tile (the category field and the event's water), dates,
 // name, venue and crew line, and price. The name is the link to the event's page, stretched over the whole row; the
 // admin's dolphin beside it is the row's one button (CC-155). I've been, Interested/Going and sharing are on the event
-// page (CC-117). Account's "Still deciding" keeps cardHTML.
+// page (CC-117). CC-253: the home page's listings are the catalog's cards too (listingsHTML's cards).
 "use strict";
 var LISTING_DAY = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "short", day: "numeric" });
 function listingDay(d) { return LISTING_DAY.format(d) + (d.getFullYear() === T.getFullYear() ? "" : ", " + d.getFullYear()); }
@@ -48,12 +48,19 @@ function listingImageHTML(value) {
   var src = listingImageSrc(value);
   return src ? '<img class="listing-image" src="' + esc(src) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">' : "";
 }
-$("grid").addEventListener("load", function (ev) {
-  if (ev.target.matches(".listing-image")) ev.target.classList.add("is-loaded");
+// CC-253: a photo shows once it has loaded, and one that fails goes, leaving the water. Wherever it is on the page.
+document.addEventListener("load", function (ev) {
+  if (ev.target.matches && ev.target.matches(".listing-image")) ev.target.classList.add("is-loaded");
 }, true);
-$("grid").addEventListener("error", function (ev) {
-  if (ev.target.matches(".listing-image")) ev.target.remove();
+document.addEventListener("error", function (ev) {
+  if (ev.target.matches && ev.target.matches(".listing-image")) ev.target.remove();
 }, true);
+// CC-253: an event's small tile (My week, crews, the journal, Find an outing): the category field, its water, its photo
+// over the water when it has one (letterboxed, as on the cards), then the category's name. extra goes on top of all that.
+function eventTileHTML(e, extra) {
+  return '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + listingImageHTML(e.imageUrl) +
+    '<span class="tile-k">' + esc(e.label) + "</span>" + (extra || "") + "</span>";
+}
 
 function listingHTML(e, card, flip) {
   var mine = AUTH.user ? MYPLANS[e.id] : null, going = !!mine && mine.status === "going";

@@ -139,7 +139,7 @@ function redrawCardsNow(id, from, focusOn) {
   var list = from && from.parentElement.closest("[id]"), listId = list ? list.id : null; // the grid this card was in
   Array.prototype.forEach.call(document.querySelectorAll('[data-card="' + id + '"]:not(.ev-panel)'), function (c) { c.outerHTML = cardHTML(KNOWN[id]); });
   Array.prototype.forEach.call(document.querySelectorAll('[data-listing="' + id + '"]'), function (r) { // CC-140: its rows' marks
-    var li = r.parentElement; r.outerHTML = listingHTML(KNOWN[id]); paintWater(li);
+    var li = r.parentElement; r.outerHTML = listingHTML(KNOWN[id], !!r.closest(".catalog-cards"), r.classList.contains("listing-flip")); paintWater(li); // CC-253: a card stays a card
   });
   return loadMyPlans().then(function () {
     if (visible("event")) renderEventView(); // CC-117: the event view's buttons, redrawn as a view, not a card
@@ -202,8 +202,8 @@ document.addEventListener("click", function (ev) {
   var on = back && t.getAttribute("aria-pressed") !== "true"; // CC-144: turning one on, on the event page, moves its dolphin
   if (t.hasAttribute("data-myplan-set")) { if (on) evNod(t, t.getAttribute("data-myplan-set")); return saveMyPlan(t.getAttribute("data-myplan-set"), { status: "interested" }, box, back); }
   if (t.hasAttribute("data-myplan-clear")) return saveMyPlan(t.getAttribute("data-myplan-clear"), null, box, back);
-  var input = box.querySelector('input[type="date"]'), day = t.getAttribute("data-date") || (input && input.value);
-  if (input && (!day || day < input.min || day > input.max)) {
+  var input = box.querySelector('input[type="date"], select.go-day'), day = t.getAttribute("data-date") || (input && input.value);
+  if (input && (!day || (input.min && (day < input.min || day > input.max)))) { // CC-260: a drop-down holds only days it's on
     box.querySelector(".form-error").textContent = !day ? "Choose a date." :
       "Choose a date from " + goingDay(input.min) + " to " + goingDay(input.max) + ".";
     input.focus(); return;
@@ -215,7 +215,7 @@ document.addEventListener("click", function (ev) {
 document.addEventListener("change", function (ev) {
   var input = ev.target; if (input.id !== "ev-going-day" || !AUTH.user) return;
   var box = input.closest(".myplan"), day = input.value, id = box.querySelector("[data-myplan-going]").getAttribute("data-myplan-going");
-  if (!day || day < input.min || day > input.max) {
+  if (!day || (input.min && (day < input.min || day > input.max))) {
     box.querySelector(".form-error").textContent = !day ? "Choose a date." :
       "Choose a date from " + goingDay(input.min) + " to " + goingDay(input.max) + ".";
     return;
@@ -257,12 +257,37 @@ function weekRowHTML(e, d) {
     myplanToggleHTML(e, goingRange(e) ? "Pick a day" : "Change plan") + wentHTML(e) + crewShareToggleHTML(e, "Tell a crew") + // closed: no day left to pick
     (going ? "" : '<button type="button" class="went" data-plan-withdraw="' + id + '">Withdraw interest</button>'); // CC-160: undone from the line above
   return '<li class="wk-row" data-day-item="' + id + '"' + (d ? "" : ' data-row="' + id + '"') + '><a class="wk-row-a" href="#e/' + id + '" data-ev-open="' + id + '">' +
-    '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + '<span class="tile-k">' + esc(e.label) + "</span></span>" +
+    eventTileHTML(e) +
     '<span class="listing-t">' + esc(e.title) + (e.pick ? pickMarkHTML(e.pick, pickText(e.pick)) : "") + "</span>" +
     '<span class="wk-where">' + esc(placeText(e)) + "</span>" +
     '<span class="wk-when">' + (when ? "<span>" + esc(when) + "</span>" : "") + "</span></a>" +
-    weekCrewHTML(e) + '<div class="card-actions wk-acts">' + acts + "</div>" + myplanHTML(e) + crewShareHTML(e) + "</li>";
+    weekCrewHTML(e) + '<div class="card-actions wk-acts">' + acts + "</div>" + myplanHTML(e, d ? undefined : weekPickHTML(e)) + crewShareHTML(e) + "</li>";
 }
+// CC-260: Still deciding's Pick a day offers the days of the shown week you can actually go (canGoOn, planner.js), one button
+// each. With none it says so, and offers the next day that fits, a button that steps the week to it.
+function weekPickHTML(e) {
+  if (!goingRange(e)) return "";
+  var mine = MYPLANS[e.id] || {}, id = esc(e.id), start = PLANNER_WEEK * 7, days = [], next = null, i;
+  for (i = 0; i < 7; i++) if (canGoOn(e, add(T, start + i))) days.push(add(T, start + i));
+  if (days.length) {
+    return '<p class="pick-days-h">Commit to a day</p><div class="row pick-days">' + days.map(function (d) {
+      var iso = isoDate(d);
+      return '<button type="button" class="went" data-myplan-going="' + id + '" data-date="' + iso + '" aria-pressed="' + (mine.status === "going" && mine.date === iso) + '">' +
+        markHTML("going") + esc(goingDay(iso)) + "</button>";
+    }).join("") + "</div>";
+  }
+  for (i = start + 7; i <= (PLANNER_MAX + 1) * 7 && !next; i++) if (canGoOn(e, add(T, i))) next = add(T, i);
+  return '<p class="pick-days-h">' + (isExhibit(e) && !e.sched.weekly_from ? "Not open this week." : "No shows this week.") + "</p>" +
+    (next ? '<div class="row pick-days"><button type="button" class="week-tbtn" data-pick-week="' + Math.floor(diff(next, T) / 7) + '">Next: ' +
+      esc(goingDay(isoDate(next))) + " \u2192</button></div>" : "");
+}
+document.addEventListener("click", function (ev) { // CC-260: "Next: Fri, Nov 20 →" shows that week
+  var b = ev.target.closest && ev.target.closest("[data-pick-week]"); if (!b) return;
+  var row = b.closest("[data-row]"), id = row && row.getAttribute("data-row");
+  showWeek(Number(b.getAttribute("data-pick-week")), "week-next");
+  var again = id && $("myplans-grid").querySelector('[data-row="' + id + '"] [data-myplan-toggle]'); // back on its Pick a day
+  if (again) again.focus();
+});
 // One day: its name, then its plans as rows, or "Nothing yet…" and Find something (the list opens under it).
 function weekDayHTML(day) {
   var now = same(day.d, T), whole = (now ? "Today, " : "") + dayName(day.d), iso = isoDate(day.d), own = day.own || [], n = day.items.length + own.length;
@@ -501,12 +526,12 @@ function journalEntryHTML(e, open) {
   var thumb = hasPhoto ? '<img class="journal-thumb" src="' + esc(API + p.url) + '" alt="">' : ""; // the tile shows if it won't load
   var notes = [saved.recommend ? "Recommended" : "", (WENT_SHARE[e.id] || {}).shared ? "Shared" : ""].filter(Boolean);
   var head = '<div class="journal-row"><a class="journal-a" href="#e/' + id + '" data-ev-open="' + id + '">' +
-    '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + '<span class="tile-k">' + esc(e.label) + "</span>" + thumb + "</span>" +
+    eventTileHTML(e, thumb) + // your own photo covers the event's
     '<span class="listing-t" id="' + k + '-h">' + esc(e.title) + "</span>" + '<span class="wk-where">' + esc(placeText(e)) + "</span></a>" +
     (open ? "" : saved.words ? '<p class="journal-words">' + esc(saved.words.split(" ").map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(". ")) + ".</p>" : '<p class="week-hint journal-nowords">No three words yet.</p>') +
     '<div class="journal-meta">' + notes.map(function (n) { return "<span>" + n + "</span>"; }).join("") + (photoState ? "<span>Photo " + esc(photoState.toLowerCase()) + "</span>" : "") +
     '<button type="button" class="week-tbtn" data-journal-open="' + id + '" aria-expanded="' + open + '" aria-label="' +
-    esc((open ? "Close your entry for " : saved.words ? "Edit your entry for " : "Write your entry for ") + e.title) + '">' + (open ? "Close" : saved.words ? "Edit" : "Write") + "</button></div></div>";
+    esc((open ? "Close your entry for " : saved.words ? "Edit your entry for " : "Write your entry for ") + e.title) + '">' + (open ? "Close" : saved.words ? "Edit" : "Write an entry") + "</button></div></div>";
   if (!open) return '<article class="journal-entry" data-journal="' + id + '" aria-labelledby="' + k + '-h">' + head + '<div id="' + k + '-b" data-drop hidden></div></article>';
   var photo = hasPhoto ? '<figure class="journal-photo"><img src="' + esc(API + p.url) + '" alt="Your photo from ' + esc(e.title) + '">' +
     (photoState ? "<figcaption>" + esc(photoState) + "</figcaption>" : "") + "</figure>" : "";
@@ -521,7 +546,13 @@ function journalEntryHTML(e, open) {
     '<label class="radio"><input type="checkbox" name="recommend"' + (j.recommend ? " checked" : "") + "> Would you recommend it?</label>" +
     '<div class="row"><button class="btn" type="submit">Save</button><span class="week-said" data-journal-said role="status"></span></div>' +
     '<p class="week-error" role="alert" data-journal-error></p></form>' + journalShareHTML(e) +
-    '<div class="card-actions wk-acts">' + photoButtonHTML(e) + wentHTML(e) + "</div>" + photo + "</div></article>";
+    '<div class="card-actions wk-acts">' + photoButtonHTML(e) + journalDeleteHTML(e) + "</div>" + photo + "</div></article>";
+}
+// CC-263: on the journal, un-marking "I've been" deletes the entry, so the button says so: a delete, not a pressed toggle.
+// It looks like "Delete this event" on your own entries, and keeps data-went, so the click handler above asks the
+// same confirmation and does the same thing.
+function journalDeleteHTML(e) {
+  return '<button type="button" class="went" data-went="' + esc(e.id) + '" aria-label="Delete your entry for ' + esc(e.title) + '">Delete entry</button>';
 }
 // CC-112: "Share publicly", off by default and saved the moment it's ticked or unticked (so unsharing can't be
 // forgotten). Once on, how it's signed: your first name and initial, or "A Culture Crew member". It needs the three

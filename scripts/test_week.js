@@ -25,7 +25,7 @@ const g = {
   window: { devicePixelRatio: 1, matchMedia: () => stub(), addEventListener: () => {} },
   matchMedia: () => stub(),
   document: stub(), localStorage: stub(), location: stub(), history: stub(), navigator: stub(),
-  Intl, console,
+  Intl, URL, console,
 };
 vm.createContext(g);
 vm.runInContext("var AUTH = { user: null }, MYPLANS = {}, API = ''; function $(id) { return document; }", g);
@@ -103,6 +103,7 @@ const link = row.match(/<a class="wk-row-a"[\s\S]*?<\/a>/)[0];
 has(link, 'href="#e/' + going.id + '" data-ev-open="' + going.id + '"', "the row opens the event page");
 has(link, '<span class="tile water-field cat-theater">', "with its tile");
 has(link, '<span class="listing-t">Heroes of the Fourth Turning</span>');
+lacks(link, "listing-image", "no photo: the water");
 lacks(link, "mark mark-", "CC-162: no dolphin for your own plan; the day says it");
 lacks(link, "<button", "no buttons inside a link");
 has(row, ">Change plan</button>"); has(row, ">Tell a crew</button>");
@@ -129,6 +130,70 @@ has(g.weekRowHTML(picked), 'class="mark mark-host" role="img" aria-label="Yours 
 set("CREWS = [];");
 lacks(g.weekRowHTML(maybe), "Tell a crew", "no crews, nobody to tell");
 set("CREWS = [{ id: 7, name: 'Thursday Theater' }];");
+
+// --- CC-260: Pick a day offers only days you can go: a fixed run's dates, else the event's show days, else its venue's
+// hours by the venue's category, else any day of the run; a week with none says so and offers the next ---
+const DOW = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+const week = [0, 1, 2, 3, 4, 5, 6].map((i) => g.add(g.T, i)); // the week My week shows first
+const ok = (e) => week.filter((d) => g.canGoOn(e, d)).map(iso);
+const sched = (over) => Object.assign({ dates: [], weekly: {}, weekly_from: "", weeks: {}, hours: {} }, over);
+const venue = (category) => ({ id: 2, name: "Lakeside Hall", neighborhood: "Old Town", area: "city", region: "north", category: category });
+// 1. a fixed run: its dates only, even where the venue has show times
+const run = ev({ schedule: sched({ dates: [{ date: iso(week[2]), time: "19:30" }, { date: iso(week[5]), time: null }],
+  weekly: { [DOW[week[0].getDay()]]: ["19:30"] }, weekly_from: "venue" }), venue: venue("Theater"),
+  run_dates: [{ date: iso(week[2]), time: "19:30" }, { date: iso(week[5]), time: null }] });
+assert.deepStrictEqual(ok(run), [iso(week[2]), iso(week[5])], "a fixed run: its listed dates");
+const listed = ev({ end_date: iso(g.add(g.T, 20)), schedule: sched({ dates: [{ date: iso(week[2]), time: "19:30" }], weekly: { [DOW[week[0].getDay()]]: ["19:30"] }, weekly_from: "venue" }),
+  venue: venue("Theater") });
+assert.deepStrictEqual(ok(listed), [iso(week[2])], "dates read from the venue's site: only those, up to the last of them");
+assert.ok(g.canGoOn(listed, g.add(week[0], 7)), "after them, the venue's show times");
+// 2. its own show days, by weekday (and not the venue's hours)
+const own = ev({ schedule: sched({ weekly: { [DOW[week[1].getDay()]]: ["20:00"], [DOW[week[4].getDay()]]: ["14:00"] }, weekly_from: "event",
+  hours: { [DOW[week[3].getDay()]]: ["10:00", "17:00"] } }), venue: venue("Visual Art") });
+assert.deepStrictEqual(ok(own), [iso(week[1]), iso(week[4])], "its own show days");
+// 3. the venue's: a theater by its show times, a gallery by its opening hours (Closed is out), no category by either
+const venueShows = { [DOW[week[3].getDay()]]: ["19:30"] }, venueHours = { [DOW[week[0].getDay()]]: null, [DOW[week[6].getDay()]]: null };
+const both = { weekly: venueShows, weekly_from: "venue", hours: venueHours };
+assert.deepStrictEqual(ok(ev({ schedule: sched(both), venue: venue("Theater") })), [iso(week[3])], "a theater: its show times");
+assert.deepStrictEqual(ok(ev({ schedule: sched(both), venue: venue("Music") })), [iso(week[3])], "a music venue: its show times");
+assert.deepStrictEqual(ok(ev({ category: "Visual Art", schedule: sched(both), venue: venue("Visual Art") })), week.slice(1, 6).map(iso),
+  "a gallery: the days it's open (a day not filled in counts as open)");
+const boxOffice = Object.fromEntries(DOW.map((k) => [k, null])); boxOffice[DOW[week[1].getDay()]] = ["12:00", "18:00"];
+assert.deepStrictEqual(ok(ev({ schedule: sched({ weekly: venueShows, weekly_from: "venue", hours: boxOffice }), venue: venue(null) })),
+  [iso(week[1]), iso(week[3])], "no category: a day it's open, or a day with a show");
+assert.deepStrictEqual(ok(ev({ schedule: sched({ hours: venueHours }), venue: venue(null) })), week.slice(1, 6).map(iso), "no category, hours only");
+assert.deepStrictEqual(ok(ev({ schedule: sched({ hours: venueHours }), venue: venue("Theater") })), week.map(iso),
+  "a theater with only opening hours: nothing known about its shows, so any day");
+// 4. nothing known: every day of the run, from today (or its opening) to its closing
+const open = ev({ begin_date: iso(week[2]), end_date: iso(week[4]) });
+assert.deepStrictEqual(ok(open), [iso(week[2]), iso(week[3]), iso(week[4])], "nothing known: the run");
+// the picker: a button a day, each saving that date; none this week says so, and offers the next one
+plan(run, "interested");
+html = g.weekRowHTML(run);
+has(html, 'data-myplan-going="' + run.id + '" data-date="' + iso(week[2]) + '" aria-pressed="false">');
+has(html, ">" + g.goingDay(iso(week[5])) + "</button>");
+lacks(html, 'type="date"', "no date field to pick a day it isn't on");
+lacks(html, 'data-date="' + iso(week[0]) + '"');
+const later = ev({ schedule: sched({ dates: [{ date: iso(g.add(g.T, 16)), time: "19:30" }] }) });
+plan(later, "interested");
+html = g.weekRowHTML(later);
+has(html, "No shows this week."); lacks(html, "data-myplan-going=\"" + later.id + "\" data-date");
+has(html, 'data-pick-week="2">Next: ' + g.goingDay(iso(g.add(g.T, 16))) + " →</button>", "the next day that fits, in its week");
+set("PLANNER_WEEK = 2;");
+has(g.weekRowHTML(later), 'data-date="' + iso(g.add(g.T, 16)) + '"', "that week offers it");
+set("PLANNER_WEEK = 0;");
+const shut = ev({ category: "Visual Art", schedule: sched({ hours: Object.fromEntries(DOW.map((k) => [k, null])) }), venue: venue("Visual Art") });
+plan(shut, "interested");
+html = g.weekRowHTML(shut);
+has(html, "Not open this week."); lacks(html, "Next:", "never open: nothing to skip to");
+has(html, ">Pick a day</button>", "still a plan to change");
+
+// CC-260: a card's Commit to: a drop-down of the days it's on; a run where any day will do keeps the date field
+delete g.MYPLANS[run.id]; set("MYPLAN_SEQ = 0;");
+html = g.myplanHTML(run);
+has(html, '<select class="go-day" id="myplan-date-0"'); lacks(html, 'type="date"');
+assert.deepStrictEqual([...html.matchAll(/<option value="([\d-]+)"/g)].map((m) => m[1]), [iso(week[2]), iso(week[5])], "a fixed run: its dates");
+has(g.myplanHTML(open), '<input type="date"', "nothing known: every day, so the date field");
 
 // --- CC-160: Withdraw interest on an interested plan, with Undo at the top of Still deciding ---
 has(g.weekRowHTML(maybe), 'class="went" data-plan-withdraw="' + maybe.id + '">Withdraw interest</button>', "a fourth option");
@@ -174,14 +239,27 @@ html = g.journalEntryHTML(fresh, true);
 assert.strictEqual((html.match(/name="word"/g) || []).length, 3, "three boxes");
 has(html, '<label for="j-' + fresh.id + '-review">Your review (optional)</label>', "labelled fields");
 has(html, "Would you recommend it?");
-has(html, "Share publicly", "CC-112 stays"); has(html, "Add a photo"); has(html, "I've been</button>");
+has(html, "Share publicly", "CC-112 stays"); has(html, "Add a photo");
+// CC-263: on the journal, "I've been" is Delete entry: a delete, not a pressed toggle, and the same click (so the same confirmation)
+has(html, '<button type="button" class="went" data-went="' + fresh.id + '" aria-label="Delete your entry for ' + g.esc(fresh.title) + '">Delete entry</button>');
+lacks(html, "I've been", "not on the journal"); lacks(html, "✓", "no tick"); lacks(html, 'aria-pressed="true"', "not a pressed toggle");
+has(g.wentHTML(fresh), "I've been</button>", "elsewhere it stays I've been"); has(g.wentHTML(fresh), 'aria-pressed="true"');
 has(html, 'data-journal-error', "a band for errors");
 has(html, ">Close</button>");
 lacks(html, 'class="pill', "no pills");
 has(g.journalEntryHTML(fresh, false), "No three words yet.");
+// CC-263: Write reads Write an entry; its accessible name, and Edit and Close, stay
+has(g.journalEntryHTML(fresh, false), 'aria-label="Write your entry for ' + g.esc(fresh.title) + '">Write an entry</button>');
 set("WENT_PHOTO[" + JSON.stringify(fresh.id) + "] = { status: 'waiting', url: '/p/1.jpg' };");
 html = g.journalEntryHTML(fresh, true);
 has(html, '<img class="journal-thumb" src="/p/1.jpg" alt="">', "your photo on the tile");
+// CC-253: the event's own photo sits on journal and week tiles; yours covers it
+const shot = ev({ title: "Shot", image_url: "https://example.com/a.webp" });
+assert.match(g.weekRowHTML(shot), /<img class="listing-image" src="https:\/\/example\.com\/a\.webp"[^>]*><span class="tile-k">/, "Still deciding rows have the photo");
+plan(shot, "going", iso(day));
+has(g.weekDayHTML({ d: day, items: [shot] }), 'class="listing-image"', "and so do a day's rows");
+set("WENT_PHOTO[" + JSON.stringify(shot.id) + "] = { status: 'approved', url: '/p/2.jpg' };");
+assert.match(g.journalEntryHTML(shot, false), /class="listing-image"[^>]*><span class="tile-k">[^<]*<\/span><img class="journal-thumb" src="\/p\/2\.jpg"/, "your photo goes over the event's");
 has(html, "<figcaption>Waiting for approval</figcaption>", "its state in words");
 
 console.log("ok: My week (CC-146, CC-156, CC-160)");

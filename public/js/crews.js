@@ -246,7 +246,7 @@ function crewPlansHTML(c) {
   return '<ul class="crew-plans">' + c.plans.map(function (row) {
     var e = toEvent(row.event), id = esc(e.id), going = row.people.some(function (p) { return p.status === "going"; });
     return '<li class="crew-plan" data-row="' + esc(c.id) + "-" + id + '"><a class="crew-plan-a" href="#e/' + id + '" data-ev-open="' + id + '">' +
-      '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + '<span class="tile-k">' + esc(e.label) + "</span></span>" +
+      eventTileHTML(e) +
       '<span class="listing-t">' + esc(e.title) + '</span><span class="crew-plan-where">' + esc(placeText(e)) + "</span>" +
       '<span class="crew-plan-when">' + esc(dateText(e)) + "</span></a>" +
       (row.people.length ? '<p class="crew-line"><span class="dots" aria-hidden="true">' + row.people.slice(0, CREW_PLAN_DOTS).map(function (p) {

@@ -25,7 +25,7 @@ const g = {
   window: { devicePixelRatio: 1, matchMedia: () => stub(), addEventListener() {} },
   matchMedia: () => stub(),
   document: stub(), localStorage: stub(), location: stub(), history: stub(), navigator: stub(),
-  Intl, console,
+  Intl, URL, console,
 };
 vm.createContext(g);
 vm.runInContext("var LEADS_MAX = 10, AUTH = { user: null }; function $(id) { return document; }", g);
@@ -81,10 +81,15 @@ g.AUTH.user = null;
 
 // --- the lead pick's markup ---
 const html = g.leadHTML(run);
-assert.ok(html.startsWith('<a class="lead-pick water-field cat-theater" href="#e/' + run.id + '" data-ev-open="' + run.id + '"'), "the whole field is one link to the event");
+assert.ok(html.startsWith('<a class="lead-pick cat-theater" href="#e/' + run.id + '" data-ev-open="' + run.id + '"'), "the whole card is one link to the event");
 assert.strictEqual((html.match(/<a /g) || []).length, 1);
 assert.ok(!/<button|<input/.test(html), "no controls inside the link");
-assert.match(html, /<span class="lead-sea"><canvas class="water" aria-hidden="true" data-water="poster"/, "the water sits in its own patch, above the words");
+assert.match(html, /<span class="lead-sea water-field cat-theater"><canvas class="water" aria-hidden="true" data-water="poster"/, "the water sits in its own patch, above the words");
+assert.doesNotMatch(html, /listing-image/, "no photo: the water alone");
+// CC-253: a catalog card, with the event's photo over its water
+const shot = g.leadHTML(interested({ image_url: "https://example.com/a.webp" }));
+assert.match(shot, /<span class="lead-sea water-field cat-theater"><canvas class="water"[^>]*><\/canvas><img class="listing-image" src="https:\/\/example\.com\/a\.webp"[^>]*><\/span><span class="lead-in">/);
+assert.doesNotMatch(g.leadHTML(interested({ image_url: "http://elsewhere.example/a.webp" })), /listing-image/, "only https or the site's own");
 assert.match(html, /<span class="lead-k">Yours Truly · Theater<\/span><h2 class="lead-t">Event \d+<\/h2>/);
 assert.match(html, /class="mark mark-host" role="img" aria-label="Andrew is committed to seeing this on \w+day, \w+ \d+\."/);
 assert.match(html, /<span>Going \w{3}, \w{3} \d+ · \w{3} \d+ – \w{3} \d+ · \$28–\$98<\/span>/);

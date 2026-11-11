@@ -3,13 +3,14 @@
    "Lights down", the lake at night. Every pair used below meets WCAG AA: scripts/check_contrast.py checks them in CI.
    page/surface/line/rule: backgrounds, hairlines and structural rules · text/muted: type (deep lake, never black)
    field-line: form borders (3:1) · lead: primary buttons, links, active chips, "Free" · star: the star in the wordmark
-   and "Today only!", nothing else · gold-*: the admin's ring and its star, nothing else (CC-139) · lake/on-lake/stripe: the masthead band and the flag's stripes
+   and "Today only!", nothing else · gold-*: the admin's ring and its star, nothing else (CC-139) · lake/on-lake/stripe: the masthead band and the flag's stripes · lake-*: the band through the year (CC-165)
    info-soft: calm notes ("Opens…", notices, plain tags) · danger-soft: errors (a band, never red text)
    cat-*: the three category fields, with only white (--on-cat) on them */
 :root, :root[data-theme="light"] {
   --page: #FFFFFF; --surface: #F2F7F9; --line: #D3E3EA; --rule: #0E2A40; --field-line: #6F8796;
   --text: #0E2A40; --muted: #4A6275;
   --lake: #0E3A5B; --on-lake: #FFFFFF; --on-lake-muted: #C9DEEA; --stripe: #9CD3EF;
+  --lake-winter: #2D4543; --lake-between: #1D495C; --lake-summer: #0C4D75; --lake-dusk: #3B3160; /* CC-165: the masthead's lake through the year */
   --lead: #0E3A5B; --on-lead: #FFFFFF;
   --star: #C8102E;
   --gold-rim: #9A7300; /* CC-139: the pale gold is ~1.4:1 on the page, so in light the rim carries the ring */
@@ -28,6 +29,7 @@
   --page: #0A1A28; --surface: #0F2334; --line: #22394D; --rule: #A6BDCC; --field-line: #6F8CA3;
   --text: #EAF2F7; --muted: #A6BDCC;
   --lake: #06121C; --on-lake: #EAF2F7; --on-lake-muted: #A6BDCC; --stripe: #5E9FC2;
+  --lake-winter: #0C1E1C; --lake-between: #0A1E26; --lake-summer: #081D30; --lake-dusk: #161028;
   --lead: #9CD3EF; --on-lead: #06121C;
   --star: #FF5C70;
   --gold-rim: #B8860B;
@@ -134,6 +136,12 @@ a.btn, a.textbtn { display: inline-block; }
    wordmark and the nav, a 6px stripe underneath. Full on home: the date and nav, the wordmark between two stripes, the
    tagline. The red star on the light band is a graphic only (the name is the text), so it isn't held to 3:1. */
 .mast { position: relative; z-index: 30; background: var(--lake); color: var(--on-lake); border-bottom: 6px solid var(--stripe); } /* z-index: the water sits under the content, and the phone sheet stays over the page */
+/* CC-165: the band follows the real lake in Chicago time (water.js, lakeApply): grey-green in winter, bright in summer,
+   in between in spring and autumn, and a dusk tone from just before sunset until 5am. Before the script runs it's --lake. */
+.mast[data-season="winter"] { --lake: var(--lake-winter); }
+.mast[data-season="spring"], .mast[data-season="autumn"] { --lake: var(--lake-between); }
+.mast[data-season="summer"] { --lake: var(--lake-summer); }
+.mast[data-season][data-dusk] { --lake: var(--lake-dusk); }
 .mast :focus-visible { outline-color: var(--stripe); } /* the page's focus blue would vanish on the lake */
 .mast-in { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "brand nav"; align-items: center; gap: 8px 24px; padding-block: 12px; }
 .mast-date, .mast-tag, .burger { display: none; }
@@ -222,19 +230,21 @@ a.btn, a.textbtn { display: inline-block; }
 .front.has-stack { row-gap: 40px; }
 .front-h { font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; line-height: 1.2; color: var(--muted); }
 
-/* The lead pick: one of colour's four places. Its water fills the top of the field; the words sit on the solid field
-   below it, because white 21px italic across a 24% line is under 4.5:1. The whole field is one link to the event, and
-   it's the element CC-144 gives the poster's view-transition-name. */
+/* The lead pick: one of colour's four places. The whole card is one link to the event, and it's the element CC-144 gives
+   the poster's view-transition-name. CC-253: it's a catalog card (CC-250): the category's tint, a rounded edge and the
+   category's bar along the bottom. The event's photo, letterboxed on its water, fills the top, and the words sit below. */
 .lead-slot { display: flex; margin-right: 28px; }
-.lead-pick { flex: 1; display: flex; flex-direction: column; min-height: 430px; text-decoration: none; }
-.lead-sea { position: relative; flex: 1 1 120px; min-height: 120px; }
-.lead-in { display: grid; gap: 14px; padding: 0 28px 28px; }
-.lead-k { font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; line-height: 1.2; }
+.lead-pick { --card-radius: 12px; flex: 1; display: flex; flex-direction: column; min-height: 430px; overflow: hidden; color: var(--text); text-decoration: none;
+  background: var(--surface); background: color-mix(in srgb, var(--cat, var(--line)) 13%, var(--page));
+  border: 1px solid var(--line); border-bottom: 5px solid var(--cat, var(--line)); border-radius: var(--card-radius); }
+.lead-sea { position: relative; flex: 1 1 45%; min-height: 120px; }
+.lead-in { display: grid; gap: 14px; padding: 18px 28px 22px; }
+.lead-k { justify-self: start; padding: 2px 8px; background: var(--cat, var(--lake)); color: var(--on-cat); font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; line-height: 1.3; }
 .lead-t { font-family: var(--display); font-weight: 500; font-size: 58px; --fs: 58; line-height: 1; letter-spacing: -0.02em; overflow-wrap: anywhere; margin-top: -6px; }
 .lead-deck { font-size: 21px; font-style: italic; line-height: 1.4; max-width: 34ch; }
-.lead-by { display: flex; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid currentColor; font-family: var(--sign); font-weight: 700; font-size: 1.125rem; line-height: 1.25; font-variant-numeric: tabular-nums; }
-.lead-pick .mark-host { width: 34px; height: 33px; --mark-bg: var(--cat); --dol-body: #fff; --dol-belly: #fff; --dol-mouth: var(--cat); } /* on a field the dolphin is white and the gold carries it */
-.lead-pick .mark-host-int { width: 39px; height: 26px; --dol-body: #fff; --dol-belly: #fff; --dol-mouth: var(--cat); } /* CC-162: interested, no ring */
+.lead-by { display: flex; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); font-family: var(--sign); font-weight: 700; font-size: 1.125rem; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.lead-pick .mark-host { width: 34px; height: 33px; }
+.lead-pick .mark-host-int { width: 39px; height: 26px; } /* CC-162: interested, no ring */
 
 /* CC-238: the admin's picks as the pier (leadstack.js). The cards are lead picks: the front one faces you, and the next two
    turn away to the right. The whole row is the stack's, so a few cards can show. Cards overlap and shadows are out, so
@@ -244,15 +254,15 @@ a.btn, a.textbtn { display: inline-block; }
 .has-stack .lead-slot { grid-column: 1 / -1; display: block; min-width: 0; margin-right: 0; }
 .stack { position: relative; --card-w: 50%; }
 .stack-cards { position: relative; height: 430px; margin: 4px 0 0; padding: 0; list-style: none; touch-action: pan-y; perspective: 1500px; perspective-origin: 25% 50%; }
-.sc { position: absolute; top: 0; left: 0; width: var(--card-w); height: 100%; transform-origin: 0 50%; background: var(--page); box-shadow: 0 0 0 3px var(--page); -webkit-user-select: none; user-select: none; }
+.sc { position: absolute; top: 0; left: 0; width: var(--card-w); height: 100%; transform-origin: 0 50%; border-radius: 12px; background: var(--page); box-shadow: 0 0 0 3px var(--page); -webkit-user-select: none; user-select: none; }
 .sc:not(.is-front) { cursor: pointer; }
 .sc:not(.is-front) .lead-pick { pointer-events: none; }
 .sc .lead-pick { height: 100%; min-height: 0; -webkit-user-drag: none; }
-.sc .lead-sea { flex: 1 1 60px; min-height: 60px; }
-.sc .lead-in { gap: 12px; padding: 0 24px 22px; }
-.sc .lead-t { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; padding-bottom: 2px; font-size: 46px; --fs: 46; }
+.sc .lead-sea { flex: 1 1 45%; min-height: 110px; }
+.sc .lead-in { gap: 10px; padding: 14px 24px 18px; }
+.sc .lead-t { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; padding-bottom: 2px; font-size: 38px; --fs: 38; }
 .sc .lead-deck { font-size: 19px; }
-.sc-veil { position: absolute; inset: 0; z-index: 2; background: var(--page); opacity: calc(var(--veil) * var(--veil-k, 0)); pointer-events: none; }
+.sc-veil { position: absolute; inset: 0; z-index: 2; border-radius: inherit; background: var(--page); opacity: calc(var(--veil) * var(--veil-k, 0)); pointer-events: none; }
 .stack.moving .sc, .stack.moving .sc-veil { transition: transform var(--stack-dur) var(--stack-ease), opacity var(--stack-dur) var(--stack-ease); }
 .stack-nav { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
 .stack-nav .btn { min-width: 48px; min-height: 48px; }
@@ -305,7 +315,7 @@ a.btn, a.textbtn { display: inline-block; }
 @media (max-width: 700px) {
   .front, .front.no-lead, .front.has-stack { grid-template-columns: minmax(0, 1fr); padding-top: 20px; }
   .lead-pick { min-height: 340px; }
-  .lead-in { padding: 0 20px 20px; }
+  .lead-in { padding: 16px 20px 18px; }
   .lead-t { font-size: 40px; --fs: 40; }
   .ways, .no-lead .ways, .has-stack .ways { padding-right: 0; border-right: 0; }
   .last-col, .no-lead .last-col, .has-stack .last-col { padding-left: 0; }
@@ -313,8 +323,8 @@ a.btn, a.textbtn { display: inline-block; }
   /* The stack runs out to the screen edges, so the third card can leave the page with no sideways scroll */
   .stack { --card-w: 72%; margin-inline: calc(-1 * clamp(16px, 4vw, 40px)); padding-inline: clamp(16px, 4vw, 40px); overflow-x: clip; }
   .stack-cards { height: 400px; margin-top: 12px; }
-  .sc .lead-in { gap: 10px; padding: 0 18px 18px; }
-  .sc .lead-t { font-size: 36px; --fs: 36; }
+  .sc .lead-in { gap: 8px; padding: 12px 16px 14px; }
+  .sc .lead-t { font-size: 28px; --fs: 28; }
   .sc .lead-deck { font-size: 18px; }
 }
 
@@ -377,7 +387,7 @@ a.btn, a.textbtn { display: inline-block; }
   .listing-when .going-day { display: inline; margin: 0 0 0 6px; }
 }
 
-/* CC-250: Neighborhood Notes cards in the catalog. The home listings keep their row layout. */
+/* CC-250: Neighborhood Notes cards in the catalog, and (CC-253) in the home page's listings. */
 .catalog-cards .listings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .catalog-cards .listing-day-head + .listings > li:only-child { grid-column: 1 / -1; }
 .catalog-cards .listing-day > .listings:first-child { padding-top: 12px; }
@@ -676,9 +686,11 @@ a.btn, a.textbtn { display: inline-block; }
 }
 .myplan .row { gap: 8px; }
 .myplan .row + .row { flex-wrap: nowrap; }
-.myplan input[type="date"] { flex: 1 1 auto; min-width: 0; background: var(--page); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 5px 8px; }
+.myplan input[type="date"], .myplan select.go-day { flex: 1 1 auto; min-width: 0; background: var(--page); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 5px 8px; }
 .myplan .went { padding: 6px 12px; }
 .myplan .form-error { font-size: 1rem; }
+.myplan .row.pick-days { flex-wrap: wrap; } /* CC-260: Pick a day's days of the week */
+.pick-days-h { margin: 0; font-weight: 700; }
 .queue { display: grid; gap: 10px; }
 .publish { border: 1px solid var(--line); border-radius: var(--r-card); padding: 12px 16px 14px; margin: 0; display: grid; gap: 10px; }
 .publish legend { padding: 0 6px; font-size: 1rem; font-weight: 700; font-family: var(--sign); color: var(--muted); }
@@ -858,7 +870,7 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 .ev-plan .btn[aria-pressed="true"] .mark-int { --dol-edge: var(--page); }
 .ev-plan .btn[aria-pressed="true"] .mark-going { --dol-body: var(--page); --dol-mouth: var(--text); }
 .ev-plan .mark { --mark-bg: var(--page); }
-.ev-plan input[type="date"] { min-height: 48px; padding: 0 12px; background: var(--page); color: var(--text); border: 1.5px solid var(--field-line); border-radius: 0;
+.ev-plan input[type="date"], .ev-plan select.go-day { min-height: 48px; padding: 0 12px; background: var(--page); color: var(--text); border: 1.5px solid var(--field-line); border-radius: 0;
   font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; }
 .ev-said { font-family: var(--sign); font-weight: 700; font-size: 1.125rem; }
 .ev-said .textbtn { min-height: 44px; margin-left: 8px; }
