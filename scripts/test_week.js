@@ -264,6 +264,19 @@ set("WENT_PHOTO[" + JSON.stringify(shot.id) + "] = { status: 'approved', url: '/
 assert.match(g.journalEntryHTML(shot, false), /class="listing-image"[^>]*><span class="tile-k">[^<]*<\/span><img class="journal-thumb" src="\/p\/2\.jpg"/, "your photo goes over the event's");
 has(html, "<figcaption>Waiting for approval</figcaption>", "its state in words");
 
+// CC-261: an interested event that's over drops out of the list, unless you've been; a passed going day stays for I've been
+const over = ev({ title: "Over", begin_date: iso(g.add(g.T, -20)), end_date: iso(g.add(g.T, -2)) });
+const onNow = ev({ title: "On now" });
+const wentTo = ev({ title: "Went", begin_date: iso(g.add(g.T, -20)), end_date: iso(g.add(g.T, -2)) });
+const goneDay = ev({ title: "Gone day", begin_date: iso(g.add(g.T, -20)), end_date: iso(g.add(g.T, -2)) });
+const ahead = ev({ title: "Ahead" });
+set("MYPLANS = {}; WENT = {}; MYPLAN_LIST = [" + [over, onNow, wentTo, goneDay, ahead].map((e) => "KNOWN[" + JSON.stringify(e.id) + "]").join(", ") + "];");
+[over, onNow, wentTo].forEach((e) => plan(e, "interested"));
+plan(goneDay, "going", iso(g.add(g.T, -3)));
+plan(ahead, "going", iso(g.add(g.T, 2)));
+set("WENT[" + JSON.stringify(wentTo.id) + "] = true;");
+assert.deepStrictEqual(Array.from(g.interestedList(), (e) => e.title), ["On now", "Went", "Gone day"],
+  "over and not been: gone; on now, been, and a passed going day: kept; a going day ahead: in the week");
 // CC-261: "Still deciding" is now "Events you're interested in", in the heading, the deck and the live messages
 const page = fs.readFileSync(path.join(__dirname, "..", "public", "index.html"), "utf8");
 has(page, '<span id="deciding-title" tabindex="-1">Events you\'re interested in</span>', "the new heading");

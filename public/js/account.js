@@ -234,7 +234,8 @@ document.addEventListener("keydown", function (ev) { // Escape closes the picker
 // to that day as event rows (CC-140) with Change plan and Tell a crew, or, on an empty day, one "Find something →"
 // line (CC-131). Previous and Next step a week at a time (never before this week; at most two years out, as far as a
 // plan can go), and "Skip to" jumps to the week of your next plan after the one showing. Beside it, Events you're interested in:
-// interested plans, with no day yet, and going plans for a day that's passed, where "I've been" is.
+// interested plans, with no day yet, and going plans for a day that's passed, where "I've been" is. An interested plan for an
+// event that's over goes once the event does, unless you've marked it "I've been" (CC-261).
 var PLANNER_LISTS = ["planner-week", "myplans-grid"], PLANNER_WEEK = 0, PLANNER_MAX = 104;
 var PLANS_STATE = "loading", WENT_STATE = "loading"; // until /me/plans and /me/attended first answer: then "ready", or "error"
 function dayTimesText(e, d) { // "7:30 PM", "Open 10 AM to 5 PM", or "" (planner.js knows the schedules)
@@ -308,13 +309,20 @@ function weekRangeText(ws, we) { // "Oct 30 – Nov 5", "Nov 6 – 12", and the 
   var md = function (d) { return F.md.format(d) + (d.getFullYear() === T.getFullYear() ? "" : ", " + d.getFullYear()); };
   return md(ws) + " \u2013 " + (ws.getMonth() === we.getMonth() && ws.getFullYear() === we.getFullYear() ? we.getDate() + (we.getFullYear() === T.getFullYear() ? "" : ", " + we.getFullYear()) : md(we));
 }
+function interestedList() { // the rows of Events you're interested in
+  return MYPLAN_LIST.filter(function (e) {
+    var mine = MYPLANS[e.id] || {};
+    if (mine.status === "going") return !(parseISO(mine.date) >= T); // a day that's passed: here for "I've been"
+    return !isPast(e) || !!WENT[e.id]; // CC-261: an interested event that's over, and you didn't go, drops out
+  });
+}
 function renderPlanner() {
   var start = PLANNER_WEEK * 7, days = [], ahead = goingAhead(), ready = PLANS_STATE === "ready";
   for (var i = 0; i < 7; i++) days.push({ d: add(T, start + i), items: [], own: [] });
   ahead.forEach(function (x) { if (x.n >= start && x.n < start + 7) days[x.n - start].items.push(x.e); });
   var ownAhead = OWN_LIST.filter(function (o) { return o.date >= isoDate(T); }); // CC-248: your own events on their day
   ownAhead.forEach(function (o) { var n = diff(parseISO(o.date), T); if (n >= start && n < start + 7) days[n - start].own.unshift(o); });
-  var deciding = MYPLAN_LIST.filter(function (e) { var mine = MYPLANS[e.id]; return !(mine && mine.status === "going" && parseISO(mine.date) >= T); });
+  var deciding = interestedList();
   var next = ahead.filter(function (x) { return x.n >= start + 7; })[0], planned = ahead.filter(function (x) { return x.n >= start && x.n < start + 7; }).length;
   $("week-range").textContent = (PLANNER_WEEK === 0 ? "This week · " : "") + weekRangeText(days[0].d, days[6].d);
   $("week-prev").disabled = PLANNER_WEEK === 0; $("week-next").disabled = PLANNER_WEEK >= PLANNER_MAX;
