@@ -277,6 +277,13 @@ function myplanToggleHTML(e, label) { // label: what it says once you have a pla
     (mine ? label || "Change plan" : "Interested?") + "</button>";
 }
 // The picker under a card: Interested, Going on a date (one-night events need no date field), or Clear.
+// CC-170: once you're going on a day, "Add to calendar": the API's calendar file for that day, opened as a plain link,
+// so iPhone offers Add to Calendar and other browsers download it for Google Calendar or Outlook.
+function calendarLinkHTML(e, mine) {
+  if (!mine || mine.status !== "going" || !mine.date) return "";
+  return '<a class="textbtn cal-link" href="' + esc(API + "/events/" + encodeURIComponent(e.id) + "/calendar.ics?date=" + encodeURIComponent(mine.date)) +
+    '" aria-label="Add ' + esc(e.title) + ' to your calendar">Add to calendar</a>';
+}
 function myplanHTML(e) {
   var mine = MYPLANS[e.id], range = goingRange(e), n = MYPLAN_SEQ, id = esc(e.id);
   if (!mine && !range) return "";
@@ -293,7 +300,7 @@ function myplanHTML(e) {
   }
   return '<div class="myplan" id="myplan-' + n + '" role="group" aria-label="Your plan for ' + esc(e.title) + '" hidden>' +
     '<div class="row"><button type="button" class="went" data-myplan-set="' + id + '" aria-pressed="' + !!(mine && mine.status === "interested") +
-    '">' + markHTML("interested") + "Interested</button>" + (mine ? '<button type="button" class="textbtn" data-myplan-clear="' + id + '">Clear plan</button>' : "") + "</div>" +
+    '">' + markHTML("interested") + "Interested</button>" + calendarLinkHTML(e, mine) + (mine ? '<button type="button" class="textbtn" data-myplan-clear="' + id + '">Clear plan</button>' : "") + "</div>" +
     (going ? '<div class="row">' + going + "</div>" : "") +
     '<p class="form-error" role="alert"></p></div>';
 }

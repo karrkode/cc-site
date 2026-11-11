@@ -862,6 +862,8 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
   font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; }
 .ev-said { font-family: var(--sign); font-weight: 700; font-size: 1.125rem; }
 .ev-said .textbtn { min-height: 44px; margin-left: 8px; }
+a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link among text buttons, centred on their line like them */
+.myplan .row a.cal-link { align-self: stretch; }
 .ev-more { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin-top: 16px; }
 .ev-more .went, .ev-more .textbtn { min-height: 44px; }
 .ev-more .crewshare { top: 100%; left: 0; right: auto; width: min(100%, 360px); } /* the crew-share picker opens under the row */

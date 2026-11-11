@@ -425,7 +425,7 @@ function evPlanHTML(e) {
   return '<div class="ev-plan myplan" role="group" aria-label="Your plan for ' + esc(e.title) + '"><div class="row">' +
     '<button class="btn ghost" type="button" data-myplan-set="' + id + '" aria-pressed="' + (!!mine && mine.status === "interested") + '">' +
     markHTML("interested") + "Interested</button>" + going + "</div>" +
-    (mine ? '<p class="ev-said">' + esc(myplanSaid(mine)) + '. <button class="textbtn" type="button" data-myplan-clear="' + id + '">Clear plan</button></p>' : "") +
+    (mine ? '<p class="ev-said">' + esc(myplanSaid(mine)) + ". " + calendarLinkHTML(e, mine) + '<button class="textbtn" type="button" data-myplan-clear="' + id + '">Clear plan</button></p>' : "") +
     '<p class="form-error" role="alert"></p></div>';
 }
 // CC-246: the event's photo, whole and never cropped, beside the poster's words on the water (above them on a phone),

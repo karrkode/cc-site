@@ -31,7 +31,7 @@ function load() {
     Intl, console, URL,
   };
   vm.createContext(sandbox);
-  vm.runInContext("var AUTH = { user: null }; function $(id) { return document; }" +
+  vm.runInContext("var API = \"https://api.example\", AUTH = { user: null }; function $(id) { return document; }" +
     "var CREWS = [], CREWSHARE_SEQ = 0, SHOW_TYPES = { Theater: 1, Music: 1 };" +
     'function crewShareToggleHTML(e) { return MYPLANS[e.id] ? "<button data-crewshare-toggle>" : ""; } function crewShareHTML() { return ""; }' +
     'function photoButtonHTML(e) { return "<button data-photo>"; } function editButtonHTML() { return "<button data-edit>"; }' +
@@ -110,8 +110,11 @@ assert.strictEqual(pressed(html, "data-myplan-going"), "true"); assert.strictEqu
 has(html, '<input type="date" id="ev-going-day"', "CC-154: going, a run shows its date field");
 has(html, 'value="' + day + '"', "the date field shows your day");
 lacks(html, 'data-myplan-going="' + e.id + '" data-date=', "and Going saves the field's day");
+has(html, 'href="https://api.example/events/' + e.id + '/calendar.ics?date=' + day + '"', "CC-170: going on a day, Add to calendar for that day");
+has(html, ">Add to calendar</a>");
 g.MYPLANS[e.id] = { status: "interested", date: null, crews: [] };
 lacks(g.eventViewHTML(e), 'type="date"', "turning Going off (Interested) hides it again");
+lacks(g.eventViewHTML(e), "calendar.ics", "CC-170: interested isn't going: nothing to add to a calendar");
 delete g.MYPLANS[e.id];
 lacks(g.eventViewHTML(e), 'type="date"', "and so does Clear plan");
 g.MYPLANS[e.id] = { status: "going", date: day, crews: [] };
