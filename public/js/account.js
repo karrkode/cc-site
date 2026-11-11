@@ -110,12 +110,12 @@ function loadMyPlans() {
     if (!res.ok) { if (PLANS_STATE !== "ready") PLANS_STATE = "error"; return; }
     PLANS_STATE = "ready";
     MYPLANS = {}; MYPLAN_LIST = res.body.map(function (row) {
-      var e = toEvent(row.event); MYPLANS[e.id] = { status: row.status, date: row.date, crews: row.crews || [] }; return e;
+      var e = toEvent(row.event); MYPLANS[e.id] = { status: row.status, date: row.date, time: row.time || null, crews: row.crews || [] }; return e;
     });
   }, function () { if (PLANS_STATE !== "ready") PLANS_STATE = "error"; });
 }
 function myplanSaid(mine) {
-  return !mine ? "Plan cleared" : mine.status === "going" ? "Going on " + dayName(parseISO(mine.date)) : "Marked interested";
+  return !mine ? "Plan cleared" : mine.status === "going" ? "Going on " + dayName(parseISO(mine.date)) + (mine.time ? " at " + clockText(mine.time) : "") : "Marked interested";
 }
 // Redraw every copy of this event's card (home, catalog and account can all show it), then put focus back
 // on the same card's plan button (or focusOn), on the card in "places you've gone" if "I've been" moved
@@ -162,7 +162,7 @@ function saveMyPlan(id, body, panel, focusOn) {
                  : api("/me/plans/" + encodeURIComponent(id), { method: "DELETE" });
   req.then(readJSON).then(function (res) {
     if (!res.ok) throw res;
-    if (body) MYPLANS[id] = { status: body.status, date: body.date || null, crews: (MYPLANS[id] && MYPLANS[id].crews) || [] }; else delete MYPLANS[id];
+    if (body) MYPLANS[id] = { status: body.status, date: body.date || null, time: body.time || null, crews: (MYPLANS[id] && MYPLANS[id].crews) || [] }; else delete MYPLANS[id];
     $("myplan-live").textContent = myplanSaid(MYPLANS[id]) + ": " + KNOWN[id].title;
     return pickerShut(panel).then(function () { return redrawCards(id, card, focusOn); });
   }).catch(function (res) {
@@ -202,25 +202,47 @@ document.addEventListener("click", function (ev) {
   var on = back && t.getAttribute("aria-pressed") !== "true"; // CC-144: turning one on, on the event page, moves its dolphin
   if (t.hasAttribute("data-myplan-set")) { if (on) evNod(t, t.getAttribute("data-myplan-set")); return saveMyPlan(t.getAttribute("data-myplan-set"), { status: "interested" }, box, back); }
   if (t.hasAttribute("data-myplan-clear")) return saveMyPlan(t.getAttribute("data-myplan-clear"), null, box, back);
-  var input = box.querySelector('input[type="date"], select.go-day'), day = t.getAttribute("data-date") || (input && input.value);
-  if (input && (!day || (input.min && (day < input.min || day > input.max)))) { // CC-260: a drop-down holds only days it's on
+  var c = goChoice(box, t), input = c.input, day = c.day, id = t.getAttribute("data-myplan-going");
+  if (input && !t.hasAttribute("data-date") && (!day || (input.min && (day < input.min || day > input.max)))) { // CC-260: a drop-down holds only days it's on
     box.querySelector(".form-error").textContent = !day ? "Choose a date." :
       "Choose a date from " + goingDay(input.min) + " to " + goingDay(input.max) + ".";
     input.focus(); return;
   }
-  if (on) evLeap(t, t.getAttribute("data-myplan-going"));
-  saveMyPlan(t.getAttribute("data-myplan-going"), { status: "going", date: day }, box, back);
+  if (on) evLeap(t, id);
+  saveMyPlan(id, { status: "going", date: day, time: goTimeFor(id, day, c.time) }, box, back);
 });
+// CC-264: the day and show a Going picker holds: a button's own (My week's days, a one-day run's shows), else its day field
+// ("2026-11-14", or "2026-11-14T16:00" from a drop-down that lists each show) and, beside a date field, its Show drop-down
+function goChoice(box, t) {
+  var input = box.querySelector('input[type="date"], select.go-day'), show = box.querySelector("select.go-time");
+  if (t && t.hasAttribute("data-date")) return { input: input, day: t.getAttribute("data-date"), time: t.getAttribute("data-time") || "" };
+  var v = (input && input.value) || "", i = v.indexOf("T");
+  return { input: input, day: i < 0 ? v : v.slice(0, i), time: i < 0 ? (show ? show.value : "") : v.slice(i + 1) };
+}
+// The show a plan keeps: the one chosen, else the day's only (or first) listed show; null when the day lists none
+function goTimeFor(id, day, time) { var e = KNOWN[id]; return time || (e && day ? goTimes(e, day)[0] : "") || null; }
+// Beside a date field, the Show drop-down follows the day: shown for a day with two or more shows, gone otherwise
+function goTimeSync(input) {
+  var box = input.closest(".myplan"), b = box && box.querySelector("[data-myplan-going]"), e = b && KNOWN[b.getAttribute("data-myplan-going")];
+  if (!e) return;
+  var old = box.querySelector("select.go-time"), html = goTimeFieldHTML(e, input.value);
+  if (old) old.outerHTML = html; else if (html) input.insertAdjacentHTML("afterend", html);
+}
 // CC-154: on the event page the date field shows once you're going, so changing it saves the new day
+// CC-264: and so does its Show drop-down. A card's date field only redraws its Show drop-down: Commit to saves it.
 document.addEventListener("change", function (ev) {
-  var input = ev.target; if (input.id !== "ev-going-day" || !AUTH.user) return;
-  var box = input.closest(".myplan"), day = input.value, id = box.querySelector("[data-myplan-going]").getAttribute("data-myplan-going");
-  if (!day || (input.min && (day < input.min || day > input.max))) {
+  var input = ev.target;
+  if (input.type === "date" && input.closest && input.closest(".myplan") && input.id !== "ev-going-day") return goTimeSync(input);
+  var box = input.closest && input.closest(".ev-plan"); if (!box || !AUTH.user) return;
+  if (input.id !== "ev-going-day" && !input.classList.contains("go-time")) return;
+  if (input.type === "date") goTimeSync(input);
+  var c = goChoice(box), day = c.day, id = box.querySelector("[data-myplan-going]").getAttribute("data-myplan-going"), field = c.input;
+  if (!day || (field.min && (day < field.min || day > field.max))) {
     box.querySelector(".form-error").textContent = !day ? "Choose a date." :
-      "Choose a date from " + goingDay(input.min) + " to " + goingDay(input.max) + ".";
+      "Choose a date from " + goingDay(field.min) + " to " + goingDay(field.max) + ".";
     return;
   }
-  saveMyPlan(id, { status: "going", date: day }, box, "#ev-going-day");
+  saveMyPlan(id, { status: "going", date: day, time: goTimeFor(id, day, c.time) }, box, input.classList.contains("go-time") ? "select.go-time" : "#ev-going-day");
 });
 document.addEventListener("keydown", function (ev) { // Escape closes the picker and returns to its button
   if (ev.key !== "Escape") return;
@@ -253,7 +275,8 @@ function weekCrewHTML(e) {
 // since they can't sit inside a link. d is the day it's planned for; without one it's a row in Events you're interested in.
 function weekRowHTML(e, d) {
   var mine = MYPLANS[e.id] || {}, going = mine.status === "going", id = esc(e.id);
-  var when = d ? dayTimesText(e, d) : going ? "Going " + goingDay(mine.date) : dateText(e);
+  // CC-264: on its day, the show you chose rather than every show that day
+  var when = d ? (mine && mine.time && mine.date === isoDate(d) ? clockText(mine.time) : dayTimesText(e, d)) : going ? "Going " + goWhen(mine.date, mine.time) : dateText(e);
   var acts = d ? myplanToggleHTML(e) + crewShareToggleHTML(e, "Tell a crew") : // the toggles first: their pickers take the same number
     myplanToggleHTML(e, goingRange(e) ? "Pick a day" : "Change plan") + wentHTML(e) + crewShareToggleHTML(e, "Tell a crew") + // closed: no day left to pick
     (going ? "" : '<button type="button" class="went" data-plan-withdraw="' + id + '">Withdraw interest</button>'); // CC-160: undone from the line above
@@ -272,9 +295,12 @@ function weekPickHTML(e) {
   for (i = 0; i < 7; i++) if (canGoOn(e, add(T, start + i))) days.push(add(T, start + i));
   if (days.length) {
     return '<p class="pick-days-h">Commit to a day</p><div class="row pick-days">' + days.map(function (d) {
-      var iso = isoDate(d);
-      return '<button type="button" class="went" data-myplan-going="' + id + '" data-date="' + iso + '" aria-pressed="' + (mine.status === "going" && mine.date === iso) + '">' +
-        markHTML("going") + esc(goingDay(iso)) + "</button>";
+      var iso = isoDate(d), shows = goTimes(e, iso); // CC-264: a day with two or more shows has a button for each
+      return (shows.length > 1 ? shows : [""]).map(function (t) {
+        var on = mine.status === "going" && mine.date === iso && (!t || mine.time === t);
+        return '<button type="button" class="went" data-myplan-going="' + id + '" data-date="' + iso + '"' + (t ? ' data-time="' + t + '"' : "") +
+          ' aria-pressed="' + on + '">' + markHTML("going") + esc(goWhen(iso, t)) + "</button>";
+      }).join("");
     }).join("") + "</div>";
   }
   for (i = start + 7; i <= (PLANNER_MAX + 1) * 7 && !next; i++) if (canGoOn(e, add(T, i))) next = add(T, i);
@@ -375,9 +401,9 @@ function withdrawPlan(id, b) {
 function undoWithdraw(b) {
   var w = WITHDRAWN; if (!w) return;
   b.disabled = true;
-  api("/me/plans/" + encodeURIComponent(w.id) + "?today=" + isoDate(T), { method: "PUT", body: { status: w.mine.status, date: w.mine.date } }).then(readJSON).then(function (res) {
+  api("/me/plans/" + encodeURIComponent(w.id) + "?today=" + isoDate(T), { method: "PUT", body: { status: w.mine.status, date: w.mine.date, time: w.mine.time || null } }).then(readJSON).then(function (res) {
     if (!res.ok) throw res;
-    MYPLANS[w.id] = { status: w.mine.status, date: w.mine.date, crews: [] };
+    MYPLANS[w.id] = { status: w.mine.status, date: w.mine.date, time: w.mine.time || null, crews: [] };
     return !(w.mine.crews || []).length ? null : api("/me/plans/" + encodeURIComponent(w.id) + "/crews", { method: "PUT", body: { crews: w.mine.crews } }).then(readJSON).then(function (r) {
       if (!r.ok) throw r;
       MYPLANS[w.id].crews = r.body.crews;

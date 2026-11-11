@@ -97,15 +97,38 @@ function goDays(e, max) {
   for (var d = range[0]; d <= range[1] && out.length < (max || GO_DAYS_MAX); d = add(d, 1)) if (canGoOn(e, d)) out.push(d);
   return out;
 }
+// CC-264: the shows you can choose between on day iso ("19:30"), soonest first: the times its schedule lists that day. An
+// exhibition counts only its own, as the calendar file does (its venue's show times are for the venue's other events).
+function goTimes(e, iso) {
+  if (isExhibit(e) && e.sched.weekly_from !== "event") return [];
+  var seen = {};
+  return (timesOn(e, parseISO(iso)) || []).filter(function (t) { return t && !seen[t] && (seen[t] = true); }).sort();
+}
 // The day field of a Going picker: the browser's date field when any day of the run will do, else a drop-down of the
 // days it's on (a date field can't leave days out). attrs: its id and label. "" when there's no day left to go.
-function goDayFieldHTML(e, attrs, value) {
+// CC-264: the drop-down lists each show of a day with two or more ("2026-11-14T16:00"); beside a date field, a Show drop-down does.
+function goDayFieldHTML(e, attrs, value, time) {
   var range = goingRange(e); if (!range) return "";
-  if (goAnyDay(e)) return '<input type="date" ' + attrs + ' min="' + isoDate(range[0]) + '" max="' + isoDate(range[1]) + '" value="' + esc(value || isoDate(range[0])) + '">';
+  if (goAnyDay(e)) {
+    var day = value || isoDate(range[0]);
+    return '<input type="date" ' + attrs + ' min="' + isoDate(range[0]) + '" max="' + isoDate(range[1]) + '" value="' + esc(day) + '">' + goTimeFieldHTML(e, day, time);
+  }
   var days = goDays(e).map(isoDate); if (!days.length) return "";
   if (value && days.indexOf(value) < 0) days.unshift(value); // a day already chosen stays shown
+  var shows = value ? goTimes(e, value) : [], chosen = shows.length > 1 ? value + "T" + (shows.indexOf(time) >= 0 ? time : shows[0]) : value;
   return '<select class="go-day" ' + attrs + ">" + days.map(function (iso) {
-    return '<option value="' + iso + '"' + (iso === value ? " selected" : "") + ">" + esc(goingDay(iso)) + "</option>";
+    var ts = goTimes(e, iso);
+    return (ts.length > 1 ? ts : [""]).map(function (t) {
+      var v = t ? iso + "T" + t : iso;
+      return '<option value="' + v + '"' + (v === chosen ? " selected" : "") + ">" + esc(goWhen(iso, t)) + "</option>";
+    }).join("");
+  }).join("") + "</select>";
+}
+// CC-264: beside a date field, which show on day iso, when it has two or more ("" otherwise)
+function goTimeFieldHTML(e, iso, time) {
+  var ts = iso ? goTimes(e, iso) : []; if (ts.length < 2) return "";
+  return '<select class="go-time" aria-label="Show time for ' + esc(e.title) + '">' + ts.map(function (t) {
+    return '<option value="' + t + '"' + (t === time ? " selected" : "") + ">" + esc(clockText(t)) + "</option>";
   }).join("") + "</select>";
 }
 function firstGoDay(e) { var d = goDays(e, 1)[0]; return d ? isoDate(d) : ""; } // what Going takes, with no day chosen yet

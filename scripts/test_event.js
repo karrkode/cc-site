@@ -142,6 +142,16 @@ has(html, '<select class="go-day" id="ev-going-day"', "a drop-down: a date field
 lacks(html, 'type="date"');
 assert.deepStrictEqual([...html.matchAll(/<option value="([\d-]+)"/g)].map((m) => m[1]), onDays, "only its show days");
 has(html, '<option value="' + onDays[1] + '" selected>', "your day chosen");
+// CC-264: a show day with two shows lists each; the Going line and Add to calendar say which you chose
+const pair = ev({ end_date: iso(g.add(g.T, 30)), schedule: { dates: [], weekly: { sat: ["11:00", "16:00"], sun: ["13:00"] }, weekly_from: "event", weeks: {}, hours: {} } });
+const sat = onDays.filter((d) => g.parseISO(d).getDay() === 6)[0];
+g.MYPLANS[pair.id] = { status: "going", date: sat, time: "16:00", crews: [] };
+html = g.eventViewHTML(pair);
+has(html, '<option value="' + sat + 'T11:00">' + g.goingDay(sat) + " · 11 AM</option>", "each show of the day");
+has(html, '<option value="' + sat + 'T16:00" selected>', "yours chosen");
+has(html, "Going on " + g.dayName(g.parseISO(sat)) + " at 4 PM.", "the line says the show");
+has(html, "calendar.ics?date=" + sat + "&amp;time=16%3A00", "and so does the invite");
+delete g.MYPLANS[pair.id];
 delete g.MYPLANS[wkend.id];
 const shut = ev({ schedule: { dates: [], weekly: {}, weekly_from: "", weeks: {}, hours: Object.fromEntries(DOWS.map((k) => [k, null])) },
   category: "Visual Art", venue: Object.assign({}, e.venue_raw || {}, { id: 3, name: "Shut Gallery", neighborhood: "Loop", area: "city", region: "downtown", category: "Visual Art" }) });

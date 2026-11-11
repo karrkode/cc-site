@@ -195,6 +195,45 @@ has(html, '<select class="go-day" id="myplan-date-0"'); lacks(html, 'type="date"
 assert.deepStrictEqual([...html.matchAll(/<option value="([\d-]+)"/g)].map((m) => m[1]), [iso(week[2]), iso(week[5])], "a fixed run: its dates");
 has(g.myplanHTML(open), '<input type="date"', "nothing known: every day, so the date field");
 
+// --- CC-264: a day with two or more shows offers each; the plan keeps the show, and its lines say it ---
+const two = ev({ title: "Matinee", schedule: sched({ weekly: { [DOW[week[2].getDay()]]: ["16:00", "11:00"], [DOW[week[4].getDay()]]: ["19:30"] }, weekly_from: "event" }) });
+assert.deepStrictEqual(g.goTimes(two, iso(week[2])), ["11:00", "16:00"], "soonest first");
+assert.deepStrictEqual(g.goTimes(two, iso(week[4])), ["19:30"]);
+assert.strictEqual(g.goWhen(iso(week[2]), "16:00"), g.goingDay(iso(week[2])) + " · 4 PM");
+plan(two, "interested");
+html = g.weekRowHTML(two);
+has(html, 'data-date="' + iso(week[2]) + '" data-time="11:00" aria-pressed="false">', "Pick a day: a button per show");
+has(html, ">" + g.goingDay(iso(week[2])) + " · 4 PM</button>");
+has(html, 'data-date="' + iso(week[4]) + '" aria-pressed="false">', "one show: one button, the day");
+has(html, ">" + g.goingDay(iso(week[4])) + "</button>");
+assert.strictEqual(g.goTimeFor(two.id, iso(week[4]), ""), "19:30", "one show: the plan keeps its time");
+assert.strictEqual(g.goTimeFor(two.id, iso(week[2]), "16:00"), "16:00", "the show chosen");
+assert.strictEqual(g.goTimeFor(open.id, iso(week[2]), ""), null, "no time listed: none");
+delete g.MYPLANS[two.id]; set("MYPLAN_SEQ = 0;");
+html = g.myplanHTML(two);
+assert.deepStrictEqual([...html.matchAll(/<option value="([\dT:-]+)"/g)].map((m) => m[1]).slice(0, 3),
+  [iso(week[2]) + "T11:00", iso(week[2]) + "T16:00", iso(week[4])], "a card's drop-down: each show of a day with two");
+has(html, ">" + g.goingDay(iso(week[2])) + " · 11 AM</option>");
+set("MYPLANS[" + JSON.stringify(two.id) + "] = " + JSON.stringify({ status: "going", date: iso(week[2]), time: "16:00", crews: [] }) + ";");
+has(g.myplanHTML(two), '<option value="' + iso(week[2]) + 'T16:00" selected>', "your show chosen");
+has(g.weekRowHTML(two, week[2]), "<span>4 PM</span>", "My week: the show you chose, not every show that day");
+has(g.myplanHTML(two), "calendar.ics?date=" + iso(week[2]) + "&amp;time=16%3A00", "Add to calendar: that show");
+assert.strictEqual(g.myplanSaid(g.MYPLANS[two.id]), "Going on " + g.dayName(week[2]) + " at 4 PM");
+plan(two, "going", iso(week[4]));
+lacks(g.myplanHTML(two), "&amp;time=", "no time saved: the calendar file takes the day's first show");
+// a date field (any day will do) gets a Show drop-down on a day with two or more shows
+const venueTwo = ev({ title: "Every night", schedule: sched({ weekly: Object.fromEntries(DOW.map((k) => [k, k === DOW[week[3].getDay()] ? ["14:00", "19:30"] : ["19:30"]])), weekly_from: "venue" }), venue: venue("Theater") });
+assert.ok(g.goAnyDay(venueTwo), "open every day: a date field");
+assert.strictEqual(g.goTimeFieldHTML(venueTwo, iso(week[1])), "", "one show: no Show drop-down");
+html = g.goTimeFieldHTML(venueTwo, iso(week[3]), "19:30");
+has(html, '<select class="go-time" aria-label="Show time for Every night">'); has(html, '<option value="19:30" selected>7:30 PM</option>');
+has(g.goDayFieldHTML(venueTwo, 'id="x"', iso(week[3])), '<input type="date" id="x"'); has(g.goDayFieldHTML(venueTwo, 'id="x"', iso(week[3])), 'class="go-time"');
+// a one-day run with two shows: Commit to each
+const oneDay = ev({ title: "One day", begin_date: iso(week[2]), end_date: iso(week[2]), schedule: sched({ dates: [{ date: iso(week[2]), time: "11:00" }, { date: iso(week[2]), time: "16:00" }] }),
+  run_dates: [{ date: iso(week[2]), time: "11:00" }, { date: iso(week[2]), time: "16:00" }] });
+html = g.myplanHTML(oneDay);
+has(html, 'data-time="11:00" aria-pressed="false">'); has(html, "Commit to " + g.goingDay(iso(week[2])) + " · 4 PM</button>");
+
 // --- CC-160: Withdraw interest on an interested plan, with Undo at the top of Events you're interested in ---
 has(g.weekRowHTML(maybe), 'class="went" data-plan-withdraw="' + maybe.id + '">Withdraw interest</button>', "a fourth option");
 const past = ev({ title: "Past going" });

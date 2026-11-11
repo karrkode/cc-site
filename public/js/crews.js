@@ -77,7 +77,7 @@ function crewNextHTML(c) { // the soonest plan someone's going to, else the soon
   var next = plans.filter(function (p) { return p.people.some(function (x) { return x.status === "going"; }); })[0] || plans[0];
   if (!next) return '<span class="crew-next"><span class="crew-next-label">Nothing planned yet</span></span>';
   var e = toEvent(next.event), going = next.people.filter(function (p) { return p.status === "going"; });
-  var day = going.length && going[0].date ? goingDay(going[0].date) : dateText(e); // people come soonest going date first
+  var day = going.length && going[0].date ? goWhen(going[0].date, going[0].time) : dateText(e); // people come soonest going date first
   return '<span class="crew-next"><span class="crew-next-label">Next up</span> ' + esc(day) + ' · <span class="crew-next-title">' + esc(e.title) +
     '</span> <span class="crew-next-label">· ' + (going.length ? plural(going.length, "going", "going") : plural(next.people.length, "interested", "interested")) + "</span></span>";
 }
@@ -210,7 +210,7 @@ function crewCountHTML(count, names, rest) { // "<b><i>Three</i></b> others are 
     '<span class="crew-count-names" id="crew-count-' + CREWCOUNT_SEQ + '" hidden>' + esc(names) + "</span>";
 }
 function othersHTML(people, verb) { // "Jordan Reyes is interested!" or "<b><i>Three</i></b> others are interested!"
-  var day = function (p) { return verb === "going" && p.date ? goingDay(p.date) : ""; };
+  var day = function (p) { return verb === "going" && p.date ? goWhen(p.date, p.time) : ""; }; // CC-264: and which show
   if (people.length === 1) return esc(people[0].name) + " is " + verb + (day(people[0]) ? " " + esc(day(people[0])) : "") + "!";
   return crewCountHTML(people.length, people.map(function (p) { return p.name + (day(p) ? " (" + day(p) + ")" : ""); }).join("\n"), " others are " + verb + "!");
 }
@@ -218,7 +218,7 @@ function crewLineHTML(people) {
   var you = people.filter(function (p) { return p.you; })[0], others = people.filter(function (p) { return !p.you; });
   var going = others.filter(function (p) { return p.status === "going"; }), interested = others.filter(function (p) { return p.status !== "going"; });
   var parts = [];
-  if (you && you.status === "going") parts.push("You’re going" + (you.date ? " " + esc(goingDay(you.date)) : "") + ".");
+  if (you && you.status === "going") parts.push("You’re going" + (you.date ? " " + esc(goWhen(you.date, you.time)) : "") + ".");
   if (going.length) parts.push(othersHTML(going, "going"));
   if (interested.length) parts.push(othersHTML(interested, "interested"));
   if (you && you.status !== "going") {

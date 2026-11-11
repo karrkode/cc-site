@@ -81,7 +81,7 @@ function fromApi(e) {
     creditMe: !!e.credit_me, suggestedBy: e.submitted_by_name || null, // the opt-in "Suggested by" credit (CC-30)
     region: e.venue.region || null, // the side of town (CC-73)
     far: e.venue.area === "out_of_town" || e.venue.region === "out_of_town", // CC-217: never suggested; gone once the clean-up has been run
-    pick: e.pick ? { status: e.pick.status, date: e.pick.date, by: e.pick.by } : null, // the owner's public pick (CC-66)
+    pick: e.pick ? { status: e.pick.status, date: e.pick.date, time: e.pick.time || null, by: e.pick.by } : null, // the owner's public pick (CC-66)
     sched: e.schedule || { dates: [], weekly: {}, weekly_from: "", hours: {} }, // when it's on, for the planner (CC-79)
     crewPlans: (e.crew_plans || []).map(function (c) { c.been = c.been || []; return c; }), // signed in: crew-mates' shared plans (CC-75), and who's been (CC-117)
     takes: e.takes || [], // members' shared journal entries, GET /events/<id> only (CC-112)
@@ -114,7 +114,8 @@ var WENT_JOURNAL = {}, JOURNAL_DRAFT = {};
 // CC-112: whether each entry is shared on its event's page, by event: { shared, anonymous }.
 var WENT_SHARE = {};
 var WENT_AT = {}; // CC-248: when you marked each event "I've been", by event (the journal mixes them by date with your own)
-// Your plans (CC-55; "Oh the places you'll go" on the account page): MYPLANS[id] = { status: "interested" | "going", date: "YYYY-MM-DD" | null }.
+// Your plans (CC-55; "Oh the places you'll go" on the account page): MYPLANS[id] = { status: "interested" | "going", date: "YYYY-MM-DD" | null,
+// time: "HH:MM" | null (CC-264: which show that day) }.
 var MYPLANS = {}, MYPLAN_LIST = [], MYPLAN_SEQ = 0;
 var TYPE_PLURAL = { "Theater": "theater", "Music": "music", "Visual Art": "visual art" };
 
@@ -229,7 +230,7 @@ function pickMarkHTML(p, label) { return markHTML(p.status === "going" ? "host" 
 var PICK_SEQ = 0;
 function pickText(p) {
   var who = p.by || "The Culture Crew";
-  return p.status === "going" && p.date ? who + " is committed to seeing this on " + dayName(parseISO(p.date)) + "." :
+  return p.status === "going" && p.date ? who + " is committed to seeing this on " + dayName(parseISO(p.date)) + (p.time ? " at " + clockText(p.time) : "") + "." :
     p.status === "going" ? who + " is committed to seeing this." : who + " is interested in this one.";
 }
 function pickHTML(e) {
@@ -265,6 +266,7 @@ function crewNoteText(e) {
 }
 function goingLater(e) { var mine = MYPLANS[e.id]; return !!mine && mine.status === "going" && parseISO(mine.date) > T; }
 function goingDay(iso) { var d = parseISO(iso); return d.getFullYear() === T.getFullYear() ? F.wmd.format(d) : F.mdy.format(d); }
+function goWhen(iso, time) { return goingDay(iso) + (time ? " \u00b7 " + clockText(time) : ""); } // CC-264: "Sat, Nov 14 · 4 PM"
 // The days you can say you're going: from today (or opening) to closing, at most two years out (the API's rule).
 function goingRange(e) {
   var lo = e.b && e.b > T ? e.b : T, far = add(T, 730), hi = e.n && e.n < far ? e.n : far;
@@ -282,7 +284,9 @@ function myplanToggleHTML(e, label) { // label: what it says once you have a pla
 // so iPhone offers Add to Calendar and other browsers download it for Google Calendar or Outlook.
 function calendarLinkHTML(e, mine) {
   if (!mine || mine.status !== "going" || !mine.date) return "";
-  return '<a class="textbtn cal-link" href="' + esc(API + "/events/" + encodeURIComponent(e.id) + "/calendar.ics?date=" + encodeURIComponent(mine.date)) +
+  return '<a class="textbtn cal-link" href="' + esc(API + "/events/" + encodeURIComponent(e.id) + "/calendar.ics?date=" + encodeURIComponent(mine.date) +
+    (mine.time ? "&time=" + encodeURIComponent(mine.time) : "")) + // CC-264: the show you chose
+
     '" aria-label="Add ' + esc(e.title) + ' to your calendar">Add to calendar</a>';
 }
 // days: in place of the Going row, My week's own (the days, in Events you're interested in, of the shown week, CC-260)
@@ -292,10 +296,14 @@ function myplanHTML(e, days) {
   var going = "";
   if (days !== undefined) going = days;
   else if (range) { // CC-260: only days it's on
-    var first = firstGoDay(e), field = first ? goDayFieldHTML(e, 'id="myplan-date-' + n + '" aria-label="Date for ' + esc(e.title) + '"', mine && mine.date ? mine.date : first) : "";
-    if (field && same(range[0], range[1])) {
-      going = '<button type="button" class="went" data-myplan-going="' + id + '" data-date="' + first + '" aria-pressed="' +
-        !!(mine && mine.status === "going") + '">' + markHTML("going") + "Commit to " + esc(goingDay(first)) + "</button>";
+    var first = firstGoDay(e), going1 = mine && mine.status === "going";
+    var field = first ? goDayFieldHTML(e, 'id="myplan-date-' + n + '" aria-label="Date for ' + esc(e.title) + '"', mine && mine.date ? mine.date : first, mine && mine.time) : "";
+    if (field && same(range[0], range[1])) { // CC-264: a one-day run with two or more shows: one button each
+      var shows = goTimes(e, first);
+      going = (shows.length > 1 ? shows : [""]).map(function (t) {
+        return '<button type="button" class="went" data-myplan-going="' + id + '" data-date="' + first + '"' + (t ? ' data-time="' + t + '"' : "") + ' aria-pressed="' +
+          !!(going1 && (!t || mine.time === t)) + '">' + markHTML("going") + "Commit to " + esc(goWhen(first, t)) + "</button>";
+      }).join("");
     } else if (field) {
       going = '<button type="button" class="went" data-myplan-going="' + id + '" aria-pressed="' + !!(mine && mine.status === "going") +
         '" aria-describedby="myplan-date-' + n + '">' + markHTML("going") + "Commit to</button>" + field;
