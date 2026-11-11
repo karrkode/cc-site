@@ -19,7 +19,7 @@ function waterSeed(id) {
   return h;
 }
 
-function water(canvas, seed, kind, t, place) {
+function water(canvas, seed, kind, t, place, look) {
   var dpr = Math.min(window.devicePixelRatio || 1, 2), w = canvas.clientWidth, h = canvas.clientHeight;
   if (!w || !h) return;
   // sharp on high-density screens: the bitmap is the box times the pixel ratio (both sides, so it never stretches)
@@ -39,14 +39,21 @@ function water(canvas, seed, kind, t, place) {
     }
     return;
   }
-  var gap = mast ? 16 : Math.max(9, Math.min(18, h / 9));
+  var gap = mast ? 16 : Math.max(9, Math.min(18, h / 9)), swell = (look && look.swell) || 1;
+  var ice = look && look.ice ? lakeIce(w, h, t) : null; // CC-165: winter's floes. The waves stop at their edges.
+  if (ice) { ctx.save(); ctx.beginPath(); ctx.rect(0, 0, w, h); ice.forEach(function (f) { floePath(ctx, f); }); ctx.clip("evenodd"); }
   for (var j = 0; j < Math.ceil(h / gap) + 1; j++) {
-    var y = 6 + j * gap, a = kind === "music" ? gap * .3 : gap * (.15 + r() * .3), f = kind === "music" ? .07 : .03 + r() * .05, ph = r() * 6 + t * .25;
+    var y = 6 + j * gap, a = swell * (kind === "music" ? gap * .3 : gap * (.15 + r() * .3)), f = kind === "music" ? .07 : .03 + r() * .05, ph = r() * 6 + t * .25;
     ctx.beginPath(); ctx.moveTo(0, y + a * Math.sin(ph));
     for (var x = 4; x <= w + 4; x += 4) {
       ctx.lineTo(x, y + a * Math.sin(x * f + ph + (kind === "theater" ? Math.sin(x * .013 + j + t * .05) * 2 : 0)));
     }
     ctx.stroke();
+  }
+  if (ice) {
+    ctx.restore();
+    ctx.fillStyle = "rgba(255,255,255," + WATER_ALPHA.mast + ")"; // the water's own 13%: text across ice reads as it does across a wave
+    ctx.beginPath(); ice.forEach(function (f) { floePath(ctx, f); }); ctx.fill();
   }
 }
 
@@ -55,7 +62,8 @@ function water(canvas, seed, kind, t, place) {
 function drawWater(canvas, t) {
   var kind = canvas.getAttribute("data-kind");
   if (t === undefined) t = waterDrifts(canvas) ? WATER_T : 0;
-  water(canvas, Number(canvas.getAttribute("data-seed")) || 0, WATER_KINDS[kind] ? kind : "theater", t || 0, canvas.getAttribute("data-water"));
+  var place = canvas.getAttribute("data-water"), look = place === "mast" ? LAKE_LOOKS[LAKE.season] : null;
+  water(canvas, Number(canvas.getAttribute("data-seed")) || 0, WATER_KINDS[kind] ? kind : "theater", (t || 0) * (look ? look.pace : 1), place, look);
 }
 
 // The canvas for an event's tile or poster. It's decoration, so screen readers skip it.
@@ -128,5 +136,65 @@ function driftFrame(ts) {
 }
 if (document.addEventListener) document.addEventListener("visibilitychange", driftWake);
 if (REDUCED_MOTION && REDUCED_MOTION.addEventListener) REDUCED_MOTION.addEventListener("change", driftWake);
+
+// ---------- the lake through the year (CC-165) ----------
+// The masthead follows the real lake by the visitor's clock, in Chicago time. Winter (December to February) is grey-green
+// and slow, with a few ice floes; summer (June to August) bright and lively; spring and autumn in between. From half an
+// hour before sunset until 5am the band takes a dusk tone. The colours are --lake-* in site.css; the masthead carries
+// data-season and data-dusk. Only the masthead: tiles and posters keep their water. With reduced motion it stays still
+// (the drift never runs, so t is 0). ?lake=winter (or spring, summer, autumn; add ",dusk") shows one, to judge by eye.
+var LAKE_LOOKS = { // pace: how fast it drifts · swell: how tall the waves are · ice: floes
+  winter: { pace: .5, swell: .7, ice: true },
+  spring: { pace: 1, swell: 1 },
+  summer: { pace: 1.4, swell: 1.25 },
+  autumn: { pace: 1, swell: 1 },
+};
+// Chicago's sunset on the 15th of each month, in minutes after midnight on the clock (daylight saving included)
+var LAKE_SUNSET = [1005, 1040, 1135, 1170, 1200, 1228, 1225, 1195, 1145, 1095, 995, 982];
+var LAKE = { season: "", dusk: false };
+
+// The season and dusk for a moment, in Chicago time
+function lakeNow(when) {
+  var parts = {};
+  new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", month: "numeric", hour: "numeric", minute: "numeric", hourCycle: "h23" })
+    .formatToParts(when).forEach(function (p) { parts[p.type] = Number(p.value); });
+  var m = parts.month, mins = (parts.hour % 24) * 60 + parts.minute;
+  var season = m === 12 || m <= 2 ? "winter" : m <= 5 ? "spring" : m <= 8 ? "summer" : "autumn";
+  return { season: season, dusk: mins >= LAKE_SUNSET[m - 1] - 30 || mins < 5 * 60 };
+}
+// ?lake=summer,dusk: a season to show, whatever the clock says
+function lakeAsked(search) {
+  var m = /[?&]lake=([a-z,]+)/.exec(search || ""), bits = m ? m[1].split(",") : [];
+  return LAKE_LOOKS[bits[0]] ? { season: bits[0], dusk: bits.indexOf("dusk") > 0 } : null;
+}
+// The floes: a few flat, ragged pieces of ice, the same ones every time, drifting east 3px a second
+function lakeIce(w, h, t) {
+  var s = 811, r = function () { s = (s * 9301 + 49297) % 233280; return s / 233280; }, n = Math.max(2, Math.round(w / 260)), out = [];
+  for (var i = 0; i < n; i++) {
+    var rx = 26 + r() * 40, span = w + rx * 2, x = ((i + .2 + r() * .6) * span / n + t * 3) % span - rx, pts = [];
+    for (var k = 0; k < 7; k++) pts.push(.7 + r() * .3);
+    out.push({ x: x, y: h * (.15 + r() * .7), rx: rx, ry: rx * (.22 + r() * .12), pts: pts });
+  }
+  return out;
+}
+function floePath(ctx, f) {
+  f.pts.forEach(function (k, i) {
+    var a = i / f.pts.length * Math.PI * 2, x = f.x + Math.cos(a) * f.rx * k, y = f.y + Math.sin(a) * f.ry * k;
+    if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+  });
+  ctx.closePath();
+}
+// Sets the masthead's season and dusk, and redraws its water when they change. Checked every minute.
+function lakeApply() {
+  var now = lakeAsked(typeof location === "object" && location.search) || lakeNow(new Date()), mast = $("mast");
+  if (now.season === LAKE.season && now.dusk === LAKE.dusk) return;
+  LAKE.season = now.season; LAKE.dusk = now.dusk;
+  if (!mast || !mast.setAttribute) return;
+  mast.setAttribute("data-season", now.season);
+  if (now.dusk) mast.setAttribute("data-dusk", ""); else mast.removeAttribute("data-dusk");
+  mast.querySelectorAll("canvas.water").forEach(function (c) { drawWater(c); });
+}
+lakeApply();
+if (typeof setInterval === "function") setInterval(lakeApply, 60000);
 
 paintWater($("mast"));

@@ -85,7 +85,18 @@ PAIRS = [  # (foreground, background, minimum, where it's used)
     ("on-src", "src-new-deep", TEXT, "a source not read yet, hovered or clicked"),
     ("rule", "src-new", NON_TEXT, "the outline on an open block"),
     ("rule", "src-new-deep", NON_TEXT, "the outline on an open block"),
-] + [("dot-ink", f"dot-{i}", TEXT, "initials on a crew dot") for i in range(6)]
+] + [("dot-ink", f"dot-{i}", TEXT, "initials on a crew dot") for i in range(6)] + [
+    # CC-165: the masthead's lake through the year, bare and across its water (winter's ice is filled at the water's 13%,
+    # and the waves stop at its edge, so nothing on the band is ever lighter than lake+13%)
+    pair
+    for lake in ("lake-winter", "lake-between", "lake-summer", "lake-dusk")
+    for under in (lake, lake + "+13%")
+    for pair in (
+        ("on-lake", under, TEXT, "masthead text, " + lake),
+        ("on-lake-muted", under, TEXT, "muted masthead text, " + lake),
+        ("stripe", under, NON_TEXT, "the stripes, focus ring and active nav, " + lake),
+    )
+]
 
 
 def block(css: str, selector: str) -> dict[str, str]:

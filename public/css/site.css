@@ -3,13 +3,14 @@
    "Lights down", the lake at night. Every pair used below meets WCAG AA: scripts/check_contrast.py checks them in CI.
    page/surface/line/rule: backgrounds, hairlines and structural rules · text/muted: type (deep lake, never black)
    field-line: form borders (3:1) · lead: primary buttons, links, active chips, "Free" · star: the star in the wordmark
-   and "Today only!", nothing else · gold-*: the admin's ring and its star, nothing else (CC-139) · lake/on-lake/stripe: the masthead band and the flag's stripes
+   and "Today only!", nothing else · gold-*: the admin's ring and its star, nothing else (CC-139) · lake/on-lake/stripe: the masthead band and the flag's stripes · lake-*: the band through the year (CC-165)
    info-soft: calm notes ("Opens…", notices, plain tags) · danger-soft: errors (a band, never red text)
    cat-*: the three category fields, with only white (--on-cat) on them */
 :root, :root[data-theme="light"] {
   --page: #FFFFFF; --surface: #F2F7F9; --line: #D3E3EA; --rule: #0E2A40; --field-line: #6F8796;
   --text: #0E2A40; --muted: #4A6275;
   --lake: #0E3A5B; --on-lake: #FFFFFF; --on-lake-muted: #C9DEEA; --stripe: #9CD3EF;
+  --lake-winter: #2D4543; --lake-between: #1D495C; --lake-summer: #0C4D75; --lake-dusk: #3B3160; /* CC-165: the masthead's lake through the year */
   --lead: #0E3A5B; --on-lead: #FFFFFF;
   --star: #C8102E;
   --gold-rim: #9A7300; /* CC-139: the pale gold is ~1.4:1 on the page, so in light the rim carries the ring */
@@ -28,6 +29,7 @@
   --page: #0A1A28; --surface: #0F2334; --line: #22394D; --rule: #A6BDCC; --field-line: #6F8CA3;
   --text: #EAF2F7; --muted: #A6BDCC;
   --lake: #06121C; --on-lake: #EAF2F7; --on-lake-muted: #A6BDCC; --stripe: #5E9FC2;
+  --lake-winter: #0C1E1C; --lake-between: #0A1E26; --lake-summer: #081D30; --lake-dusk: #161028;
   --lead: #9CD3EF; --on-lead: #06121C;
   --star: #FF5C70;
   --gold-rim: #B8860B;
@@ -134,6 +136,12 @@ a.btn, a.textbtn { display: inline-block; }
    wordmark and the nav, a 6px stripe underneath. Full on home: the date and nav, the wordmark between two stripes, the
    tagline. The red star on the light band is a graphic only (the name is the text), so it isn't held to 3:1. */
 .mast { position: relative; z-index: 30; background: var(--lake); color: var(--on-lake); border-bottom: 6px solid var(--stripe); } /* z-index: the water sits under the content, and the phone sheet stays over the page */
+/* CC-165: the band follows the real lake in Chicago time (water.js, lakeApply): grey-green in winter, bright in summer,
+   in between in spring and autumn, and a dusk tone from just before sunset until 5am. Before the script runs it's --lake. */
+.mast[data-season="winter"] { --lake: var(--lake-winter); }
+.mast[data-season="spring"], .mast[data-season="autumn"] { --lake: var(--lake-between); }
+.mast[data-season="summer"] { --lake: var(--lake-summer); }
+.mast[data-season][data-dusk] { --lake: var(--lake-dusk); }
 .mast :focus-visible { outline-color: var(--stripe); } /* the page's focus blue would vanish on the lake */
 .mast-in { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "brand nav"; align-items: center; gap: 8px 24px; padding-block: 12px; }
 .mast-date, .mast-tag, .burger { display: none; }
