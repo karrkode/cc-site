@@ -428,6 +428,14 @@ function evPlanHTML(e) {
     (mine ? '<p class="ev-said">' + esc(myplanSaid(mine)) + '. <button class="textbtn" type="button" data-myplan-clear="' + id + '">Clear plan</button></p>' : "") +
     '<p class="form-error" role="alert"></p></div>';
 }
+// CC-246: the event's photo, whole and never cropped, beside the poster's words on the water (above them on a phone),
+// credited in its own corner: .poster-frame is the photo's exact size, so the credit sits on the picture.
+// No photo, or one that fails to load (catalog's error listener below), and the poster is the water alone.
+function posterPhotoHTML(e) {
+  var src = listingImageSrc(e.imageUrl);
+  return src ? '<figure class="poster-photo"><span class="poster-frame"><img src="' + esc(src) + '" alt="" decoding="async" referrerpolicy="no-referrer">' +
+    photoCreditHTML(e) + "</span></figure>" : "";
+}
 // The page: "← The listings", the poster, then the facts and actions (and takes) beside your crews. The poster is one
 // element, data-poster="<id>", for CC-144's tile-becomes-poster transition.
 function eventViewHTML(e) {
@@ -435,10 +443,11 @@ function eventViewHTML(e) {
   var times = e.runDates.length ? runDatesText(e) : SHOW_TYPES[e.type] && !oneNight(e) && !past ? showDaysText(e.sched.weekly, e.sched.weeks) : "";
   if (times) facts.splice(1, 0, ["Shows", times]);
   if (e.address) facts.push(["Address", e.address, e.mapUrl]); // CC-218: neither the address nor the link when there's none
-  var html = '<div class="poster water-field' + catClass(e.type) + '" data-poster="' + esc(e.id) + '">' + waterHTML(e, "poster") +
+  var photo = posterPhotoHTML(e);
+  var html = '<div class="poster water-field' + catClass(e.type) + (photo ? " has-photo" : "") + '" data-poster="' + esc(e.id) + '">' + waterHTML(e, "poster") +
     '<div class="poster-in"><p class="poster-k">' + esc(e.label) + " · " + esc(st.label) + "</p>" +
     '<h1 id="event-title" tabindex="-1">' + esc(e.title) + "</h1>" +
-    '<p class="poster-where">' + esc(placeText(e)) + "</p></div></div>";
+    '<p class="poster-where">' + esc(placeText(e)) + "</p></div>" + photo + "</div>";
   // data-card: the card buttons (I've been, crew sharing, a photo, Edit) find their event, and redraw it, the same way
   // here; .ev-panel keeps account.js from swapping it for a card
   var main = '<div class="ev-main ev-panel" data-card="' + esc(e.id) + '">' +
@@ -628,6 +637,10 @@ $("ev-back").addEventListener("click", function () {
   try { history.replaceState(null, "", to === "home" || to === "join" ? location.pathname + location.search : "/" + location.search + "#" + to); } catch (err) {}
   closeEvent();
 });
+$("ev-body").addEventListener("error", function (ev) { // CC-246: a photo that won't load leaves the water
+  var fig = ev.target.closest && ev.target.closest(".poster-photo");
+  if (fig) { fig.parentNode.classList.remove("has-photo"); fig.remove(); }
+}, true);
 $("ev-body").addEventListener("click", function (ev) {
   var t = ev.target;
   if (t.id === "ev-signin-btn") { signInFrom("e/" + EV.id); return; }

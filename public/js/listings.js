@@ -36,13 +36,17 @@ function listingCrewHTML(e) {
 
 // CC-250: the catalog shows the event's photo, with its water as the default. The API gives the photo's address on
 // the site itself (https in production, http://localhost:4173 locally); anything else is ignored.
-function listingImageHTML(value) {
+// An event photo's address if it's one we show (https, or this site's own), else "". CC-246: the poster uses it too.
+function listingImageSrc(value) {
   if (typeof value !== "string" || !value.trim()) return "";
   try {
     var url = new URL(value.trim());
-    if (url.username || url.password || !(url.protocol === "https:" || url.origin === location.origin)) return "";
-    return '<img class="listing-image" src="' + esc(url.href) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">';
+    return url.username || url.password || !(url.protocol === "https:" || url.origin === location.origin) ? "" : url.href;
   } catch (err) { return ""; }
+}
+function listingImageHTML(value) {
+  var src = listingImageSrc(value);
+  return src ? '<img class="listing-image" src="' + esc(src) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">' : "";
 }
 $("grid").addEventListener("load", function (ev) {
   if (ev.target.matches(".listing-image")) ev.target.classList.add("is-loaded");

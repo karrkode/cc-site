@@ -812,6 +812,24 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
   color: inherit; overflow-wrap: anywhere; text-wrap: balance; }
 .poster-where { font-size: 1.5rem; line-height: 1.25; } /* 24px: large text across the lines */
 @media (max-width: 560px) { .poster { min-height: 300px; } }
+/* CC-246: with a photo, the words keep the water on the left and the whole photo sits on the water to the right, never
+   cropped (a square or tall picture shows whole, with water around it); on a phone it goes above the words. The frame
+   is the photo's own size, so the credit sits small in the photo's bottom-right corner. */
+.poster.has-photo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 46%); align-items: center; gap: 0 clamp(16px, 3vw, 32px);
+  padding: clamp(20px, 4vw, 40px); }
+.has-photo .poster-in { align-self: end; }
+.poster-photo { margin: 0; display: flex; justify-content: center; min-width: 0; }
+.poster-frame { position: relative; display: block; max-width: 100%; line-height: 0; }
+.poster-frame img { display: block; max-width: 100%; max-height: 420px; width: auto; height: auto; }
+.photo-credit { position: absolute; right: 8px; bottom: 8px; display: inline-flex; align-items: center; min-height: 24px;
+  padding: 2px 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.62); color: #fff; font-size: 0.8125rem; line-height: 1.2;
+  text-decoration: none; max-width: calc(100% - 16px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.photo-credit:hover, .photo-credit:focus-visible { background: rgba(0, 0, 0, 0.82); }
+@media (max-width: 720px) {
+  .poster.has-photo { grid-template-columns: minmax(0, 1fr); gap: 20px; min-height: 0; }
+  .has-photo .poster-photo { order: -1; }
+  .poster-frame img { max-height: 60vh; }
+}
 
 .ev-cols { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); grid-template-areas: "main side" "takes side";
   column-gap: clamp(32px, 5vw, 64px); margin-top: 32px; align-items: start; }
