@@ -175,11 +175,17 @@ html = g.journalEntryHTML(fresh, true);
 assert.strictEqual((html.match(/name="word"/g) || []).length, 3, "three boxes");
 has(html, '<label for="j-' + fresh.id + '-review">Your review (optional)</label>', "labelled fields");
 has(html, "Would you recommend it?");
-has(html, "Share publicly", "CC-112 stays"); has(html, "Add a photo"); has(html, "I've been</button>");
+has(html, "Share publicly", "CC-112 stays"); has(html, "Add a photo");
+// CC-263: on the journal, "I've been" is Delete entry: a delete, not a pressed toggle, and the same click (so the same confirmation)
+has(html, '<button type="button" class="went" data-went="' + fresh.id + '" aria-label="Delete your entry for ' + g.esc(fresh.title) + '">Delete entry</button>');
+lacks(html, "I've been", "not on the journal"); lacks(html, "✓", "no tick"); lacks(html, 'aria-pressed="true"', "not a pressed toggle");
+has(g.wentHTML(fresh), "I've been</button>", "elsewhere it stays I've been"); has(g.wentHTML(fresh), 'aria-pressed="true"');
 has(html, 'data-journal-error', "a band for errors");
 has(html, ">Close</button>");
 lacks(html, 'class="pill', "no pills");
 has(g.journalEntryHTML(fresh, false), "No three words yet.");
+// CC-263: Write reads Write an entry; its accessible name, and Edit and Close, stay
+has(g.journalEntryHTML(fresh, false), 'aria-label="Write your entry for ' + g.esc(fresh.title) + '">Write an entry</button>');
 set("WENT_PHOTO[" + JSON.stringify(fresh.id) + "] = { status: 'waiting', url: '/p/1.jpg' };");
 html = g.journalEntryHTML(fresh, true);
 has(html, '<img class="journal-thumb" src="/p/1.jpg" alt="">', "your photo on the tile");

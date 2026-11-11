@@ -506,7 +506,7 @@ function journalEntryHTML(e, open) {
     (open ? "" : saved.words ? '<p class="journal-words">' + esc(saved.words.split(" ").map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(". ")) + ".</p>" : '<p class="week-hint journal-nowords">No three words yet.</p>') +
     '<div class="journal-meta">' + notes.map(function (n) { return "<span>" + n + "</span>"; }).join("") + (photoState ? "<span>Photo " + esc(photoState.toLowerCase()) + "</span>" : "") +
     '<button type="button" class="week-tbtn" data-journal-open="' + id + '" aria-expanded="' + open + '" aria-label="' +
-    esc((open ? "Close your entry for " : saved.words ? "Edit your entry for " : "Write your entry for ") + e.title) + '">' + (open ? "Close" : saved.words ? "Edit" : "Write") + "</button></div></div>";
+    esc((open ? "Close your entry for " : saved.words ? "Edit your entry for " : "Write your entry for ") + e.title) + '">' + (open ? "Close" : saved.words ? "Edit" : "Write an entry") + "</button></div></div>";
   if (!open) return '<article class="journal-entry" data-journal="' + id + '" aria-labelledby="' + k + '-h">' + head + '<div id="' + k + '-b" data-drop hidden></div></article>';
   var photo = hasPhoto ? '<figure class="journal-photo"><img src="' + esc(API + p.url) + '" alt="Your photo from ' + esc(e.title) + '">' +
     (photoState ? "<figcaption>" + esc(photoState) + "</figcaption>" : "") + "</figure>" : "";
@@ -521,7 +521,13 @@ function journalEntryHTML(e, open) {
     '<label class="radio"><input type="checkbox" name="recommend"' + (j.recommend ? " checked" : "") + "> Would you recommend it?</label>" +
     '<div class="row"><button class="btn" type="submit">Save</button><span class="week-said" data-journal-said role="status"></span></div>' +
     '<p class="week-error" role="alert" data-journal-error></p></form>' + journalShareHTML(e) +
-    '<div class="card-actions wk-acts">' + photoButtonHTML(e) + wentHTML(e) + "</div>" + photo + "</div></article>";
+    '<div class="card-actions wk-acts">' + photoButtonHTML(e) + journalDeleteHTML(e) + "</div>" + photo + "</div></article>";
+}
+// CC-263: on the journal, un-marking "I've been" deletes the entry, so the button says so: a delete, not a pressed toggle.
+// It looks like "Delete this event" on your own entries, and keeps data-went, so the click handler above asks the
+// same confirmation and does the same thing.
+function journalDeleteHTML(e) {
+  return '<button type="button" class="went" data-went="' + esc(e.id) + '" aria-label="Delete your entry for ' + esc(e.title) + '">Delete entry</button>';
 }
 // CC-112: "Share publicly", off by default and saved the moment it's ticked or unticked (so unsharing can't be
 // forgotten). Once on, how it's signed: your first name and initial, or "A Culture Crew member". It needs the three
