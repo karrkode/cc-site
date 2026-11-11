@@ -80,7 +80,7 @@ has(planner, 'paintWater($("res-body"));', "the tiles' water is drawn");
 has(planner, '<div class="chips segs">', "sides of town are the joined square buttons");
 
 // --- the 404: the compact masthead, a title and deck, no box and no exclamation mark ---
-has(page404, "<header><div class=\"wrap\"><a class=\"brand\" href=\"/\">Culture", "the 404 has the wordmark on the lake");
+has(page404, "<header><div class=\"wrap\"><a class=\"brand\" href=\"/\">Chi<svg", "the 404 has the wordmark on the lake, the star after Chi (CC-252)");
 has(page404, "border-bottom: 6px solid var(--stripe);", "and the stripe under it");
 lacks(page404, "border-top: 4px", "no boxed panel");
 const h1 = page404.slice(page404.indexOf("<h1>"), page404.indexOf("</h1>"));

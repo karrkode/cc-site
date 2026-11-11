@@ -13,13 +13,13 @@
 })();
 </script>
 <style>:root{color-scheme:light;background:#FFFFFF}:root[data-theme="dark"]{color-scheme:dark;background:#0A1A28}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
-<title>Culture Crew · Chicago theater, music and art</title>
+<title>Chi Culture Crew · Chicago theater, music and art</title>
 <!-- CC-108: what search results and shared links show. CC-119: both descriptions start with the line under the Home headline. Event pages (/e/...) come from the API with their own. -->
 <meta name="description" content="Chicago theater, music, and art curated by you and your crew. Dates, prices and neighborhoods in one list, and an outing found in four questions.">
 <link rel="canonical" href="https://chiculturecrew.com/">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Culture Crew">
-<meta property="og:title" content="Culture Crew · Chicago theater, music and art">
+<meta property="og:site_name" content="Chi Culture Crew">
+<meta property="og:title" content="Chi Culture Crew · Chicago theater, music and art">
 <meta property="og:description" content="Chicago theater, music, and art curated by you and your crew. Find an outing in four questions.">
 <meta property="og:url" content="https://chiculturecrew.com/">
 <meta property="og:image" content="https://chiculturecrew.com/img/preview.png">
@@ -114,7 +114,7 @@
      CC-147: always paper-white, under a small flag band -->
 <dialog class="qr-full" id="qr-full" aria-labelledby="qr-full-title">
   <div class="qr-full-in">
-    <div class="qr-flag"><i></i><p class="qr-flag-word">Culture<svg class="star" aria-hidden="true"><use href="#chi-star"></use></svg>Crew</p><i></i></div>
+    <div class="qr-flag"><i></i><p class="qr-flag-word">Chi<svg class="star" aria-hidden="true"><use href="#chi-star"></use></svg>Culture Crew</p><i></i></div>
     <div class="qr-full-body">
       <h2 id="qr-full-title" tabindex="-1">Scan to join the crew</h2>
       <div class="qr-full-code" id="qr-full-code" role="img" aria-label="QR code for the invite page"></div>
@@ -249,7 +249,7 @@
   <canvas class="water" aria-hidden="true" data-water="mast" data-seed="5" data-kind="theater"></canvas><!-- CC-138: the lake's water, behind the masthead -->
   <div class="wrap mast-in">
     <p class="mast-date" id="mast-date"></p>
-    <button class="brand" type="button" id="brand" data-go="home" aria-label="Culture Crew">Culture<svg class="star" aria-hidden="true"><use href="#chi-star"></use></svg>Crew</button>
+    <button class="brand" type="button" id="brand" data-go="home" aria-label="Chi Culture Crew">Chi<svg class="star" aria-hidden="true"><use href="#chi-star"></use></svg>Culture Crew</button><!-- CC-252: the star after Chi -->
     <button class="burger" type="button" id="mast-burger" aria-label="Menu" aria-expanded="false" aria-controls="mast-nav"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="burger-lines" d="M3 7h18M3 12h18M3 17h18"></path><path class="burger-x" d="M5 5l14 14M19 5 5 19"></path></svg></button>
     <nav aria-label="Sections" id="mast-nav">
       <button class="navlink" type="button" data-go="catalog" id="nav-catalog">Catalog</button>
@@ -283,7 +283,7 @@
            so it's right on first paint; the hidden one is display:none, so it isn't part of the accessible name. -->
       <button class="navlink theme-toggle" type="button" id="theme-toggle"><span class="to-dark">Lights down</span><span class="to-light">Lights up</span></button>
     </nav>
-    <p class="mast-tag">Chicago theater, music and visual art, kept by the crew</p>
+    <p class="mast-tag">Choose an event. Commit with your crew. Communicate your thoughts.</p>
   </div>
 </header>
 
@@ -294,15 +294,16 @@
     <!-- Welcome -->
     <section class="view" id="view-home">
       <!-- CC-143: the front page (brief section 5). The masthead's tagline says what the site is (it took over CC-119's
-           line), so the page's h1 is for screen readers. Then the admin's picks (CC-238: a stack across the row, or one lead pick in three columns), three ways in, last chance. -->
-      <h1 class="sr-only" id="home-title" tabindex="-1">Culture Crew: Chicago theater, music and visual art</h1>
+           line), so the page's h1 is for screen readers. Then the admin's picks (CC-238: a stack across the row, or one lead pick in three columns), four ways in (CC-252), last chance. -->
+      <h1 class="sr-only" id="home-title" tabindex="-1">Chi Culture Crew: Chicago theater, music and visual art</h1>
       <p class="lede" id="home-lede" role="status" hidden></p><!-- only "couldn't be loaded" shows here (CC-107) -->
       <div class="front no-lead" id="front">
         <div class="lead-slot" id="lead-slot" hidden></div>
         <nav class="ways rise" id="ways" aria-labelledby="ways-h">
-          <h2 class="front-h" id="ways-h">Three ways in</h2>
+          <h2 class="front-h" id="ways-h">Four ways in</h2>
           <button class="way" type="button" data-go="plan"><span class="way-t">Find an outing&nbsp;→</span><span class="way-d">Four questions. One pick and a few backups.</span></button>
           <button class="way" type="button" data-go="crews"><span class="way-t">Check in on the crew&nbsp;→</span><span class="way-d" id="way-crews-d">The friends you go out with. Sign in to start one or join one.</span></button>
+          <button class="way" type="button" data-go="journal"><span class="way-t">Update your cultural journal&nbsp;→</span><span class="way-d">Where you've been, in three words each.</span></button><!-- CC-252 -->
           <button class="way" type="button" data-go="catalog"><span class="way-t">Read the listings&nbsp;→</span><span class="way-d" id="way-catalog-d">Every event, opening soonest first.</span></button>
         </nav>
         <section class="last-col" aria-labelledby="last-h">
@@ -596,10 +597,15 @@
         <h1 id="journal-title" tabindex="-1">Cultural journal</h1>
         <p class="week-deck">Where you've been, in three words each. Only you can see it, unless you share an entry.</p>
       </div>
-      <div class="panel" id="journal-signin" hidden>
-        <p>Mark events with &ldquo;I've been&rdquo; and they wait here for your notes: three words each, and a review if you like.</p>
-        <div class="row"><button class="btn" type="button" id="journal-signin-btn">Sign in or make an account</button></div>
-      </div>
+      <!-- CC-252: the welcome box. Signed out it takes the sign-in panel's place and leads to making an account; signed in
+           it can be put away, and stays away in this browser (journalWelcome, account.js). -->
+      <section class="jw" id="journal-welcome" aria-labelledby="journal-welcome-h">
+        <div class="jw-in">
+          <p class="jw-h" id="journal-welcome-h">Thoughts are fleeting! Use this journal to help record your thoughts and remember where you've been.</p>
+          <p class="jw-out" id="journal-welcome-out" hidden>But first you need to create an account! <button class="textbtn" type="button" id="journal-register">Click here to register</button>.</p>
+        </div>
+        <button class="jw-x" type="button" id="journal-welcome-x" aria-label="Put this note away" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+      </section>
       <section class="journal-sec" id="journal-main" aria-labelledby="journal-title" hidden>
         <p class="week-hint">The last five events you've been to, and any you've added yourself. Sum each one up in three words. A review is up to you.</p>
         <div class="journal" id="went-grid"></div>
@@ -988,9 +994,9 @@
           <input id="card-campaign" type="text" value="card" maxlength="40" autocomplete="off" spellcheck="false" aria-describedby="card-campaign-hint">
           <span class="hint small" id="card-campaign-hint">Name each batch, for example lobby-goodman, to compare them on Site stats. Letters, numbers and dashes. Today's date is added to the end, so batches printed on different days show separately.</span></div>
         <p class="hint small">The code opens <code id="card-url"></code></p>
-        <div class="biz-card" id="biz-card" role="img" aria-label="Preview of the printed card: Culture Crew, What's the crew seeing next?, chiculturecrew.com/join, and the QR code">
+        <div class="biz-card" id="biz-card" role="img" aria-label="Preview of the printed card: Chi Culture Crew, What's the crew seeing next?, chiculturecrew.com/join, and the QR code">
           <div class="biz-text">
-            <p class="biz-brand"><svg class="star" aria-hidden="true"><use href="#chi-star"></use></svg>Culture Crew</p>
+            <p class="biz-brand">Chi<svg class="star" aria-hidden="true"><use href="#chi-star"></use></svg>Culture Crew</p>
             <p class="biz-head">What’s the crew seeing <span>next?</span></p>
             <p class="biz-sub">Chicago theater, music and art, and the people you go with.</p>
             <p class="biz-url">chiculturecrew.com/join</p>
