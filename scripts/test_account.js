@@ -78,7 +78,7 @@ has(issues, "acctRowHTML(i.key", "your reports are rows too");
 // CC-237: every prompt sets its way back, and a new member hears about confirming wherever they land
 const submit = read("js/submit.js"), crewsJs = read("js/crews.js"), catalogJs = read("js/catalog.js");
 has(submit, 'signInFrom("submit")'); has(catalogJs, 'signInFrom("e/" + EV.id)'); has(crewsJs, 'signInFrom("crews")');
-has(account, 'signInFrom("planner")'); has(account, 'signInFrom("journal")');
+has(account, 'signInFrom("planner")'); has(account, 'registerFrom("journal")'); has(account, 'function registerFrom(place) { signInFrom(place);'); // CC-252: the journal's is a register prompt
 lacks(between(html, 'id="submit-signin"', "</div>\n      </div>"), 'data-go="account"', "the Submit prompt sets its way back");
 for (const src of [account, submit, crewsJs, catalogJs]) assert.ok(!/AFTER_SIGN_IN = "/.test(src), "only signInFrom and authForm set AFTER_SIGN_IN");
 has(fn(account, "openAccount"), "AFTER_SIGN_IN = null");

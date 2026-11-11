@@ -148,6 +148,7 @@ a.btn, a.textbtn { display: inline-block; }
 .brand {
   grid-area: brand; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0; background: none; border: 0;
   color: inherit; cursor: pointer; font-family: var(--display); font-size: 2rem; font-weight: 600; line-height: 1; letter-spacing: -0.02em;
+  white-space: nowrap; /* CC-252: "Culture Crew" stays on one line */
 }
 .brand .star { width: 0.56em; height: 0.56em; }
 .mast nav { grid-area: nav; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 0 8px; }
@@ -166,7 +167,7 @@ a.btn, a.textbtn { display: inline-block; }
 .mast-date { grid-area: date; font-variant-numeric: tabular-nums; }
 .mast-full .brand {
   justify-content: center; gap: 18px; margin-top: 14px; padding: 10px 0 8px;
-  border-block: 6px solid var(--stripe); font-size: clamp(2.75rem, 7vw, 5rem);
+  border-block: 6px solid var(--stripe); font-size: clamp(min(2.75rem, 10vw), 7vw, 5rem); /* CC-252: under 440px it scales, so the longer name fits */
 }
 .mast-full .brand .star { width: 0.475em; height: 0.475em; }
 .mast-tag { grid-area: tag; margin-top: 10px; text-align: center; text-wrap: balance; }
@@ -212,7 +213,7 @@ a.btn, a.textbtn { display: inline-block; }
   .mast-full .brand {
     justify-content: flex-start; margin-top: calc(6px * (1 - var(--s))); padding: calc(10px * (1 - var(--s))) 0 calc(8px * (1 - var(--s))) calc((1 - var(--s)) * var(--brand-in, 0px));
     border-block-width: calc(6px * (1 - var(--s))); gap: calc(12px - 5px * var(--s));
-    font-size: calc(clamp(2.75rem, 7vw, 5rem) * (1 - var(--s)) + 1.625rem * var(--s));
+    font-size: calc(clamp(min(2.75rem, 10vw), 7vw, 5rem) * (1 - var(--s)) + 1.625rem * var(--s));
   }
   .mast-full .brand .star { width: calc(0.475em + 0.085em * var(--s)); height: calc(0.475em + 0.085em * var(--s)); }
   .mast-full .water { height: var(--mast-full-h, 100%); bottom: auto; clip-path: inset(0 0 var(--mast-cut, 0px) 0); }
@@ -278,7 +279,7 @@ a.btn, a.textbtn { display: inline-block; }
   .stack-progress { flex: 1 1 auto; }
 }
 
-/* Three ways in: stacked links, hairlines between. CC-103's rise stays: 600ms, 120ms apart, first load only. */
+/* Four ways in (CC-252; it was three): stacked links, hairlines between. CC-103's rise stays: 600ms, 120ms apart, first load only. */
 .ways { padding-right: 24px; border-right: 1px solid var(--rule); }
 .way { display: grid; gap: 4px; width: 100%; min-height: 44px; padding: 16px 0; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--text); text-align: left; cursor: pointer; font: inherit; }
 .way:last-child { border-bottom: 0; }
@@ -287,6 +288,7 @@ a.btn, a.textbtn { display: inline-block; }
 .ways.rise .way { animation: door-rise 0.6s var(--ease-out) both; }
 .ways.rise .way:nth-of-type(2) { animation-delay: 0.12s; }
 .ways.rise .way:nth-of-type(3) { animation-delay: 0.24s; }
+.ways.rise .way:nth-of-type(4) { animation-delay: 0.36s; }
 @keyframes door-rise { from { opacity: 0; transform: translateY(24px); } }
 
 /* Last chance: soonest to close. "Today only!" is one of red's two jobs (the other is the star). */
@@ -1179,6 +1181,14 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 /* CC-159: My week's line to the journal, on a rule under the week */
 .week-tojournal { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; margin-top: 48px; padding-top: 8px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 1rem; }
 /* the Cultural journal (CC-98), its own page since CC-159, at reading width. A folded entry is its row and its three words as an italic deck. */
+/* CC-252: the journal's welcome box, a calm note (info-soft) under the deck. Signed in it has a 44px close in the corner. */
+.jw { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 8px; max-width: 820px; margin-top: 28px; padding: 18px 10px 18px 20px; background: var(--info-soft); color: var(--on-info-soft); }
+.jw-in { display: grid; gap: 8px; padding-right: 10px; }
+.jw-h { font-family: var(--display); font-weight: 600; font-size: 1.375rem; line-height: 1.25; letter-spacing: -0.01em; text-wrap: pretty; }
+.jw-out { font-size: 1.0625rem; }
+.jw-out .textbtn { padding-block: 12px; margin-block: -12px; color: inherit; font-size: inherit; } /* a 44px target inside the line */
+.jw-x { display: grid; place-items: center; width: 44px; height: 44px; margin-block: -10px; padding: 0; background: none; border: 0; color: inherit; cursor: pointer; }
+.jw-x svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .journal-sec { max-width: 820px; margin-top: 28px; padding-top: 10px; border-top: 1px solid var(--rule); }
 .journal { display: grid; }
 .journal > .week-hint, .journal > .week-error { margin-top: 14px; }
