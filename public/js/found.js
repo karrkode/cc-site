@@ -238,7 +238,7 @@ $("rules-list").addEventListener("click", function (ev) {
 // ---------- "Edit/Approve": the event edit form (CC-56), filled from the found item ----------
 function foundMode(i) { // i: the found item, or null for the ordinary edit form
   var on = !!i, sel = $("ed-category"), blank = sel.querySelector('option[value=""]');
-  $("ed-found").hidden = !on; $("ed-remove").hidden = on;
+  $("ed-found").hidden = !on; $("ed-remove").hidden = on; $("ed-picture-controls").hidden = on;
   $("ed-save").textContent = on ? "Approve" : "Save changes";
   Array.prototype.forEach.call($("ed-status").options, function (o) { o.hidden = on && o.value !== "approved" && o.value !== "pending"; });
   var start = on ? foundType(i).category : true;
