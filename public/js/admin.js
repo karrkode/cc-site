@@ -790,11 +790,36 @@ $("va-list").addEventListener("keydown", function (ev) { // Enter in the edit bo
 // changed, so an untouched price keeps its exact lowest price. Afterwards every list on the
 // page is updated in place, and focus goes back to the Edit button (or the view's heading if it's gone).
 var EDITING = null, REFOCUS = null; // the open edit; the event whose Edit button should get focus back
+var ED_IMAGE_LIMIT = 3800000; // CC-265: stays within the API and reverse proxy's upload cap
+function forgetEditorPicture() {
+  if (EDITING && EDITING.picture && EDITING.picture.url) URL.revokeObjectURL(EDITING.picture.url);
+}
+function paintEditorPicture() {
+  if (!EDITING || !EDITING.picture || EDITING.found) return;
+  var p = EDITING.picture, e = EDITING.e;
+  var look = Object.assign({}, e, { type: $("ed-category").value || e.type });
+  var src = p.mode === "upload" ? p.url : p.mode === "remove" ? "" : listingImageSrc(e.imageUrl);
+  $("ed-picture-preview").innerHTML = '<span class="tile water-field' + catClass(look.type) + '">' +
+    waterHTML(look, "tile") + (src ? '<img class="listing-image" src="' + esc(src) + '" alt="" decoding="async">' : "") + "</span>";
+  $("ed-image-note").textContent = p.mode === "upload" ? "New picture selected. Save changes to use it." :
+    p.mode === "remove" ? "Default water selected. Save changes to remove the picture." :
+    e.imageUrl ? "Current event picture." : "Default category water (no picture).";
+  $("ed-image-remove").disabled = !e.imageUrl && p.mode !== "upload";
+  $("ed-image-undo").hidden = p.mode === "keep";
+  paintWater($("ed-picture-preview"));
+}
+function resetEditorPicture() {
+  if (!EDITING || !EDITING.picture) return;
+  forgetEditorPicture();
+  EDITING.picture = { mode: "keep", file: null, url: "" };
+  $("ed-image-file").value = "";
+  paintEditorPicture();
+}
 function editButtonHTML(e, cls) {
   return '<button type="button" class="' + cls + '" data-edit="' + esc(e.id) + '" aria-label="Edit ' + esc(e.title) + '">Edit</button>';
 }
 function openEditor(e, opener) {
-  EDITING = { e: e, opener: opener };
+  EDITING = { e: e, opener: opener, picture: { mode: "keep", file: null, url: "" } };
   foundMode(null); // the same form approves found events (CC-71)
   $("ed-heading").textContent = "Edit " + e.title;
   $("ed-title").value = e.title; $("ed-category").value = TYPE_ORDER.indexOf(e.type) >= 0 ? e.type : ""; $("ed-status").value = e.status || "approved";
@@ -808,11 +833,12 @@ function openEditor(e, opener) {
   $("ed-dates-note").hidden = !datesToLookUp(e); // CC-102: a reminder to find its dates
   $("ed-withdraw").textContent = e.status === "withdrawn" ? "Restore" : "Withdraw";
   $("ed-error").textContent = ""; $("ed-confirm").hidden = true; setEditorBusy(false);
-  openDialog($("edit-dialog")); $("ed-title").focus();
+  resetEditorPicture();
+  openDialog($("edit-dialog")); paintWater($("ed-picture-preview")); $("ed-title").focus();
 }
 function closeEditor() { if ($("edit-dialog").open) closeDialog($("edit-dialog")); }
 $("edit-dialog").addEventListener("close", function () { // Escape, Cancel or done: back to where the admin was
-  var was = EDITING; EDITING = null; if (!was) return;
+  var was = EDITING; forgetEditorPicture(); EDITING = null; if (!was) return;
   REFOCUS = was.e.id;
   var back = was.opener && document.contains(was.opener) ? was.opener :
     Array.prototype.filter.call(document.querySelectorAll('[data-edit="' + was.e.id + '"]'), function (b) { return b.offsetParent; })[0];
@@ -833,6 +859,27 @@ document.addEventListener("click", function (ev) {
   var e = KNOWN[b.getAttribute("data-edit")]; if (e) openEditor(e, b);
 });
 $("ed-cancel").addEventListener("click", closeEditor);
+$("ed-category").addEventListener("change", function () { if (EDITING && !EDITING.found) paintEditorPicture(); });
+$("ed-image-file").addEventListener("change", function () {
+  if (!EDITING || EDITING.found || !this.files.length) return;
+  var file = this.files[0];
+  if (!/^(image\/jpeg|image\/png|image\/webp|image\/gif|image\/avif)$/.test(file.type) || !file.size || file.size > ED_IMAGE_LIMIT) {
+    $("ed-error").textContent = "Choose a JPEG, PNG, WebP, GIF or AVIF file smaller than 3.8 MB.";
+    this.value = "";
+    return;
+  }
+  $("ed-error").textContent = "";
+  forgetEditorPicture();
+  EDITING.picture = { mode: "upload", file: file, url: URL.createObjectURL(file) };
+  paintEditorPicture();
+});
+$("ed-image-remove").addEventListener("click", function () {
+  if (!EDITING || EDITING.found) return;
+  forgetEditorPicture(); EDITING.picture = { mode: "remove", file: null, url: "" };
+  $("ed-image-file").value = "";
+  paintEditorPicture();
+});
+$("ed-image-undo").addEventListener("click", resetEditorPicture);
 // CC-125: an opera is Music, so ticking Opera picks Music, and another type unticks it (the venue dialog works the same way)
 function operaGoesWithMusic(sel, box) {
   $(box).addEventListener("change", function () { if (this.checked) { $(sel).value = "Music"; $(sel).dispatchEvent(new Event("change")); } });
@@ -893,8 +940,22 @@ $("edit-form").addEventListener("submit", function (ev) {
   setEditorBusy(true); $("ed-error").textContent = "";
   (venueChanged ? venueIdFor(venue, hood) : Promise.resolve(null)).then(function (venueId) {
     if (venueId !== null && venueId !== e.venueId) body.venue_id = venueId;
-    if (!Object.keys(body).length) { closeEditor(); return; } // nothing changed
-    return saveEvent(e, body, "Saved changes to " + title + ".");
+    // CC-265: image changes are held in the editor until Save; cancel never touches the API.
+    var pic = EDITING.picture, changed = pic && pic.mode !== "keep";
+    if (!Object.keys(body).length && !changed) { closeEditor(); return; }
+    if (!changed) return saveEvent(e, body, "Saved changes to " + title + ".");
+    var imageRequest = pic.mode === "remove" ? { method: "DELETE" } : { method: "PUT", raw: pic.file };
+    return api("/events/" + encodeURIComponent(e.id) + "/image", imageRequest).then(readJSON).then(function (res) {
+      if (!res.ok) { editorFail(res, pic.mode === "upload" ? "ed-image-file" : null); return; }
+      var saved = toEvent(res.body); eventChanged(e.id, saved);
+      if (Object.keys(body).length) {
+        // CC-265: the picture is saved now: if the other changes fail, the editor shows it and a retry sends only those
+        EDITING.e = saved; resetEditorPicture();
+        return saveEvent(saved, body, "Saved changes and picture for " + title + ".");
+      }
+      $("edit-live").textContent = pic.mode === "remove" ? "Restored the default water for " + title + "." : "Updated the picture for " + title + ".";
+      closeEditor();
+    }, function () { editorFail(null); });
   }).catch(function (res) { editorFail(res, "ed-venue"); });
 });
 function saveEvent(e, body, said) {

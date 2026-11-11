@@ -45,6 +45,8 @@ jobs:
         run: node scripts/test_week.js
       - name: Your own journal events (CC-248)
         run: node scripts/test_own_events.js
+      - name: Admin event picture (CC-265)
+        run: node scripts/test_event_picture.js
       - name: Invite a friend, its QR screen and the invite page keep their labels, focus and counts
         run: node scripts/test_invite.js
       - name: Account settings and sign-in keep their labels, autocomplete, statuses and errors

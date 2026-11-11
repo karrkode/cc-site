@@ -1571,6 +1571,17 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 .editor .remove { padding-top: 16px; }
 @media (max-width: 760px) { .editor { padding: 24px 20px; } }
 
+/* CC-265: admin image changes use the same category water and contained artwork as catalog cards. */
+.editor .ed-picture-layout { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px; }
+.editor .ed-picture-preview { flex: 0 0 168px; max-width: 100%; }
+.editor .ed-picture-preview .tile { width: 168px; max-width: 100%; height: 112px; border: 1.5px solid var(--rule); border-radius: var(--r-ctl); }
+.editor .ed-picture-actions { flex: 1 1 220px; display: grid; gap: 12px; min-width: 0; }
+.editor .ed-picture-actions .field input[type="file"] { display: block; max-width: 100%; font: inherit; color: var(--text); }
+.editor .ed-picture-actions .row { gap: 8px; }
+.editor #ed-image-undo[hidden], .editor #ed-picture-controls[hidden] { display: none; }
+.editor .ed-picture-actions input[type="file"]::file-selector-button { margin-right: 12px; padding: 8px 14px; border: 0; border-radius: var(--r-ctl); background: transparent; color: var(--text); box-shadow: inset 0 0 0 1.5px var(--text); font-family: var(--sign); font-weight: 700; font-size: 1rem; cursor: pointer; } /* the ghost button, not the browser's grey one */
+.editor .ed-picture-actions input[type="file"]::file-selector-button:hover { background: var(--info-soft); }
+
 /* CC-206: the Review menu's group pages: one reading column, built for the iPad. A row is one link, with what's waiting as a plain number. */
 .hub { max-width: 50rem; }
 .lf-page .hub .section > h2 { justify-content: flex-start; font-family: var(--display); font-weight: 600; font-size: clamp(1.75rem, 4vw, 2.125rem); letter-spacing: -0.01em; }
@@ -1956,4 +1967,3 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
    for its backdrop. The script sets its box. */
 dialog.dialog-leaving { display: block; position: fixed; z-index: 101; margin: 0; max-width: none; max-height: none; box-sizing: border-box; }
 .dialog-scrim { position: fixed; inset: 0; z-index: 100; }
-
