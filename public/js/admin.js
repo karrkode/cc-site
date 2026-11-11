@@ -947,8 +947,12 @@ $("edit-form").addEventListener("submit", function (ev) {
     var imageRequest = pic.mode === "remove" ? { method: "DELETE" } : { method: "PUT", raw: pic.file };
     return api("/events/" + encodeURIComponent(e.id) + "/image", imageRequest).then(readJSON).then(function (res) {
       if (!res.ok) { editorFail(res, pic.mode === "upload" ? "ed-image-file" : null); return; }
-      if (Object.keys(body).length) return saveEvent(e, body, "Saved changes and picture for " + title + ".");
-      eventChanged(e.id, toEvent(res.body));
+      var saved = toEvent(res.body); eventChanged(e.id, saved);
+      if (Object.keys(body).length) {
+        // CC-265: the picture is saved now: if the other changes fail, the editor shows it and a retry sends only those
+        EDITING.e = saved; resetEditorPicture();
+        return saveEvent(saved, body, "Saved changes and picture for " + title + ".");
+      }
       $("edit-live").textContent = pic.mode === "remove" ? "Restored the default water for " + title + "." : "Updated the picture for " + title + ".";
       closeEditor();
     }, function () { editorFail(null); });
