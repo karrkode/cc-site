@@ -264,7 +264,7 @@ set("WENT_PHOTO[" + JSON.stringify(shot.id) + "] = { status: 'approved', url: '/
 assert.match(g.journalEntryHTML(shot, false), /class="listing-image"[^>]*><span class="tile-k">[^<]*<\/span><img class="journal-thumb" src="\/p\/2\.jpg"/, "your photo goes over the event's");
 has(html, "<figcaption>Waiting for approval</figcaption>", "its state in words");
 
-// CC-261: an interested event that's over drops out of the list, unless you've been; a passed going day stays for I've been
+// CC-261: an event that's over, or a going plan's day that's passed, drops out of the list unless you've been
 const over = ev({ title: "Over", begin_date: iso(g.add(g.T, -20)), end_date: iso(g.add(g.T, -2)) });
 const onNow = ev({ title: "On now" });
 const wentTo = ev({ title: "Went", begin_date: iso(g.add(g.T, -20)), end_date: iso(g.add(g.T, -2)) });
@@ -275,8 +275,10 @@ set("MYPLANS = {}; WENT = {}; MYPLAN_LIST = [" + [over, onNow, wentTo, goneDay, 
 plan(goneDay, "going", iso(g.add(g.T, -3)));
 plan(ahead, "going", iso(g.add(g.T, 2)));
 set("WENT[" + JSON.stringify(wentTo.id) + "] = true;");
-assert.deepStrictEqual(Array.from(g.interestedList(), (e) => e.title), ["On now", "Went", "Gone day"],
-  "over and not been: gone; on now, been, and a passed going day: kept; a going day ahead: in the week");
+assert.deepStrictEqual(Array.from(g.interestedList(), (e) => e.title), ["On now", "Went"],
+  "over and not been, or a passed going day not been: gone; on now, or been: kept; a going day ahead: in the week");
+set("WENT[" + JSON.stringify(goneDay.id) + "] = true;");
+assert.deepStrictEqual(Array.from(g.interestedList(), (e) => e.title), ["On now", "Went", "Gone day"], "a passed going day you've been to stays");
 // CC-261: "Still deciding" is now "Events you're interested in", in the heading, the deck and the live messages
 const page = fs.readFileSync(path.join(__dirname, "..", "public", "index.html"), "utf8");
 has(page, '<span id="deciding-title" tabindex="-1">Events you\'re interested in</span>', "the new heading");

@@ -234,8 +234,8 @@ document.addEventListener("keydown", function (ev) { // Escape closes the picker
 // to that day as event rows (CC-140) with Change plan and Tell a crew, or, on an empty day, one "Find something →"
 // line (CC-131). Previous and Next step a week at a time (never before this week; at most two years out, as far as a
 // plan can go), and "Skip to" jumps to the week of your next plan after the one showing. Beside it, Events you're interested in:
-// interested plans, with no day yet, and going plans for a day that's passed, where "I've been" is. An interested plan for an
-// event that's over goes once the event does, unless you've marked it "I've been" (CC-261).
+// interested plans, with no day yet. Once the event is over, or a going plan's day has passed, a plan shows there only if
+// you've marked it "I've been" (CC-261).
 var PLANNER_LISTS = ["planner-week", "myplans-grid"], PLANNER_WEEK = 0, PLANNER_MAX = 104;
 var PLANS_STATE = "loading", WENT_STATE = "loading"; // until /me/plans and /me/attended first answer: then "ready", or "error"
 function dayTimesText(e, d) { // "7:30 PM", "Open 10 AM to 5 PM", or "" (planner.js knows the schedules)
@@ -312,8 +312,10 @@ function weekRangeText(ws, we) { // "Oct 30 – Nov 5", "Nov 6 – 12", and the 
 function interestedList() { // the rows of Events you're interested in
   return MYPLAN_LIST.filter(function (e) {
     var mine = MYPLANS[e.id] || {};
-    if (mine.status === "going") return !(parseISO(mine.date) >= T); // a day that's passed: here for "I've been"
-    return !isPast(e) || !!WENT[e.id]; // CC-261: an interested event that's over, and you didn't go, drops out
+    // CC-261: once it's over (the event, or a going plan's day) it stays only if you've marked "I've been"
+    var over = mine.status === "going" ? !(parseISO(mine.date) >= T) : isPast(e);
+    if (mine.status === "going" && !over) return false; // in the week ahead
+    return !over || !!WENT[e.id];
   });
 }
 function renderPlanner() {
