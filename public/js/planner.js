@@ -319,7 +319,7 @@ function stopHTML(e, slot, ws, we) {
 }
 // CC-149: an event's tile (the category field, its water and the category's name), as on the listings (CC-140)
 function outingTileHTML(e) {
-  return '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + '<span class="tile-k">' + esc(e.label) + "</span></span>";
+  return eventTileHTML(e); // CC-253: with its photo
 }
 function shareUrl() {
   var base = PAGE_URL && PAGE_URL.indexOf("http") === 0 ? PAGE_URL : location.href.split("#")[0];

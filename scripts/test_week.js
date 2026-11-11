@@ -25,7 +25,7 @@ const g = {
   window: { devicePixelRatio: 1, matchMedia: () => stub(), addEventListener: () => {} },
   matchMedia: () => stub(),
   document: stub(), localStorage: stub(), location: stub(), history: stub(), navigator: stub(),
-  Intl, console,
+  Intl, URL, console,
 };
 vm.createContext(g);
 vm.runInContext("var AUTH = { user: null }, MYPLANS = {}, API = ''; function $(id) { return document; }", g);
@@ -103,6 +103,7 @@ const link = row.match(/<a class="wk-row-a"[\s\S]*?<\/a>/)[0];
 has(link, 'href="#e/' + going.id + '" data-ev-open="' + going.id + '"', "the row opens the event page");
 has(link, '<span class="tile water-field cat-theater">', "with its tile");
 has(link, '<span class="listing-t">Heroes of the Fourth Turning</span>');
+lacks(link, "listing-image", "no photo: the water");
 lacks(link, "mark mark-", "CC-162: no dolphin for your own plan; the day says it");
 lacks(link, "<button", "no buttons inside a link");
 has(row, ">Change plan</button>"); has(row, ">Tell a crew</button>");
@@ -182,6 +183,13 @@ has(g.journalEntryHTML(fresh, false), "No three words yet.");
 set("WENT_PHOTO[" + JSON.stringify(fresh.id) + "] = { status: 'waiting', url: '/p/1.jpg' };");
 html = g.journalEntryHTML(fresh, true);
 has(html, '<img class="journal-thumb" src="/p/1.jpg" alt="">', "your photo on the tile");
+// CC-253: the event's own photo sits on journal and week tiles; yours covers it
+const shot = ev({ title: "Shot", image_url: "https://example.com/a.webp" });
+assert.match(g.weekRowHTML(shot), /<img class="listing-image" src="https:\/\/example\.com\/a\.webp"[^>]*><span class="tile-k">/, "Still deciding rows have the photo");
+plan(shot, "going", iso(day));
+has(g.weekDayHTML({ d: day, items: [shot] }), 'class="listing-image"', "and so do a day's rows");
+set("WENT_PHOTO[" + JSON.stringify(shot.id) + "] = { status: 'approved', url: '/p/2.jpg' };");
+assert.match(g.journalEntryHTML(shot, false), /class="listing-image"[^>]*><span class="tile-k">[^<]*<\/span><img class="journal-thumb" src="\/p\/2\.jpg"/, "your photo goes over the event's");
 has(html, "<figcaption>Waiting for approval</figcaption>", "its state in words");
 
 console.log("ok: My week (CC-146, CC-156, CC-160)");
