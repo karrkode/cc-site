@@ -233,6 +233,8 @@ For the site, the "Page checks" job does these checks:
 - The Node tests in `scripts/`: the water, the listing rows, the event poster, the home page and the motion.
 - The asset links can be stamped, and each script has correct JavaScript syntax.
 
+CC-193: a Content-Security-Policy (CSP) limits what the pages can run and load. The policy lives in cc-backend (`infra/aws/frontend.tf`, one list for the site and one for the pages the API renders; `web.nginx.conf` enforces the same lists locally). Do not add a `<style>` element, an `on…=` attribute or an inline script to a page: put CSS in `css/` and code in `js/`. The one inline script is the theme script, which the policy allows by its hash and which must stay byte-identical to `THEME_SCRIPT` in cc-backend `app/seo.py` (`scripts/test_csp.js` checks the hash). Inline `style="…"` attributes are still allowed (`style-src-attr`); a new source such as another API host or image CDN needs the policy changed first.
+
 When you merge a pull request into `main`, GitHub Actions deploys the change.
 The site deploy uploads the files to S3, then removes each file that the site does not have now (CC-150). It does not remove style or script files that a cached page still links to, because their names do not change.
 GitHub Actions uses OIDC to get access to AWS. It does not keep AWS keys.

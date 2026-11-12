@@ -4,53 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<script>
-// Theme before first paint (CC-49): the visitor's saved choice, otherwise light (CC-136: light leads, and
-// dark is "Lights down"). Storage can be blocked (private windows, strict settings); then it's simply light.
-(function () {
+<!-- Theme before first paint (CC-49): the visitor's saved choice, otherwise light (CC-136: light leads, and
+     dark is "Lights down"). Storage can be blocked (private windows, strict settings); then it's simply light.
+     CC-193: the script body must stay byte-identical to THEME_SCRIPT in cc-backend app/seo.py, because the
+     Content-Security-Policy allows it by hash (scripts/test_csp.js pins the hash). -->
+<script>(function () {
   var t = "light";
   try { var s = localStorage.getItem("cc_theme"); if (s === "light" || s === "dark") t = s; } catch (e) {}
   document.documentElement.setAttribute("data-theme", t);
-})();
-</script>
+})();</script>
 <title>Not found · Chi Culture Crew</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Text:wght@600..800&amp;family=Instrument+Sans:ital,wght@0,400..600;1,400&amp;display=swap">
-<style>
-/* Shown by CloudFront for any path that isn't on the site. Colours and type match site.css (CC-136). CC-149: Lakefront,
-   the compact masthead (the lake band, the wordmark and the 6px stripe), then a Instrument Sans title and an italic deck. */
-:root, :root[data-theme="light"] {
-  --page: #FFFFFF; --text: #0E2A40; --muted: #4A6275; --rule: #0E2A40; --lake: #0E3A5B; --on-lake: #FFFFFF; --stripe: #9CD3EF; --lead: #0E3A5B; --on-lead: #FFFFFF;
-  --star: #C8102E; --focus: #0F5E8C;
-  color-scheme: light;
-}
-:root[data-theme="dark"] {
-  --page: #0A1A28; --text: #EAF2F7; --muted: #A6BDCC; --rule: #A6BDCC; --lake: #06121C; --on-lake: #EAF2F7; --stripe: #5E9FC2; --lead: #9CD3EF; --on-lead: #06121C;
-  --star: #FF5C70; --focus: #9CD3EF;
-  color-scheme: dark;
-}
-*, *::before, *::after { box-sizing: border-box; }
-body {
-  margin: 0; min-height: 100vh; min-height: 100dvh; background: var(--page); color: var(--text);
-  font-family: "Instrument Sans", system-ui, "Helvetica Neue", Arial, sans-serif; font-size: 1.125rem; line-height: 1.45; -webkit-font-smoothing: antialiased;
-}
-.wrap { max-width: 1120px; margin-inline: auto; padding-inline: max(16px, min(4vw, 40px)); }
-header { background: var(--lake); color: var(--on-lake); border-bottom: 6px solid var(--stripe); }
-header .wrap { display: flex; align-items: center; min-height: 72px; }
-.brand { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: inherit; text-decoration: none;
-  font-family: "Instrument Sans", system-ui, "Helvetica Neue", Arial, sans-serif; font-weight: 600; font-size: 2rem; letter-spacing: -0.015em; }
-.brand:focus-visible { outline: 3px solid var(--stripe); outline-offset: 2px; }
-.star { width: 0.7em; height: 0.7em; fill: var(--star); }
-main { padding-block: 48px 64px; }
-h1 { margin: 0; max-width: 18ch; font-family: "Instrument Sans", system-ui, "Helvetica Neue", Arial, sans-serif; font-weight: 500; font-size: clamp(2.5rem, 6vw, 4rem);
-  line-height: 1; letter-spacing: -0.025em; text-wrap: balance; }
-p { margin: 14px 0 0; max-width: 46ch; font-style: italic; font-size: 1.3125rem; line-height: 1.4; color: var(--muted); }
-.home { display: inline-flex; align-items: center; min-height: 48px; margin-top: 28px; padding: 0 20px; background: var(--lead); color: var(--on-lead);
-  font-family: "Big Shoulders Text", "Arial Narrow", sans-serif; font-weight: 700; font-size: 1.1875rem; text-decoration: none; }
-.home:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-@media (max-width: 760px) { .brand { font-size: 1.625rem; } header .wrap { min-height: 60px; } main { padding-top: 32px; } }
-</style>
+<link rel="stylesheet" href="/css/404.css?v=dev">
 </head>
 <body>
 <header><div class="wrap"><a class="brand" href="/">Chi<svg class="star" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,1 14.5,7.67 21.53,6.5 17,12 21.53,17.5 14.5,16.33 12,23 9.5,16.33 2.47,17.5 7,12 2.47,6.5 9.5,7.67"></polygon></svg>Culture Crew</a></div></header>

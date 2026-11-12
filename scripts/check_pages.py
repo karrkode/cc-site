@@ -62,14 +62,14 @@ def main() -> int:
         for i, script in enumerate(page.scripts):
             (OUT / f"{path.stem}-{i}.js").write_text(script, encoding="utf-8")
         # the files the page loads (CC-65): they must exist, and their scripts count as the page's own
-        for ref in sorted(set(re.findall(r'(?:src|href)="((?:css|js)/[^"?]+)(?:\?v=dev)?"', text))):
-            if not (PUBLIC / ref).is_file():
+        for ref in sorted(set(re.findall(r'(?:src|href)="(/?(?:css|js)/[^"?]+)(?:\?v=dev)?"', text))):
+            if not (PUBLIC / ref.lstrip("/")).is_file():
                 problems.append(f"{path.name}: loads {ref}, which isn't in public/")
             elif ref.endswith(".js"):
-                code = (PUBLIC / ref).read_text(encoding="utf-8")
+                code = (PUBLIC / ref.lstrip("/")).read_text(encoding="utf-8")
                 (OUT / f"{path.stem}-{Path(ref).stem}.js").write_text(code, encoding="utf-8")
                 text += "\n" + code
-        for ref in re.findall(r'(?:src|href)="((?:css|js)/[^"]+)"', text):
+        for ref in re.findall(r'(?:src|href)="(/?(?:css|js)/[^"]+)"', text):
             if not ref.endswith("?v=dev"):
                 problems.append(f'{path.name}: {ref} needs "?v=dev" so the deploy can stamp its version')
         looked_up = set(re.findall(r'\$\("([\w-]+)"\)', text))
