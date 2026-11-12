@@ -79,6 +79,8 @@ jobs:
         run: node scripts/test_mast.js
       - name: The masthead's words, four ways in, and the journal's welcome box (CC-252)
         run: node scripts/test_journal_welcome.js
+      - name: No inline style or script but the theme script, which the Content-Security-Policy allows by hash (CC-193)
+        run: node scripts/test_csp.js
       - name: Asset links can be stamped for deploy
         run: python3 scripts/stamp_assets.py
       - name: JavaScript syntax

@@ -12,7 +12,7 @@ const assert = require("assert");
 
 const PUB = path.join(__dirname, "..", "public");
 const read = (f) => fs.readFileSync(path.join(PUB, f), "utf8");
-const html = read("index.html"), css = read("css/site.css"), page404 = read("404.html");
+const html = read("index.html"), css = read("css/site.css"), page404 = read("404.html"), css404 = read("css/404.css"); // CC-193: the 404's styles are a file, not a <style>
 const js = ["planner", "submit", "admin", "hours", "found", "issues", "photos", "approvals"].map((f) => read("js/" + f + ".js")).join("\n");
 const has = (s, part, msg) => assert.ok(s.includes(part), msg || "has " + part);
 const lacks = (s, part, msg) => assert.ok(!s.includes(part), msg || "lacks " + part);
@@ -81,8 +81,8 @@ has(planner, '<div class="chips segs">', "sides of town are the joined square bu
 
 // --- the 404: the compact masthead, a title and deck, no box and no exclamation mark ---
 has(page404, "<header><div class=\"wrap\"><a class=\"brand\" href=\"/\">Chi<svg", "the 404 has the wordmark on the lake, the star after Chi (CC-252)");
-has(page404, "border-bottom: 6px solid var(--stripe);", "and the stripe under it");
-lacks(page404, "border-top: 4px", "no boxed panel");
+has(css404, "border-bottom: 6px solid var(--stripe);", "and the stripe under it");
+lacks(css404, "border-top: 4px", "no boxed panel");
 const h1 = page404.slice(page404.indexOf("<h1>"), page404.indexOf("</h1>"));
 lacks(h1, "!", "the headline has no exclamation mark");
 lacks(page404, "Click here", "the link says where it goes");

@@ -1314,13 +1314,14 @@ function paintCard() {
 function openCard() { if (!isAdmin()) { openAccount(); return; } show("card"); paintCard(); }
 $("card-campaign").addEventListener("input", paintCard);
 // Print just the card, on a business-card-sized page; the page size is only set for this print.
+var CARD_PAGE = null;
 $("card-print").addEventListener("click", function () {
-  var page = document.createElement("style"); page.id = "card-page";
-  page.textContent = "@page { size: 3.5in 2in; margin: 0; }";
-  document.head.appendChild(page); document.documentElement.classList.add("print-card");
+  // CC-193: a constructed stylesheet, because the Content-Security-Policy blocks a <style> element added by script
+  CARD_PAGE = new CSSStyleSheet(); CARD_PAGE.replaceSync("@page { size: 3.5in 2in; margin: 0; }");
+  document.adoptedStyleSheets = document.adoptedStyleSheets.concat(CARD_PAGE); document.documentElement.classList.add("print-card");
   window.print();
 });
 window.addEventListener("afterprint", function () {
-  var page = document.getElementById("card-page"); if (page) page.remove(); // added only while printing
+  if (CARD_PAGE) { document.adoptedStyleSheets = document.adoptedStyleSheets.filter(function (x) { return x !== CARD_PAGE; }); CARD_PAGE = null; } // added only while printing
   document.documentElement.classList.remove("print-card");
 });

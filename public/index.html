@@ -3,16 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<script>
-// Theme before first paint (CC-49): the visitor's saved choice, otherwise light (CC-136: light leads, and
-// dark is "Lights down"). Storage can be blocked (private windows, strict settings); then it's simply light.
-(function () {
+<!-- Theme before first paint (CC-49): the visitor's saved choice, otherwise light (CC-136: light leads, and
+     dark is "Lights down"). Storage can be blocked (private windows, strict settings); then it's simply light.
+     CC-193: the script body must stay byte-identical to THEME_SCRIPT in cc-backend app/seo.py, because the
+     Content-Security-Policy allows it by hash (scripts/test_csp.js pins the hash). -->
+<script>(function () {
   var t = "light";
   try { var s = localStorage.getItem("cc_theme"); if (s === "light" || s === "dark") t = s; } catch (e) {}
   document.documentElement.setAttribute("data-theme", t);
-})();
-</script>
-<style>:root{color-scheme:light;background:#FFFFFF}:root[data-theme="dark"]{color-scheme:dark;background:#0A1A28}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+})();</script>
 <title>Chi Culture Crew · Chicago theater, music and art</title>
 <!-- CC-108: what search results and shared links show. CC-119: both descriptions start with the line under the Home headline. Event pages (/e/...) come from the API with their own. -->
 <meta name="description" content="Chicago theater, music, and art curated by you and your crew. Dates, prices and neighborhoods in one list, and an outing found in four questions.">

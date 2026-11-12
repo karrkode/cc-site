@@ -1,3 +1,5 @@
+/* CC-193: first paint (was an inline <style> in index.html; the Content-Security-Policy blocks inline <style>). */
+:root{color-scheme:light;background:#FFFFFF}:root[data-theme="dark"]{color-scheme:dark;background:#0A1A28}body{margin:0}img{max-width:100%}[hidden]{display:none!important}
 /* Layout: a front page (CC-143), rows of listings, and a four-question box office. */
 /* Colours by purpose (CC-136, Lakefront; design/lakefront-brief.md section 3). Light, "Paper and lake", leads; dark is
    "Lights down", the lake at night. Every pair used below meets WCAG AA: scripts/check_contrast.py checks them in CI.

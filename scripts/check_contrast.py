@@ -101,7 +101,8 @@ PAIRS = [  # (foreground, background, minimum, where it's used)
 
 def block(css: str, selector: str) -> dict[str, str]:
     """The custom properties declared in the rule whose whole selector is `selector`."""
-    m = re.search(r"^" + re.escape(selector) + r"\s*\{([^}]*)\}", css, flags=re.M)
+    # CC-193: site.css opens with the first-paint rules (also a :root rule, with no tokens), so take the one with tokens
+    m = next((m for m in re.finditer(r"^" + re.escape(selector) + r"\s*\{([^}]*)\}", css, flags=re.M) if "--" in m.group(1)), None)
     if not m:
         sys.exit(f"no {selector} block in {CSS}")
     body = re.sub(r"/\*.*?\*/", "", m.group(1), flags=re.S)

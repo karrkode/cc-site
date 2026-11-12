@@ -57,12 +57,13 @@ def main() -> int:
         def stamp(m: re.Match) -> str:
             nonlocal stamped
             ref = m.group(1)
-            digest = hashlib.sha256((PUBLIC / ref).read_bytes()).hexdigest()[:10]
+            digest = hashlib.sha256((PUBLIC / ref.lstrip("/")).read_bytes()).hexdigest()[:10]
             stamped += 1
             return f'"{ref}?v={digest}"'
 
-        text = re.sub(r'"((?:css|js)/[^"?]+)\?v=dev"', stamp, text)
-        if re.search(r'"(?:css|js)/[^"]*\?v=dev"', text):
+        # CC-193: a leading slash is allowed, for 404.html (CloudFront serves it on any path)
+        text = re.sub(r'"(/?(?:css|js)/[^"?]+)\?v=dev"', stamp, text)
+        if re.search(r'"/?(?:css|js)/[^"]*\?v=dev"', text):
             print(f"ERROR: {page.name} still has an unstamped ?v=dev link", file=sys.stderr)
             return 1
         page.write_text(text, encoding="utf-8")
