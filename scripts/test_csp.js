@@ -18,7 +18,14 @@ for (const f of fs.readdirSync(PUB).filter((n) => n.endsWith(".html"))) {
     check(hash === THEME_HASH, `${f}: an inline script that isn't the theme script (hash ${hash}); move it to js/`);
   }
 }
-// an inline style="" is allowed (style-src-attr), but not in a <style> of a data: image or a generated page, so nothing more to pin here.
+// a <style> element made by script is blocked too (an inline style="" attribute is allowed, by style-src-attr)
+const js = path.join(PUB, "js");
+for (const f of fs.readdirSync(js).filter((n) => n.endsWith(".js"))) {
+  const code = fs.readFileSync(path.join(js, f), "utf8");
+  check(!/createElement\(\s*["']style["']/.test(code), `js/${f}: creates a <style> element (use a constructed stylesheet)`);
+  // the dolphin QR (crews.js) puts a <style> in a data: SVG image, which is not part of the page
+  if (f !== "crews.js") check(!/["'`]<style/.test(code), `js/${f}: writes a <style> into the page`);
+}
 
 if (failed) process.exit(1);
 console.log("test_csp: ok");
