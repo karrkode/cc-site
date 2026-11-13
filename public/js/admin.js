@@ -92,8 +92,9 @@ function removeRemovedItem(item) { // focus the next one's first control, or the
   item.remove();
   var f = removedLeft() && next && next.querySelector("select"); (f || $("review-title")).focus();
 }
-function deleteRemoved(id) { // resolves true once it's gone (404 counts: someone else got there first)
-  return api("/events/" + encodeURIComponent(id), { method: "DELETE" }).then(function (r) {
+function deleteRemoved(id, live) { // resolves true once it's gone (404 counts: someone else got there first)
+  // CC-202: the API refuses a live (approved) event unless the request says so; the removed list never sends it.
+  return api("/events/" + encodeURIComponent(id) + (live ? "?live=true" : ""), { method: "DELETE" }).then(function (r) {
     if (r.ok || r.status === 404) { delete KNOWN[id]; delete WENT[id]; delete MYPLANS[id]; return true; }
     return readJSON(r);
   });
@@ -438,7 +439,7 @@ $("oot-del-events").addEventListener("click", function () {
   var n = OOT.event_ids.length, sources = ootSources(OOT.venues); if (!n) return;
   ootAsk(this, ootAskHTML(n > 1 ? "all " + n + " out-of-town events" : "the out-of-town event", sources.length,
     "Everyone's “I've been” marks, plans and photos for " + (n > 1 ? "them" : "it") + " go too. ", "Delete " + plural(n, "event", "events"), n > 1 ? "them" : "it"),
-    { sources: sources, steps: OOT.event_ids.map(function (id) { return function () { return deleteRemoved(id); }; }), one: "event", many: "events" });
+    { sources: sources, steps: OOT.event_ids.map(function (id) { return function () { return deleteRemoved(id, true); }; }), one: "event", many: "events" });
 });
 function askDeleteVenues(opener, venues) {
   var n = venues.length, sources = ootSources(venues);
@@ -979,7 +980,7 @@ $("ed-delete-no").addEventListener("click", function () { dropClose($("ed-confir
 $("ed-delete-yes").addEventListener("click", function () {
   var e = EDITING && EDITING.e; if (!e) return;
   setEditorBusy(true);
-  api("/events/" + encodeURIComponent(e.id), { method: "DELETE" }).then(function (r) {
+  api("/events/" + encodeURIComponent(e.id) + (e.status === "approved" ? "?live=true" : ""), { method: "DELETE" }).then(function (r) { // CC-202
     if (!r.ok && r.status !== 404) return readJSON(r).then(function (res) { editorFail(res); });
     eventChanged(e.id, null); $("edit-live").textContent = "Deleted " + e.title + "."; closeEditor();
   }, function () { editorFail(null); });

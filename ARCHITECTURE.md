@@ -109,7 +109,7 @@ The API has these groups of routes:
 | Routes | Function | Who can use them |
 |---|---|---|
 | `/auth` | Sign in, sign out, register, confirm email, reset password | All users |
-| `/events` | Show, search, submit, edit and delete events | All users can read. Admins can edit and delete. |
+| `/events` | Show, search, submit, edit and delete events | All users can read. Admins can edit and delete. Deleting a live event needs `?live=true` (CC-202); the API answers 409 without it. |
 | `/me` | "I've been" marks and their photos, plans, the user's submissions, which crews can see each plan | The signed-in user only |
 | `/photos` | Show one "I've been" photo | Anyone with a signed link (15 minutes) |
 | `/approvals` | The photos waiting for approval; approve or reject one | Approvers and admins |
@@ -122,6 +122,13 @@ The API has these groups of routes:
 | `/e/{id}-{title}`, `/sitemap.xml`, `/robots.txt` | Plain HTML event pages with schema.org Event data, the sitemap of live events, and robots.txt (CC-108). Public details only. | Anyone, through chiculturecrew.com |
 | `/chicago/`, `/chicago/{slug}` | Plain HTML roundup pages (CC-109), each with an intro admins edit on the Review page (`/admin/roundups`). | Anyone, through chiculturecrew.com. Intros: admins only |
 | `/traffic` | Count a page view, a click to an event's page, or a planned outing, and where the visit came from (a tagged link or the referring site's domain). No cookies. | All visitors (the site sends it) |
+| `PUT /admin/takes/{event_id}/{user_id}` | An admin hides or shows one member's public take on an event (CC-112) | Admins only |
+| `GET /me/issues` | The problem reports the signed-in user sent | The signed-in user only |
+| `POST /me/approver` | Accept or decline the offer to approve photos | A member who has been offered it |
+| `POST /crews/invite/preview` | Show a crew's name, who invited you and how many are in it, before joining (a POST, so the token stays out of logs) | Anyone with the invite token |
+| `/health` | Is the API up | Anyone |
+
+In production the API's `/docs`, `/redoc` and `/openapi.json` are off (CC-202). They work locally.
 
 ## 4. The database
 
