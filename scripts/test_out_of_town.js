@@ -50,7 +50,7 @@ const g = {
   },
   readJSON: (r) => Promise.resolve({ ok: r.ok, status: r.status, body: r.body }),
   errorText: (res) => (res ? res.body.detail : "No connection"),
-  deleteRemoved(id) { return g.api("/events/" + id, { method: "DELETE" }).then((r) => (r.ok || r.status === 404 ? true : g.readJSON(r))); },
+  deleteRemoved(id, live) { return g.api("/events/" + id + (live ? "?live=true" : ""), { method: "DELETE" }).then((r) => (r.ok || r.status === 404 ? true : g.readJSON(r))); },
   reloadEvents() { g.RELOADS += 1; }, loadVenues() {},
 };
 vm.createContext(g);
@@ -96,11 +96,11 @@ const kenosha = { id: 3, name: "Kenosha Hall", neighborhood: "Kenosha, WI", even
   delete ANSWER["PATCH /admin/discovery/sources/9"];
 
   // --- yes: source off, then one delete per event, with a failure reported ---
-  CALLS.length = 0; ANSWER["DELETE /events/12"] = 500;
+  CALLS.length = 0; ANSWER["DELETE /events/12?live=true"] = 500;
   const seen = [];
   Object.defineProperty($("oot-status"), "textContent", { set(v) { seen.push(v); }, get() { return seen[seen.length - 1] || ""; } });
   $("oot-del-events").handlers.click.call($("oot-del-events")); click("#oot-yes"); await flush();
-  assert.deepStrictEqual(CALLS, ['PATCH /admin/discovery/sources/9 {"active":false}', "DELETE /events/11", "DELETE /events/12"], "source first, then each event");
+  assert.deepStrictEqual(CALLS, ['PATCH /admin/discovery/sources/9 {"active":false}', "DELETE /events/11?live=true", "DELETE /events/12?live=true"], "source first, then each event");
   assert.deepStrictEqual(seen.slice(0, 3), ["Turning off source 1 of 1…", "Deleting 1 of 2…", "Deleting 2 of 2…"]);
   assert.strictEqual(seen[seen.length - 1], "Deleted 1 event. 1 event couldn't be deleted: Server said no");
   assert.strictEqual($("edit-live").textContent, seen[seen.length - 1], "announced even if the section hides");
