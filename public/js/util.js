@@ -610,11 +610,15 @@ SHEET_BARS.forEach(function (b) {
   });
 });
 
-// CC-242: on a phone the masthead is pinned, and the full one shrinks to the compact one over the first MAST_CUT px of
-// scroll (its full height less its compact height, measured). site.css draws it from --shrink, 0 to 1. Its bottom margin
-// gives back the height it has lost, so the page under it never moves and its bottom keeps pace with the content until
-// it's compact. With reduced motion there's no in-between: full at the top, compact as soon as the page moves.
-var MAST_CUT = 0, MAST_FULL_H = 0, MAST_WATER_H = 0, MAST_TICK = 0;
+// CC-242, CC-290: on a phone the masthead is pinned, and the full one reduces to the compact one as the page scrolls.
+// site.css does all of it with position: sticky, so the page itself carries the masthead and nothing here runs per
+// scroll event (they reach a phone late: CC-290). measureMast only tells the CSS what it can't work out: how much of
+// the masthead scrolls away before the 62px band is left (--mast-cut), where the wordmark pins (--mast-pin), and how
+// far it shrinks and moves on the way (--brand-k, --brand-in, --stripe-k). It reads the layout and never changes it.
+// Where the scroll can't drive the fade and the shrink itself, paintShrink sets them, --mast-f and --mast-s, 0 to 1:
+// opacity and transform only. With reduced motion the wordmark has no in-between.
+var MAST_BAND = 62, MAST_BRAND_PX = 26, MAST_PIN = 0, MAST_TICK = 0;
+var MAST_SCROLL_CSS = !!(window.CSS && CSS.supports && CSS.supports("animation-timeline: scroll()"));
 function mastShrink(y, cut, calm) {
   if (!(cut > 0) || !(y > 0)) return 0;
   return calm ? 1 : Math.min(1, y / cut);
@@ -625,32 +629,30 @@ var MAST_W = 0;
 function mastNeedsMeasure(lastW, w) { return lastW !== w; }
 function measureMast() {
   MAST_W = window.innerWidth;
-  var keepY = Math.max(0, window.scrollY); // CC-289: measuring clears the bottom margin, which shortens the page and makes the browser clamp the scroll
-  var m = $("mast"), tag = m.querySelector(".mast-tag"), brand = $("brand");
-  ["--shrink", "--tag-h", "--brand-in", "--mast-full-h", "--mast-cut"].forEach(function (k) { m.style.removeProperty(k); });
-  m.style.marginBottom = ""; m.classList.remove("mast-small"); MAST_CUT = 0;
-  if (!MAST_PHONE.matches || !m.classList.contains("mast-full")) return;
-  var words = document.createRange(); words.selectNodeContents(brand); // the wordmark itself, centred in the band
-  m.style.setProperty("--tag-h", tag.getBoundingClientRect().height + "px");
-  m.style.setProperty("--brand-in", Math.max(0, (brand.clientWidth - words.getBoundingClientRect().width) / 2) + "px");
-  MAST_FULL_H = m.getBoundingClientRect().height;
-  MAST_WATER_H = m.clientHeight; m.style.setProperty("--mast-full-h", MAST_WATER_H + "px");
-  m.style.setProperty("--shrink", "1");
-  MAST_CUT = MAST_FULL_H - m.getBoundingClientRect().height;
-  paintShrink(); // the margin is back, so the page is its old height again
-  if (window.scrollY !== keepY) { window.scrollTo(window.scrollX, keepY); paintShrink(); } // and the shrink follows the scroll it had
+  var m = $("mast"), brand = $("brand"), date = $("mast-date");
+  if (!MAST_PHONE.matches || !m.classList.contains("mast-full")) {
+    MAST_PIN = 0;
+    ["--mast-cut", "--mast-pin", "--brand-k", "--brand-in", "--stripe-k", "--mast-f", "--mast-s"].forEach(function (k) { m.style.removeProperty(k); });
+    return;
+  }
+  // the wordmark's own place, from the date above it: 6px, the upper stripe's 6px, then the wordmark (site.css). Its own
+  // offsetTop would be wherever it's stuck just now. It pins with its middle 28px down the screen.
+  MAST_PIN = Math.max(1, date.offsetTop + date.offsetHeight + 12 + brand.offsetHeight / 2 - 28);
+  m.style.setProperty("--mast-cut", Math.max(0, m.getBoundingClientRect().height - MAST_BAND) + "px");
+  m.style.setProperty("--mast-pin", MAST_PIN + "px");
+  m.style.setProperty("--brand-k", String(MAST_BRAND_PX / (parseFloat(getComputedStyle(brand).fontSize) || MAST_BRAND_PX)));
+  m.style.setProperty("--brand-in", Math.max(0, brand.offsetLeft - date.offsetLeft) + "px");
+  m.style.setProperty("--stripe-k", String(date.offsetWidth ? m.clientWidth / date.offsetWidth : 1));
+  paintShrink();
 }
 function paintShrink() {
   MAST_TICK = 0;
-  if (!MAST_CUT) return;
-  var m = $("mast"), s = mastShrink(window.scrollY, MAST_CUT, MOTION_CALM.matches);
-  m.style.setProperty("--shrink", String(s));
-  var h = m.getBoundingClientRect().height;
-  m.style.marginBottom = (MAST_FULL_H - h) + "px";
-  m.style.setProperty("--mast-cut", (MAST_WATER_H - m.clientHeight) + "px"); // the water keeps its full height, clipped to the band
-  m.classList.toggle("mast-small", s === 1);
+  if (MAST_SCROLL_CSS || !MAST_PIN) return;
+  var m = $("mast");
+  m.style.setProperty("--mast-f", String(mastShrink(window.scrollY, 0.8 * MAST_PIN, false)));
+  m.style.setProperty("--mast-s", String(mastShrink(window.scrollY, MAST_PIN, MOTION_CALM.matches)));
 }
-window.addEventListener("scroll", function () { if (MAST_CUT && !MAST_TICK) MAST_TICK = requestAnimationFrame(paintShrink); }, { passive: true });
+window.addEventListener("scroll", function () { if (!MAST_SCROLL_CSS && MAST_PIN && !MAST_TICK) MAST_TICK = requestAnimationFrame(paintShrink); }, { passive: true });
 window.addEventListener("resize", function () { if (mastNeedsMeasure(MAST_W, window.innerWidth)) measureMast(); });
 MAST_PHONE.addEventListener("change", measureMast);
 MOTION_CALM.addEventListener("change", paintShrink);
