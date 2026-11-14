@@ -210,7 +210,7 @@ a.btn, a.textbtn { display: inline-block; }
 @media (max-width: 960px) {
   html { scroll-padding-top: 72px; } /* a heading jumped to lands below the pinned band */
   .mast { position: sticky; top: 0; }
-  .mast-full { top: calc(-1 * var(--mast-cut, 0px)); }
+  .mast-full { top: calc(-1 * var(--mast-cut, 140px)); } /* 140px: near enough until util.js has measured */
   .mast-full .mast-in {
     position: relative; display: flex; flex-direction: column; align-items: stretch; padding-block: 6px 0;
     --brand-f: clamp(min(2.75rem, 10vw), 7vw, 5rem); --brand-h: calc(var(--brand-f) + 18px);
@@ -225,6 +225,7 @@ a.btn, a.textbtn { display: inline-block; }
     height: var(--brand-h); min-height: 0; margin: 0 0 calc(-1 * var(--brand-over)); padding: 9px 0; border: 0; gap: 12px;
     font-size: var(--brand-f); transform-origin: left center;
   }
+  .mast-full .brand::before { content: ""; position: absolute; inset: -12px 0; } /* shrunk, it's still 44px to the finger */
   .mast-full .mast-in::after { order: 4; position: sticky; top: 56px; margin-top: var(--brand-over); } /* the band's stripe, once it's pinned */
   .mast-full .mast-tag { order: 5; flex: none; margin: 10px 0 18px; }
   @supports (animation-timeline: scroll()) {

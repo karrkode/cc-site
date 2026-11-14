@@ -72,7 +72,7 @@ const rule = (sel) => {
 
 test("CC-290: on a phone the masthead sticks at a negative top, so the page scrolls it down to the band", () => {
   assert.match(phone, /\.mast \{ position: sticky; top: 0; \}/);
-  assert.match(rule(".mast-full"), /top: calc\(-1 \* var\(--mast-cut, 0px\)\)/);
+  assert.match(rule(".mast-full"), /top: calc\(-1 \* var\(--mast-cut, 140px\)\)/);
   assert.match(rule(".mast-full .brand"), /position: sticky; top: calc\(28px - var\(--brand-h\) \/ 2\)/, "the wordmark pins in the band's middle");
   assert.match(rule(".mast-full .mast-in::after"), /position: sticky; top: 56px/, "and the stripe under it");
   assert.match(rule(".mast-full .burger"), /position: sticky; top: 6px/, "the hamburger stays in the corner");
@@ -106,10 +106,9 @@ test("CC-290: the scroll drives the fade and the shrink itself where it can; red
 // A fake masthead: 375 wide, 204 tall, the date 44px high at 6px, the wordmark 55.5px high and 325 wide in a 343px column.
 function fakeMast(over) {
   const vals = {}, writes = [];
-  const style = {
+  const style = new Proxy({
     setProperty(k, v) { vals[k] = String(v); writes.push(k); }, removeProperty(k) { delete vals[k]; writes.push(k); },
-    set marginBottom(v) { writes.push("margin-bottom"); }, set height(v) { writes.push("height"); },
-  };
+  }, { set(t, k) { writes.push("style." + String(k)); return true; } }); // any style.x = ... counts as a write
   const classes = new Set(["mast-full"]);
   const m = {
     style, clientWidth: 375, offsetHeight: 204, getBoundingClientRect: () => ({ height: 203.7 }),
