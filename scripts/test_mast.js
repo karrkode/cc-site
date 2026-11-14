@@ -74,7 +74,9 @@ test("CC-290: on a phone the masthead sticks at a negative top, so the page scro
   assert.match(phone, /\.mast \{ position: sticky; top: 0; \}/);
   assert.match(rule(".mast-full"), /top: calc\(-1 \* var\(--mast-cut, 140px\)\)/);
   assert.match(rule(".mast-full .brand"), /position: sticky; top: calc\(28px - var\(--brand-h\) \/ 2\)/, "the wordmark pins in the band's middle");
-  assert.match(rule(".mast-full .mast-in::after"), /position: sticky; top: 56px/, "and the stripe under it");
+  const band = rule(".mast-full .mast-in::after");
+  assert.match(band, /position: sticky; top: calc\(56px - var\(--brand-h\)\)/, "and the band behind it, its stripe ending 62px down");
+  assert.match(band, /background: var\(--lake\); border-bottom: 6px solid var\(--stripe\)/, "opaque, so the tagline goes behind it with no help from the fade");
   assert.match(rule(".mast-full .burger"), /position: sticky; top: 6px/, "the hamburger stays in the corner");
 });
 

@@ -202,8 +202,9 @@ a.btn, a.textbtn { display: inline-block; }
 /* CC-242, CC-290: on a phone the masthead is pinned to the top. The full one (home, join) reduces to the compact one as the
    page scrolls, and nothing in that is laid out by script: scroll events reach a phone late, so a masthead sized from
    them trails the page (CC-290). The masthead keeps its full height and sticks at a negative top, so the page carries it
-   up until only the band's 62px are left. Inside it the date scrolls off, the wordmark and the lower stripe stick where
-   the compact band has them, and the tagline slides away behind them. What changes on the way is opacity and transform
+   up until only the band's 62px are left. Inside it the date scrolls off, the wordmark and the band behind it (plain
+   lake, the lower stripe along its foot) stick where the compact band is, and the tagline slides away behind the band.
+   That alone is a whole masthead at every scroll position. On top of it, as opacity and transform
    only: the date and tagline fade, the wordmark shrinks to 26px and goes left, the stripe widens to the band. The
    scroll drives those itself (animation-timeline); where it can't, util.js sets --mast-f and --mast-s (paintShrink).
    util.js measures --mast-cut, --mast-pin, --brand-k, --brand-in and --stripe-k once per width (measureMast). */
@@ -226,10 +227,14 @@ a.btn, a.textbtn { display: inline-block; }
     font-size: var(--brand-f); transform-origin: left center;
   }
   .mast-full .brand::before { content: ""; position: absolute; inset: -12px 0; } /* shrunk, it's still 44px to the finger */
-  .mast-full .mast-in::after { order: 4; position: sticky; top: 56px; margin-top: var(--brand-over); } /* the band's stripe, once it's pinned */
+  .mast-full .mast-in::after { /* the band: plain lake behind the wordmark, the stripe under it. Pinned, it's what the tagline slides away behind, so nothing ever shows through the wordmark, however late the fade is */
+    order: 4; position: sticky; top: calc(56px - var(--brand-h)); box-sizing: border-box; height: calc(var(--brand-h) + 6px);
+    margin-top: calc(var(--brand-over) - var(--brand-h)); background: var(--lake); border-bottom: 6px solid var(--stripe);
+  }
   .mast-full .mast-tag { order: 5; flex: none; margin: 10px 0 18px; }
   @supports (animation-timeline: scroll()) {
     .mast-full .mast-date, .mast-full .mast-tag { animation: mast-fade linear both; animation-timeline: scroll(root); animation-range: 0px calc(0.8 * var(--mast-pin, 60px)); }
+    .mast-full .mast-tag { animation-range: 0px var(--mast-cut, 140px); } /* it greys out as it goes under the band */
     .mast-full .brand { animation: mast-brand linear both; }
     .mast-full .brand .star { animation: mast-star linear both; }
     .mast-full .mast-in::after { animation: mast-stripe linear both; }
