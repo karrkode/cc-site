@@ -625,7 +625,7 @@ var MAST_W = 0;
 function mastNeedsMeasure(lastW, w) { return lastW !== w; }
 function measureMast() {
   MAST_W = window.innerWidth;
-  var keepY = window.scrollY; // CC-289: measuring clears the bottom margin, which shortens the page and makes the browser clamp the scroll
+  var keepY = Math.max(0, window.scrollY); // CC-289: measuring clears the bottom margin, which shortens the page and makes the browser clamp the scroll
   var m = $("mast"), tag = m.querySelector(".mast-tag"), brand = $("brand");
   ["--shrink", "--tag-h", "--brand-in", "--mast-full-h", "--mast-cut"].forEach(function (k) { m.style.removeProperty(k); });
   m.style.marginBottom = ""; m.classList.remove("mast-small"); MAST_CUT = 0;
@@ -638,7 +638,7 @@ function measureMast() {
   m.style.setProperty("--shrink", "1");
   MAST_CUT = MAST_FULL_H - m.getBoundingClientRect().height;
   paintShrink(); // the margin is back, so the page is its old height again
-  if (window.scrollY !== keepY) { window.scrollTo(0, keepY); paintShrink(); } // and the shrink follows the scroll it had
+  if (window.scrollY !== keepY) { window.scrollTo(window.scrollX, keepY); paintShrink(); } // and the shrink follows the scroll it had
 }
 function paintShrink() {
   MAST_TICK = 0;
