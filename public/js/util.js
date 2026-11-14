@@ -619,7 +619,13 @@ function mastShrink(y, cut, calm) {
   if (!(cut > 0) || !(y > 0)) return 0;
   return calm ? 1 : Math.min(1, y / cut);
 }
+// CC-289: a phone's toolbar sliding in or out while you scroll fires `resize` with the same width and a new height; the
+// masthead's measurements only depend on the width, so only a new width needs measuring again.
+var MAST_W = 0;
+function mastNeedsMeasure(lastW, w) { return lastW !== w; }
 function measureMast() {
+  MAST_W = window.innerWidth;
+  var keepY = window.scrollY; // CC-289: measuring clears the bottom margin, which shortens the page and makes the browser clamp the scroll
   var m = $("mast"), tag = m.querySelector(".mast-tag"), brand = $("brand");
   ["--shrink", "--tag-h", "--brand-in", "--mast-full-h", "--mast-cut"].forEach(function (k) { m.style.removeProperty(k); });
   m.style.marginBottom = ""; m.classList.remove("mast-small"); MAST_CUT = 0;
@@ -631,7 +637,8 @@ function measureMast() {
   MAST_WATER_H = m.clientHeight; m.style.setProperty("--mast-full-h", MAST_WATER_H + "px");
   m.style.setProperty("--shrink", "1");
   MAST_CUT = MAST_FULL_H - m.getBoundingClientRect().height;
-  paintShrink();
+  paintShrink(); // the margin is back, so the page is its old height again
+  if (window.scrollY !== keepY) { window.scrollTo(0, keepY); paintShrink(); } // and the shrink follows the scroll it had
 }
 function paintShrink() {
   MAST_TICK = 0;
@@ -644,7 +651,7 @@ function paintShrink() {
   m.classList.toggle("mast-small", s === 1);
 }
 window.addEventListener("scroll", function () { if (MAST_CUT && !MAST_TICK) MAST_TICK = requestAnimationFrame(paintShrink); }, { passive: true });
-window.addEventListener("resize", measureMast);
+window.addEventListener("resize", function () { if (mastNeedsMeasure(MAST_W, window.innerWidth)) measureMast(); });
 MAST_PHONE.addEventListener("change", measureMast);
 MOTION_CALM.addEventListener("change", paintShrink);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(measureMast); // the wordmark's width needs its font

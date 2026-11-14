@@ -66,3 +66,17 @@ test("on a phone the masthead is pinned, and the compact one hides the date and 
   assert.match(phone, /\.mast \{ position: sticky; top: 0; \}/);
   assert.match(phone, /\.mast-small \.mast-date, \.mast-small \.mast-tag \{ visibility: hidden; \}/);
 });
+
+test("CC-289: a phone's toolbar sliding while you scroll (same width, new height) doesn't re-measure the masthead", () => {
+  vm.runInContext(util.match(/function mastNeedsMeasure\([^\n]*\n/)[0], g);
+  assert.strictEqual(g.mastNeedsMeasure(375, 375), false, "iOS fires resize for the toolbar, height only");
+  assert.strictEqual(g.mastNeedsMeasure(375, 390), true, "a new width (rotation) does");
+  assert.strictEqual(g.mastNeedsMeasure(0, 375), true, "the first measure");
+  assert.match(util, /addEventListener\("resize", function \(\) \{ if \(mastNeedsMeasure\(MAST_W, window\.innerWidth\)\) measureMast\(\); \}\)/);
+});
+
+test("CC-289: measuring puts the scroll back (it clears the margin, so the page is briefly shorter and the browser clamps)", () => {
+  const body = util.match(/function measureMast\(\) \{[\s\S]*?\n\}\n/)[0];
+  assert.match(body, /var keepY = window\.scrollY;/);
+  assert.ok(body.indexOf("window.scrollTo(0, keepY)") > body.indexOf("MAST_CUT = MAST_FULL_H"), "restored after the margin is back");
+});
