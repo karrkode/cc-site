@@ -536,6 +536,8 @@ function closeEvent() {
   var from = EV.from || "catalog", id = EV.id, link = EV.link;
   EV.from = null; EV.pushed = false; EV.link = null;
   if (from === "catalog" && !CAT_ITEMS.length) renderCatalog();
+  // CC-259: a plan saved on the event page redraws only the views that are showing, so the one we return to is stale
+  if (from === "planner") renderPlannerPage(); else if (from === "account") renderAccount(); else if (from === "journal") renderJournalPage();
   // the row that opened it, unless a redraw replaced it since (a plan changed): then the same event's in that view
   if (!link || !link.isConnected || !$("view-" + from).contains(link)) link = document.querySelector('#view-' + from + ' [data-ev-open="' + id + '"]');
   posterMove(posterSource(link), true, function () {
