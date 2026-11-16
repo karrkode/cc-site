@@ -45,7 +45,7 @@ const g = {
   document: { addEventListener() {}, contains: () => false, querySelectorAll: () => [], activeElement: null },
   URL: { createObjectURL: () => "blob:" + ++URLS, revokeObjectURL() {} },
   TYPE_ORDER: ["Theater", "Music", "Visual Art"], KNOWN: {}, VENUES: [], VIEWS: {}, visible: () => false, isAdmin: () => true,
-  foundMode() {}, localInputValue: () => "", fillWeekly() {}, setRun() {}, datesToLookUp: () => false,
+  foundMode() {}, edLinkSync() {}, localInputValue: () => "", fillWeekly() {}, setRun() {}, datesToLookUp: () => false,
   isFixedRun: () => false, readRun: () => ({ run_dates: [] }), weeklyChange: () => null, minPrice: () => null,
   openDialog: (d) => { d.open = true; }, closeDialog: (d) => { d.open = false; d.fire("close"); },
   paintWater() {}, listingImageSrc: (u) => u, waterHTML: () => "<water>", catClass: (t) => " cat-" + String(t).toLowerCase(),

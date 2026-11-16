@@ -160,6 +160,15 @@ function byClosing(a, b) { return (a.n ? a.n.getTime() : Infinity) - (b.n ? b.n.
 // ---------- small DOM helpers ----------
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+// CC-256: in the edit and approve dialog, the word "Link" opens the URL field's address in a new tab. Only http(s) addresses count.
+function webLink(v) { v = (v || "").trim(); return /^https?:\/\//i.test(v) && v.length > 8 ? v : ""; }
+function edLinkSync() {
+  var lab = $("ed-url-lab"), url = webLink($("ed-url").value);
+  if (!url) { lab.textContent = "Link"; return; }
+  lab.textContent = "";
+  var a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = "Link";
+  lab.appendChild(a);
+}
 function safeUrl(u) { return /^https?:\/\//i.test(u) ? u : "#"; }
 // CC-246: "Photo: venue.example ↗", linking to the page an event's photo was copied from; "" when it has none.
 // It sits small in the photo's corner on the event page's poster.

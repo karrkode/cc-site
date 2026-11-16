@@ -279,7 +279,7 @@ function openFoundEditor(i, opener, done) { // done (CC-207): what to do once it
   $("ed-opera").checked = foundType(i).opera;
   $("ed-venue").value = i.venue_name; $("ed-hood").value = i.neighborhood || "";
   $("ed-begin").value = i.begin_date || ""; $("ed-end").value = i.end_date || ""; $("ed-open-run").checked = i.open_run && !i.end_date;
-  $("ed-cost").value = i.cost_text || ""; $("ed-url").value = i.url || ""; $("ed-publish-at").value = "";
+  $("ed-cost").value = i.cost_text || ""; $("ed-url").value = i.url || ""; edLinkSync(); $("ed-publish-at").value = "";
   // CC-88: the show days the page gave, else the venue's usual show times to start from
   var own = Object.keys(i.weekly || {}).length ? i.weekly : null, venueTimes = i.venue_show_times || {};
   showDaysFor("ed", foundType(i).category); setShowDays("ed", own || venueTimes, own ? i.weeks : {});

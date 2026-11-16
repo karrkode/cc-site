@@ -534,7 +534,7 @@ a.btn, a.textbtn { display: inline-block; }
 .chip[aria-pressed="true"] .n { color: inherit; } /* full contrast on the accent (CC-52: opacity made it 3.1:1) */
 .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 12px; }
 .field { display: grid; gap: 4px; min-width: 0; }
-.field label { font-size: 1rem; font-weight: 700; font-family: var(--sign); color: var(--muted); }
+.field label, .field .field-lab { font-size: 1rem; font-weight: 700; font-family: var(--sign); color: var(--muted); }
 .field input, .field select {
   width: 100%; min-width: 0; background: var(--page); border: 1px solid var(--field-line); border-radius: var(--r-ctl); padding: 9px 10px;
 }
@@ -1547,7 +1547,8 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 /* forms */
 .lf-page .fields, .editor .fields { grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 16px; } /* two across only when both fit */
 .lf-page .field, .editor .field { gap: 6px; align-content: start; } /* a hint under one field doesn't push its neighbour's box down */
-.lf-page .field label:not(.radio), .editor .field label:not(.radio) { font-size: 1.0625rem; }
+.lf-page .field label:not(.radio), .editor .field label:not(.radio), .editor .field .field-lab { font-size: 1.0625rem; }
+.field .field-lab a { color: var(--link, inherit); text-decoration: underline; } /* CC-256 */
 .lf-page :is(.field input:not([type="checkbox"], [type="radio"], [type="file"]), .field select, .field textarea, .queue-item select, .queue-item textarea),
 .editor :is(.field input:not([type="checkbox"], [type="radio"], [type="file"]), .field select, .field textarea) {
   min-height: 48px; padding: 0 12px; background: var(--page); color: var(--text); border: 1.5px solid var(--field-line); border-radius: 0;
