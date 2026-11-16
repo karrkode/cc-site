@@ -827,7 +827,7 @@ function openEditor(e, opener) {
   $("ed-opera").checked = !!e.opera; // CC-125
   $("ed-venue").value = e.venue; $("ed-hood").value = e.hood || "";
   $("ed-begin").value = e.begin || ""; $("ed-end").value = e.end || ""; $("ed-open-run").checked = !!e.openRun;
-  $("ed-cost").value = e.costRaw || ""; $("ed-url").value = e.url || "";
+  $("ed-cost").value = e.costRaw || ""; $("ed-url").value = e.url || ""; edLinkSync();
   $("ed-publish-at").value = e.publishAt ? localInputValue(e.publishAt) : "";
   fillWeekly(e); // its own show times, for the planner (CC-79; hours.js)
   setRun("ed", e.runDates); $("ed-runkind").hidden = false; // its fixed run, if it has one (CC-96; hours.js)
@@ -860,6 +860,7 @@ document.addEventListener("click", function (ev) {
   var e = KNOWN[b.getAttribute("data-edit")]; if (e) openEditor(e, b);
 });
 $("ed-cancel").addEventListener("click", closeEditor);
+$("ed-url").addEventListener("input", edLinkSync);
 $("ed-category").addEventListener("change", function () { if (EDITING && !EDITING.found) paintEditorPicture(); });
 $("ed-image-file").addEventListener("change", function () {
   if (!EDITING || EDITING.found || !this.files.length) return;
