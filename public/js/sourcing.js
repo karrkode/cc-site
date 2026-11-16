@@ -257,7 +257,9 @@ $("src-list").addEventListener("click", function (ev) {
   var i = SRC.items.filter(function (x) { return String(x.id) === row.getAttribute("data-found"); })[0];
   if (!i) return;
   $("src-status").textContent = "";
-  if (act === "edit") { openFoundEditor(i, b, function (said) { srcDone(i, said); }); return; }
+  if (act === "edit") { openFoundEditor(i, b, function (said, delayed) { // CC-257: a delay hides it, or in the Hidden list only changes its return day
+    if (!delayed) srcDone(i, said); else if (SRC.open === "hidden") { Object.assign(i, delayed); $("edit-live").textContent = said; paintSrc(); } else srcDone(i, said, "hide");
+  }); return; }
   foundPost(row, act).then(function (res) {
     if (!res.ok) { foundBusy(row, false); $("src-status").textContent = errorText(res); return; }
     srcDone(i, (act === "reject" ? "Deleted " : act === "hide" ? "Hid " : "Unhid ") + i.title + ".", act);

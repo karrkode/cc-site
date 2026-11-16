@@ -220,7 +220,9 @@
       </div>
     </fieldset>
     <p class="form-error" id="ed-error" role="alert"></p>
-    <div class="row"><button class="btn" type="submit" id="ed-save">Save changes</button><button class="btn ghost" type="button" id="ed-cancel">Cancel</button></div>
+    <div class="row"><button class="btn" type="submit" id="ed-save">Save changes</button><button class="btn ghost" type="button" id="ed-cancel">Cancel</button><button class="btn ghost" type="button" id="ed-delay" aria-expanded="false" aria-controls="ed-delay-choices" hidden>Delay…</button></div>
+    <div class="row" id="ed-delay-choices" role="group" aria-label="Delay for" hidden><button class="btn ghost" type="button" data-delay="1w">1 week</button><button class="btn ghost" type="button" data-delay="1m">1 month</button><button class="btn ghost" type="button" data-delay="2m">2 months</button></div>
+    <p class="hint small" id="ed-delay-hint" hidden>Hides it without saving what you changed here. It comes back to the queue on its own.</p>
     <div class="remove" id="ed-remove">
       <div class="row"><button class="btn ghost" type="button" id="ed-withdraw">Withdraw</button><button class="btn danger" type="button" id="ed-delete">Delete…</button></div>
       <span class="hint small" id="ed-remove-hint">Withdraw hides it but keeps it, with everyone's marks and plans. Delete removes it for good.</span>
