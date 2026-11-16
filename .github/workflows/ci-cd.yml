@@ -31,6 +31,8 @@ jobs:
         run: node scripts/test_listings.js
       - name: The event page is a poster, with its plan buttons and crews
         run: node scripts/test_event.js
+      - name: Going back from an event redraws My week, the account and the journal
+        run: node scripts/test_week_return.js
       - name: The home front page picks its lead and lists last chances
         run: node scripts/test_home.js
       - name: The home stack moves only when asked, keeps its order and loops
