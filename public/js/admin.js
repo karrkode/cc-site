@@ -344,8 +344,18 @@ function loadVenues(focusId) {
 }
 function venueLabel(v) { return v.neighborhood ? v.name + " · " + v.neighborhood : v.name; }
 function venueMatches(v, q) { q = q.trim().toLowerCase(); return !q || (v.name + " " + v.neighborhood).toLowerCase().indexOf(q) >= 0; }
+// CC-258: which hours a venue gives follows its category: Visual Art opening hours, Theater and Music usual show times,
+// no category yet both. Returns the sections that count: ["open"], ["shows"] or ["open", "shows"].
+function hoursKinds(v) { return v.category === "Visual Art" ? ["open"] : v.category === "Theater" || v.category === "Music" ? ["shows"] : ["open", "shows"]; }
 // CC-78: opening hours are "filled in" for a day when it's open (with times) or closed; a day left out isn't known.
-function hoursComplete(v) { var h = v.open_hours || {}; return ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].every(function (d) { return d in h; }); }
+// CC-258: show times are filled in once any day has a start time (a day left out just has no shows).
+function hoursComplete(v) {
+  var h = v.open_hours || {}, s = v.show_times || {};
+  return hoursKinds(v).every(function (k) {
+    return k === "open" ? ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].every(function (d) { return d in h; }) :
+      Object.keys(s).some(function (d) { return (s[d] || []).length > 0; });
+  });
+}
 // CC-219: why a venue isn't in the public list. Pending ends when one of its events is approved; hidden only with Unhide.
 function venueStates(v) {
   var says = (v.hidden ? ['<span class="state">Hidden</span>'] : []).concat(v.pending ? ['<span class="state">Pending</span>'] : []);
