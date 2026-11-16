@@ -351,10 +351,12 @@ function hoursKinds(v) { return v.category === "Visual Art" ? ["open"] : v.categ
 // CC-258: show times are filled in once any day has a start time (a day left out just has no shows).
 function hoursComplete(v) {
   var h = v.open_hours || {}, s = v.show_times || {};
-  return hoursKinds(v).every(function (k) {
+  // No category counts as filled in with either kind (the venue may still be sorted into one).
+  var kinds = hoursKinds(v), has = function (k) {
     return k === "open" ? ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].every(function (d) { return d in h; }) :
       Object.keys(s).some(function (d) { return (s[d] || []).length > 0; });
-  });
+  };
+  return kinds.length === 1 ? has(kinds[0]) : kinds.some(has);
 }
 // CC-219: why a venue isn't in the public list. Pending ends when one of its events is approved; hidden only with Unhide.
 function venueStates(v) {

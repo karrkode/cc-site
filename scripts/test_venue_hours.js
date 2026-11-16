@@ -31,8 +31,8 @@ assert(box.hoursComplete(V({ category: "Theater", show_times: { fri: ["19:30"] }
 assert(box.hoursComplete(V({ category: "Music", show_times: { sat: ["20:00"] } })));
 assert(!box.hoursComplete(V({ category: "Theater", open_hours: week })), "opening hours don't make a theater complete");
 assert(!box.hoursComplete(V({ category: "Theater", show_times: { fri: [] } })), "an empty day is not a show time");
-assert(!box.hoursComplete(V({ open_hours: week })) && !box.hoursComplete(V({ show_times: { fri: ["19:30"] } })), "no category needs both");
-assert(box.hoursComplete(V({ open_hours: week, show_times: { fri: ["19:30"] } })));
+assert(box.hoursComplete(V({ open_hours: week })) && box.hoursComplete(V({ show_times: { fri: ["19:30"] } })), "no category: either kind counts");
+assert(!box.hoursComplete(V({})), "no category and nothing filled in");
 // The line under the venue only counts the hours the venue gives
 const note = (o) => box.hoursNote(V(o));
 assert(/set by an admin/.test(note({ category: "Theater", show_times_by: "admin" })));
