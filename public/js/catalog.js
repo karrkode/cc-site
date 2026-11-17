@@ -423,7 +423,7 @@ function evTakesOf(e, byAdmin) {
 // Yours truly's take, above Your crews: what the admin thought, for everyone.
 function evAdminTakesHTML(e) {
   var list = evTakesOf(e, true), admin = isAdmin();
-  return list.length ? '<ol class="ev-takes-yt" aria-label="Yours truly went">' + list.map(function (t) { return evTakeHTML(t, admin); }).join("") + "</ol>" : "";
+  return list.length ? '<ol class="ev-takes-yt" aria-label="Yours truly\u2019s take">' + list.map(function (t) { return evTakeHTML(t, admin); }).join("") + "</ol>" : "";
 }
 function evTakesHTML(e) {
   var list = evTakesOf(e, false), admin = isAdmin();

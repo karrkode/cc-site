@@ -278,7 +278,7 @@ html = g.journalEntryHTML(fresh, true);
 assert.strictEqual((html.match(/name="word"/g) || []).length, 3, "three boxes");
 has(html, '<label for="j-' + fresh.id + '-review">Your review (optional)</label>', "labelled fields");
 has(html, "Would you recommend it?");
-has(html, "Share publicly", "CC-112 stays"); has(html, "Add a photo");
+has(html, "Share with your crews", "CC-112 stays (CC-172: with your crews, not publicly)"); has(html, "Add a photo");
 // CC-263: on the journal, "I've been" is Delete entry: a delete, not a pressed toggle, and the same click (so the same confirmation)
 has(html, '<button type="button" class="went" data-went="' + fresh.id + '" aria-label="Delete your entry for ' + g.esc(fresh.title) + '">Delete entry</button>');
 lacks(html, "I've been", "not on the journal"); lacks(html, "✓", "no tick"); lacks(html, 'aria-pressed="true"', "not a pressed toggle");

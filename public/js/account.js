@@ -644,7 +644,7 @@ function journalEntryHTML(e, open) {
 function journalDeleteHTML(e) {
   return '<button type="button" class="went" data-went="' + esc(e.id) + '" aria-label="Delete your entry for ' + esc(e.title) + '">Delete entry</button>';
 }
-// CC-112: "Share publicly", off by default and saved the moment it's ticked or unticked (so unsharing can't be
+// CC-112, CC-172: "Share with your crews", off by default and saved the moment it's ticked or unticked (so unsharing can't be
 // forgotten). Once on, how it's signed: your first name and initial, or "A Culture Crew member". It needs the three
 // words saved first, since they're what's shared.
 function journalShareHTML(e) {
@@ -654,11 +654,11 @@ function journalShareHTML(e) {
     return '<label class="radio"><input type="radio" name="' + k + '-as" value="' + (anon ? "anon" : "name") + '"' + (sh.anonymous === anon ? " checked" : "") + "> " + esc(text) + "</label>";
   };
   return '<div class="journal-share' + (sh.shared ? " on" : "") + '" data-share="' + id + '">' +
-    '<label class="radio"><input type="checkbox" name="share"' + (sh.shared ? " checked" : "") + (saved || sh.shared ? "" : " disabled") + ' aria-describedby="' + k + '-hint"> Share publicly</label>' +
-    '<p class="hint small" id="' + k + '-hint">' + (saved || sh.shared ? "Your three words, review and recommendation go on the event\u2019s page for anyone deciding whether to go." :
+    '<label class="radio"><input type="checkbox" name="share"' + (sh.shared ? " checked" : "") + (saved || sh.shared ? "" : " disabled") + ' aria-describedby="' + k + '-hint"> ' + (isAdmin() ? "Share on the event" : "Share with your crews") + '</label>' +
+    '<p class="hint small" id="' + k + '-hint">' + (saved || sh.shared ? (isAdmin() ? "Your three words and whether you\u2019d recommend it show on the event\u2019s page to everyone, signed Yours truly. Your review stays private." :
+      "Your three words and whether you\u2019d recommend it show on the event\u2019s page to the people in your crews. Your review stays private.") : // CC-172
       "Save your three words first, then you can share them on the event\u2019s page.") + "</p>" +
-    (sh.shared ? '<fieldset class="share-as"><legend>Signed as</legend>' + (me ? sign(false, me) : "") + sign(true, "A Culture Crew member") + "</fieldset>" +
-      '<p class="hint small"><a href="#e/' + id + '" data-ev-open="' + id + '">See it on the event</a></p>' : "") +
+    (sh.shared && !isAdmin() ? '<fieldset class="share-as"><legend>Signed as</legend>' + (me ? sign(false, me) : "") + sign(true, "A Culture Crew member") + "</fieldset>" : "") + // CC-172: the admin always signs as Yours truly, and nobody sees their own take there, so no link to it
     '<p class="form-error" role="alert" data-share-error></p></div>';
 }
 function redrawShare(id, focusName) {

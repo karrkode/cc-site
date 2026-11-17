@@ -84,7 +84,7 @@ e.takes = [{ words: "sharp funny long", review: "Secretreview", name: "Theo R.",
 html = g.eventViewHTML(e);
 has(html, '<h2 id="ev-takes-h">What others have said</h2>'); lacks(html, ">Takes</h2>", "the old heading is gone");
 has(html, "<span>sharp</span>"); has(html, "<b>Theo R.</b> · Would recommend"); lacks(html, "Secretreview", "never the review");
-has(html, '<ol class="ev-takes-yt" aria-label="Yours truly went">'); has(html, "<b>Yours truly</b>");
+has(html, '<ol class="ev-takes-yt" aria-label="Yours truly\u2019s take">'); has(html, "<b>Yours truly</b>");
 assert.ok(html.indexOf("ev-takes-yt") < html.indexOf('id="ev-crews-h"'), "Yours truly's take comes before Your crews");
 assert.ok(html.indexOf("ev-takes-yt") < html.indexOf("What others have said") && html.split("<span>grand</span>").length === 2, "the admin's words show once, not under others");
 e.takes = [e.takes[1]]; html = g.eventViewHTML(e); lacks(html, "ev-takes-h", "no others, no section"); has(html, "ev-takes-yt");
