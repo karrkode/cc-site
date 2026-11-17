@@ -420,8 +420,8 @@ function evTakesHTML(e) {
   return '<section class="ev-takes" aria-labelledby="ev-takes-h"><h2 id="ev-takes-h">Takes</h2><ol>' +
     e.takes.map(function (t) {
       return '<li class="ev-take' + (t.hidden ? " is-hidden" : "") + '">' +
-        '<p class="ev-take-words">' + t.words.split(" ").map(function (w) { return "<span>" + esc(w) + "</span>"; }).join("") + "</p>" +
-        (t.review ? '<p class="ev-take-review">' + esc(t.review) + "</p>" : "") +
+        '<blockquote class="ev-take-quote"><p class="ev-take-words">' + t.words.split(" ").map(function (w) { return "<span>" + esc(w) + "</span>"; }).join("") + "</p>" +
+        (t.review ? '<p class="ev-take-review">' + esc(t.review) + "</p>" : "") + "</blockquote>" + // CC-172: quote first, then who, so the reading order is the visual one
         '<p class="ev-take-by"><b>' + esc(t.name) + "</b>" + (t.recommend ? " · Would recommend" : "") + "</p>" +
         (admin && t.user_id ? '<div class="row ev-take-admin">' + (t.hidden ? '<span class="hint">Hidden from everyone but admins</span>' : "") +
           '<button class="btn ghost" type="button" data-take-hide="' + esc(t.user_id) + '" data-hidden="' + (t.hidden ? "0" : "1") + '">' +
