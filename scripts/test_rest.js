@@ -77,7 +77,7 @@ has(planner, "function outingTileHTML(e)");
 has(planner, '"</p>" + outingTileHTML(e) + \'<div class="stop-body">\'', "a stop has its tile");
 has(planner, "'<div class=\"alt\">' + outingTileHTML(e)", "a swap has its tile");
 has(planner, 'paintWater($("res-body"));', "the tiles' water is drawn");
-has(planner, '<div class="chips segs">', "sides of town are the joined square buttons");
+has(planner, "function regionMapHTML(counts, chosen)", "sides of town are a clickable map (CC-292)");
 
 // --- the 404: the compact masthead, a title and deck, no box and no exclamation mark ---
 has(page404, "<header><div class=\"wrap\"><a class=\"brand\" href=\"/\">Chi<svg", "the 404 has the wordmark on the lake, the star after Chi (CC-252)");

@@ -634,6 +634,21 @@ a.btn, a.textbtn { display: inline-block; }
 .row { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
 .hint { color: var(--muted); font-size: 1rem; }
 .hoods { display: grid; gap: 8px; margin-top: 8px; }
+/* CC-292: the map of Chicago in question 4. Sections are SVG groups; all colours are tokens, so both themes follow. */
+.rmap { width: 100%; max-width: 420px; height: auto; display: block; margin: 0 auto; font-family: var(--sign); }
+.rmap .lake { fill: var(--info-soft); }
+.rmap .lake-name { font-size: 10px; fill: var(--muted); font-style: italic; }
+.hoods .any-region { justify-content: center; } /* Anywhere sits centred above the map */
+.rsec { cursor: pointer; outline: none; }
+.rsec path { fill: var(--surface); stroke: var(--page); stroke-width: 3; stroke-linejoin: round; }
+.rsec text { font-size: 12.5px; font-weight: 700; fill: var(--text); pointer-events: none; }
+.rsec .rn { font-size: 11px; font-weight: 500; fill: var(--muted); font-variant-numeric: tabular-nums; }
+@media (hover: hover) { .rsec:hover path { fill: var(--info-soft); } }
+.rsec[aria-pressed="true"] path { fill: var(--text); }
+.rsec[aria-pressed="true"] text, .rsec[aria-pressed="true"] .rn { fill: var(--page); }
+.rsec:focus-visible path { stroke: var(--lead); stroke-width: 6; paint-order: stroke; } /* paints under the fill, so the ring shows outside the section even under later neighbours */
+.rsec[aria-disabled="true"] { cursor: not-allowed; opacity: 0.45; }
+@media (hover: hover) { .rsec[aria-disabled="true"]:hover path { fill: var(--surface); } }
 .hoods h2 { font-size: 1rem; font-weight: 700; font-family: var(--sign); color: var(--muted); margin-top: 10px; }
 
 /* outing */
