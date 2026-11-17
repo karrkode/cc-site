@@ -229,11 +229,12 @@ function renderStep() {
       }).join("");
   } else {
     $("plan-title").textContent = "Where would you like to go?";
-    $("plan-help").textContent = "Tap one or more sections of the map, or leave it open. \u201cAnywhere nearby\u201d means the city and suburbs.";
+    $("plan-help").textContent = "Tap one or more sections of the map, or leave it open. \u201cAnywhere\u201d means the city and suburbs.";
     var allN = pool(plan.ws, plan.we, plan.budget, plan.types).length, counts = {};
     REGIONS.forEach(function (r) { var one = {}; one[r[0]] = 1; counts[r[0]] = pool(plan.ws, plan.we, plan.budget, plan.types, one).length; });
-    html = '<div class="hoods">' + regionMapHTML(counts, plan.regions) + '<div class="chips segs"><button type="button" class="chip" data-pregion=""' +
-      ' aria-pressed="' + (Object.keys(plan.regions).length === 0) + '">Anywhere nearby<span class="n">' + allN + "</span></button></div></div>";
+    html = '<div class="hoods"><div class="chips segs any-region"><button type="button" class="chip" data-pregion=""' +
+      ' aria-pressed="' + (Object.keys(plan.regions).length === 0) + '">Anywhere<span class="n">' + allN + "</span></button></div>" +
+      regionMapHTML(counts, plan.regions) + "</div>";
   }
   $("plan-opts").innerHTML = html;
   if (plan.step === 1) paintPrice();

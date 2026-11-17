@@ -638,6 +638,7 @@ a.btn, a.textbtn { display: inline-block; }
 .rmap { width: 100%; max-width: 420px; height: auto; display: block; margin: 0 auto; font-family: var(--sign); }
 .rmap .lake { fill: var(--info-soft); }
 .rmap .lake-name { font-size: 10px; fill: var(--muted); font-style: italic; }
+.hoods .any-region { justify-content: center; } /* Anywhere sits centred above the map */
 .rsec { cursor: pointer; outline: none; }
 .rsec path { fill: var(--surface); stroke: var(--page); stroke-width: 3; stroke-linejoin: round; }
 .rsec text { font-size: 12.5px; font-weight: 700; fill: var(--text); pointer-events: none; }
