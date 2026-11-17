@@ -185,7 +185,9 @@ function capList(list, n, label) {
   if (items.length <= n) { list.style.maxHeight = ""; list.removeAttribute("tabindex"); list.removeAttribute("role"); list.removeAttribute("aria-label"); return; }
   var top = items[0].offsetTop, bottom = items[n - 1].offsetTop + items[n - 1].offsetHeight;
   list.style.maxHeight = Math.ceil(bottom - top + 2) + "px";
-  list.tabIndex = 0; list.setAttribute("role", "region"); list.setAttribute("aria-label", label);
+  list.tabIndex = 0; list.setAttribute("aria-label", label);
+  // CC-291: a <ul> or <ol> stays a list (role="region" on it left its <li>s outside any list, as axe reports); other boxes become regions
+  if (!/^(UL|OL)$/.test(list.tagName)) list.setAttribute("role", "region");
 }
 function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
 // CC-96: a fixed run's upcoming dates and times, in the event view ("Fri, Oct 24, 8 PM · Sun, Nov 2, 7:30 PM · 2 more").

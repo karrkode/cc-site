@@ -1,6 +1,6 @@
 // Checks run in CI before the site deploys (CC-291): the skip link is the first thing in the page and points at <main>,
 // and the page's ids are unique, so an aria-labelledby or aria-controls never lands on the wrong element (the Engagement
-// table was once labelled by the Source grid's heading). The full axe scan needs a running site: scripts/test_a11y.js.
+// table was once labelled by the Source grid's heading). The full axe scan needs a running site: scripts/scan_a11y.js.
 //
 //     node scripts/test_skip_link.js
 "use strict";

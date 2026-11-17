@@ -100,7 +100,7 @@ The design brief is "Lakefront" (epic CC-135). The brief is not in this reposito
 
 ### Accessibility (CC-291)
 
-A skip link is the first Tab stop (`start.js` sends focus to `<main id="main">`). Every view's heading takes focus when the view opens (`VIEWS`, util.js), menus and dialogs close on Escape and return focus to what opened them, and live regions announce list changes. `scripts/test_a11y.js` runs axe-core in Chrome over each page in both themes and at desktop and phone width; `scripts/test_skip_link.js` is the part that runs in CI.
+A skip link is the first Tab stop (`start.js` sends focus to `<main id="main">`). In the code, each view's heading takes focus when the view opens (`VIEWS`, util.js), menus and dialogs close on Escape and return focus to what opened them, and live regions announce list changes. `scripts/scan_a11y.js` runs axe-core in Chrome over each page in both themes and at desktop and phone width (it needs a running site, so it isn't in CI); `scripts/test_skip_link.js` is the part that runs in CI (static ids only).
 
 ## 3. The API
 
