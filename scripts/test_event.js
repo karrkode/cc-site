@@ -82,11 +82,11 @@ const past = ev({ begin_date: iso(g.add(g.T, -30)), end_date: iso(g.add(g.T, -2)
 html = g.eventViewHTML(past);
 has(html, "· Closed</p>"); has(html, "This run has closed."); lacks(html, "Tickets and showtimes", "no tickets once closed");
 
-// --- signed out: no plan buttons, a way to sign in; the admin's pick still shows ---
+// --- signed out: no plan buttons, a way to sign in; the admin's pick no longer shows under Your crews (CC-172) ---
 e = ev({ pick: { status: "interested", date: null, by: "The Culture Crew" } });
 html = g.eventViewHTML(e);
 lacks(html, "data-myplan-"); has(html, 'id="ev-signin-btn"');
-has(html, 'class="mark mark-host-int"', "the admin interested: the ink dolphin (CC-162)"); has(html, "The Culture Crew is interested in this one.");
+lacks(html, 'class="mark mark-host-int"', "CC-172: no admin dolphin under Your crews"); lacks(html, "The Culture Crew is interested in this one.", "CC-172: the admin's pick isn't a line under Your crews");
 
 // --- signed in: Interested and Going on the page, pressed as your plan says ---
 g.AUTH.user = { id: 1, name: "Local User", role: "member" };
@@ -199,7 +199,7 @@ lacks(html, "Yours truly is interested", "your own pick isn't a line under Your 
 lacks(html, "mark-host", "nor the admin's ring"); has(html, "Marked interested. ", "it shows as your plan");
 has(html, "Start a crew to see who's going with you.", "in no crew: the hint, as for anyone");
 e.pick.by = "Another Owner";
-has(g.eventViewHTML(e), "Another Owner is interested in this one.", "another owner's pick still shows");
+lacks(g.eventViewHTML(e), "Another Owner is interested in this one.", "CC-172: nobody's pick is a line under Your crews");
 // Clear plan: the pick comes back null, and the page (drawn from its own copy, EV.e) loses the line without a reload,
 // even when a list fetched since has put another copy of the event in KNOWN
 e = ev({ pick: { status: "interested", date: null, by: "Yours truly" } });
