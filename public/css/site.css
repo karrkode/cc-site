@@ -58,7 +58,7 @@
   --display: "Instrument Sans", system-ui, "Helvetica Neue", Arial, sans-serif;
   --body: "Instrument Sans", system-ui, "Helvetica Neue", Arial, sans-serif;
   --sign: "Big Shoulders Text", "Arial Narrow", system-ui, sans-serif;
-  --serif: "Newsreader", Georgia, "Times New Roman", serif; /* CC-172: editorial details only (the lead pick's drop cap, the takes' pull quotes) */
+  --serif: "Newsreader", Georgia, "Times New Roman", serif; /* CC-172: editorial details only (the takes' pull quotes) */
   --step--1: 1rem; /* 16px, the minimum for anything */
   --step-0: 1.125rem;
   --step-1: 1.3125rem;
@@ -278,8 +278,6 @@ a.btn, a.textbtn { display: inline-block; }
 .lead-k { justify-self: start; padding: 2px 8px; background: var(--cat, var(--lake)); color: var(--on-cat); font-family: var(--sign); font-weight: 700; font-size: 1.1875rem; line-height: 1.3; }
 .lead-t { font-family: var(--display); font-weight: 500; font-size: 58px; --fs: 58; line-height: 1; letter-spacing: -0.02em; overflow-wrap: anywhere; margin-top: -6px; }
 .lead-deck { font-size: 21px; font-style: italic; line-height: 1.4; max-width: 34ch; }
-/* CC-172: a two-line drop cap. ::first-letter is only paint: the text stays one run, so screen readers read it whole. */
-.lead-deck::first-letter { float: left; font-family: var(--serif); font-style: normal; font-weight: 500; font-size: 2.9em; line-height: 0.82; padding: 0.04em 0.1em 0 0; }
 .lead-by { display: flex; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); font-family: var(--sign); font-weight: 700; font-size: 1.125rem; line-height: 1.25; font-variant-numeric: tabular-nums; }
 .lead-pick .mark-host { width: 34px; height: 33px; }
 .lead-pick .mark-host-int { width: 39px; height: 26px; } /* CC-162: interested, no ring */
