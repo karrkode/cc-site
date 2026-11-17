@@ -1201,6 +1201,8 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 .day-item { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
 .day-item > a { font-family: var(--display); font-weight: 500; font-size: 1.1875rem; line-height: 1.25; }
 .day-where { font-size: 1rem; color: var(--muted); }
+.day-commits { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; } /* CC-262 */
+.day-commit { min-height: 44px; }
 .day-time { font-family: var(--sign); font-weight: 700; font-size: 1rem; }
 .day-scroll { display: grid; gap: 10px; overflow-y: auto; overscroll-behavior: contain; position: relative; } /* three to see, scroll for the rest */
 /* CC-156: the three kinds, joined like Previous and Next, sharing the width; pressed is the ink, its swatch kept */

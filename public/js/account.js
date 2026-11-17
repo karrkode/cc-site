@@ -369,6 +369,7 @@ function renderPlanner() {
   days.forEach(function (day) { paintFindDay(isoDate(day.d)); });
   $("myplans-grid").innerHTML = ready ? deciding.map(function (e) { return weekRowHTML(e); }).join("") : "";
   $("deciding-undo").innerHTML = ready ? withdrawnHTML() : "";
+  $("week-undo").innerHTML = ready ? committedHTML() : "";
   $("deciding-hint").textContent = !ready ? "" : deciding.some(goingRange) ? "Pick a day for one, and it moves into your week." : deciding.length ? "" :
     "Nothing waiting. Mark an event Interested, and it waits here until you pick a day.";
   paintWater($("planner-main")); rowsPainted($("planner-week")); rowsPainted($("myplans-grid")); // the two columns arrive side by side
@@ -474,10 +475,63 @@ function dayFoundHTML(iso) { // what's in the open list: loading, an error, noth
   return dayKindsHTML(iso) + '<div class="day-scroll"><ul class="day-items">' + items.slice(0, FIND_DAY_SHOWN).map(function (e) {
     var times = dayTimesText(e, d), id = esc(e.id);
     return '<li class="day-item"><a href="#e/' + id + '" data-ev-open="' + id + '">' + esc(e.title) + "</a>" +
-      '<span class="day-where">' + esc(placeText(e)) + "</span>" + (times ? '<span class="day-time">' + esc(times) + "</span>" : "") + "</li>";
+      '<span class="day-where">' + esc(placeText(e)) + "</span>" + (times ? '<span class="day-time">' + esc(times) + "</span>" : "") + dayCommitHTML(e, iso) + "</li>";
   }).join("") + "</ul>" + (items.length > FIND_DAY_SHOWN ? '<p class="week-hint"><a href="#catalog" data-find-catalog="' + iso + '"' +
     (kind ? ' data-find-kind="' + esc(kind) + '"' : "") + ">See more for that day in the catalog</a></p>" : "") + "</div>";
 }
+// CC-262: Commit! on an event in a day's list makes it a going plan on that day, in one press (a day with two or more
+// shows has a button for each, as Commit to has, CC-264). The list closes, the event is in the day at once, a live message
+// says so, and a line at the top of the week offers Undo: the plan as it was (interested, going another day, or none).
+function dayCommitHTML(e, iso) {
+  var d = parseISO(iso), id = esc(e.id), shows = goTimes(e, iso); if (!canGoOn(e, d)) return "";
+  return '<span class="day-commits">' + (shows.length > 1 ? shows : [""]).map(function (t) {
+    return '<button type="button" class="went day-commit" data-day-commit="' + id + '" data-date="' + iso + '"' + (t ? ' data-time="' + t + '"' : "") +
+      ' aria-label="' + esc("Commit to " + e.title + ", " + goWhen(iso, t)) + '">Commit!' + (t ? " " + esc(clockText(t)) : "") + "</button>";
+  }).join("") + "</span>";
+}
+var COMMITTED = null; // { id, title, iso, prev }: the last Commit! until it's undone or the plan changes some other way
+function committedHTML(error) { // an error is shown once, as Withdraw's is, and kept nowhere (it would be read out again on every redraw)
+  var c = COMMITTED, mine = c && MYPLANS[c.id];
+  return (error ? '<p class="week-error" role="alert">' + esc(checkThis(error)) + "</p>" : "") + (c && mine && mine.status === "going" && mine.date === c.iso ? // else it changed since: Undo no longer applies
+    '<p class="week-undo">Committed <span class="week-undo-t">' + esc(c.title) + "</span> to " + esc(goingDay(c.iso)) + ". " +
+    '<button type="button" class="week-tbtn" id="week-undo-btn" data-commit-undo="' + esc(c.id) + '">Undo</button></p>' : "");
+}
+function commitFromDay(b) {
+  var id = b.getAttribute("data-day-commit"), iso = b.getAttribute("data-date"), e = KNOWN[id], prev = MYPLANS[id] ? JSON.parse(JSON.stringify(MYPLANS[id])) : null;
+  var time = b.getAttribute("data-time") || goTimeFor(id, iso, "");
+  b.disabled = true;
+  api("/me/plans/" + encodeURIComponent(id) + "?today=" + isoDate(T), { method: "PUT", body: { status: "going", date: iso, time: time } }).then(readJSON).then(function (res) {
+    if (!res.ok) throw res;
+    MYPLANS[id] = { status: "going", date: iso, time: time, crews: (prev && prev.crews) || [] };
+    COMMITTED = { id: id, title: e.title, iso: iso, prev: prev };
+    delete FIND_DAY_OPEN[iso]; if (FIND_DAY_KIND.iso === iso) FIND_DAY_KIND = { iso: "", type: "" }; // the list closes: the day has its event
+    $("myplan-live").textContent = "Committed: " + e.title + ", " + dayName(parseISO(iso)) + ". Undo is at the top of The week ahead.";
+    return redrawCards(id).then(function () { if ($("week-undo-btn")) $("week-undo-btn").focus(); });
+  }).catch(function (res) {
+    b.disabled = false; // an earlier Undo stays; the error shows beside it, and focus stays on the button pressed
+    $("week-undo").innerHTML = committedHTML(res && res.status ? errorText(res) : "your plan couldn\u2019t be saved. Check your connection and try again.");
+    b.focus();
+  });
+}
+function undoCommit(b) {
+  var c = COMMITTED; if (!c) return;
+  var p = c.prev; b.disabled = true;
+  (p ? api("/me/plans/" + encodeURIComponent(c.id) + "?today=" + isoDate(T), { method: "PUT", body: { status: p.status, date: p.date || null, time: p.time || null } }) :
+    api("/me/plans/" + encodeURIComponent(c.id), { method: "DELETE" })).then(readJSON).then(function (res) {
+    if (!res.ok) throw res;
+    COMMITTED = null; if (p) MYPLANS[c.id] = p; else delete MYPLANS[c.id]; // now, in case the redraw's fetch of the plans fails
+    $("myplan-live").textContent = (p ? "Back to how it was: " : "Plan cleared: ") + c.title;
+    return redrawCards(c.id).then(function () { (document.querySelector('[data-find-day="' + c.iso + '"]') || $("deciding-title")).focus(); });
+  }).catch(function (res) {
+    $("week-undo").innerHTML = committedHTML(res && res.status ? errorText(res) : "your plan couldn\u2019t be put back. Check your connection and try again.");
+    if ($("week-undo-btn")) $("week-undo-btn").focus();
+  });
+}
+document.addEventListener("click", function (ev) {
+  if (!AUTH.user) return;
+  var t = ev.target.closest("[data-day-commit],[data-commit-undo]"); if (!t) return;
+  if (t.hasAttribute("data-day-commit")) commitFromDay(t); else undoCommit(t);
+});
 function dayFindHTML(iso, whole) { // the button on the day's line; weekDayHTML puts its list under the line
   return '<button type="button" class="week-tbtn day-find" data-find-day="' + iso + '" data-whole="' + esc(whole) + '" aria-controls="find-' + iso + '"></button>';
 }
