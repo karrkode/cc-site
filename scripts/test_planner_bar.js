@@ -19,7 +19,7 @@ assert.ok(h.includes("This weekend") && h.includes("Up to $40"), "answered steps
 assert.strictEqual((h.match(/data-pstep=/g) || []).length, 2, "only the answered, earlier steps are buttons");
 assert.strictEqual((h.match(/aria-current="step"/g) || []).length, 1, "one current step");
 assert.ok(/<span class="chev" aria-current="step"><span class="sr-only">Step 3 of 5: <\/span><span class="chev-name">Kind/.test(h), "the current chevron is the third, named Kind");
-assert.ok(h.includes("Your outing") && h.includes("Side of town"), "later steps show their names");
+assert.ok(h.includes("Your plan") && h.includes("Side of town"), "later steps show their names");
 
 g.renderPlanBar(4);
 assert.ok(bar.innerHTML.includes("Music, Theater") && bar.innerHTML.includes("Northside"), "at the result all four answers show");

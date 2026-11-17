@@ -198,7 +198,7 @@ function optHTML(attrs, main, sub, n, disabled, pressed) {
 }
 // CC-255: the five steps as a chevron bar. cur is the current step (4 is the outing, -1 hides the bar). A step before it shows
 // its answer in place of its name and is a button that goes back to it; the current one is marked aria-current="step".
-var PLAN_STEPS = ["When", "Budget", "Kind", "Side of town", "Your outing"];
+var PLAN_STEPS = ["When", "Budget", "Kind", "Side of town", "Your plan"];
 function planAnswer(i) {
   if (i === 0) { var w = whenChoices().filter(function (c) { return c[0] === plan.when; })[0]; return w ? w[1] : windowText(plan.ws, plan.we); }
   if (i === 1) return budgetText(plan.budget);
