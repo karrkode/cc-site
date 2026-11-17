@@ -37,6 +37,8 @@ jobs:
         run: node scripts/test_home.js
       - name: The home stack moves only when asked, keeps its order and loops
         run: node scripts/test_stack.js
+      - name: Find an outing's budget is one bar, Free to the widest stop, with Free tags
+        run: node scripts/test_planner_budget.js
       - name: The motion keeps the brief's timings, 30fps drift and reduced-motion fallbacks
         run: node scripts/test_motion.js
       - name: The masthead's lake follows the season and dusk in Chicago time (CC-165)
