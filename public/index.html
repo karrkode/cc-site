@@ -448,14 +448,13 @@
       <div id="ev-body"></div>
     </section>
     <section class="view plan lf-page" id="view-plan" hidden>
+      <!-- CC-255: the five steps as chevrons; planner.js fills it in -->
+      <nav class="plan-bar" id="plan-bar" aria-label="Progress" hidden></nav>
+      <div class="plan-stage" id="plan-stage">
       <div id="plan-questions">
         <div class="view-head">
           <h1 id="plan-title" tabindex="-1"></h1>
           <p class="lf-deck" id="plan-help"></p>
-          <div class="progress">
-            <p class="plan-step" id="plan-count">Question 1 of 4</p>
-            <div class="ticks" aria-hidden="true"><i id="tick-0"></i><i id="tick-1"></i><i id="tick-2"></i><i id="tick-3"></i></div>
-          </div>
         </div>
         <div class="opts" id="plan-opts"></div>
         <div class="row" style="margin-top:18px">
@@ -470,6 +469,7 @@
           <p class="lf-deck" id="res-sub"></p>
         </div>
         <div id="res-body"></div>
+      </div>
       </div>
     </section>
 
