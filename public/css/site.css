@@ -1740,7 +1740,8 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 .lf-page .hoods .chip .n { margin-left: 2px; }
 #plan-questions > .row { margin-top: 24px; }
 /* CC-255: Find an outing's five steps as a chevron bar, and the steps sliding in and out of one field */
-.plan-bar { margin: 24px 0; }
+.plan-bar { margin: 24px 0 0; }
+.plan-stage .view-head { padding-top: 24px; } /* the bar above is the head's top margin */
 .plan-bar ol { display: flex; margin: 0; padding: 0; list-style: none; }
 .plan-bar li { flex: 1 1 0; min-width: 0; margin-left: -10px; }
 .plan-bar li:first-child { margin-left: 0; }
