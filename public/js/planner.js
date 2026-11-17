@@ -3,21 +3,24 @@
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- planner ----------
-// budget: "free", "any", or a top price in whole dollars (CC-128); priced: the Priced choice is open, showing its slider
-var plan = { step: 0, when: null, ws: null, we: null, slot: "day", budget: null, priced: false, types: {}, regions: {} };
+// budget: "free", "any", or a top price in whole dollars (CC-128, CC-254: the one maximum-price bar)
+var plan = { step: 0, when: null, ws: null, we: null, slot: "day", budget: null, types: {}, regions: {} };
 var pick = null; // { ws, we, stops: [event], alts: [event], total, shared }
 // CC-128: the slider only stops at prices that add events: each lowest ticket price posted in the window (rounded up to
 // the dollar), then "any" when some events have no price posted yet. Free events fit under every top price.
+// CC-254: the lowest stop is "free" (free events only) when the window has any; with no events at all the one stop is "any".
 var PLAN_STOPS = [];
 function priceStops(events) {
-  var seen = {}, out = [], unpriced = false;
+  var seen = {}, out = [], unpriced = false, free = false;
   events.forEach(function (e) {
     if (e.min === null) unpriced = true;
+    else if (e.min === 0) free = true;
     else if (e.min > 0 && !seen[Math.ceil(e.min)]) { seen[Math.ceil(e.min)] = 1; out.push(Math.ceil(e.min)); }
   });
   out.sort(function (a, b) { return a - b; });
   if (unpriced) out.push("any");
-  return out;
+  if (free) out.unshift("free");
+  return out.length ? out : ["any"];
 }
 function budgetText(b) { return b === "any" ? "Any price" : b === "free" ? "Free" : "Up to $" + b; }
 
@@ -184,7 +187,7 @@ function whenChoices() {
   return out;
 }
 function startPlan() {
-  plan = { step: 0, when: null, ws: null, we: null, slot: "day", budget: null, priced: false, types: {}, regions: {} }; pick = null;
+  plan = { step: 0, when: null, ws: null, we: null, slot: "day", budget: null, types: {}, regions: {} }; pick = null;
   show("plan"); $("plan-questions").hidden = false; $("plan-result").hidden = true;
   withPlanEvents(T, add(T, 34), renderStep);
 }
@@ -197,7 +200,7 @@ function renderStep() {
   $("plan-questions").hidden = false; $("plan-result").hidden = true;
   $("plan-count").textContent = "Question " + (plan.step + 1) + " of 4";
   for (var i = 0; i < 4; i++) $("tick-" + i).className = i <= plan.step ? "on" : "";
-  $("plan-next").hidden = plan.step < 2 && !(plan.step === 1 && plan.priced);
+  $("plan-next").hidden = plan.step < 1;
   $("plan-next").textContent = plan.step === 3 ? "Build my outing" : "Next";
   $("plan-back").textContent = plan.step === 0 ? "Cancel" : "Back";
   var html = "";
@@ -211,13 +214,10 @@ function renderStep() {
   } else if (plan.step === 1) {
     $("plan-title").textContent = "What's the budget per person?";
     $("plan-help").textContent = "We go by the lowest ticket price listed for each event.";
-    // CC-128: Free, or Priced with a top price set on a slider that opens in place of Free (Back, or Priced again, closes it)
-    var inWindow = pool(plan.ws, plan.we, "any"), freeN = pool(plan.ws, plan.we, "free").length;
+    // CC-128, CC-254: one bar, set straight away: its lowest stop is Free, its top is the widest (Any price when some events have no price posted)
+    var inWindow = pool(plan.ws, plan.we, "any");
     PLAN_STOPS = priceStops(inWindow);
-    if (!PLAN_STOPS.length) plan.priced = false;
-    html = (plan.priced ? "" : optHTML('data-budget="free"', "Free", "No ticket cost", freeN, freeN === 0)) +
-      optHTML('data-budget="priced"', "Priced", "Set a top price per person", inWindow.length, !PLAN_STOPS.length, String(plan.priced));
-    if (plan.priced) html += priceSliderHTML(inWindow);
+    html = priceSliderHTML(inWindow);
   } else if (plan.step === 2) {
     $("plan-title").textContent = "What are you in the mood for?";
     $("plan-help").textContent = "Choose as many as you like, or leave it open.";
@@ -242,18 +242,21 @@ function renderStep() {
       }).join("") + "</div></div>";
   }
   $("plan-opts").innerHTML = html;
-  if (plan.step === 1 && plan.priced) paintPrice();
+  if (plan.step === 1) paintPrice();
 }
-// The top price slider, set to the chosen price (or the next stop up when the window changed), else to the top.
+// The top price slider, set to the chosen price (or the next stop up when the window changed), else to the top (the widest: nothing hidden).
 function priceSliderHTML(inWindow) {
   var at = PLAN_STOPS.length - 1;
-  if (typeof plan.budget === "number") PLAN_STOPS.some(function (s, i) { if (s === "any" || s >= plan.budget) { at = i; return true; } return false; });
+  if (plan.budget === "free" && PLAN_STOPS[0] === "free") at = 0;
+  else if (typeof plan.budget === "number") PLAN_STOPS.some(function (s, i) { if (s === "any" || s >= plan.budget) { at = i; return true; } return false; });
   plan.budget = PLAN_STOPS[at];
-  var unpriced = inWindow.filter(function (e) { return e.min === null; }).length, last = PLAN_STOPS.length - 1;
+  var unpriced = inWindow.filter(function (e) { return e.min === null; }).length, last = PLAN_STOPS.length - 1,
+    freeN = inWindow.filter(function (e) { return e.min === 0; }).length;
   return '<div class="price-pick">' +
     '<div class="price-now"><label for="plan-price" id="plan-price-text">' + esc(budgetText(plan.budget)) + '</label><span class="opt-n" id="plan-price-n" aria-live="polite"></span></div>' +
     '<input type="range" id="plan-price" min="0" max="' + last + '" step="any" value="' + at + '"' + (last ? "" : " disabled") + ">" +
     '<div class="price-ends" aria-hidden="true"><span>' + esc(budgetText(PLAN_STOPS[0])) + "</span><span>" + (last ? esc(budgetText(PLAN_STOPS[last])) : "") + "</span></div>" +
+    '<p class="hint" id="plan-free-n">' + (freeN ? plural(freeN, "free event", "free events") + " in your window, always included." : "No free events in your window.") + "</p>" +
     (unpriced ? '<p class="hint">' + plural(unpriced, "event has", "events have") + " no price posted yet. " + (unpriced === 1 ? "It's" : "They're") + " only included at Any price.</p>" : "") +
     "</div>";
 }
@@ -325,10 +328,6 @@ $("plan-opts").addEventListener("click", function (ev) {
     var k = b.getAttribute("data-when"), w = whenChoices().filter(function (c) { return c[0] === k; })[0];
     if (!w) { renderStep(); return; } // the hour passed while the page was open
     plan.when = k; plan.ws = w[3][0]; plan.we = w[3][1]; plan.slot = w[4]; plan.step = 1; renderStep(); $("plan-title").focus();
-  } else if (b.getAttribute("data-budget") === "priced") {
-    plan.priced = !plan.priced; renderStep(); (plan.priced && !$("plan-price").disabled ? $("plan-price") : $("plan-opts").querySelector("[data-budget]")).focus();
-  } else if (b.hasAttribute("data-budget")) {
-    plan.budget = "free"; plan.priced = false; plan.types = {}; plan.regions = {}; plan.step = 2; renderStep(); $("plan-title").focus();
   } else if (b.hasAttribute("data-ptype")) {
     var t = b.getAttribute("data-ptype");
     if (!t) plan.types = {}; else if (plan.types[t]) delete plan.types[t]; else plan.types[t] = 1;
@@ -339,7 +338,6 @@ $("plan-opts").addEventListener("click", function (ev) {
 });
 $("plan-back").addEventListener("click", function () {
   if (plan.step === 0) { show("home"); return; }
-  if (plan.step === 1 && plan.priced) { plan.priced = false; renderStep(); $("plan-opts").querySelector("[data-budget]").focus(); return; } // back to Free or Priced
   plan.step -= 1;
   var back = function () { renderStep(); $("plan-title").focus(); };
   if (plan.step === 0) withPlanEvents(T, add(T, 34), back); else back(); // the presets need the five weeks loaded
@@ -375,11 +373,16 @@ function whyText(e, ws, we) {
   if (e.b && diff(ws, e.b) <= 10 && diff(ws, e.b) >= 0) return "Just opened, running through " + short(e.n) + ".";
   return e.n ? "Running through " + short(e.n) + "." : "";
 }
+// CC-254: a free event carries a Free tag in the pick and its backups ("Usually free" keeps its words beside it)
+function costHTML(e) {
+  if (e.min !== 0) return esc(costText(e));
+  return '<span class="pill">Free</span>' + (e.costUsual ? " " + esc(costText(e)) : "");
+}
 function stopHTML(e, slot, ws, we) {
   return '<div class="stop"><p class="stop-slot">' + esc(slot) + "</p>" + outingTileHTML(e) + '<div class="stop-body">' +
     "<h2>" + esc(e.title) + "</h2>" +
     '<p class="where">' + placeHTML(e) + "</p>" +
-    '<p class="facts">' + esc(dateText(e)) + " · " + esc(costText(e)) + "</p>" +
+    '<p class="facts">' + esc(dateText(e)) + " · " + costHTML(e) + "</p>" +
     "<p>" + esc([showTimesText(e, ws, we, plan.slot), whyText(e, ws, we)].filter(Boolean).join(" ")) + "</p>" +
     '<a class="btn cta" href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + (isArt(e) ? "Exhibition details" : "Tickets and showtimes") + " ↗</a>" +
     "</div></div>";
@@ -412,7 +415,7 @@ function renderOuting() {
     '<span class="hint" id="share-msg" role="status"></span></div><input type="text" id="share-url" readonly hidden aria-label="Link to this outing"></div>';
   if (!pick.shared && pick.alts.length) {
     body += '<div class="section"><h2>Or swap in one of these</h2><div class="alts">' + pick.alts.slice(0, 4).map(function (e) {
-      return '<div class="alt">' + outingTileHTML(e) + '<div class="alt-text"><p class="alt-title">' + esc(e.title) + '</p><p class="alt-meta">' + esc(placeText(e)) + " · " + esc(dateText(e)) + " · " + esc(costText(e)) + "</p></div>" +
+      return '<div class="alt">' + outingTileHTML(e) + '<div class="alt-text"><p class="alt-title">' + esc(e.title) + '</p><p class="alt-meta">' + esc(placeText(e)) + " · " + esc(dateText(e)) + " · " + costHTML(e) + "</p></div>" +
         '<button class="btn ghost" type="button" data-swap="' + e.id + '">Swap in</button></div>';
     }).join("") + "</div></div>";
   }
@@ -443,7 +446,7 @@ $("res-body").addEventListener("click", function (ev) {
   var relax = t.closest("[data-relax]");
   if (relax) {
     var r = relax.getAttribute("data-relax");
-    if (r === "budget") { plan.budget = "any"; plan.priced = true; } else if (r === "types") plan.types = {}; else if (r === "regions") plan.regions = {};
+    if (r === "budget") { plan.budget = "any"; } else if (r === "types") plan.types = {}; else if (r === "regions") plan.regions = {};
     else {
       var w = whenChoices().filter(function (c) { return c[0] === relax.getAttribute("data-when-to"); })[0];
       if (w) { plan.when = w[0]; plan.ws = w[3][0]; plan.we = w[3][1]; plan.slot = w[4]; }
