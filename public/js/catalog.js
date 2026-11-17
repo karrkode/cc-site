@@ -385,6 +385,26 @@ function evCrewHTML(c) {
   var lines = line(c.going, " is going", " are going") + line(c.interested, " is interested", " are interested") + line(c.been, " has been", " have been");
   return lines ? '<div class="ev-crew"><h3>' + esc(c.crew_name) + "</h3><ul>" + lines + "</ul></div>" : "";
 }
+// CC-166: on the poster, a row of circles (initials) for the crew members going, then "and 2 interested". Only what
+// crew_plans already holds: your crews, and plans shared with them. A name in two crews counts once. "" when nobody.
+function posterCrewHTML(e) {
+  var going = [], interested = [];
+  (e.crewPlans || []).forEach(function (c) {
+    c.going.forEach(function (n) { if (going.indexOf(n) < 0) going.push(n); });
+    c.interested.forEach(function (n) { if (interested.indexOf(n) < 0 && going.indexOf(n) < 0) interested.push(n); });
+  });
+  interested = interested.filter(function (n) { return going.indexOf(n) < 0; });
+  if (!going.length && !interested.length) return "";
+  var shown = going.slice(0, 6), extra = going.length - shown.length;
+  var said = going.length ? going.map(shortName).join(", ") + (going.length === 1 ? " is going" : " are going") : "";
+  if (interested.length) said += (said ? ", " : "") + interested.length + " interested";
+  return '<p class="poster-crew" role="group" aria-label="' + esc("From your crews: " + said) + '">' +
+    (going.length ? '<span class="dots" aria-hidden="true">' + shown.map(function (n) {
+      return '<span class="face tone-' + crewTone(n) + '">' + esc(initials(n)) + "</span>";
+    }).join("") + (extra > 0 ? '<span class="face more">+' + extra + "</span>" : "") + "</span>" : "") +
+    '<span class="poster-crew-t" aria-hidden="true">' + (going.length ? "going" : "") +
+    (interested.length ? (going.length ? " and " : "") + interested.length + " interested" : "") + "</span></p>";
+}
 // The admin's pick under Your crews, in the admin's voice ("Yours truly is interested in this one."). CC-152: not when
 // it's your own plan (an owner with the dolphins setting): that shows as your plan, not as somebody else's line.
 function evHostHTML(e) {
@@ -449,7 +469,7 @@ function eventViewHTML(e) {
   var html = '<div class="poster water-field' + catClass(e.type) + (photo ? " has-photo" : "") + '" data-poster="' + esc(e.id) + '">' + waterHTML(e, "poster") +
     '<div class="poster-in"><p class="poster-k">' + esc(e.label) + " · " + esc(st.label) + "</p>" +
     '<h1 id="event-title" tabindex="-1">' + esc(e.title) + "</h1>" +
-    '<p class="poster-where">' + esc(placeText(e)) + "</p></div>" + photo + "</div>";
+    '<p class="poster-where">' + esc(placeText(e)) + "</p>" + posterCrewHTML(e) + "</div>" + photo + "</div>";
   // data-card: the card buttons (I've been, crew sharing, a photo, Edit) find their event, and redraw it, the same way
   // here; .ev-panel keeps account.js from swapping it for a card
   var main = '<div class="ev-main ev-panel" data-card="' + esc(e.id) + '">' +

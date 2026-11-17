@@ -173,7 +173,17 @@ e = ev({ crew_plans: [
 html = g.eventViewHTML(e);
 has(html, "<h3>Thursday Night Out</h3>"); lacks(html, "<h3>Family</h3>", "a crew with nobody on it is left out");
 has(html, "<span>Maya C. and Theo R. are going</span>"); has(html, "<span>Jo P. is interested</span>");
-assert.strictEqual((html.match(/class="face tone-\d"/g) || []).length, 3, "a dot per person");
+const side = html.slice(html.indexOf('<aside class="ev-side"'));
+assert.strictEqual((side.match(/class="face tone-\d"/g) || []).length, 3, "a dot per person");
+// CC-166: the poster shows who's going as circles, then how many are interested; one label for screen readers
+const poster = html.slice(html.indexOf('<p class="poster-crew"'), html.indexOf("</p>", html.indexOf('<p class="poster-crew"')));
+assert.strictEqual((poster.match(/class="face tone-\d"/g) || []).length, 2, "a circle for each going, not the interested");
+has(poster, 'aria-label="From your crews: Maya C., Theo R. are going, 1 interested"', "the names for screen readers");
+has(poster, "going and 1 interested", "the words beside the circles");
+lacks(g.eventViewHTML(ev({ crew_plans: [{ crew_id: 1, crew_name: "A", going: [], interested: [], been: ["Jo Park"] }] })), "poster-crew", "nobody going or interested: no row");
+html = g.eventViewHTML(ev({ crew_plans: [{ crew_id: 1, crew_name: "A", going: ["Maya Chen"], interested: [], been: [] }, { crew_id: 2, crew_name: "B", going: ["Maya Chen"], interested: ["Jo Park"], been: [] }] }));
+assert.strictEqual((html.match(/class="poster-crew"/g) || []).length, 1); has(html, "Maya C. is going, 1 interested", "a person in two crews counts once");
+html = g.eventViewHTML(e);
 has(html, '<span class="face tone-' + g.crewTone("Maya Chen") + '">MC</span>');
 g.CREWS.push({ id: 1 });
 html = g.eventViewHTML(ev({}));
