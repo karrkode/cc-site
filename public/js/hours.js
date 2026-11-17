@@ -29,7 +29,8 @@ function parseTimes(text) {
 }
 function byText(by, what) { return by === "admin" ? what + " were set by an admin." : by === "discovery" ? what + " were filled in from the venue's website." : ""; }
 function hoursNote(v) { // the line under a venue on the Venues page
-  var admin = v.open_hours_by === "admin" || v.show_times_by === "admin", found = v.open_hours_by === "discovery" || v.show_times_by === "discovery";
+  var by = hoursKinds(v).map(function (k) { return k === "open" ? v.open_hours_by : v.show_times_by; }); // CC-258: only the hours this venue gives
+  var admin = by.indexOf("admin") >= 0, found = by.indexOf("discovery") >= 0;
   return admin || found ? '<p class="alt-meta">' + (admin ? "Hours set by an admin" : "Hours from the venue's website") + "</p>" : "";
 }
 function hoursRows() {
@@ -66,10 +67,37 @@ function openHoursDialog(v, opener) {
     $("hd-show-" + k).value = ((v.show_times || {})[k] || []).map(clockText).join(", ");
   });
   $("hd-error").textContent = ""; setHoursBusy(false);
-  openDialog($("hours-dialog")); $("hd-open").querySelector("select").focus();
+  paintHoursSections(v);
+  openDialog($("hours-dialog")); $("hours-form").querySelector("fieldset:not([hidden]) select, fieldset:not([hidden]) input").focus();
 }
+// CC-258: the section that fits the venue's category comes first; the other is folded behind a link (for a theater's
+// box office hours, say) and opens on its own when it already holds hours. Nothing in a folded section is cleared.
+function paintHoursSections(v) {
+  var kinds = hoursKinds(v), form = $("hours-form"), first = kinds[0] === "shows" ? "hd-sec-shows" : "hd-sec-open";
+  var secs = { open: $("hd-sec-open"), shows: $("hd-sec-shows") }, fold = $("hd-more");
+  if (kinds.length === 2) first = "hd-sec-open";
+  form.insertBefore($(first), $("hd-from").nextSibling);
+  var second = $(first === "hd-sec-open" ? "hd-sec-shows" : "hd-sec-open");
+  form.insertBefore(second, $(first).nextSibling);
+  secs.open.hidden = secs.shows.hidden = false; fold.hidden = true;
+  if (kinds.length === 1) {
+    var otherKey = kinds[0] === "open" ? "shows" : "open", other = secs[otherKey];
+    var holds = otherKey === "open" ? Object.keys(v.open_hours || {}).length > 0 :
+      Object.keys(v.show_times || {}).some(function (d) { return (v.show_times[d] || []).length; });
+    form.insertBefore(fold, second.nextSibling);
+    if (!holds) {
+      other.hidden = true; fold.hidden = false; fold.setAttribute("data-show", otherKey);
+      fold.textContent = otherKey === "open" ? "Show opening hours" : "Add usual show times";
+    }
+  }
+}
+$("hd-more").addEventListener("click", function () {
+  var sec = $(this.getAttribute("data-show") === "open" ? "hd-sec-open" : "hd-sec-shows");
+  sec.hidden = false; this.hidden = true; sec.querySelector("select, input").focus();
+});
 function sameHours(a, b) { // the same days and values, in any order
-  b = b || {};
+  b = b || {}; // CC-258: a day saved with no times counts as left out, so an untouched folded section isn't re-saved
+  b = Object.keys(b).reduce(function (o, k) { if (!Array.isArray(b[k]) || b[k].length) o[k] = b[k]; return o; }, {});
   return Object.keys(a).length === Object.keys(b).length && HOUR_DAYS.every(function (d) { return JSON.stringify(a[d[0]]) === JSON.stringify(b[d[0]]); });
 }
 function setHoursBusy(on) { Array.prototype.forEach.call($("hours-form").querySelectorAll("button, input, select"), function (x) { x.disabled = on; }); }

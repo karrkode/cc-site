@@ -74,14 +74,15 @@
   <form id="hours-form" novalidate>
     <h2 id="hd-heading">Hours</h2>
     <p class="hint" id="hd-from"></p>
-    <fieldset class="hours"><legend>Opening hours</legend>
+    <fieldset class="hours" id="hd-sec-open"><legend>Opening hours</legend>
       <p class="hint small">For museums and galleries, or a theater's box office. A late night is just that day's hours; a closing time after midnight is fine.</p>
       <div class="hours-grid" id="hd-open"></div>
     </fieldset>
-    <fieldset class="hours"><legend>Usual show times</legend>
+    <fieldset class="hours" id="hd-sec-shows"><legend>Usual show times</legend>
       <p class="hint small" id="hd-shows-hint">Start times, like “7:30 PM” or “2 PM, 7:30 PM”. Leave a day blank if there are no shows.</p>
       <div class="hours-grid" id="hd-shows"></div>
     </fieldset>
+    <button type="button" class="textbtn" id="hd-more" hidden>Show opening hours</button>
     <p class="hint small">Used later to recommend only what's open or playing; not shown on event cards. Your changes are never replaced by what the checker finds.</p>
     <p class="form-error" id="hd-error" role="alert"></p>
     <div class="row"><button class="btn" type="submit" id="hd-save">Save hours</button><button class="btn ghost" type="button" id="hd-cancel">Cancel</button></div>
@@ -1111,7 +1112,7 @@
         <div id="oot-ask" hidden></div><p class="hint" id="oot-status" role="status"></p><div class="queue" id="oot-list"></div></div>
       <h2 class="sr-only">All venues</h2>
       <div class="filters"><div class="field"><label for="v-q">Find a venue</label><input id="v-q" type="search" maxlength="100" placeholder="Name or neighborhood" autocomplete="off"></div>
-        <div class="field"><label for="v-hours">Opening hours</label><select id="v-hours"><option value="">Any</option><option value="full">Every day filled in</option><option value="gaps">Some days missing</option></select></div>
+        <div class="field"><label for="v-hours">Hours</label><select id="v-hours"><option value="">Any</option><option value="full">Filled in</option><option value="gaps">Missing some</option></select></div>
         <label class="radio"><input type="checkbox" id="v-noregion"> Only venues without a side of town</label>
         <label class="radio"><input type="checkbox" id="v-noaddress"> Only venues without an address</label></div>
       <p class="hint lf-count" id="v-count" role="status"></p>
