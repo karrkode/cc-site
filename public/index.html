@@ -35,6 +35,7 @@
 
 </head>
 <body>
+<a class="skip-link" id="skip-link" href="#main">Skip to main content</a><!-- CC-291: the first Tab stop; start.js moves focus to <main> without touching the address -->
 <p class="sr-only" id="myplan-live" role="status"></p>
 <p class="sr-only" id="edit-live" role="status"></p>
 <dialog class="editor" id="venue-dialog" aria-labelledby="vd-heading">
@@ -308,7 +309,7 @@
 
 <div class="wrap">
   <section class="invite-banner" id="invite-banner" hidden aria-label="Crew invites waiting for you"></section>
-  <main>
+  <main id="main" tabindex="-1">
     <p class="notice" id="joined-note" role="status" hidden></p><!-- CC-237: a new account's first view (paintJoinedNote) -->
     <!-- Welcome -->
     <section class="view" id="view-home">
@@ -1044,8 +1045,8 @@
         <div class="traffic-chart" id="traffic-chart"></div>
         <p class="interest-legend" aria-hidden="true"><span class="sw going"></span>Returning visitors <span class="sw interested"></span>New visitors</p>
         <p class="hint small" id="traffic-views"></p>
-        <h3 id="sources-title">Where visitors came from</h3>
-        <div class="table-wrap"><table class="sources-table" id="traffic-sources" aria-labelledby="sources-title"></table></div>
+        <h3 id="traffic-sources-title">Where visitors came from</h3>
+        <div class="table-wrap"><table class="sources-table" id="traffic-sources" aria-labelledby="traffic-sources-title"></table></div>
         <details class="hint small utm-help">
           <summary>Tags to put on your links</summary>
           <div class="details-body">
