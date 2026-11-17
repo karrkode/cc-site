@@ -58,6 +58,7 @@
   --display: "Instrument Sans", system-ui, "Helvetica Neue", Arial, sans-serif;
   --body: "Instrument Sans", system-ui, "Helvetica Neue", Arial, sans-serif;
   --sign: "Big Shoulders Text", "Arial Narrow", system-ui, sans-serif;
+  --serif: "Newsreader", Georgia, "Times New Roman", serif; /* CC-172: editorial details only (the takes' pull quotes) */
   --step--1: 1rem; /* 16px, the minimum for anything */
   --step-0: 1.125rem;
   --step-1: 1.3125rem;
@@ -938,10 +939,14 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 /* takes, under the actions */
 .ev-takes { margin-top: 48px; }
 .ev-takes ol { list-style: none; margin: 0; padding: 0; }
-.ev-take { display: grid; gap: 6px; padding: 16px 0; border-bottom: 1px solid var(--line); }
-.ev-take-words { font-family: var(--display); font-style: italic; font-weight: 400; font-size: 1.625rem; line-height: 1.2; overflow-wrap: anywhere; }
+/* CC-172: each take is a pull quote: Newsreader italic, a rule above and below, then who said it. */
+.ev-takes-yt { list-style: none; margin: 0 0 28px; padding: 0; } /* CC-172: Yours truly's take, above Your crews */
+.ev-takes-yt .ev-take { margin-top: 0; }
+.ev-takes h2 { border-bottom: 0; padding-bottom: 0; } /* the first quote's top rule is the heading's underline */
+.ev-take { display: grid; gap: 6px; margin-top: 20px; padding: 16px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.ev-take-quote { display: grid; gap: 6px; margin: 0; }
+.ev-take-words { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 1.75rem; line-height: 1.2; overflow-wrap: anywhere; }
 .ev-take-words span + span::before { content: " · "; color: var(--muted); font-style: normal; }
-.ev-take-review { white-space: pre-line; overflow-wrap: anywhere; }
 .ev-take-by { font-family: var(--sign); font-weight: 700; font-size: 1rem; color: var(--muted); }
 .ev-take-by b { color: var(--text); font-weight: 700; }
 #ev-share-url { width: 100%; margin-top: 12px; }

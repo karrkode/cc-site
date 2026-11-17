@@ -79,7 +79,7 @@ has(html, 'value="fierce"'); has(html, "Only you can see this.");
 has(html, 'class="btn ghost own-photo-btn" for="op-1">Add a photo</label>', "Add a photo is a button");
 assert.ok(html.indexOf(">Add a photo<") < html.indexOf(">Save</button>"), "Add a photo sits left of Save");
 has(html, 'data-own-delete="1"');
-lacks(html, "Share publicly", "own events are never shared");
+lacks(html, "Share with your crews", "own events are never shared");
 html = g.ownEntryHTML(own({ id: 5, photo_url: "/photos/own/5?exp=1&sig=x" }), true);
 has(html, "Change photo"); has(html, 'data-own-photo-remove="5"'); has(html, 'src="/photos/own/5?exp=1&amp;sig=x"');
 

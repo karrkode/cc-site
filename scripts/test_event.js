@@ -77,16 +77,27 @@ has(html, "<dt>When</dt>"); has(html, "<dt>Price</dt><dd>$20–$40</dd>");
 has(html, 'href="https://example.com" target="_blank" rel="noopener">Tickets and showtimes ↗</a>', "Tickets as it was");
 has(html, 'id="ev-share"'); has(html, 'id="ev-share-url"'); has(html, 'id="ev-share-msg"');
 e.takes = [{ words: "sharp funny long", review: "", name: "Theo R.", recommend: true, hidden: false, user_id: null }];
-has(g.eventViewHTML(e), '<h2 id="ev-takes-h">Takes</h2>');
+// CC-172: "What others have said" is the crew-mates' takes: the three words, who, whether they'd recommend, never the review.
+// Yours truly's take (by_admin) goes above Your crews instead, with the same words and no review.
+e.takes = [{ words: "sharp funny long", review: "Secretreview", name: "Theo R.", recommend: true, hidden: false, user_id: null, by_admin: false },
+           { words: "grand dark moody", review: "", name: "Yours truly", recommend: false, hidden: false, user_id: null, by_admin: true }];
+html = g.eventViewHTML(e);
+has(html, '<h2 id="ev-takes-h">What others have said</h2>'); lacks(html, ">Takes</h2>", "the old heading is gone");
+has(html, "<span>sharp</span>"); has(html, "<b>Theo R.</b> · Would recommend"); lacks(html, "Secretreview", "never the review");
+has(html, '<ol class="ev-takes-yt" aria-label="Yours truly\u2019s take">'); has(html, "<b>Yours truly</b>");
+assert.ok(html.indexOf("ev-takes-yt") < html.indexOf('id="ev-crews-h"'), "Yours truly's take comes before Your crews");
+assert.ok(html.indexOf("ev-takes-yt") < html.indexOf("What others have said") && html.split("<span>grand</span>").length === 2, "the admin's words show once, not under others");
+e.takes = [e.takes[1]]; html = g.eventViewHTML(e); lacks(html, "ev-takes-h", "no others, no section"); has(html, "ev-takes-yt");
+e.takes = [];
 const past = ev({ begin_date: iso(g.add(g.T, -30)), end_date: iso(g.add(g.T, -2)) });
 html = g.eventViewHTML(past);
 has(html, "· Closed</p>"); has(html, "This run has closed."); lacks(html, "Tickets and showtimes", "no tickets once closed");
 
-// --- signed out: no plan buttons, a way to sign in; the admin's pick still shows ---
+// --- signed out: no plan buttons, a way to sign in; the admin's pick no longer shows under Your crews (CC-172) ---
 e = ev({ pick: { status: "interested", date: null, by: "The Culture Crew" } });
 html = g.eventViewHTML(e);
 lacks(html, "data-myplan-"); has(html, 'id="ev-signin-btn"');
-has(html, 'class="mark mark-host-int"', "the admin interested: the ink dolphin (CC-162)"); has(html, "The Culture Crew is interested in this one.");
+lacks(html, 'class="mark mark-host-int"', "CC-172: no admin dolphin under Your crews"); lacks(html, "The Culture Crew is interested in this one.", "CC-172: the admin's pick isn't a line under Your crews");
 
 // --- signed in: Interested and Going on the page, pressed as your plan says ---
 g.AUTH.user = { id: 1, name: "Local User", role: "member" };
@@ -199,7 +210,7 @@ lacks(html, "Yours truly is interested", "your own pick isn't a line under Your 
 lacks(html, "mark-host", "nor the admin's ring"); has(html, "Marked interested. ", "it shows as your plan");
 has(html, "Start a crew to see who's going with you.", "in no crew: the hint, as for anyone");
 e.pick.by = "Another Owner";
-has(g.eventViewHTML(e), "Another Owner is interested in this one.", "another owner's pick still shows");
+lacks(g.eventViewHTML(e), "Another Owner is interested in this one.", "CC-172: nobody's pick is a line under Your crews");
 // Clear plan: the pick comes back null, and the page (drawn from its own copy, EV.e) loses the line without a reload,
 // even when a list fetched since has put another copy of the event in KNOWN
 e = ev({ pick: { status: "interested", date: null, by: "Yours truly" } });
