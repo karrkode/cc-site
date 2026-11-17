@@ -188,7 +188,7 @@ function whenChoices() {
 }
 function startPlan() {
   plan = { step: 0, when: null, ws: null, we: null, slot: "day", budget: null, types: {}, regions: {} }; pick = null;
-  show("plan"); $("plan-questions").hidden = false; $("plan-result").hidden = true;
+  show("plan"); $("plan-bar").hidden = true; $("plan-questions").hidden = false; $("plan-result").hidden = true;
   withPlanEvents(T, add(T, 34), renderStep);
 }
 function optHTML(attrs, main, sub, n, disabled, pressed) {
@@ -196,10 +196,48 @@ function optHTML(attrs, main, sub, n, disabled, pressed) {
     '<span><span class="opt-main">' + esc(main) + "</span>" + (sub ? '<br><span class="opt-sub">' + esc(sub) + "</span>" : "") + "</span>" +
     (n === null ? "" : '<span class="opt-n">' + plural(n, "event", "events") + "</span>") + "</button>";
 }
+// CC-255: the five steps as a chevron bar. cur is the current step (4 is the outing, -1 hides the bar). A step before it shows
+// its answer in place of its name and is a button that goes back to it; the current one is marked aria-current="step".
+var PLAN_STEPS = ["When", "Budget", "Kind", "Side of town", "Your plan"];
+function planAnswer(i) {
+  if (i === 0) { var w = whenChoices().filter(function (c) { return c[0] === plan.when; })[0]; return w ? w[1] : windowText(plan.ws, plan.we); }
+  if (i === 1) return budgetText(plan.budget);
+  if (i === 2) return Object.keys(plan.types).join(", ") || "Surprise me";
+  return Object.keys(plan.regions).map(function (k) { return REGION_NAMES[k]; }).join(", ") || "Anywhere";
+}
+function renderPlanBar(cur) {
+  var bar = $("plan-bar"); bar.hidden = cur < 0; if (cur < 0) return;
+  bar.innerHTML = "<ol>" + PLAN_STEPS.map(function (name, i) {
+    var done = i < cur, ans = done ? planAnswer(i) : "", where = '<span class="sr-only">Step ' + (i + 1) + " of 5: </span>",
+      text = where + '<span class="chev-name">' + esc(done ? ans : name) + "</span>" + (done ? '<span class="chev-step">' + esc(name) + "</span>" : "");
+    if (done) return '<li class="done"><button type="button" class="chev" data-pstep="' + i + '" aria-label="Step ' + (i + 1) + " of 5, " + esc(name) + ": " + esc(ans) + '. Go back to this step.">' + text + "</button></li>";
+    return "<li" + (i === cur ? ' class="now"' : "") + '><span class="chev"' + (i === cur ? ' aria-current="step"' : "") + ">" + text + "</span></li>";
+  }).join("") + "</ol>";
+}
+// CC-255: show the next step sliding in from the right (dir 1) or the left (dir -1) while the one it replaces slides out
+// the other way. render() changes the panel; the old one is cloned first and kept, inert, until it has gone. Reduced
+// motion (or no dir) is a plain swap.
+function planLand(id) { window.scrollTo(0, 0); $(id).focus({ preventScroll: true }); } // the bar sits above the title, so show the top
+var planSlideTimer = null;
+function planSlide(dir, render) {
+  clearTimeout(planSlideTimer); // a second move can start before the first has finished: drop its ghost and classes
+  Array.prototype.forEach.call(document.querySelectorAll(".plan-ghost"), function (n) { n.parentNode.removeChild(n); });
+  $("plan-questions").classList.remove("plan-in-fwd", "plan-in-back"); $("plan-result").classList.remove("plan-in-fwd", "plan-in-back");
+  var stage = $("plan-stage"), old = !$("plan-questions").hidden ? $("plan-questions") : !$("plan-result").hidden ? $("plan-result") : null,
+    still = !dir || !old || $("view-plan").hidden || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches),
+    ghost = still ? null : old.cloneNode(true);
+  render();
+  if (!ghost) return;
+  var cls = dir > 0 ? "fwd" : "back", now = !$("plan-questions").hidden ? $("plan-questions") : $("plan-result");
+  Array.prototype.forEach.call(ghost.querySelectorAll("[id]"), function (n) { n.removeAttribute("id"); });
+  ghost.removeAttribute("id"); ghost.hidden = false; ghost.setAttribute("aria-hidden", "true"); ghost.setAttribute("inert", "");
+  ghost.className += " plan-ghost plan-out-" + cls; now.classList.add("plan-in-" + cls);
+  void now.offsetWidth; stage.appendChild(ghost);
+  planSlideTimer = setTimeout(function () { if (ghost.parentNode) ghost.parentNode.removeChild(ghost); now.classList.remove("plan-in-fwd", "plan-in-back"); }, 450);
+}
 function renderStep() {
   $("plan-questions").hidden = false; $("plan-result").hidden = true;
-  $("plan-count").textContent = "Question " + (plan.step + 1) + " of 4";
-  for (var i = 0; i < 4; i++) $("tick-" + i).className = i <= plan.step ? "on" : "";
+  renderPlanBar(plan.step);
   $("plan-next").hidden = plan.step < 1;
   $("plan-next").textContent = plan.step === 3 ? "Build my outing" : "Next";
   $("plan-back").textContent = plan.step === 0 ? "Cancel" : "Back";
@@ -338,7 +376,7 @@ $("plan-opts").addEventListener("click", function (ev) {
     var v = $("plan-date").value; if (!v) { $("plan-date").focus(); return; }
     var d = parseISO(v); if (d < T) { $("plan-date").focus(); return; }
     plan.when = "date"; plan.ws = d; plan.we = d; plan.slot = "day"; plan.step = 1;
-    withPlanEvents(d, d, function () { renderStep(); $("plan-title").focus(); }); return;
+    withPlanEvents(d, d, function () { planSlide(1, function () { renderStep(); planLand("plan-title"); }); }); return;
   }
   var rc = ev.target.closest("[data-pregion]");
   if (rc && !rc.disabled && rc.getAttribute("aria-disabled") !== "true") {
@@ -352,7 +390,7 @@ $("plan-opts").addEventListener("click", function (ev) {
   if (b.hasAttribute("data-when")) {
     var k = b.getAttribute("data-when"), w = whenChoices().filter(function (c) { return c[0] === k; })[0];
     if (!w) { renderStep(); return; } // the hour passed while the page was open
-    plan.when = k; plan.ws = w[3][0]; plan.we = w[3][1]; plan.slot = w[4]; plan.step = 1; renderStep(); $("plan-title").focus();
+    plan.when = k; plan.ws = w[3][0]; plan.we = w[3][1]; plan.slot = w[4]; plan.step = 1; planSlide(1, function () { renderStep(); planLand("plan-title"); });
   } else if (b.hasAttribute("data-ptype")) {
     var t = b.getAttribute("data-ptype");
     if (!t) plan.types = {}; else if (plan.types[t]) delete plan.types[t]; else plan.types[t] = 1;
@@ -363,13 +401,24 @@ $("plan-opts").addEventListener("click", function (ev) {
 });
 $("plan-back").addEventListener("click", function () {
   if (plan.step === 0) { show("home"); return; }
-  plan.step -= 1;
-  var back = function () { renderStep(); $("plan-title").focus(); };
-  if (plan.step === 0) withPlanEvents(T, add(T, 34), back); else back(); // the presets need the five weeks loaded
+  planBack(plan.step - 1);
+});
+// CC-255: back one step (the Back button) or to an earlier answered step (its chevron), sliding in from the left
+var planGoing = false;
+function planBack(to) {
+  if (planGoing) return; planGoing = true;
+  var back = function () { planGoing = false; plan.step = to; planSlide(-1, function () { renderStep(); planLand("plan-title"); }); };
+  if (to === 0) withPlanEvents(T, add(T, 34), back); else back(); // the presets need the five weeks loaded
+  if (to === 0) setTimeout(function () { planGoing = false; }, 4000); // a failed load must not leave the bar dead
+}
+$("plan-bar").addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-pstep]"); if (!b) return;
+  planBack(+b.getAttribute("data-pstep"));
 });
 $("plan-next").addEventListener("click", function () {
-  if (plan.step === 1) { plan.types = {}; plan.regions = {}; plan.step = 2; renderStep(); $("plan-title").focus(); }
-  else if (plan.step === 2) { plan.step = 3; renderStep(); $("plan-title").focus(); } else buildOuting();
+  var next = function () { planSlide(1, function () { renderStep(); planLand("plan-title"); }); };
+  if (plan.step === 1) { plan.types = {}; plan.regions = {}; plan.step = 2; next(); }
+  else if (plan.step === 2) { plan.step = 3; next(); } else buildOuting();
 });
 
 function isArt(e) { return e.type === "Visual Art"; }
@@ -387,7 +436,7 @@ function buildOuting() {
   var used = {}; stops.forEach(function (s) { used[s.id] = 1; });
   var alts = (shows.length ? shows : art).filter(function (e) { return !used[e.id]; });
   pick = { ws: plan.ws, we: plan.we, stops: stops, alts: alts, total: all.length, shared: false };
-  renderOuting();
+  planSlide($("plan-result").hidden ? 1 : 0, renderOuting); // rebuilt from the result itself (the relax buttons): no step change
   if (stops.length) track("outing"); // an outing was actually planned (CC-68)
 }
 function whyText(e, ws, we) {
@@ -421,7 +470,7 @@ function shareUrl() {
   return base + "#o-" + ymd(pick.ws) + "-" + ymd(pick.we) + "-" + pick.stops.map(function (s) { return s.id; }).join("-");
 }
 function renderOuting() {
-  $("plan-questions").hidden = true; $("plan-result").hidden = false;
+  $("plan-questions").hidden = true; $("plan-result").hidden = false; renderPlanBar(pick.shared ? -1 : 4);
   $("res-title").textContent = windowText(pick.ws, pick.we);
   var body = "";
   if (!pick.stops.length) {
