@@ -77,7 +77,8 @@ function changeValue(field, v) {
 }
 function foundItemHTML(i) { return foundRowHTML(i, foundActions(i, esc(i.id), esc(i.title))); }
 function foundRowHTML(i, actions, pick) { // CC-207: Event Sourcing's list shows the same row, with its own buttons (CC-208: and a tick box)
-  var id = esc(i.id), title = esc(i.title), state = i.status === "hidden" && actions.indexOf("data-src-act") >= 0 ? "" : FOUND_STATES[i.status];
+  var id = esc(i.id), title = esc(i.title), state = i.status === "hidden" && i.back_on ? "Back on " + short(parseISO(i.back_on)) : // CC-257: a delayed one says when it returns
+    i.status === "hidden" && actions.indexOf("data-src-act") >= 0 ? "" : FOUND_STATES[i.status];
   var where = i.venue_name + (i.neighborhood ? " · " + i.neighborhood : i.venue_id ? "" : " · new venue");
   var html = '<div class="queue-item found' + (pick ? " pickable" : "") + '" data-found="' + id + '">' + (pick || "") + '<div class="alt-text">' +
     '<p class="kind">' + esc(foundType(i).category ? typeLabel(foundType(i).category, foundType(i).opera) : FOUND_KINDS[i.kind] || "Event") + (i.needs ? ' <span class="state needs">' + esc(FOUND_NEEDS[i.needs]) + "</span>" : "") + (state ? ' <span class="state' + (i.status === "rejected" ? " rejected" : i.status === "approved" ? " approved" : "") + '">' + esc(state) + "</span>" : "") + "</p>" +
@@ -240,6 +241,7 @@ function foundMode(i) { // i: the found item, or null for the ordinary edit form
   var on = !!i, sel = $("ed-category"), blank = sel.querySelector('option[value=""]');
   $("ed-found").hidden = !on; $("ed-remove").hidden = on; $("ed-picture-controls").hidden = on;
   $("ed-save").textContent = on ? "Approve" : "Save changes";
+  $("ed-delay").hidden = !on; $("ed-delay").setAttribute("aria-expanded", "false"); $("ed-delay-choices").hidden = true; $("ed-delay-hint").hidden = true; // CC-257
   Array.prototype.forEach.call($("ed-status").options, function (o) { o.hidden = on && o.value !== "approved" && o.value !== "pending"; });
   var start = on ? foundType(i).category : true;
   if (!start && !blank) sel.insertAdjacentHTML("afterbegin", '<option value="">Choose a type</option>');
@@ -291,6 +293,24 @@ function openFoundEditor(i, opener, done) { // done (CC-207): what to do once it
   (i.needs === "date" ? $("ed-begin") : run.length && !run[0].time ? $("ed-run-list").querySelector("[data-run-time]") :
     i.needs === "show_days" ? $("ed-days").firstElementChild : $("ed-title")).focus(); // what's missing first
 }
+// CC-257: Delay… in the form: hide it for 1 week, 1 month or 2 months without saving the form's edits. It returns by itself.
+$("ed-delay").addEventListener("click", function () {
+  var open = $("ed-delay-choices").hidden; // pressed again closes the choices
+  $("ed-delay-choices").hidden = !open; $("ed-delay-hint").hidden = !open; this.setAttribute("aria-expanded", String(open));
+  if (open) $("ed-delay-choices").querySelector("button").focus();
+});
+$("ed-delay-choices").addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-delay]"); if (!b || !EDITING || !EDITING.found) return;
+  var i = EDITING.found, done = EDITING.done;
+  setEditorBusy(true); $("ed-error").textContent = "";
+  api("/admin/discovery/items/" + i.id + "/delay", { method: "POST", body: { span: b.getAttribute("data-delay") } }).then(readJSON).then(function (res) {
+    if (!res.ok) { editorFail(res); return; }
+    var row = $("found-list").querySelector('[data-found="' + i.id + '"]'), said = "Delayed " + i.title + " until " + short(parseISO(res.body.back_on)) + ".";
+    EDITING = null; closeEditor();
+    if (done) done(said, res.body); else if (i.status === "hidden") loadFound(false, "#found-title"); else if (row) foundDone(row, said); else $("edit-live").textContent = said;
+    if (!done) $("edit-live").textContent = said;
+  }).catch(function () { editorFail(null); });
+});
 // CC-88: what the event as approved would still be missing (the API checks this too)
 function stillNeeds(i, type, begin, end, openRun, weekly, runTimed) {
   if (i.kind === "permanent") return "";
