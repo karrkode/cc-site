@@ -37,7 +37,7 @@ const scope = new Function("$", "document", "api", "readJSON", "errorText", "unc
   "isFixedRun", "datesUnknown", "RUN", "SHOW_DAYS", "AUTH", "SUBMIT_SENT", "setTimeout", "clearTimeout", "Event",
   submit.slice(submit.indexOf("// ---------- CC-124"), submit.indexOf('$("s-venue").addEventListener("change"')) +
   "; return { linkRead, linkStop, fillFromDraft };");
-const t = scope($, doc, api, null, (r) => r ? r.body.detail : "Couldn't reach Culture Crew.", () => false, () => {}, () => {},
+const t = scope($, doc, api, null, (r) => r ? r.body.detail : "Couldn't reach Chi Culture Crew.", () => false, () => {}, () => {},
   (f, dates) => { RUN.s = dates; kind = dates.length ? "fixed" : "range"; }, (f, w) => { SHOW_DAYS.s.days = Object.assign({}, w); },
   () => kind === "fixed", () => kind === "unknown", RUN, SHOW_DAYS, { user: {} }, false,
   (f, ms) => { timers.push({ f, ms }); return timers.length; }, () => {}, function (type) { this.type = type; });

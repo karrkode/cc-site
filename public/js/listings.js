@@ -57,7 +57,7 @@ document.addEventListener("error", function (ev) {
 }, true);
 // CC-253: an event's small tile (My week, crews, the journal, Find an outing): the category field, its water, its photo
 // over the water when it has one (letterboxed, as on the cards), then the category's name. extra goes on top of all that.
-function eventTileHTML(e, extra, bare) { // bare: no category tag (CC-261: My week's committed rows)
+function eventTileHTML(e, extra, bare) { // bare: no category tag (CC-261: My week's going rows)
   return '<span class="tile water-field' + catClass(e.type) + '">' + waterHTML(e, "tile") + listingImageHTML(e.imageUrl) +
     (bare ? "" : '<span class="tile-k">' + esc(e.label) + "</span>") + (extra || "") + "</span>";
 }
@@ -81,7 +81,7 @@ function listingHTML(e, card, flip) {
 }
 
 // CC-155: the admin's pick beside the name, as a button that says what it means: its name is the event page's
-// sentence ("Yours truly is committed to seeing this."), shown in a tip on hover, keyboard focus or a tap. The tip
+// sentence ("Yours truly is going to see this."), shown in a tip on hover, keyboard focus or a tap. The tip
 // lives on the page body, like the crew counts' (crews.js), so the row's edges and the views' transforms don't clip it.
 function listingPickHTML(e) {
   if (!e.pick) return "";

@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- CC-275: two nested C's (Culture Crew) in the site lake navy, with the Chicago flag's red star (index.html #chi-star, the site's star red) at the left. Plain attributes, no style element: the Content-Security-Policy would block inline CSS in this file. -->
+  <!-- CC-275: two nested C's (Chi Culture Crew) in the site lake navy, with the Chicago flag's red star (index.html #chi-star, the site's star red) at the left. Plain attributes, no style element: the Content-Security-Policy would block inline CSS in this file. -->
   <defs><clipPath id="t"><rect width="64" height="64" rx="14"/></clipPath></defs>
   <g clip-path="url(#t)">
     <rect width="64" height="64" fill="#FFFFFF"/>

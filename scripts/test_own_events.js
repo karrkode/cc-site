@@ -27,7 +27,7 @@ const g = {
 };
 vm.createContext(g);
 vm.runInContext("var AUTH = { user: null }, MYPLANS = {}, API = ''; function $(id) { return document; }", g);
-["util.js", "water.js", "listings.js", "planner.js", "account.js", "crews.js", "photos.js"].forEach((f) => vm.runInContext(read(f), g));
+["util.js", "water.js", "listings.js", "outing.js", "account.js", "crews.js", "photos.js"].forEach((f) => vm.runInContext(read(f), g));
 const set = (code) => vm.runInContext(code, g);
 set("AUTH.user = { id: 'u1', display_name: 'Yours Truly', role: 'user' };");
 const has = (html, s, msg) => assert.ok(html.includes(s), msg || "has " + s);

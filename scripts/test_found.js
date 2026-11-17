@@ -28,7 +28,7 @@ const g = {
 };
 vm.createContext(g);
 vm.runInContext("var AUTH = { user: null }, MYPLANS = {}, API = ''; function $(id) { return document; }", g);
-["util.js", "planner.js", "found.js"].forEach((f) => vm.runInContext(read(f), g));
+["util.js", "outing.js", "found.js"].forEach((f) => vm.runInContext(read(f), g));
 
 const iso = (n) => g.isoDate(g.add(g.T, n));
 function item(over) {

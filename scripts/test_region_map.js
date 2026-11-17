@@ -1,4 +1,4 @@
-// CC-292: question 4 of Find an outing is a map of Chicago in five clickable sections (regionMapHTML in public/js/planner.js).
+// CC-292: question 4 of Find an outing is a map of Chicago in five clickable sections (regionMapHTML in public/js/outing.js).
 // Checks the five sections, their labels with counts, aria-pressed, disabled sections, and the theme tokens in the CSS.
 //
 //     node scripts/test_region_map.js
@@ -15,7 +15,7 @@ const g = { window: { matchMedia: () => stub(), addEventListener() {} }, matchMe
   location: stub(), history: stub(), navigator: stub(), Intl, console };
 vm.createContext(g);
 vm.runInContext("var AUTH = { user: null }, MYPLANS = {}, API = ''; function $(id) { return document; }", g);
-["util.js", "planner.js"].forEach((f) => vm.runInContext(read("js/" + f), g));
+["util.js", "outing.js"].forEach((f) => vm.runInContext(read("js/" + f), g));
 
 const keys = g.REGIONS.map((r) => r[0]);
 assert.deepStrictEqual(Array.from(keys), ["downtown", "north", "west", "south", "suburbs"], "five sides of town");
@@ -50,9 +50,9 @@ assert.ok(!/#[0-9a-fA-F]{3,8}\b/.test(block), "no hard-coded colours in the map 
 assert.ok(/\.rsec\[aria-pressed="true"\]/.test(block) && /\.rsec:focus-visible/.test(block) && /aria-disabled="true"/.test(block), "pressed, focus and disabled states");
 assert.ok(/stroke:\s*var\(--/.test(block) && /fill:\s*var\(--/.test(block), "fills and strokes are tokens");
 
-// the planner wires it: click toggles via data-pregion, Enter and Space too
-const planner = read("js/planner.js");
-assert.ok(planner.includes("regionMapHTML(counts, plan.regions)"), "step 4 draws the map");
-assert.ok(planner.includes('ev.key === "Enter" || ev.key === " "') && planner.includes('hasAttribute("data-pregion")'), "keyboard toggles a section");
-assert.ok(planner.includes('aria-disabled") !== "true"'), "a disabled section ignores clicks");
+// Find an outing wires it: click toggles via data-pregion, Enter and Space too
+const outing = read("js/outing.js");
+assert.ok(outing.includes("regionMapHTML(counts, plan.regions)"), "step 4 draws the map");
+assert.ok(outing.includes('ev.key === "Enter" || ev.key === " "') && outing.includes('hasAttribute("data-pregion")'), "keyboard toggles a section");
+assert.ok(outing.includes('aria-disabled") !== "true"'), "a disabled section ignores clicks");
 console.log("region map checks passed");

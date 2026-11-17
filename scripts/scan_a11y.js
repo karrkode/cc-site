@@ -42,7 +42,7 @@ const PAGES = [
   { name: "invite", head: "ip-title", path: "/invite" },
   { name: "sign-in", head: "account-title", path: "/#account" },
   { name: "submit", head: "submit-title", path: "/#submit" },
-  { name: "planner", head: "planner-title", path: "/#planner", who: "user" },
+  { name: "week", head: "week-title", path: "/#week", who: "user" },
   { name: "journal", head: "journal-title", path: "/#journal", who: "user" },
   { name: "crews", head: "crews-title", path: "/#crews", who: "user" },
   { name: "account", head: "account-title", path: "/#account", who: "user" },
@@ -74,10 +74,10 @@ async function signIn(ctx, who) {
   const [email, password] = ACCOUNTS[who];
   const page = await ctx.newPage();
   await page.goto(BASE + "/#account");
-  await page.waitForSelector("#login-email");
-  await page.fill("#login-email", email);
-  await page.fill("#login-password", password);
-  await page.click("#login-form button[type=submit]");
+  await page.waitForSelector("#signin-email");
+  await page.fill("#signin-email", email);
+  await page.fill("#signin-password", password);
+  await page.click("#signin-form button[type=submit]");
   await page.waitForFunction(() => { const n = document.getElementById("nav-account"); return n && !/^sign in/i.test(n.innerText.trim()); }, null, { timeout: 8000 })
     .catch(() => { throw new Error("scan_a11y: couldn't sign in the " + who + " account at " + BASE + " (CORS, or a wrong password?)"); });
   return page;

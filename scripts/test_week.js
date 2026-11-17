@@ -29,7 +29,7 @@ const g = {
 };
 vm.createContext(g);
 vm.runInContext("var AUTH = { user: null }, MYPLANS = {}, API = ''; function $(id) { return document; }", g);
-["util.js", "water.js", "listings.js", "planner.js", "account.js", "crews.js", "photos.js"].forEach((f) => vm.runInContext(read(f), g));
+["util.js", "water.js", "listings.js", "outing.js", "account.js", "crews.js", "photos.js"].forEach((f) => vm.runInContext(read(f), g));
 const set = (code) => vm.runInContext(code, g);
 set("AUTH.user = { id: 'u1', display_name: 'Yours Truly', role: 'user' }; CREWS = [{ id: 7, name: 'Thursday Theater' }];");
 
@@ -126,7 +126,7 @@ const picked = ev({ pick: { status: "interested", date: null, by: "Yours truly" 
 plan(picked, "interested");
 has(g.weekRowHTML(picked), 'class="mark mark-host-int" role="img" aria-label="Yours truly is interested in this one."', "the ink dolphin");
 picked.pick = { status: "going", date: null, by: "Yours truly" };
-has(g.weekRowHTML(picked), 'class="mark mark-host" role="img" aria-label="Yours truly is committed to seeing this."', "the gold ring");
+has(g.weekRowHTML(picked), 'class="mark mark-host" role="img" aria-label="Yours truly is going to see this."', "the gold ring");
 set("CREWS = [];");
 lacks(g.weekRowHTML(maybe), "Tell a crew", "no crews, nobody to tell");
 set("CREWS = [{ id: 7, name: 'Thursday Theater' }];");
@@ -179,9 +179,9 @@ plan(later, "interested");
 html = g.weekRowHTML(later);
 has(html, "No shows this week."); lacks(html, "data-myplan-going=\"" + later.id + "\" data-date");
 has(html, 'data-pick-week="2">Next: ' + g.goingDay(iso(g.add(g.T, 16))) + " →</button>", "the next day that fits, in its week");
-set("PLANNER_WEEK = 2;");
+set("WEEK_OFFSET = 2;");
 has(g.weekRowHTML(later), 'data-date="' + iso(g.add(g.T, 16)) + '"', "that week offers it");
-set("PLANNER_WEEK = 0;");
+set("WEEK_OFFSET = 0;");
 const shut = ev({ category: "Visual Art", schedule: sched({ hours: Object.fromEntries(DOW.map((k) => [k, null])) }), venue: venue("Visual Art") });
 plan(shut, "interested");
 html = g.weekRowHTML(shut);
@@ -244,7 +244,7 @@ assert.strictEqual(g.withdrawnHTML(), "", "nothing withdrawn, no line");
 set("WITHDRAWN = { id: " + JSON.stringify(maybe.id) + ", title: 'Matt & Ben', mine: { status: 'interested', date: null, crews: [7] } }; delete MYPLANS[" + JSON.stringify(maybe.id) + "];");
 html = g.withdrawnHTML();
 has(html, 'Withdrew your interest in <span class="week-undo-t">Matt &amp; Ben</span>.', "says what went, escaped");
-has(html, 'id="deciding-undo-btn" data-plan-undo="' + maybe.id + '">Undo</button>', "Undo, right away");
+has(html, 'id="interested-undo-btn" data-plan-undo="' + maybe.id + '">Undo</button>', "Undo, right away");
 lacks(html, "week-error");
 set("WITHDRAWN.error = 'that event is no longer listed.';");
 has(g.withdrawnHTML(), '<p class="week-error" role="alert">Check this: that event is no longer listed.</p>', "a failed Undo says Check this:");
@@ -297,7 +297,7 @@ const shot = ev({ title: "Shot", image_url: "https://example.com/a.webp" });
 assert.match(g.weekRowHTML(shot), /<img class="listing-image" src="https:\/\/example\.com\/a\.webp"[^>]*><span class="tile-k">/, "interested rows have the photo, with the category tag");
 plan(shot, "going", iso(day));
 has(g.weekDayHTML({ d: day, items: [shot] }), 'class="listing-image"', "and so do a day's rows");
-// CC-261: committed rows in the week ahead go without the category tag
+// CC-261: going rows in the week ahead go without the category tag
 assert.doesNotMatch(g.weekDayHTML({ d: day, items: [shot] }), /tile-k/, "no category tag on a day's rows");
 set("WENT_PHOTO[" + JSON.stringify(shot.id) + "] = { status: 'approved', url: '/p/2.jpg' };");
 assert.match(g.journalEntryHTML(shot, false), /class="listing-image"[^>]*><span class="tile-k">[^<]*<\/span><img class="journal-thumb" src="\/p\/2\.jpg"/, "your photo goes over the event's");
@@ -320,7 +320,7 @@ set("WENT[" + JSON.stringify(goneDay.id) + "] = true;");
 assert.deepStrictEqual(Array.from(g.interestedList(), (e) => e.title), ["On now", "Went", "Gone day"], "a passed going day you've been to stays");
 // CC-261: "Still deciding" is now "Events you're interested in", in the heading, the deck and the live messages
 const page = fs.readFileSync(path.join(__dirname, "..", "public", "index.html"), "utf8");
-has(page, '<span id="deciding-title" tabindex="-1">Events you\'re interested in</span>', "the new heading");
+has(page, '<span id="interested-title" tabindex="-1">Events you\'re interested in</span>', "the new heading");
 has(page, "and the events you're interested in.</p>", "and the deck");
 assert.ok(!/still deciding/i.test(page + read("account.js") + read("util.js")), "the old name is gone");
 has(read("account.js"), "Undo is at the top of Events you\\u2019re interested in.", "Withdraw's live message");
@@ -353,8 +353,8 @@ console.log("ok: My week (CC-146, CC-156, CC-160, CC-261)");
     assert.strictEqual(set("MYPLANS[" + JSON.stringify(cplay.id) + "].status"), "going");
     assert.ok(!g.FIND_DAY_OPEN[cd], "the list closes");
     assert.deepStrictEqual(redraws, [cplay.id], "My week is drawn again");
-    has(live.textContent, "Committed: Commit Play, ", "live message"); has(live.textContent, "Undo is at the top");
-    has(g.committedHTML(), 'data-commit-undo="' + cplay.id + '">Undo</button>', "Undo is offered");
+    has(live.textContent, "Going: Commit Play, ", "live message"); has(live.textContent, "Undo is at the top");
+    has(g.justGoingHTML(), 'data-commit-undo="' + cplay.id + '">Undo</button>', "Undo is offered");
     await run(() => g.undoCommit(btn({})));
     assert.ok(calls[1].startsWith("DELETE /me/plans/"), "no plan before: Undo clears it");
     // it was interested before: Undo puts interested back, not a clear
@@ -363,20 +363,20 @@ console.log("ok: My week (CC-146, CC-156, CC-160, CC-261)");
     await run(() => g.undoCommit(btn({})));
     assert.ok(calls[1].includes('"status":"interested"'), "Undo puts interested back: " + calls[1]);
     // a plan changed some other way hides Undo
-    set("MYPLANS[" + JSON.stringify(cplay.id) + "] = { status: 'going', date: '2000-01-01', crews: [] }; COMMITTED = { id: " + JSON.stringify(cplay.id) + ", title: 'x', iso: " + JSON.stringify(cd) + ", prev: null };");
-    assert.strictEqual(g.committedHTML(), "", "Undo goes once the plan has changed");
+    set("MYPLANS[" + JSON.stringify(cplay.id) + "] = { status: 'going', date: '2000-01-01', crews: [] }; JUST_GOING = { id: " + JSON.stringify(cplay.id) + ", title: 'x', iso: " + JSON.stringify(cd) + ", prev: null };");
+    assert.strictEqual(g.justGoingHTML(), "", "Undo goes once the plan has changed");
     // a failed save says so, in an alert, and keeps the list
     g.api = () => Promise.resolve({ ok: false, status: 500 }); g.readJSON = () => Promise.resolve({ ok: false, status: 500, body: {} });
     set("delete MYPLANS[" + JSON.stringify(cplay.id) + "]; FIND_DAY_OPEN[" + JSON.stringify(cd) + "] = true;");
     await run(() => g.commitFromDay(btn({ "data-day-commit": cplay.id, "data-date": cd })));
     has(box.innerHTML, 'role="alert"', "a failure is an alert"); assert.ok(g.FIND_DAY_OPEN[cd], "the list stays open");
-    assert.strictEqual(g.committedHTML(), "", "nothing committed, so no Undo beside the error");
+    assert.strictEqual(g.justGoingHTML(), "", "nothing just marked going, so no Undo beside the error");
     // an earlier Undo survives a later failed Commit!, and an error is shown once, not kept
-    set("MYPLANS[" + JSON.stringify(cplay.id) + "] = { status: 'going', date: " + JSON.stringify(cd) + ", crews: [] }; COMMITTED = { id: " + JSON.stringify(cplay.id) + ", title: 'Commit Play', iso: " + JSON.stringify(cd) + ", prev: null };");
+    set("MYPLANS[" + JSON.stringify(cplay.id) + "] = { status: 'going', date: " + JSON.stringify(cd) + ", crews: [] }; JUST_GOING = { id: " + JSON.stringify(cplay.id) + ", title: 'Commit Play', iso: " + JSON.stringify(cd) + ", prev: null };");
     const other2 = ev({ title: "Other Play" });
     await run(() => g.commitFromDay(btn({ "data-day-commit": other2.id, "data-date": cd })));
     has(box.innerHTML, "data-commit-undo", "the earlier Undo stays"); has(box.innerHTML, 'role="alert"');
-    assert.ok(!g.committedHTML().includes('role="alert"'), "the error isn't kept for the next redraw");
+    assert.ok(!g.justGoingHTML().includes('role="alert"'), "the error isn't kept for the next redraw");
     console.log("ok: Commit! from a day's Find something list (CC-262)");
   })().catch((e) => { console.error(e); process.exit(1); });
 }

@@ -1,5 +1,5 @@
-// Culture Crew site: Admin tools: the review queue, venues, and editing events.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
+// Chi Culture Crew site: Admin tools: the review queue, venues, and editing events.
+// Loaded by index.html in order (core, util, catalog, outing, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- review queue (admins) ----------
@@ -841,7 +841,7 @@ function openEditor(e, opener) {
   $("ed-begin").value = e.begin || ""; $("ed-end").value = e.end || ""; $("ed-open-run").checked = !!e.openRun;
   $("ed-cost").value = e.costRaw || ""; $("ed-url").value = e.url || ""; edLinkSync();
   $("ed-publish-at").value = e.publishAt ? localInputValue(e.publishAt) : "";
-  fillWeekly(e); // its own show times, for the planner (CC-79; hours.js)
+  fillWeekly(e); // its own show times, for Find an outing (CC-79; hours.js)
   setRun("ed", e.runDates); $("ed-runkind").hidden = false; // its fixed run, if it has one (CC-96; hours.js)
   $("ed-dates-note").hidden = !datesToLookUp(e); // CC-102: a reminder to find its dates
   $("ed-withdraw").textContent = e.status === "withdrawn" ? "Restore" : "Withdraw";
@@ -1020,7 +1020,7 @@ var STAT_METRICS = [
   ["registrations", "New members", function (w) { return w.confirmed + " confirmed their email"; }],
   ["active", "Active members", function () { return "used the site while signed in"; }],
   ["plans_interested", "Marked interested", function () { return "new “Interested” plans"; }],
-  ["plans_going", "Committed to a date", function () { return "new plans with a date"; }],
+  ["plans_going", "Going on a date", function () { return "new plans with a date"; }],
   ["attended", "“I've been” marks", function () { return "events members say they went to"; }],
   ["submitted", "Events sent in", function () { return "suggestions from members"; }]
 ];
@@ -1062,7 +1062,7 @@ function paintStats(s) {
   }).join("");
 }
 
-// CC-69: the events members are most interested in or committed to, as stacked bars (committed, then
+// CC-69: the events members are most interested in or going to, as stacked bars (going, then
 // interested) scaled to the busiest event, with "I've been" counts. Totals only; never who.
 function loadInterest() {
   $("interest-status").textContent = "Loading…";
@@ -1080,7 +1080,7 @@ function paintInterest(rows) {
   var max = Math.max.apply(null, rows.map(function (r) { return r.interested + r.going; }).concat([1]));
   $("interest-list").innerHTML = rows.map(function (r) {
     var e = toEvent(r.event);
-    var counts = [[r.going, " committed"], [r.interested, " interested"], [r.attended, " \u201cI've been\u201d"]]
+    var counts = [[r.going, " going"], [r.interested, " interested"], [r.attended, " \u201cI've been\u201d"]]
       .filter(function (c) { return c[0]; }).map(function (c) { return c[0] + c[1]; }).join(" · ");
     return '<li><div class="interest-name"><span class="kind">' + esc(e.label) + '</span><a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" +
       '<span class="hint small">' + esc(placeText(e)) + "</span></div>" +
@@ -1096,7 +1096,7 @@ $("i-closed").addEventListener("change", loadInterest);
 
 // CC-68: visits over the last 30 days: totals, a daily chart of visitors (returning ones stacked under
 // new ones), and views of each part of the site. Counts only.
-var VIEW_NAMES = { home: "Home", join: "Join page", catalog: "Catalog", event: "Event view", plan: "Find an outing", submit: "Submit", account: "Account", crews: "Crews", planner: "My week",
+var VIEW_NAMES = { home: "Home", join: "Join page", catalog: "Catalog", event: "Event view", plan: "Find an outing", submit: "Submit", account: "Account", crews: "Crews", week: "My week",
   review: "Review", sourcing: "Event Sourcing", engagement: "Engagement", people: "Venues and Members", venues: "Venues", stats: "Stats", sources: "Source grid", found: "Found events", issues: "Issues",
   reset: "Password reset", verify: "Email confirmation" };
 function loadTraffic() {

@@ -1,7 +1,7 @@
 // CC-255: Find an outing's chevron progress bar, and the slide between steps (still when motion is reduced).
 const assert = require("assert"), fs = require("fs"), path = require("path"), vm = require("vm");
 const read = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
-const src = read("public/js/planner.js"), css = read("public/css/site.css"), html = read("public/index.html");
+const src = read("public/js/outing.js"), css = read("public/css/site.css"), html = read("public/index.html");
 const g = {}; vm.createContext(g);
 const bar = { hidden: true, innerHTML: "" };
 g.$ = (id) => (id === "plan-bar" ? bar : null);
@@ -32,4 +32,4 @@ assert.ok(/matchMedia\("\(prefers-reduced-motion: reduce\)"\)/.test(src), "planS
 assert.ok(/@media \(prefers-reduced-motion: no-preference\) \{\s*\.plan-in-fwd/.test(css) && !/^\.plan-in-fwd/m.test(css), "the slide keyframes are applied only when motion is allowed");
 assert.ok(html.includes('id="plan-bar"') && html.includes('aria-label="Progress"') && !/Question 1 of 4|tick-0/.test(html), "the bar replaces the Question line and ticks");
 assert.ok(/planSlide\(-1/.test(src) && /planSlide\(1/.test(src), "forward slides one way and back the other");
-console.log("planner bar ok");
+console.log("outing bar ok");

@@ -35,7 +35,7 @@ inputs.forEach(([, id, rest]) => {
   has(all, '<label for="' + id + '">', id + " has a label");
   assert.ok(/autocomplete="[^"]+"/.test(rest), id + " has autocomplete");
 });
-const auto = { "login-email": "username", "login-password": "current-password", "reg-name": "name", "reg-email": "email", "reg-password": "new-password",
+const auto = { "signin-email": "username", "signin-password": "current-password", "reg-name": "name", "reg-email": "email", "reg-password": "new-password",
   "p-name": "name", "p-email": "email", "p-password": "current-password", "pw-current": "current-password", "pw-new": "new-password",
   "pw-confirm": "new-password", "reset-new": "new-password", "reset-confirm": "new-password", "forgot-email": "email" };
 Object.keys(auto).forEach((id) => assert.ok(new RegExp('<input id="' + id + '"[^>]*autocomplete="' + auto[id] + '"').test(all), id + " autocompletes " + auto[id]));
@@ -43,18 +43,18 @@ has(account, '$("pw-user").value = AUTH.user.email;', "the hidden username holds
 
 // --- statuses and confirmations are read out; errors are alerts ---
 ["forgot-msg", "profile-msg", "password-msg", "account-notice"].forEach((id) => assert.ok(new RegExp('id="' + id + '" role="status"').test(all), id + " is a status"));
-["login-error", "forgot-error", "register-error", "profile-error", "password-error", "reset-error", "verify-error"].forEach((id) =>
+["signin-error", "forgot-error", "register-error", "profile-error", "password-error", "reset-error", "verify-error"].forEach((id) =>
   assert.ok(new RegExp('class="form-error" id="' + id + '" role="alert"').test(all), id + " is an alert"));
 
 // --- errors: "Check this:", the ink border on the field at fault, never red text ---
 has(css, '.acct-view .field input[aria-invalid="true"] { border: 2.5px solid var(--text);', "the field at fault gets the ink border");
 has(css, ".acct-view .field input { min-height: 48px;", "48px fields");
 lacks(between(css, "/* CC-148: Account settings", "/* CC-121: the join page"), "var(--star)", "no red");
-["login", "register", "profile", "password", "reset", "forgot"].forEach((f) => {
+["signin", "register", "profile", "password", "reset", "forgot"].forEach((f) => {
   const handler = between(account, '$("' + f + '-form").addEventListener("submit"', "\n});");
   assert.ok(!/err(?:El)?\.textContent = (?!checkThis|"")/.test(handler), f + ": every error says Check this:");
 });
-has(account, 'acctBad($("login-error"), $("login-email"), "Enter the email you signed up with.")');
+has(account, 'acctBad($("signin-error"), $("signin-email"), "Enter the email you signed up with.")');
 has(account, "errEl.textContent = checkThis(errorText(res));", "sign in and register: the server's errors say Check this: too");
 
 // --- statuses are words, and the rows render ---
@@ -78,7 +78,7 @@ has(issues, "acctRowHTML(i.key", "your reports are rows too");
 // CC-237: every prompt sets its way back, and a new member hears about confirming wherever they land
 const submit = read("js/submit.js"), crewsJs = read("js/crews.js"), catalogJs = read("js/catalog.js");
 has(submit, 'signInFrom("submit")'); has(catalogJs, 'signInFrom("e/" + EV.id)'); has(crewsJs, 'signInFrom("crews")');
-has(account, 'signInFrom("planner")'); has(account, 'registerFrom("journal")'); has(account, 'function registerFrom(place) { signInFrom(place);'); // CC-252: the journal's is a register prompt
+has(account, 'signInFrom("week")'); has(account, 'registerFrom("journal")'); has(account, 'function registerFrom(place) { signInFrom(place);'); // CC-252: the journal's is a register prompt
 lacks(between(html, 'id="submit-signin"', "</div>\n      </div>"), 'data-go="account"', "the Submit prompt sets its way back");
 for (const src of [account, submit, crewsJs, catalogJs]) assert.ok(!/AFTER_SIGN_IN = "/.test(src), "only signInFrom and authForm set AFTER_SIGN_IN");
 has(fn(account, "openAccount"), "AFTER_SIGN_IN = null");

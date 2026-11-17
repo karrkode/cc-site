@@ -42,7 +42,7 @@ function load() {
     helper("account.js", "isAdmin") + helper("account.js", "myplanSaid"), sandbox);
   vm.runInContext(read("listings.js"), sandbox);
   vm.runInContext(read("catalog.js"), sandbox);
-  vm.runInContext(read("planner.js"), sandbox); // CC-260: the days it's on (canGoOn), as on the page
+  vm.runInContext(read("outing.js"), sandbox); // CC-260: the days it's on (canGoOn), as on the page
   return sandbox;
 }
 
@@ -94,10 +94,10 @@ html = g.eventViewHTML(past);
 has(html, "· Closed</p>"); has(html, "This run has closed."); lacks(html, "Tickets and showtimes", "no tickets once closed");
 
 // --- signed out: no plan buttons, a way to sign in; the admin's pick no longer shows under Your crews (CC-172) ---
-e = ev({ pick: { status: "interested", date: null, by: "The Culture Crew" } });
+e = ev({ pick: { status: "interested", date: null, by: "The Chi Culture Crew" } });
 html = g.eventViewHTML(e);
 lacks(html, "data-myplan-"); has(html, 'id="ev-signin-btn"');
-lacks(html, 'class="mark mark-host-int"', "CC-172: no admin dolphin under Your crews"); lacks(html, "The Culture Crew is interested in this one.", "CC-172: the admin's pick isn't a line under Your crews");
+lacks(html, 'class="mark mark-host-int"', "CC-172: no admin dolphin under Your crews"); lacks(html, "The Chi Culture Crew is interested in this one.", "CC-172: the admin's pick isn't a line under Your crews");
 
 // --- signed in: Interested and Going on the page, pressed as your plan says ---
 g.AUTH.user = { id: 1, name: "Local User", role: "member" };

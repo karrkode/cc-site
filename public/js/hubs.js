@@ -1,4 +1,4 @@
-// Culture Crew site: The admin's Review menu and its group pages (CC-206): Engagement, and Venues and Members (Event Sourcing is sourcing.js).
+// Chi Culture Crew site: The admin's Review menu and its group pages (CC-206): Engagement, and Venues and Members (Event Sourcing is sourcing.js).
 // The tools themselves stay on their own pages. These pages only say what's waiting and link to them.
 
 // ---------- the Review menu ----------

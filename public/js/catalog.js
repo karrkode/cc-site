@@ -1,5 +1,5 @@
-// Culture Crew site: The home page's "Last chances" list and the catalog with its filters.
-// Loaded by index.html in order (core, util, catalog, leadstack, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
+// Chi Culture Crew site: The home page's "Last chances" list and the catalog with its filters.
+// Loaded by index.html in order (core, util, catalog, leadstack, outing, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- home: the front page (CC-143) ----------
@@ -88,7 +88,7 @@ $("front-all").addEventListener("click", function () { resetCatalog(); loadCatal
 // CC-132: the catalog opens on "Opening soonest"; the home page's Last chance list and its button keep closing order
 var cat = { q: "", types: {}, hoods: {}, regions: {}, picks: {}, when: "upcoming", cost: "any", where: "any", sort: "opening", custom: null, crews: "" };
 function resetCatalog() { cat = { q: "", types: {}, hoods: {}, regions: {}, picks: {}, when: "upcoming", cost: "any", where: "any", sort: "opening", custom: null, crews: "" }; }
-// CC-66: the dolphin filters, for every visitor: the owner's picks (interested and/or committed).
+// CC-66: the dolphin filters, for every visitor: the owner's picks (interested and/or going).
 function syncMineChips() {
   Array.prototype.forEach.call($("mine-chips").children, function (b) {
     b.setAttribute("aria-pressed", String(!!cat.picks[b.getAttribute("data-mine")]));
@@ -133,7 +133,7 @@ function syncCatalogControls() {
 }
 var PAGE = 24, CAT_ITEMS = [], CAT_TOTAL = 0, CAT_REQ = 0;
 var COST_MAX = { free: "0", u40: "39.99", u100: "99.99" }; // "under $40" = a lowest price below 40
-// CC-128: the planner's top price comes over as "le40" (a lowest price of $40 or less); it gets its own option
+// CC-128: Find an outing's top price comes over as "le40" (a lowest price of $40 or less); it gets its own option
 function costMax(c) { return COST_MAX[c] || (/^le\d+$/.test(c) ? c.slice(2) : null); }
 function costOption() {
   var sel = $("f-cost"), old = sel.querySelector("option[data-top]"), top = /^le\d+$/.test(cat.cost);
@@ -181,7 +181,7 @@ function paintCatalog(focusFrom) {
   syncMineChips();
   // CC-140: rows under day heads for Opening soonest and Closing soonest; already closed and the other sorts have none
   $("grid").innerHTML = CAT_ITEMS.length ? listingsHTML(CAT_ITEMS, cat.when === "past" ? "" : cat.sort, true) : cat.crews ?
-    '<div class="list-state"><p><strong>Nothing from your crews matches.</strong></p><p class="hint">No crew-mate has marked an event like this as interested, committed or been. Widen the other filters, or turn off Your Crews Catalog to see everything.</p></div>' :
+    '<div class="list-state"><p><strong>Nothing from your crews matches.</strong></p><p class="hint">No crew-mate has marked an event like this as interested, going or been. Widen the other filters, or turn off Your Crews Catalog to see everything.</p></div>' :
     Object.keys(cat.picks).length ?
     '<div class="list-state"><p><strong>No picks match.</strong></p><p class="hint">Widen the other filters, or turn off the dolphin filters to see everything.</p></div>' :
     '<div class="list-state"><p><strong>Nothing matches those filters.</strong></p><p class="hint">Try a wider date range or a higher price limit.</p></div>';
@@ -299,7 +299,7 @@ $("mine-chips").addEventListener("click", function (ev) {
   renderCatalog();
 });
 // CC-94: the Your Crews Catalog chip (it replaced CC-75's dropdown) shows for members of a crew: events other
-// members of any of your crews are interested in, committed to, or have been to.
+// members of any of your crews are interested in, going to, or have been to.
 $("crews-chip").addEventListener("click", function () { cat.crews = cat.crews ? "" : "all"; renderCatalog(); });
 function buildCrewFilter() {
   var mine = AUTH.user ? CREWS : [];
@@ -558,7 +558,7 @@ function closeEvent() {
   EV.from = null; EV.pushed = false; EV.link = null;
   if (from === "catalog" && !CAT_ITEMS.length) renderCatalog();
   // CC-259: a plan saved on the event page redraws only the views that are showing, so the one we return to is stale
-  if (from === "planner") renderPlannerPage(); else if (from === "account") renderAccount(); else if (from === "journal") renderJournalPage();
+  if (from === "week") renderWeekPage(); else if (from === "account") renderAccount(); else if (from === "journal") renderJournalPage();
   // the row that opened it, unless a redraw replaced it since (a plan changed): then the same event's in that view
   if (!link || !link.isConnected || !$("view-" + from).contains(link)) link = document.querySelector('#view-' + from + ' [data-ev-open="' + id + '"]');
   posterMove(posterSource(link), true, function () {

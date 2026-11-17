@@ -1,5 +1,5 @@
-// Culture Crew site: approvers and photo approvals (CC-91).
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they
+// Chi Culture Crew site: approvers and photo approvals (CC-91).
+// Loaded by index.html in order (core, util, catalog, outing, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they
 // share one global scope, so anything declared here is visible to the files after it.
 "use strict";
 // Approver is a permission a member holds. Only an admin offers it (the Members page); the member accepts or
@@ -10,7 +10,7 @@ function canApprove() { return !!AUTH.user && !!AUTH.user.can_approve; }
 
 // ---------- the offer, under "Waiting for you" (crews.js paintPending) ----------
 function approverOfferHTML() {
-  return '<div class="pending" data-approver-offer><p><strong>Culture Crew</strong> would like you to help approve “I’ve been” photos: ' +
+  return '<div class="pending" data-approver-offer><p><strong>Chi Culture Crew</strong> would like you to help approve “I’ve been” photos: ' +
     "you'd look at members' photos and approve the ones that show they were there.</p>" +
     '<div class="row"><button class="btn" type="button" data-approver-answer="yes">Accept</button>' +
     '<button class="btn ghost" type="button" data-approver-answer="no">Decline</button></div></div>';

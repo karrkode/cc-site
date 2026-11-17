@@ -1,9 +1,9 @@
 // CC-254: Find an outing's budget step is one maximum-price bar: Free at the left, the widest stop at the right.
 const assert = require("assert"), fs = require("fs"), path = require("path"), vm = require("vm");
-const src = fs.readFileSync(path.join(__dirname, "..", "public/js/planner.js"), "utf8");
+const src = fs.readFileSync(path.join(__dirname, "..", "public/js/outing.js"), "utf8");
 const grab = (from, to) => src.slice(src.indexOf(from), src.indexOf(to));
 const g = {}; vm.createContext(g);
-vm.runInContext(grab("var PLAN_STOPS", "// The planner only needs"), g);
+vm.runInContext(grab("var PLAN_STOPS", "// Find an outing only needs"), g);
 vm.runInContext(grab("function costHTML", "function stopHTML"), g);
 g.esc = (t) => String(t); g.costText = (e) => (e.costUsual ? "Usually " + e.cost : e.min === null ? "Price not posted" : e.cost);
 const ev = (min) => ({ min });
@@ -26,4 +26,4 @@ assert.strictEqual(g.costHTML({ min: null }), "Price not posted");
 assert.ok(!/data-budget|plan\.priced/.test(src), "no Free or Priced choice");
 assert.ok(/plan-free-n/.test(src), "the count line of free events");
 assert.ok(/\$\("plan-next"\)\.hidden = plan\.step < 1;/.test(src), "Next shows at the budget question");
-console.log("planner budget ok");
+console.log("outing budget ok");

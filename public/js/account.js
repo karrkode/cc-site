@@ -1,5 +1,5 @@
-// Culture Crew site: Signing in, your plans, "I've been", the account page, profile, email links and passwords.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
+// Chi Culture Crew site: Signing in, your plans, "I've been", the account page, profile, email links and passwords.
+// Loaded by index.html in order (core, util, catalog, outing, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- signed-in state ----------
@@ -9,7 +9,7 @@ function rerenderLists() {
   renderHome();
   if (visible("catalog")) paintCatalog();
   if (visible("account")) renderAccount();
-  if (visible("planner")) renderPlannerPage(); // CC-105
+  if (visible("week")) renderWeekPage(); // CC-105
   if (visible("journal")) renderJournalPage(); // CC-159
   if (visible("event")) loadEventView(); // CC-117: signed in or out, the crews' plans change
 }
@@ -29,7 +29,7 @@ function onAuthChange() {
     if ($("issue-dialog").open) closeDialog($("issue-dialog"));
     rerenderLists();
     if (visible("crews")) renderCrewsPage();
-    if (visible("planner")) renderPlannerPage();
+    if (visible("week")) renderWeekPage();
     if (visible("journal")) renderJournalPage();
     if (visible("join")) paintJoinPage(); // CC-121
     return;
@@ -38,7 +38,7 @@ function onAuthChange() {
   returnAfterSignIn();
   if (visible("join") && $("jp-in").hidden) paintJoinPage(); // CC-121 (just joined: the welcome stays)
   if (visible("crews")) renderCrewsPage();
-  if (visible("planner")) renderPlannerPage();
+  if (visible("week")) renderWeekPage();
   if (visible("journal")) renderJournalPage();
   if (visible("submit")) renderSubmit();
   if (visible("review")) renderReview();
@@ -55,7 +55,7 @@ function returnAfterSignIn() {
   if (back === "home") { ROUTE = location.hash; show("home"); return; } // CC-237: Home takes the sign-in page's place, so Back doesn't land on the account page
   // CC-157: the sign-in page was pushed on the way: going back takes it off the history, and the popstate reopens that page
   if (back && location.hash === "#account" && history.state && history.state.view === "account") history.back();
-  else if (back === "crews") openCrews(); else if (back === "planner") openPlanner(); else if (back === "journal") openJournal();
+  else if (back === "crews") openCrews(); else if (back === "week") openWeek(); else if (back === "journal") openJournal();
   else if (back === "submit") openSubmit();
   else if (back && back.indexOf("e/") === 0) openEvent(back.slice(2), false); // signed in from an event (CC-117)
   else if (visible("account")) renderAccount(true);
@@ -144,13 +144,13 @@ function redrawCardsNow(id, from, focusOn) {
   return loadMyPlans().then(function () {
     if (visible("event")) renderEventView(); // CC-117: the event view's buttons, redrawn as a view, not a card
     if (visible("account")) renderAccount();
-    if (visible("planner")) renderPlannerPage();
+    if (visible("week")) renderWeekPage();
     if (visible("journal")) renderJournalPage(); // CC-159
-    var item = '[data-card="' + id + '"],[data-day-item="' + id + '"],[data-journal="' + id + '"]', planner = PLANNER_LISTS.indexOf(listId) >= 0;
+    var item = '[data-card="' + id + '"],[data-day-item="' + id + '"],[data-journal="' + id + '"]', inWeek = WEEK_LISTS.indexOf(listId) >= 0;
     var card = listId && $(listId) ? $(listId).querySelector(item) : null;
-    if (!card && planner) card = $("planner-main").querySelector(item); // moved within the planner
+    if (!card && inWeek) card = $("week-main").querySelector(item); // moved within My week
     // CC-159: "I've been" moves it to the journal, now its own page: focus the line that goes there
-    var target = card ? card.querySelector(focusOn || "[data-myplan-toggle]") : planner ? (WENT[id] ? $("planner-tojournal") : $("myplans-title")) : listId === "went-grid" ? $("journal-title") : null;
+    var target = card ? card.querySelector(focusOn || "[data-myplan-toggle]") : inWeek ? (WENT[id] ? $("week-tojournal") : $("myplans-title")) : listId === "went-grid" ? $("journal-title") : null;
     if (target) target.focus();
   });
 }
@@ -258,9 +258,9 @@ document.addEventListener("keydown", function (ev) { // Escape closes the picker
 // plan can go), and "Skip to" jumps to the week of your next plan after the one showing. Beside it, Events you're interested in:
 // interested plans, with no day yet. Once the event is over, or a going plan's day has passed, a plan shows there only if
 // you've marked it "I've been" (CC-261).
-var PLANNER_LISTS = ["planner-week", "myplans-grid"], PLANNER_WEEK = 0, PLANNER_MAX = 104;
+var WEEK_LISTS = ["week-list", "myplans-grid"], WEEK_OFFSET = 0, WEEK_MAX = 104;
 var PLANS_STATE = "loading", WENT_STATE = "loading"; // until /me/plans and /me/attended first answer: then "ready", or "error"
-function dayTimesText(e, d) { // "7:30 PM", "Open 10 AM to 5 PM", or "" (planner.js knows the schedules)
+function dayTimesText(e, d) { // "7:30 PM", "Open 10 AM to 5 PM", or "" (outing.js knows the schedules)
   if (isExhibit(e)) { var h = hoursOn(e, d); return h && h[2] ? "Open " + clockText(h[0]) + " to " + clockText(h[1]) : ""; }
   return (timesOn(e, d) || []).filter(Boolean).map(clockText).join(" and ");
 }
@@ -287,11 +287,11 @@ function weekRowHTML(e, d) {
     '<span class="wk-when">' + (when ? "<span>" + esc(when) + "</span>" : "") + "</span></a>" +
     weekCrewHTML(e) + '<div class="card-actions wk-acts">' + acts + "</div>" + myplanHTML(e, d ? undefined : weekPickHTML(e)) + crewShareHTML(e) + "</li>";
 }
-// CC-260: Pick a day in Events you're interested in offers the days of the shown week you can actually go (canGoOn, planner.js), one button
+// CC-260: Pick a day in Events you're interested in offers the days of the shown week you can actually go (canGoOn, outing.js), one button
 // each. With none it says so, and offers the next day that fits, a button that steps the week to it.
 function weekPickHTML(e) {
   if (!goingRange(e)) return "";
-  var mine = MYPLANS[e.id] || {}, id = esc(e.id), start = PLANNER_WEEK * 7, days = [], next = null, i;
+  var mine = MYPLANS[e.id] || {}, id = esc(e.id), start = WEEK_OFFSET * 7, days = [], next = null, i;
   for (i = 0; i < 7; i++) if (canGoOn(e, add(T, start + i))) days.push(add(T, start + i));
   if (days.length) {
     return '<p class="pick-days-h">Commit to a day</p><div class="row pick-days">' + days.map(function (d) {
@@ -303,7 +303,7 @@ function weekPickHTML(e) {
       }).join("");
     }).join("") + "</div>";
   }
-  for (i = start + 7; i <= (PLANNER_MAX + 1) * 7 && !next; i++) if (canGoOn(e, add(T, i))) next = add(T, i);
+  for (i = start + 7; i <= (WEEK_MAX + 1) * 7 && !next; i++) if (canGoOn(e, add(T, i))) next = add(T, i);
   return '<p class="pick-days-h">' + (isExhibit(e) && !e.sched.weekly_from ? "Not open this week." : "No shows this week.") + "</p>" +
     (next ? '<div class="row pick-days"><button type="button" class="week-tbtn" data-pick-week="' + Math.floor(diff(next, T) / 7) + '">Next: ' +
       esc(goingDay(isoDate(next))) + " \u2192</button></div>" : "");
@@ -344,17 +344,17 @@ function interestedList() { // the rows of Events you're interested in
     return !over || !!WENT[e.id];
   });
 }
-function renderPlanner() {
-  var start = PLANNER_WEEK * 7, days = [], ahead = goingAhead(), ready = PLANS_STATE === "ready";
+function renderWeek() {
+  var start = WEEK_OFFSET * 7, days = [], ahead = goingAhead(), ready = PLANS_STATE === "ready";
   for (var i = 0; i < 7; i++) days.push({ d: add(T, start + i), items: [], own: [] });
   ahead.forEach(function (x) { if (x.n >= start && x.n < start + 7) days[x.n - start].items.push(x.e); });
   var ownAhead = OWN_LIST.filter(function (o) { return o.date >= isoDate(T); }); // CC-248: your own events on their day
   ownAhead.forEach(function (o) { var n = diff(parseISO(o.date), T); if (n >= start && n < start + 7) days[n - start].own.unshift(o); });
-  var deciding = interestedList();
+  var interestedRows = interestedList();
   var next = ahead.filter(function (x) { return x.n >= start + 7; })[0], planned = ahead.filter(function (x) { return x.n >= start && x.n < start + 7; }).length;
-  $("week-range").textContent = (PLANNER_WEEK === 0 ? "This week · " : "") + weekRangeText(days[0].d, days[6].d);
-  $("week-prev").disabled = PLANNER_WEEK === 0; $("week-next").disabled = PLANNER_WEEK >= PLANNER_MAX;
-  $("week-now").hidden = PLANNER_WEEK === 0;
+  $("week-range").textContent = (WEEK_OFFSET === 0 ? "This week · " : "") + weekRangeText(days[0].d, days[6].d);
+  $("week-prev").disabled = WEEK_OFFSET === 0; $("week-next").disabled = WEEK_OFFSET >= WEEK_MAX;
+  $("week-now").hidden = WEEK_OFFSET === 0;
   $("week-skip").hidden = !next;
   if (next) $("week-skip").textContent = "Skip to your next plan: " + goingDay(MYPLANS[next.e.id].date);
   // loading and errors: the days wait, rather than saying "Nothing yet…" before the plans are in
@@ -363,16 +363,16 @@ function renderPlanner() {
     '<p class="week-hint" role="status">Finding your plans\u2026</p>';
   planned += days.reduce(function (t, day) { return t + day.own.length; }, 0);
   $("week-n").textContent = ready ? plural(planned, "plan", "plans") : "";
-  $("deciding-n").textContent = ready ? String(deciding.length) : "";
-  $("planner-week").innerHTML = !ready ? "" : days.map(weekDayHTML).join("") +
+  $("interested-n").textContent = ready ? String(interestedRows.length) : "";
+  $("week-list").innerHTML = !ready ? "" : days.map(weekDayHTML).join("") +
     (ahead.length || ownAhead.length ? "" : '<p class="week-hint">Commit to a day on any event and it shows up here.</p>');
   days.forEach(function (day) { paintFindDay(isoDate(day.d)); });
-  $("myplans-grid").innerHTML = ready ? deciding.map(function (e) { return weekRowHTML(e); }).join("") : "";
-  $("deciding-undo").innerHTML = ready ? withdrawnHTML() : "";
-  $("week-undo").innerHTML = ready ? committedHTML() : "";
-  $("deciding-hint").textContent = !ready ? "" : deciding.some(goingRange) ? "Pick a day for one, and it moves into your week." : deciding.length ? "" :
+  $("myplans-grid").innerHTML = ready ? interestedRows.map(function (e) { return weekRowHTML(e); }).join("") : "";
+  $("interested-undo").innerHTML = ready ? withdrawnHTML() : "";
+  $("week-undo").innerHTML = ready ? justGoingHTML() : "";
+  $("interested-hint").textContent = !ready ? "" : interestedRows.some(goingRange) ? "Pick a day for one, and it moves into your week." : interestedRows.length ? "" :
     "Nothing waiting. Mark an event Interested, and it waits here until you pick a day.";
-  paintWater($("planner-main")); rowsPainted($("planner-week")); rowsPainted($("myplans-grid")); // the two columns arrive side by side
+  paintWater($("week-main")); rowsPainted($("week-list")); rowsPainted($("myplans-grid")); // the two columns arrive side by side
 }
 // CC-160: Withdraw interest clears the plan (and so its sharing with crews, server side) at once, and a line at the top
 // of Events you're interested in offers Undo, which puts back the plan and the crews it was shared with. Only an interested plan has
@@ -382,7 +382,7 @@ var WITHDRAWN = null; // { id, title, mine, error }
 function withdrawnHTML() {
   var w = WITHDRAWN; if (!w || MYPLANS[w.id]) return "";
   return '<p class="week-undo">Withdrew your interest in <span class="week-undo-t">' + esc(w.title) + "</span>. " +
-    '<button type="button" class="week-tbtn" id="deciding-undo-btn" data-plan-undo="' + esc(w.id) + '">Undo</button></p>' +
+    '<button type="button" class="week-tbtn" id="interested-undo-btn" data-plan-undo="' + esc(w.id) + '">Undo</button></p>' +
     (w.error ? '<p class="week-error" role="alert">' + esc(checkThis(w.error)) + "</p>" : "");
 }
 function withdrawPlan(id, b) {
@@ -392,10 +392,10 @@ function withdrawPlan(id, b) {
     if (!res.ok) throw res;
     WITHDRAWN = { id: id, title: KNOWN[id].title, mine: mine }; delete MYPLANS[id];
     $("myplan-live").textContent = "Withdrew your interest: " + KNOWN[id].title + ". Undo is at the top of Events you\u2019re interested in.";
-    return redrawCards(id).then(function () { if ($("deciding-undo-btn")) $("deciding-undo-btn").focus(); });
+    return redrawCards(id).then(function () { if ($("interested-undo-btn")) $("interested-undo-btn").focus(); });
   }).catch(function (res) {
     b.disabled = false;
-    $("deciding-undo").innerHTML = '<p class="week-error" role="alert">' + esc(checkThis(res && res.status ? errorText(res) :
+    $("interested-undo").innerHTML = '<p class="week-error" role="alert">' + esc(checkThis(res && res.status ? errorText(res) :
       "your interest couldn\u2019t be withdrawn. Check your connection and try again.")) + "</p>";
   });
 }
@@ -415,17 +415,17 @@ function undoWithdraw(b) {
     if (visible("crews")) loadCrews();
     return redrawCards(w.id).then(function () {
       var row = $("myplans-grid").querySelector('[data-day-item="' + w.id + '"] [data-plan-withdraw]');
-      (row || $("deciding-title")).focus();
+      (row || $("interested-title")).focus();
     });
   }).catch(function (res) {
     if (MYPLANS[w.id]) { // the plan came back but its crews didn't: say so, and Tell a crew is on its row again
       WITHDRAWN = null;
       return redrawCards(w.id).then(function () {
-        $("deciding-undo").innerHTML = '<p class="week-error" role="alert">' + esc(checkThis("your plan is back, but not shared with your crews. Use Tell a crew on it.")) + "</p>";
+        $("interested-undo").innerHTML = '<p class="week-error" role="alert">' + esc(checkThis("your plan is back, but not shared with your crews. Use Tell a crew on it.")) + "</p>";
       });
     }
     w.error = res && res.status ? errorText(res) : "your plan couldn\u2019t be put back. Check your connection and try again.";
-    renderPlanner(); if ($("deciding-undo-btn")) $("deciding-undo-btn").focus();
+    renderWeek(); if ($("interested-undo-btn")) $("interested-undo-btn").focus();
   });
 }
 document.addEventListener("click", function (ev) {
@@ -434,18 +434,18 @@ document.addEventListener("click", function (ev) {
   if (t.hasAttribute("data-plan-withdraw")) withdrawPlan(t.getAttribute("data-plan-withdraw"), t); else undoWithdraw(t);
 });
 function showWeek(n, focusId) {
-  PLANNER_WEEK = Math.max(0, Math.min(PLANNER_MAX, n)); renderPlanner();
+  WEEK_OFFSET = Math.max(0, Math.min(WEEK_MAX, n)); renderWeek();
   var b = $(focusId); // stay on the button pressed, or the nearest one still usable (Skip goes once it's used up)
   (b && !b.hidden && !b.disabled ? b : !$("week-next").disabled ? $("week-next") : $("week-prev")).focus();
 }
-$("week-prev").addEventListener("click", function () { showWeek(PLANNER_WEEK - 1, "week-prev"); });
-$("week-next").addEventListener("click", function () { showWeek(PLANNER_WEEK + 1, "week-next"); });
+$("week-prev").addEventListener("click", function () { showWeek(WEEK_OFFSET - 1, "week-prev"); });
+$("week-next").addEventListener("click", function () { showWeek(WEEK_OFFSET + 1, "week-next"); });
 $("week-now").addEventListener("click", function () { showWeek(0, "week-next"); });
 $("week-skip").addEventListener("click", function () {
-  var next = goingAhead().filter(function (x) { return x.n >= PLANNER_WEEK * 7 + 7; })[0];
+  var next = goingAhead().filter(function (x) { return x.n >= WEEK_OFFSET * 7 + 7; })[0];
   if (next) showWeek(Math.floor(next.n / 7), "week-skip");
 });
-// CC-131: "Find something →" opens a list under the day, in place, of only what's on that day (the planner's rule,
+// CC-131: "Find something →" opens a list under the day, in place, of only what's on that day (Find an outing's rule,
 // CC-79: a show with a time that day, an exhibition on a day it's open; on today, only what's still to come). Each
 // links to its event; the button closes it again. An empty day says so and offers the catalog.
 // FIND_DAY_OPEN and FIND_DAY keep, by day, which lists are open and what came back, so redrawing the week keeps them.
@@ -489,11 +489,11 @@ function dayCommitHTML(e, iso) {
       ' aria-label="' + esc("Commit to " + e.title + ", " + goWhen(iso, t)) + '">Commit!' + (t ? " " + esc(clockText(t)) : "") + "</button>";
   }).join("") + "</span>";
 }
-var COMMITTED = null; // { id, title, iso, prev }: the last Commit! until it's undone or the plan changes some other way
-function committedHTML(error) { // an error is shown once, as Withdraw's is, and kept nowhere (it would be read out again on every redraw)
-  var c = COMMITTED, mine = c && MYPLANS[c.id];
+var JUST_GOING = null; // { id, title, iso, prev }: the last Commit! until it's undone or the plan changes some other way
+function justGoingHTML(error) { // an error is shown once, as Withdraw's is, and kept nowhere (it would be read out again on every redraw)
+  var c = JUST_GOING, mine = c && MYPLANS[c.id];
   return (error ? '<p class="week-error" role="alert">' + esc(checkThis(error)) + "</p>" : "") + (c && mine && mine.status === "going" && mine.date === c.iso ? // else it changed since: Undo no longer applies
-    '<p class="week-undo">Committed <span class="week-undo-t">' + esc(c.title) + "</span> to " + esc(goingDay(c.iso)) + ". " +
+    '<p class="week-undo">Marked <span class="week-undo-t">' + esc(c.title) + "</span> as going on " + esc(goingDay(c.iso)) + ". " +
     '<button type="button" class="week-tbtn" id="week-undo-btn" data-commit-undo="' + esc(c.id) + '">Undo</button></p>' : "");
 }
 function commitFromDay(b) {
@@ -503,27 +503,27 @@ function commitFromDay(b) {
   api("/me/plans/" + encodeURIComponent(id) + "?today=" + isoDate(T), { method: "PUT", body: { status: "going", date: iso, time: time } }).then(readJSON).then(function (res) {
     if (!res.ok) throw res;
     MYPLANS[id] = { status: "going", date: iso, time: time, crews: (prev && prev.crews) || [] };
-    COMMITTED = { id: id, title: e.title, iso: iso, prev: prev };
+    JUST_GOING = { id: id, title: e.title, iso: iso, prev: prev };
     delete FIND_DAY_OPEN[iso]; if (FIND_DAY_KIND.iso === iso) FIND_DAY_KIND = { iso: "", type: "" }; // the list closes: the day has its event
-    $("myplan-live").textContent = "Committed: " + e.title + ", " + dayName(parseISO(iso)) + ". Undo is at the top of The week ahead.";
+    $("myplan-live").textContent = "Going: " + e.title + ", " + dayName(parseISO(iso)) + ". Undo is at the top of The week ahead.";
     return redrawCards(id).then(function () { if ($("week-undo-btn")) $("week-undo-btn").focus(); });
   }).catch(function (res) {
     b.disabled = false; // an earlier Undo stays; the error shows beside it, and focus stays on the button pressed
-    $("week-undo").innerHTML = committedHTML(res && res.status ? errorText(res) : "your plan couldn\u2019t be saved. Check your connection and try again.");
+    $("week-undo").innerHTML = justGoingHTML(res && res.status ? errorText(res) : "your plan couldn\u2019t be saved. Check your connection and try again.");
     b.focus();
   });
 }
 function undoCommit(b) {
-  var c = COMMITTED; if (!c) return;
+  var c = JUST_GOING; if (!c) return;
   var p = c.prev; b.disabled = true;
   (p ? api("/me/plans/" + encodeURIComponent(c.id) + "?today=" + isoDate(T), { method: "PUT", body: { status: p.status, date: p.date || null, time: p.time || null } }) :
     api("/me/plans/" + encodeURIComponent(c.id), { method: "DELETE" })).then(readJSON).then(function (res) {
     if (!res.ok) throw res;
-    COMMITTED = null; if (p) MYPLANS[c.id] = p; else delete MYPLANS[c.id]; // now, in case the redraw's fetch of the plans fails
+    JUST_GOING = null; if (p) MYPLANS[c.id] = p; else delete MYPLANS[c.id]; // now, in case the redraw's fetch of the plans fails
     $("myplan-live").textContent = (p ? "Back to how it was: " : "Plan cleared: ") + c.title;
-    return redrawCards(c.id).then(function () { (document.querySelector('[data-find-day="' + c.iso + '"]') || $("deciding-title")).focus(); });
+    return redrawCards(c.id).then(function () { (document.querySelector('[data-find-day="' + c.iso + '"]') || $("interested-title")).focus(); });
   }).catch(function (res) {
-    $("week-undo").innerHTML = committedHTML(res && res.status ? errorText(res) : "your plan couldn\u2019t be put back. Check your connection and try again.");
+    $("week-undo").innerHTML = justGoingHTML(res && res.status ? errorText(res) : "your plan couldn\u2019t be put back. Check your connection and try again.");
     if ($("week-undo-btn")) $("week-undo-btn").focus();
   });
 }
@@ -645,7 +645,7 @@ function journalDeleteHTML(e) {
   return '<button type="button" class="went" data-went="' + esc(e.id) + '" aria-label="Delete your entry for ' + esc(e.title) + '">Delete entry</button>';
 }
 // CC-112, CC-172: "Share with your crews", off by default and saved the moment it's ticked or unticked (so unsharing can't be
-// forgotten). Once on, how it's signed: your first name and initial, or "A Culture Crew member". It needs the three
+// forgotten). Once on, how it's signed: your first name and initial, or "A Chi Culture Crew member". It needs the three
 // words saved first, since they're what's shared.
 function journalShareHTML(e) {
   var id = esc(e.id), sh = WENT_SHARE[e.id] || { shared: false, anonymous: false }, saved = !!(WENT_JOURNAL[e.id] || {}).words, k = "js-" + id;
@@ -658,7 +658,7 @@ function journalShareHTML(e) {
     '<p class="hint small" id="' + k + '-hint">' + (saved || sh.shared ? (isAdmin() ? "Your three words and whether you\u2019d recommend it show on the event\u2019s page to everyone, signed Yours truly. Your review stays private." :
       "Your three words and whether you\u2019d recommend it show on the event\u2019s page to the people in your crews. Your review stays private.") : // CC-172
       "Save your three words first, then you can share them on the event\u2019s page.") + "</p>" +
-    (sh.shared && !isAdmin() ? '<fieldset class="share-as"><legend>Signed as</legend>' + (me ? sign(false, me) : "") + sign(true, "A Culture Crew member") + "</fieldset>" : "") + // CC-172: the admin always signs as Yours truly, and nobody sees their own take there, so no link to it
+    (sh.shared && !isAdmin() ? '<fieldset class="share-as"><legend>Signed as</legend>' + (me ? sign(false, me) : "") + sign(true, "A Chi Culture Crew member") + "</fieldset>" : "") + // CC-172: the admin always signs as Yours truly, and nobody sees their own take there, so no link to it
     '<p class="form-error" role="alert" data-share-error></p></div>';
 }
 function redrawShare(id, focusName) {
@@ -767,7 +767,7 @@ function loadOwn() {
     ownRepaint();
   }, function () { if (OWN_STATE !== "ready") OWN_STATE = "error"; ownRepaint(); });
 }
-function ownRepaint() { if (visible("journal")) renderJournal(); if (visible("planner")) renderPlanner(); }
+function ownRepaint() { if (visible("journal")) renderJournal(); if (visible("week")) renderWeek(); }
 function ownById(id) { return OWN_LIST.filter(function (o) { return String(o.id) === String(id); })[0]; }
 function ownSort() { OWN_LIST.sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : b.id - a.id; }); }
 function ownComing(o) { return o.date > isoDate(T); }
@@ -804,7 +804,7 @@ function ownEntryHTML(o, open) {
 // The form, for a new event (o null) or one of yours. What you type is a draft until you save, as with the journal.
 function ownCatOptionsHTML(sel) {
   var opt = function (v, text) { return '<option value="' + esc(v) + '"' + (v === sel ? " selected" : "") + ">" + esc(text) + "</option>"; };
-  return opt("", "No category") + '<optgroup label="Culture Crew’s">' + OWN_CATALOG.map(function (c) { return opt("c:" + c, c); }).join("") + "</optgroup>" +
+  return opt("", "No category") + '<optgroup label="Chi Culture Crew’s">' + OWN_CATALOG.map(function (c) { return opt("c:" + c, c); }).join("") + "</optgroup>" +
     (OWN_CATS.length ? '<optgroup label="Yours">' + OWN_CATS.map(function (c) { return opt("o:" + c.id, c.name); }).join("") + "</optgroup>" : "") +
     (OWN_CATS.length < 20 ? opt("new", "New category…") : "");
 }
@@ -1040,15 +1040,15 @@ function ownWeekRowHTML(o) {
 }
 
 // ---------- My week page (CC-105; renamed in CC-118) ----------
-// The week ahead, on its own page (#planner). Signed out, a word on what it's for and a way to sign in that comes back here.
-var AFTER_SIGN_IN = null; // where to go once signed in: "crews", "planner", "journal", "submit", "e/<id>" or "home"
-function openPlanner() { renderPlannerPage(); show("planner"); }
-function renderPlannerPage() {
+// The week ahead, on its own page (#week). Signed out, a word on what it's for and a way to sign in that comes back here.
+var AFTER_SIGN_IN = null; // where to go once signed in: "crews", "week", "journal", "submit", "e/<id>" or "home"
+function openWeek() { renderWeekPage(); show("week"); }
+function renderWeekPage() {
   var u = AUTH.user;
-  $("planner-signin").hidden = !!u; $("planner-main").hidden = !u;
-  if (u) renderPlanner();
+  $("week-signin").hidden = !!u; $("week-main").hidden = !u;
+  if (u) renderWeek();
 }
-$("planner-signin-btn").addEventListener("click", function () { signInFrom("planner"); });
+$("week-signin-btn").addEventListener("click", function () { signInFrom("week"); });
 // CC-159: the Cultural Journal, on its own page (#journal), from the you menu, My week's line to it and the front page's
 // ways in (CC-252). CC-252: a welcome box heads it. Signed out it takes the sign-in panel's place and leads to making an
 // account, then back here; signed in it can be put away, for good in this browser (localStorage, not the account, so a new
@@ -1066,7 +1066,7 @@ function renderJournalPage() {
   $("journal-main").hidden = !u;
   if (u) renderJournal();
 }
-function registerFrom(place) { signInFrom(place); $("reg-name").focus(); } // CC-252: straight to New here? Make an account
+function registerFrom(place) { signInFrom(place); $("reg-name").focus(); } // CC-252: straight to New here? Create an account
 $("journal-register").addEventListener("click", function () { registerFrom("journal"); });
 $("journal-welcome-x").addEventListener("click", function () {
   JW_OFF = true;
@@ -1138,13 +1138,13 @@ $("me-menu").addEventListener("keydown", function (ev) {
 $("me-menu").addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-me]"); if (!b) return;
   var go = b.getAttribute("data-me"); closeMeMenu(false); closeMastSheet(false);
-  if (go === "account") openAccount(); else if (go === "crews") openCrews(); else if (go === "planner") openPlanner(); else if (go === "journal") openJournal();
+  if (go === "account") openAccount(); else if (go === "crews") openCrews(); else if (go === "week") openWeek(); else if (go === "journal") openJournal();
   else if (go === "invite") inviteFriend(); else signOut();
 });
 // CC-115: invite a friend to the site: the phone's share sheet, or the link to copy. Tagged so these visits
 // show up as "invite" on Site stats. Only the public site link: crew invite links stay with their crew.
 var INVITE_TAGS = "?utm_source=invite&utm_medium=referral&utm_campaign=friend";
-var INVITE_TEXT = "I use Culture Crew to find Chicago theater, music and art, and to go out with friends. Come see what's on:";
+var INVITE_TEXT = "I use Chi Culture Crew to find Chicago theater, music and art, and to go out with friends. Come see what's on:";
 // CC-126: an admin's invite opens the invite page (/invite), tagged invite / link, or invite / qr for the code
 function adminInviteUrl(medium) { return location.origin + "/invite?utm_source=invite&utm_medium=" + medium + "&utm_campaign=friend"; }
 // CC-147: closing the dialog (or the QR screen after it) returns focus to what opened it. The you menu has closed by
@@ -1157,7 +1157,7 @@ function inviteReturnFocus() {
 }
 function inviteFriend() {
   var admin = isAdmin(), url = admin ? adminInviteUrl("link") : location.origin + "/" + INVITE_TAGS;
-  if (navigator.share && !admin) { navigator.share({ title: "Culture Crew", text: INVITE_TEXT, url: url }).catch(function () {}); return; }
+  if (navigator.share && !admin) { navigator.share({ title: "Chi Culture Crew", text: INVITE_TEXT, url: url }).catch(function () {}); return; }
   // CC-126: admins choose: on a phone, Share the link or Show a QR code; elsewhere, Copy link or Show a QR code
   var share = admin && !!navigator.share;
   $("invite-share").hidden = !share; $("invite-copy").hidden = share; $("invite-qr").hidden = !admin;
@@ -1169,7 +1169,7 @@ function inviteFriend() {
   if (share) { $("invite-url").scrollLeft = 0; $("invite-share").focus(); } else { $("invite-url").focus(); $("invite-url").select(); $("invite-url").scrollLeft = 0; } // CC-147: selected, showing its start
 }
 $("invite-share").addEventListener("click", function () {
-  navigator.share({ title: "Culture Crew", text: INVITE_TEXT, url: $("invite-url").value }).catch(function () {});
+  navigator.share({ title: "Chi Culture Crew", text: INVITE_TEXT, url: $("invite-url").value }).catch(function () {});
 });
 // CC-126: the code fills the screen, made here in the browser (qrSvgText, admin.js), never by an outside service.
 // The screen is kept awake while it shows, where the browser allows. CC-147: the code is deep lake ink on white.
@@ -1196,7 +1196,7 @@ $("invite-copy").addEventListener("click", function () {
 document.addEventListener("click", function (ev) { if (!$("me-wrap").contains(ev.target)) closeMeMenu(false); });
 
 // ---------- account (CC-148: Lakefront, design/lakefront-brief.md section 10) ----------
-// Signed out: Sign in beside "New here? Make an account". Signed in: "Hi, name" and Sign out, then 7/5: your profile
+// Signed out: Sign in beside "New here? Create an account". Signed in: "Hi, name" and Sign out, then 7/5: your profile
 // and password, beside the events you've sent us, your reports and photo approvals. Statuses are words, never pills.
 // Errors are the pale red band starting "Check this:" (checkThis, crews.js), with the ink border on the field at fault.
 var NOTICE_SET = false; // a one-off message (e.g. "email confirmed") showing instead of the usual notice
@@ -1213,7 +1213,7 @@ function renderAccount(withSubmissions) {
   $("account-sub").hidden = !!u; $("account-who-row").hidden = !u; // signed in, who you are and Sign out take the deck's place
   paintJoin(); // an invite link's "Join <crew>" panel (crews.js), signed in or not
   if (!u) {
-    PLANNER_WEEK = 0; $("planner-week").innerHTML = ""; $("myplans-grid").innerHTML = ""; $("went-grid").innerHTML = ""; $("my-submissions").innerHTML = ""; $("my-submissions-n").textContent = "";
+    WEEK_OFFSET = 0; $("week-list").innerHTML = ""; $("myplans-grid").innerHTML = ""; $("went-grid").innerHTML = ""; $("my-submissions").innerHTML = ""; $("my-submissions-n").textContent = "";
     CREWS = []; CREW_LINKS = {}; CREW_ASK = null; CREW_EDIT = null; $("crew-list").innerHTML = "";
     return;
   }
@@ -1371,7 +1371,7 @@ $("reset-form").addEventListener("submit", function (ev) {
 $("forgot-open").addEventListener("click", function () {
   var form = $("forgot-form"), open = form.hidden;
   this.setAttribute("aria-expanded", String(open));
-  if (open) { $("forgot-email").value = $("login-email").value.trim(); $("forgot-msg").textContent = ""; }
+  if (open) { $("forgot-email").value = $("signin-email").value.trim(); $("forgot-msg").textContent = ""; }
   dropToggle(form, open, function () { $("forgot-email").focus(); });
 });
 $("forgot-form").addEventListener("input", function () { acctClear(this, $("forgot-error")); });
@@ -1472,7 +1472,7 @@ function authForm(form, path, body, errEl) {
       errEl.textContent = checkThis(errorText(res)); return;
     }
     form.reset();
-    ["login", "register", "forgot"].forEach(function (f) { acctClear($(f + "-form"), $(f + "-error")); }); // nothing left over for next time
+    ["signin", "register", "forgot"].forEach(function (f) { acctClear($(f + "-form"), $(f + "-error")); }); // nothing left over for next time
     // CC-237: an invite's Join panel and a one-off message (a confirmation link that failed, say) are on this page, so stay
     var stay = !!JOIN || NOTICE_SET;
     if (!stay) {
@@ -1502,12 +1502,12 @@ function registerBody(email, pw, name) {
   return body;
 }
 function looksLikeEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
-$("login-form").addEventListener("submit", function (ev) {
+$("signin-form").addEventListener("submit", function (ev) {
   ev.preventDefault();
-  var email = $("login-email").value.trim(), pw = $("login-password").value;
-  if (!looksLikeEmail(email)) { acctBad($("login-error"), $("login-email"), "Enter the email you signed up with."); return; }
-  if (!pw) { acctBad($("login-error"), $("login-password"), "Enter your password."); return; }
-  authForm(this, "/auth/login", { email: email, password: pw }, $("login-error"));
+  var email = $("signin-email").value.trim(), pw = $("signin-password").value;
+  if (!looksLikeEmail(email)) { acctBad($("signin-error"), $("signin-email"), "Enter the email you signed up with."); return; }
+  if (!pw) { acctBad($("signin-error"), $("signin-password"), "Enter your password."); return; }
+  authForm(this, "/auth/login", { email: email, password: pw }, $("signin-error"));
 });
 $("register-form").addEventListener("submit", function (ev) {
   ev.preventDefault();
@@ -1516,7 +1516,7 @@ $("register-form").addEventListener("submit", function (ev) {
   if (pw.length < 8) { acctBad($("register-error"), $("reg-password"), "Use a password of at least 8 characters."); return; }
   authForm(this, "/auth/register", registerBody(email, pw, $("reg-name").value.trim()), $("register-error"));
 });
-["login", "register"].forEach(function (f) {
+["signin", "register"].forEach(function (f) {
   $(f + "-form").addEventListener("input", function () { acctClear(this, $(f + "-error")); });
 });
 // Signing out (the account page's button, or the name menu): back to Sign in.
@@ -1574,4 +1574,4 @@ $("jp-form").addEventListener("submit", function (ev) {
     });
 });
 $("jp-form").addEventListener("input", function (ev) { $("jp-error").textContent = ""; crewMarkInvalid(ev.target, false); });
-$("jp-signin").addEventListener("click", function () { openAccount(); $("login-email").focus(); });
+$("jp-signin").addEventListener("click", function () { openAccount(); $("signin-email").focus(); });

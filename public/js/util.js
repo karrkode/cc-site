@@ -1,5 +1,5 @@
-// Culture Crew site: Shared helpers: dates, the event shape, DOM helpers and switching views.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
+// Chi Culture Crew site: Shared helpers: dates, the event shape, DOM helpers and switching views.
+// Loaded by index.html in order (core, util, catalog, outing, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 var PAGE_URL = "";
@@ -26,7 +26,7 @@ var F = {
   long: new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" })
 };
 function short(d) { return d.getFullYear() === T.getFullYear() ? F.md.format(d) : F.mdy.format(d); }
-function clockText(t) { // "19:30" -> "7:30 PM", "14:00" -> "2 PM" (venue hours and the planner, CC-78/79)
+function clockText(t) { // "19:30" -> "7:30 PM", "14:00" -> "2 PM" (venue hours and Find an outing, CC-78/79)
   var p = t.split(":"), h = +p[0], m = p[1];
   return (h % 12 || 12) + (m === "00" ? "" : ":" + m) + (h < 12 ? " AM" : " PM");
 }
@@ -82,7 +82,7 @@ function fromApi(e) {
     region: e.venue.region || null, // the side of town (CC-73)
     far: e.venue.area === "out_of_town" || e.venue.region === "out_of_town", // CC-217: never suggested; gone once the clean-up has been run
     pick: e.pick ? { status: e.pick.status, date: e.pick.date, time: e.pick.time || null, by: e.pick.by } : null, // the owner's public pick (CC-66)
-    sched: e.schedule || { dates: [], weekly: {}, weekly_from: "", hours: {} }, // when it's on, for the planner (CC-79)
+    sched: e.schedule || { dates: [], weekly: {}, weekly_from: "", hours: {} }, // when it's on, for Find an outing (CC-79)
     crewPlans: (e.crew_plans || []).map(function (c) { c.been = c.been || []; return c; }), // signed in: crew-mates' shared plans (CC-75), and who's been (CC-117)
     takes: e.takes || [], // members' shared journal entries, GET /events/<id> only (CC-112)
     runDates: (e.run_dates || []).map(function (r) { return { date: r.date, time: r.time, end_time: r.end_time || "" }; }), // a fixed run (CC-96)
@@ -126,7 +126,7 @@ function costOk(e, key) {
   if (key === "free") return e.min === 0;
   if (key === "u40") return e.min !== null && e.min < 40;
   if (key === "u100") return e.min !== null && e.min < 100;
-  if (typeof key === "number") return e.min !== null && e.min <= key; // the planner's top price (CC-128)
+  if (typeof key === "number") return e.min !== null && e.min <= key; // Find an outing's top price (CC-128)
   return true;
 }
 function dateText(e) {
@@ -240,9 +240,9 @@ function pickMarkHTML(p, label) { return markHTML(p.status === "going" ? "host" 
 // The owner's pick as a dolphin button: hovering shows what it means; tapping (phones) opens it in the card.
 var PICK_SEQ = 0;
 function pickText(p) {
-  var who = p.by || "The Culture Crew";
-  return p.status === "going" && p.date ? who + " is committed to seeing this on " + dayName(parseISO(p.date)) + (p.time ? " at " + clockText(p.time) : "") + "." :
-    p.status === "going" ? who + " is committed to seeing this." : who + " is interested in this one.";
+  var who = p.by || "The Chi Culture Crew";
+  return p.status === "going" && p.date ? who + " is going to see this on " + dayName(parseISO(p.date)) + (p.time ? " at " + clockText(p.time) : "") + "." :
+    p.status === "going" ? who + " is going to see this." : who + " is interested in this one.";
 }
 function pickHTML(e) {
   if (!e.pick) return "";
@@ -257,7 +257,7 @@ document.addEventListener("click", function (ev) {
   var note = document.getElementById(b.getAttribute("aria-controls")), open = b.getAttribute("aria-expanded") !== "true";
   b.setAttribute("aria-expanded", String(open)); if (note) dropToggle(note, open);
 });
-// Committed to a day after today: "I've been" would be premature, so the card doesn't offer it.
+// Going on a day after today: "I've been" would be premature, so the card doesn't offer it.
 // "Ben K. and Maya C. from Thursday Theater are going" / "3 from Laughin Times are interested" (CC-75), per crew.
 function crewNoteText(e) {
   function who(names) {
@@ -335,7 +335,7 @@ function wentHTML(e) {
 // ---------- views ----------
 // CC-121, CC-126: the join page is at chiculturecrew.com/join, and with the admins' invite pitch at /invite
 function onJoinPage() { return location.pathname === "/join" || location.pathname === "/invite"; }
-var VIEWS = { home: "home-title", join: "jp-title", catalog: "catalog-title", event: "event-title", plan: "plan-title", account: "account-title", crews: "crews-title", planner: "planner-title", journal: "journal-title", submit: "submit-title", review: "review-title", venues: "venues-title", stats: "stats-title", sources: "sources-title", found: "found-title", issues: "issues-title", approvals: "approvals-title", members: "members-title", card: "card-title", sourcing: "sourcing-title", engagement: "engagement-title", people: "people-title", health: "health-title", reset: "reset-title", verify: "verify-title" };
+var VIEWS = { home: "home-title", join: "jp-title", catalog: "catalog-title", event: "event-title", plan: "plan-title", account: "account-title", crews: "crews-title", week: "week-title", journal: "journal-title", submit: "submit-title", review: "review-title", venues: "venues-title", stats: "stats-title", sources: "sources-title", found: "found-title", issues: "issues-title", approvals: "approvals-title", members: "members-title", card: "card-title", sourcing: "sourcing-title", engagement: "engagement-title", people: "people-title", health: "health-title", reset: "reset-title", verify: "verify-title" };
 // CC-206: the option on the admin's Review menu each admin page belongs to
 var RV_GROUP = { review: "review", sourcing: "sourcing", found: "sourcing", sources: "sourcing", engagement: "engagement", stats: "engagement", health: "engagement", card: "engagement",
   issues: "engagement", approvals: "engagement", people: "people", venues: "people", members: "people" };
@@ -361,7 +361,7 @@ function show(name, focusId, still) {
   var lists = rowLists(), showing = lists.filter(rowsShowing);
   Object.keys(VIEWS).forEach(function (v) { $("view-" + v).hidden = v !== name && !(v === "catalog" && name === "join"); }); // CC-121: the catalog shows under the join page
   ["catalog", "plan", "submit", "review", "account"].forEach(function (v) {
-    if (v === name || (v === "catalog" && name === "event") || (v === "account" && (name === "crews" || name === "planner" || name === "journal")) || (v === "review" && RV_GROUP[name] && (name !== "approvals" || isAdmin()))) $("nav-" + v).setAttribute("aria-current", "page"); else $("nav-" + v).removeAttribute("aria-current");
+    if (v === name || (v === "catalog" && name === "event") || (v === "account" && (name === "crews" || name === "week" || name === "journal")) || (v === "review" && RV_GROUP[name] && (name !== "approvals" || isAdmin()))) $("nav-" + v).setAttribute("aria-current", "page"); else $("nav-" + v).removeAttribute("aria-current");
   });
   paintMast(name);
   window.scrollTo(0, 0);
@@ -680,6 +680,6 @@ document.addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-go]"); if (!b || !FACETS) return; // the views need the filter options; they load first
   var go = b.getAttribute("data-go");
   if (go === "plan") startPlan(); else if (go === "catalog") { renderCatalog(); show("catalog"); }
-  else if (go === "account") openAccount(); else if (go === "crews") openCrews(); else if (go === "planner") openPlanner(); else if (go === "journal") openJournal(); else if (go === "submit") openSubmit(); else if (go === "review") openReview(); else if (go === "sourcing") openSourcing(); else if (go === "engagement") openEngagement(); else if (go === "people") openPeople(); else if (go === "venues") openVenues(); else if (go === "stats") openStats(); else if (go === "sources") openSources(); else if (go === "found") openFound(); else if (go === "issues") openIssues(); else if (go === "approvals") openApprovals(); else if (go === "members") openMembers(); else if (go === "card") openCard(); else if (go === "health") openHealth();
+  else if (go === "account") openAccount(); else if (go === "crews") openCrews(); else if (go === "week") openWeek(); else if (go === "journal") openJournal(); else if (go === "submit") openSubmit(); else if (go === "review") openReview(); else if (go === "sourcing") openSourcing(); else if (go === "engagement") openEngagement(); else if (go === "people") openPeople(); else if (go === "venues") openVenues(); else if (go === "stats") openStats(); else if (go === "sources") openSources(); else if (go === "found") openFound(); else if (go === "issues") openIssues(); else if (go === "approvals") openApprovals(); else if (go === "members") openMembers(); else if (go === "card") openCard(); else if (go === "health") openHealth();
   else show("home");
 });

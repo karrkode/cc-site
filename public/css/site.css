@@ -153,7 +153,7 @@ a.btn, a.textbtn { display: inline-block; }
 .brand {
   grid-area: brand; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0; background: none; border: 0;
   color: inherit; cursor: pointer; font-family: var(--display); font-size: 2rem; font-weight: 600; line-height: 1; letter-spacing: -0.02em;
-  white-space: nowrap; /* CC-252: "Culture Crew" stays on one line */
+  white-space: nowrap; /* CC-252: "Chi Culture Crew" stays on one line */
 }
 .brand .star { width: 0.56em; height: 0.56em; }
 .mast nav { grid-area: nav; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 0 8px; }
@@ -575,7 +575,7 @@ a.btn, a.textbtn { display: inline-block; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; } /* at most 3 across (CC-129) */
 .empty { padding: 40px 20px; text-align: center; background: var(--surface); border: 1px dashed var(--line); border-radius: var(--r-card); display: grid; gap: 10px; justify-items: center; }
 
-/* box office (planner) */
+/* box office (Find an outing) */
 .plan { max-width: 720px; }
 .opts { display: grid; gap: 10px; margin-top: 8px; }
 .opt {
@@ -1136,9 +1136,9 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 .week-head { padding-block: 40px 0; }
 .week-head h1 { font-family: var(--display); font-weight: 500; font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1; letter-spacing: -0.025em; }
 .week-deck { margin-top: 10px; max-width: 60ch; font-style: italic; font-size: 1.3125rem; line-height: 1.4; color: var(--muted); }
-#planner-signin { margin-top: 28px; border: 0; }
-#view-planner .btn { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 20px; white-space: nowrap; }
-#view-planner .radio { min-height: 44px; }
+#week-signin { margin-top: 28px; border: 0; }
+#view-week .btn { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 20px; white-space: nowrap; }
+#view-week .radio { min-height: 44px; }
 
 /* the week bar: the range (read out when it changes), and Previous and Next joined */
 .week-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px 16px; margin-top: 28px; }
@@ -1166,14 +1166,14 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
   font-family: var(--sign); font-weight: 700; font-size: 1.25rem; line-height: 1.2; }
 .week-sub-n { color: var(--muted); font-size: 1.0625rem; }
 .week-state { padding: 14px 0; }
-#planner-week > .week-hint, #deciding-hint { margin-top: 10px; }
+#week-list > .week-hint, #interested-hint { margin-top: 10px; }
 /* CC-160: after Withdraw interest, a line with Undo at the top of Events you're interested in, ruled off like a row */
 .week-undo-box:empty { display: none; }
 .week-undo-box { display: grid; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
 .week-undo { font-size: 1.0625rem; }
 .week-undo-t { font-style: italic; }
 .week-undo .week-tbtn { margin-left: 4px; vertical-align: middle; font-weight: 700; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px; }
-#deciding-hint:empty { display: none; }
+#interested-hint:empty { display: none; }
 
 /* a day: its name, then its plans, or "Nothing yet…" under the name (so it lines up whatever the date) and
    Find something → on the right */
@@ -1215,7 +1215,7 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
   .wk-when { grid-column: 1; grid-row: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; text-align: left; font-size: 1rem; }
   .wk-row .myplan { left: 0; width: 100%; }
 }
-#view-planner .myplan .went, #view-planner .myplan .textbtn, #view-planner .myplan input[type="date"], #view-planner .crewshare .went { min-height: 44px; }
+#view-week .myplan .went, #view-week .myplan .textbtn, #view-week .myplan input[type="date"], #view-week .crewshare .went { min-height: 44px; }
 
 /* Find something: only that day's events, in place, under its line (CC-131) */
 .day-found { display: grid; gap: 8px; padding: 2px 0 14px; }
@@ -1611,7 +1611,7 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 .lf-page .btn.neutral, .editor .btn.neutral { box-shadow: inset 0 0 0 1.5px var(--text); }
 .lf-page .textbtn, .editor .textbtn { display: inline-flex; align-items: center; min-height: 44px; }
 .lf-page .row, .editor .row { gap: 12px 20px; }
-.lf-page .panel { border: 0; padding: 24px; } /* signed out: the quiet surface, "Sign in or make an account" */
+.lf-page .panel { border: 0; padding: 24px; } /* signed out: the quiet surface, "Sign in or create an account" */
 /* filters over a list: no box; Venues' sit between two rules like the catalog's (CC-141) */
 .lf-page .found-filters { gap: 12px 18px; margin-bottom: 16px; }
 .lf-page .found-filters .field { flex: 1 1 180px; max-width: 320px; }
@@ -1811,7 +1811,7 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 
 /* CC-148: Account settings and the sign-in pages in Lakefront (design/lakefront-brief.md section 10). A Instrument Sans
    title with an italic deck (signed in: who you are and Sign out instead); then two columns that stack on phones.
-   Signed out: Sign in, and "New here? Make an account", side by side. Signed in, 7/5: your profile and password,
+   Signed out: Sign in, and "New here? Create an account", side by side. Signed in, 7/5: your profile and password,
    beside the events you've sent us, your reports and photo approvals, as rows with their statuses in words. Forms:
    Big Shoulders labels above 48px square fields in Instrument Sans; the field at fault gets the 2.5px ink border and the
    form the pale red band starting "Check this:". Confirming your email and choosing a new password use the same. */

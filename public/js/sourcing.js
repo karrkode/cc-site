@@ -1,4 +1,4 @@
-// Culture Crew site: Event Sourcing (admins, CC-206, CC-207): what needs the admin, the budget dial, the graph of new
+// Chi Culture Crew site: Event Sourcing (admins, CC-206, CC-207): what needs the admin, the budget dial, the graph of new
 // events found, and the found events themselves, by source. The numbers are the weekly recap's and the budget guard's,
 // from the same code (/admin/discovery/summary), so the page, the email and the guard agree. Found events (found.js)
 // stays the full tool, with its filters, proposed updates and history. CC-208: the found events group by source or by

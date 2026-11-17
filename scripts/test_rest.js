@@ -13,7 +13,7 @@ const assert = require("assert");
 const PUB = path.join(__dirname, "..", "public");
 const read = (f) => fs.readFileSync(path.join(PUB, f), "utf8");
 const html = read("index.html"), css = read("css/site.css"), page404 = read("404.html"), css404 = read("css/404.css"); // CC-193: the 404's styles are a file, not a <style>
-const js = ["planner", "submit", "admin", "hours", "found", "issues", "photos", "approvals"].map((f) => read("js/" + f + ".js")).join("\n");
+const js = ["outing", "submit", "admin", "hours", "found", "issues", "photos", "approvals"].map((f) => read("js/" + f + ".js")).join("\n");
 const has = (s, part, msg) => assert.ok(s.includes(part), msg || "has " + part);
 const lacks = (s, part, msg) => assert.ok(!s.includes(part), msg || "lacks " + part);
 const view = (id) => { // from the view's <section> to the next view's
@@ -72,12 +72,12 @@ has(sub, "function submitBad(id, text)", "submit marks the field at fault");
 has(sub, 'if (bad) { submitBad(bad[0], bad[1]); return; }');
 
 // --- Find an outing: each stop and swap is a row with its tile ---
-const planner = read("js/planner.js");
-has(planner, "function outingTileHTML(e)");
-has(planner, '"</p>" + outingTileHTML(e) + \'<div class="stop-body">\'', "a stop has its tile");
-has(planner, "'<div class=\"alt\">' + outingTileHTML(e)", "a swap has its tile");
-has(planner, 'paintWater($("res-body"));', "the tiles' water is drawn");
-has(planner, "function regionMapHTML(counts, chosen)", "sides of town are a clickable map (CC-292)");
+const outing = read("js/outing.js");
+has(outing, "function outingTileHTML(e)");
+has(outing, '"</p>" + outingTileHTML(e) + \'<div class="stop-body">\'', "a stop has its tile");
+has(outing, "'<div class=\"alt\">' + outingTileHTML(e)", "a swap has its tile");
+has(outing, 'paintWater($("res-body"));', "the tiles' water is drawn");
+has(outing, "function regionMapHTML(counts, chosen)", "sides of town are a clickable map (CC-292)");
 
 // --- the 404: the compact masthead, a title and deck, no box and no exclamation mark ---
 has(page404, "<header><div class=\"wrap\"><a class=\"brand\" href=\"/\">Chi<svg", "the 404 has the wordmark on the lake, the star after Chi (CC-252)");

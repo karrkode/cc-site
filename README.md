@@ -1,13 +1,13 @@
-# Culture Crew — the site
+# Chi Culture Crew — the site
 
 The page at **https://chiculturecrew.com**: a running list of plays, concerts and
-exhibitions around Chicago, with a catalog, an outing planner that suggests only what's on, accounts,
+exhibitions around Chicago, with a catalog, Find an outing, which suggests only what's on, accounts,
 plans and an "I've been" list with optional photos, culture crews that share plans and see who's been,
 event submissions, issue reports, and admin pages (review, found events from event discovery, venues,
 members, photo approvals, stats). Approvers, offered the permission by the admin, review "I've been" photos.
 
 It's a single static page (`public/index.html` with its `css/` and `js/`, no build step) served from S3 through
-CloudFront. Everything dynamic comes from the Culture Crew API at
+CloudFront. Everything dynamic comes from the Chi Culture Crew API at
 **https://api.chiculturecrew.com** ([karrkode/cc-backend](https://github.com/karrkode/cc-backend)),
 which the page calls from the browser. The infrastructure for both lives in cc-backend's
 `infra/` folder.
