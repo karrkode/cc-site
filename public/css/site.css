@@ -859,7 +859,11 @@ footer .privacy { margin-top: 8px; font-size: 1rem; } /* CC-68: how visits are c
 #ev-body .poster h1 { font-family: var(--display); font-weight: 500; font-size: clamp(2.75rem, 7vw, 5.5rem); line-height: 0.98; letter-spacing: -0.02em;
   color: inherit; overflow-wrap: anywhere; text-wrap: balance; }
 .poster-where { font-size: 1.5rem; line-height: 1.25; } /* 24px: large text across the lines */
-@media (max-width: 560px) { .poster { min-height: 300px; } }
+/* CC-166: crew members going, as circles (people) under the place, then "and 2 interested" */
+.poster-crew { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 4px 0 0; font-family: var(--sign); font-weight: 700; font-size: 1.125rem; line-height: 1.2; }
+.poster-crew .dots { display: inline-flex; flex: none; padding-left: 6px; }
+.poster-crew .face { width: 34px; height: 34px; margin-left: -6px; font-size: 13px; border-color: var(--page); }
+@media (max-width: 560px) { .poster { min-height: 300px; } .poster-crew .face { width: 30px; height: 30px; font-size: 12px; } }
 /* CC-246: with a photo, the words keep the water on the left and the whole photo sits on the water to the right, never
    cropped (a square or tall picture shows whole, with water around it); on a phone it goes above the words. The frame
    is the photo's own size, so the credit sits small in the photo's bottom-right corner. */
