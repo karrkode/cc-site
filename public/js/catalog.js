@@ -405,22 +405,31 @@ function posterCrewHTML(e) {
     '<span class="poster-crew-t" aria-hidden="true">' + (going.length ? "going" : "") +
     (interested.length ? (going.length ? " and " : "") + interested.length + " interested" : "") + "</span></p>";
 }
-// CC-112: members' shared journal entries, newest first: three words, the review, who and whether they'd recommend
-// it. Admins also see hidden ones (marked) and can hide or unhide each; the member's entry isn't touched.
+// CC-112, CC-172: shared journal entries, newest first, as pull quotes: the three words, then who and whether they'd
+// recommend it (never the review). The API sends the admin's ("Yours truly", by_admin) to everyone, and a member's
+// only to their crew-mates. Admins also see hidden ones (marked) and can hide or unhide each; the entry isn't touched.
+function evTakeHTML(t, admin) {
+  return '<li class="ev-take' + (t.hidden ? " is-hidden" : "") + '">' +
+    '<blockquote class="ev-take-quote"><p class="ev-take-words">' + t.words.split(" ").map(function (w) { return "<span>" + esc(w) + "</span>"; }).join(" ") + "</p></blockquote>" + // quote first, then who: the reading order is the visual one
+    '<p class="ev-take-by"><b>' + esc(t.name) + "</b>" + (t.recommend ? " · Would recommend" : "") + "</p>" +
+    (admin && t.user_id ? '<div class="row ev-take-admin">' + (t.hidden ? '<span class="hint">Hidden from everyone but admins</span>' : "") +
+      '<button class="btn ghost" type="button" data-take-hide="' + esc(t.user_id) + '" data-hidden="' + (t.hidden ? "0" : "1") + '">' +
+      (t.hidden ? "Unhide" : "Hide") + "</button></div>" : "") +
+    "</li>";
+}
+function evTakesOf(e, byAdmin) {
+  return (e.takes || []).filter(function (t) { return !!t.by_admin === byAdmin; });
+}
+// Yours truly's take, above Your crews: what the admin thought, for everyone.
+function evAdminTakesHTML(e) {
+  var list = evTakesOf(e, true), admin = isAdmin();
+  return list.length ? '<ol class="ev-takes-yt" aria-label="Yours truly went">' + list.map(function (t) { return evTakeHTML(t, admin); }).join("") + "</ol>" : "";
+}
 function evTakesHTML(e) {
-  if (!e.takes || !e.takes.length) return "";
-  var admin = isAdmin();
-  return '<section class="ev-takes" aria-labelledby="ev-takes-h"><h2 id="ev-takes-h">Takes</h2><ol>' +
-    e.takes.map(function (t) {
-      return '<li class="ev-take' + (t.hidden ? " is-hidden" : "") + '">' +
-        '<blockquote class="ev-take-quote"><p class="ev-take-words">' + t.words.split(" ").map(function (w) { return "<span>" + esc(w) + "</span>"; }).join("") + "</p>" +
-        (t.review ? '<p class="ev-take-review">' + esc(t.review) + "</p>" : "") + "</blockquote>" + // CC-172: quote first, then who, so the reading order is the visual one
-        '<p class="ev-take-by"><b>' + esc(t.name) + "</b>" + (t.recommend ? " · Would recommend" : "") + "</p>" +
-        (admin && t.user_id ? '<div class="row ev-take-admin">' + (t.hidden ? '<span class="hint">Hidden from everyone but admins</span>' : "") +
-          '<button class="btn ghost" type="button" data-take-hide="' + esc(t.user_id) + '" data-hidden="' + (t.hidden ? "0" : "1") + '">' +
-          (t.hidden ? "Unhide" : "Hide") + "</button></div>" : "") +
-        "</li>";
-    }).join("") + "</ol></section>";
+  var list = evTakesOf(e, false), admin = isAdmin();
+  if (!list.length) return "";
+  return '<section class="ev-takes" aria-labelledby="ev-takes-h"><h2 id="ev-takes-h">What others have said</h2><ol>' +
+    list.map(function (t) { return evTakeHTML(t, admin); }).join("") + "</ol></section>";
 }
 // CC-142: Interested and Going as buttons on the page (the cards' picker, laid out in it: the same data-myplan-*
 // buttons, so account.js saves them). A one-night event needs no date. CC-154: a run shows its date field only once
@@ -480,7 +489,7 @@ function eventViewHTML(e) {
   // CC-144: once you're going, you head Your crews (turning Going on slides it in)
   var you = AUTH.user && MYPLANS[e.id] && MYPLANS[e.id].status === "going" ? '<div class="ev-you"><p class="ev-who"><span class="dots" aria-hidden="true">' +
     '<span class="face face-you">You</span></span><span>You’re going</span></p></div>' : "";
-  var side = '<aside class="ev-side" aria-labelledby="ev-crews-h"><h2 id="ev-crews-h">Your crews</h2>' + you; // CC-172: the admin's pick isn't a crew, so it no longer shows here
+  var side = '<aside class="ev-side" aria-labelledby="ev-crews-h">' + evAdminTakesHTML(e) + '<h2 id="ev-crews-h">Your crews</h2>' + you; // CC-172: the admin's pick isn't a crew, so it no longer shows here
   if (!AUTH.user) {
     main += "</div>";
     side += '<p class="hint">Sign in to mark it interested or going, and to see who from your crews is going.</p>' +
