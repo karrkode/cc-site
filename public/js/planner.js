@@ -229,20 +229,41 @@ function renderStep() {
       }).join("");
   } else {
     $("plan-title").textContent = "Where would you like to go?";
-    $("plan-help").textContent = "Choose one or more sides of town, or leave it open. \u201cAnywhere nearby\u201d means the city and suburbs.";
-    var chip = function (attr, label, n, disabled, pressed) {
-      return '<button type="button" class="chip" ' + attr + (disabled ? " disabled" : "") + ' aria-pressed="' + pressed + '">' + esc(label) +
-        '<span class="n">' + n + "</span></button>";
-    };
-    var allN = pool(plan.ws, plan.we, plan.budget, plan.types).length;
-    html = '<div class="hoods"><div class="chips segs">' + chip('data-pregion=""', "Anywhere nearby", allN, false, String(Object.keys(plan.regions).length === 0)) +
-      REGIONS.map(function (r) {
-        var one = {}; one[r[0]] = 1; var n = pool(plan.ws, plan.we, plan.budget, plan.types, one).length;
-        return chip('data-pregion="' + r[0] + '"', r[1], n, n === 0, String(!!plan.regions[r[0]]));
-      }).join("") + "</div></div>";
+    $("plan-help").textContent = "Tap one or more sections of the map, or leave it open. \u201cAnywhere nearby\u201d means the city and suburbs.";
+    var allN = pool(plan.ws, plan.we, plan.budget, plan.types).length, counts = {};
+    REGIONS.forEach(function (r) { var one = {}; one[r[0]] = 1; counts[r[0]] = pool(plan.ws, plan.we, plan.budget, plan.types, one).length; });
+    html = '<div class="hoods">' + regionMapHTML(counts, plan.regions) + '<div class="chips segs"><button type="button" class="chip" data-pregion=""' +
+      ' aria-pressed="' + (Object.keys(plan.regions).length === 0) + '">Anywhere nearby<span class="n">' + allN + "</span></button></div></div>";
   }
   $("plan-opts").innerHTML = html;
   if (plan.step === 1) paintPrice();
+}
+// CC-292: question 4 as a map of Chicago in five clickable sections: the four sides of the city and the suburbs around it.
+// Each section is a role="button" group (an SVG shape can't be a <button>) that toggles its region in plan.regions, the way
+// the chips did. counts: events per region key; chosen: plan.regions. A section with no events is disabled.
+var REGION_MAP = { // key: [outline, label x, label y, one line]
+  north: ["M70 50 L200 50 L208 120 L212 150 L70 150 Z", 135, 96],
+  west: ["M70 150 L128 150 L128 235 L70 235 Z", 99, 190],
+  downtown: ["M128 150 L212 150 L216 195 L226 235 L128 235 Z", 172, 190],
+  south: ["M70 235 L226 235 L244 280 L250 320 L70 320 Z", 148, 274],
+  suburbs: ["M8 8 H292 V362 H8 Z M70 50 L200 50 L208 120 L212 150 L216 195 L226 235 L244 280 L250 320 L70 320 Z " +
+    "M200 8 L292 8 L292 362 L262 362 L250 320 L244 280 L226 235 L216 195 L212 150 L208 120 L200 50 Z", 130, 346, true]
+};
+function regionMapHTML(counts, chosen) {
+  var out = '<svg class="rmap" viewBox="0 0 300 370" role="group" aria-label="Map of Chicago in five sections">' +
+    '<path class="lake" d="M200 8 L292 8 L292 362 L262 362 L250 320 L244 280 L226 235 L216 195 L212 150 L208 120 L200 50 Z"/>' +
+    '<text class="lake-name" x="256" y="100" text-anchor="middle" aria-hidden="true">Lake</text>' +
+    '<text class="lake-name" x="256" y="114" text-anchor="middle" aria-hidden="true">Michigan</text>';
+  REGIONS.forEach(function (r) {
+    var g = REGION_MAP[r[0]], n = counts[r[0]] || 0, on = !!chosen[r[0]], off = n === 0;
+    out += '<g class="rsec" role="button" data-pregion="' + r[0] + '" aria-pressed="' + on + '"' + (off ? ' aria-disabled="true" tabindex="-1"' : ' tabindex="0"') +
+      ' aria-label="' + esc(r[1] + ", " + plural(n, "event", "events")) + '">' +
+      '<path d="' + g[0] + '" fill-rule="evenodd"/><text aria-hidden="true" text-anchor="middle" x="' + g[1] + '" y="' + g[2] + '">' +
+      (g[3] ? '<tspan>' + (on ? "\u2713 " : "") + esc(r[1]) + " \u00B7 " + n + "</tspan>"
+        : '<tspan x="' + g[1] + '">' + esc(r[1]) + '</tspan><tspan class="rn" x="' + g[1] + '" dy="16">' + (on ? "\u2713 " : "") + plural(n, "event", "events") + "</tspan>") +
+      "</text></g>";
+  });
+  return out + "</svg>";
 }
 // The top price slider, set to the chosen price (or the next stop up when the window changed), else to the top (the widest: nothing hidden).
 function priceSliderHTML(inWindow) {
@@ -300,6 +321,9 @@ $("plan-opts").addEventListener("pointerdown", function (ev) {
 });
 $("plan-opts").addEventListener("keydown", function (ev) { // a key counts from the stop, not from wherever the settling thumb has got to
   if (ev.target.id === "plan-price" && priceGlide) { priceGlideStop(); ev.target.value = PLAN_STOPS.indexOf(plan.budget); }
+  if ((ev.key === "Enter" || ev.key === " ") && ev.target.getAttribute && ev.target.getAttribute("role") === "button" && ev.target.hasAttribute("data-pregion")) {
+    ev.preventDefault(); ev.target.dispatchEvent(new MouseEvent("click", { bubbles: true })); // CC-292: a map section is a button for the keyboard too
+  }
 });
 ["pointerup", "pointercancel"].forEach(function (type) { // on the document: the pointer can let go anywhere
   document.addEventListener(type, function () {
@@ -316,7 +340,7 @@ $("plan-opts").addEventListener("click", function (ev) {
     withPlanEvents(d, d, function () { renderStep(); $("plan-title").focus(); }); return;
   }
   var rc = ev.target.closest("[data-pregion]");
-  if (rc && !rc.disabled) {
+  if (rc && !rc.disabled && rc.getAttribute("aria-disabled") !== "true") {
     var rname = rc.getAttribute("data-pregion");
     if (!rname) plan.regions = {}; else if (plan.regions[rname]) delete plan.regions[rname]; else plan.regions[rname] = 1;
     renderStep();

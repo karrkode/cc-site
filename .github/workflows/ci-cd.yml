@@ -57,6 +57,8 @@ jobs:
         run: node scripts/test_account.js
       - name: Find an outing, Submit an event, the admin pages and the 404 are in Lakefront, with no eyebrows or pills
         run: node scripts/test_rest.js
+      - name: Find an outing's map of Chicago has five labelled, toggling sections (CC-292)
+        run: node scripts/test_region_map.js
       - name: The withdrawn Comedy and Educational list deletes one event or all of them, after a confirm
         run: node scripts/test_removed.js
       - name: Out of town clean-up (CC-217)
