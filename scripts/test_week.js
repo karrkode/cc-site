@@ -327,3 +327,56 @@ has(read("account.js"), "Undo is at the top of Events you\\u2019re interested in
 has(read("account.js"), '"Back in Events you\\u2019re interested in: "', "and Undo's");
 
 console.log("ok: My week (CC-146, CC-156, CC-160, CC-261)");
+
+// --- CC-262: Commit! on an event in a day's Find something list ---
+{
+  const cd = iso(g.add(g.T, 2)), cplay = ev({ title: "Commit Play" });
+  set("FIND_DAY_OPEN[" + JSON.stringify(cd) + "] = true; FIND_DAY[" + JSON.stringify(cd) + "] = { loading: false, items: [] };");
+  g.FIND_DAY[cd].items = [cplay];
+  let h = g.dayFoundHTML(cd);
+  has(h, '<button type="button" class="went day-commit" data-day-commit="' + cplay.id + '" data-date="' + cd + '"', "each event has Commit!");
+  has(h, 'aria-label="Commit to Commit Play, ' + g.goingDay(cd) + '">Commit!</button>', "its label names the event and the day");
+  // the flow: Commit! saves going on that day, closes the list, offers Undo; Undo puts the plan back (none, or interested)
+  const calls = [], redraws = [], live = { textContent: "" }, box = { innerHTML: "", focus() {} };
+  g.api = (p, o) => { calls.push((o.method) + " " + p.split("?")[0] + (o.body ? " " + JSON.stringify(o.body) : "")); return Promise.resolve({ ok: true }); };
+  g.readJSON = () => Promise.resolve({ ok: true, body: {} });
+  g.redrawCards = (id) => { redrawn(id); return Promise.resolve(); };
+  const redrawn = (id) => redraws.push(id);
+  set("$ = function (id) { return id === 'week-undo' ? __box : id === 'myplan-live' ? __live : { focus() {}, innerHTML: '' }; };");
+  if (typeof g.errorText !== "function") g.errorText = () => "the server said no."; // defined in a script this test doesn't load
+  g.__box = box; g.__live = live;
+  const btn = (attrs) => ({ disabled: false, focus() {}, getAttribute: (k) => attrs[k] === undefined ? null : attrs[k] });
+  const run = async (fn) => { fn(); await new Promise((r) => setTimeout(r, 0)); };
+  (async () => {
+    await run(() => g.commitFromDay(btn({ "data-day-commit": cplay.id, "data-date": cd })));
+    assert.ok(calls[0].startsWith("PUT /me/plans/") && calls[0].includes('"status":"going","date":"' + cd + '"'), "saves going on that day");
+    assert.strictEqual(set("MYPLANS[" + JSON.stringify(cplay.id) + "].status"), "going");
+    assert.ok(!g.FIND_DAY_OPEN[cd], "the list closes");
+    assert.deepStrictEqual(redraws, [cplay.id], "My week is drawn again");
+    has(live.textContent, "Committed: Commit Play, ", "live message"); has(live.textContent, "Undo is at the top");
+    has(g.committedHTML(), 'data-commit-undo="' + cplay.id + '">Undo</button>', "Undo is offered");
+    await run(() => g.undoCommit(btn({})));
+    assert.ok(calls[1].startsWith("DELETE /me/plans/"), "no plan before: Undo clears it");
+    // it was interested before: Undo puts interested back, not a clear
+    plan(cplay, "interested"); calls.length = 0;
+    await run(() => g.commitFromDay(btn({ "data-day-commit": cplay.id, "data-date": cd })));
+    await run(() => g.undoCommit(btn({})));
+    assert.ok(calls[1].includes('"status":"interested"'), "Undo puts interested back: " + calls[1]);
+    // a plan changed some other way hides Undo
+    set("MYPLANS[" + JSON.stringify(cplay.id) + "] = { status: 'going', date: '2000-01-01', crews: [] }; COMMITTED = { id: " + JSON.stringify(cplay.id) + ", title: 'x', iso: " + JSON.stringify(cd) + ", prev: null };");
+    assert.strictEqual(g.committedHTML(), "", "Undo goes once the plan has changed");
+    // a failed save says so, in an alert, and keeps the list
+    g.api = () => Promise.resolve({ ok: false, status: 500 }); g.readJSON = () => Promise.resolve({ ok: false, status: 500, body: {} });
+    set("delete MYPLANS[" + JSON.stringify(cplay.id) + "]; FIND_DAY_OPEN[" + JSON.stringify(cd) + "] = true;");
+    await run(() => g.commitFromDay(btn({ "data-day-commit": cplay.id, "data-date": cd })));
+    has(box.innerHTML, 'role="alert"', "a failure is an alert"); assert.ok(g.FIND_DAY_OPEN[cd], "the list stays open");
+    assert.strictEqual(g.committedHTML(), "", "nothing committed, so no Undo beside the error");
+    // an earlier Undo survives a later failed Commit!, and an error is shown once, not kept
+    set("MYPLANS[" + JSON.stringify(cplay.id) + "] = { status: 'going', date: " + JSON.stringify(cd) + ", crews: [] }; COMMITTED = { id: " + JSON.stringify(cplay.id) + ", title: 'Commit Play', iso: " + JSON.stringify(cd) + ", prev: null };");
+    const other2 = ev({ title: "Other Play" });
+    await run(() => g.commitFromDay(btn({ "data-day-commit": other2.id, "data-date": cd })));
+    has(box.innerHTML, "data-commit-undo", "the earlier Undo stays"); has(box.innerHTML, 'role="alert"');
+    assert.ok(!g.committedHTML().includes('role="alert"'), "the error isn't kept for the next redraw");
+    console.log("ok: Commit! from a day's Find something list (CC-262)");
+  })().catch((e) => { console.error(e); process.exit(1); });
+}
