@@ -642,12 +642,12 @@ a.btn, a.textbtn { display: inline-block; }
 .rsec path { fill: var(--surface); stroke: var(--page); stroke-width: 3; stroke-linejoin: round; }
 .rsec text { font-size: 12.5px; font-weight: 700; fill: var(--text); pointer-events: none; }
 .rsec .rn { font-size: 11px; font-weight: 500; fill: var(--muted); font-variant-numeric: tabular-nums; }
-.rsec:hover path { fill: var(--info-soft); }
+@media (hover: hover) { .rsec:hover path { fill: var(--info-soft); } }
 .rsec[aria-pressed="true"] path { fill: var(--text); }
 .rsec[aria-pressed="true"] text, .rsec[aria-pressed="true"] .rn { fill: var(--page); }
-.rsec:focus-visible path { stroke: var(--lead); stroke-width: 4; }
+.rsec:focus-visible path { stroke: var(--lead); stroke-width: 6; paint-order: stroke; } /* paints under the fill, so the ring shows outside the section even under later neighbours */
 .rsec[aria-disabled="true"] { cursor: not-allowed; opacity: 0.45; }
-.rsec[aria-disabled="true"]:hover path { fill: var(--surface); }
+@media (hover: hover) { .rsec[aria-disabled="true"]:hover path { fill: var(--surface); } }
 .hoods h2 { font-size: 1rem; font-weight: 700; font-family: var(--sign); color: var(--muted); margin-top: 10px; }
 
 /* outing */

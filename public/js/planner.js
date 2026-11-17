@@ -259,7 +259,7 @@ function regionMapHTML(counts, chosen) {
     out += '<g class="rsec" role="button" data-pregion="' + r[0] + '" aria-pressed="' + on + '"' + (off ? ' aria-disabled="true" tabindex="-1"' : ' tabindex="0"') +
       ' aria-label="' + esc(r[1] + ", " + plural(n, "event", "events")) + '">' +
       '<path d="' + g[0] + '" fill-rule="evenodd"/><text aria-hidden="true" text-anchor="middle" x="' + g[1] + '" y="' + g[2] + '">' +
-      (g[3] ? '<tspan>' + (on ? "\u2713 " : "") + esc(r[1]) + " \u00B7 " + n + "</tspan>"
+      (g[3] ? '<tspan>' + (on ? "\u2713 " : "") + esc(r[1]) + " \u00B7 " + plural(n, "event", "events") + "</tspan>"
         : '<tspan x="' + g[1] + '">' + esc(r[1]) + '</tspan><tspan class="rn" x="' + g[1] + '" dy="16">' + (on ? "\u2713 " : "") + plural(n, "event", "events") + "</tspan>") +
       "</text></g>";
   });
@@ -321,7 +321,7 @@ $("plan-opts").addEventListener("pointerdown", function (ev) {
 });
 $("plan-opts").addEventListener("keydown", function (ev) { // a key counts from the stop, not from wherever the settling thumb has got to
   if (ev.target.id === "plan-price" && priceGlide) { priceGlideStop(); ev.target.value = PLAN_STOPS.indexOf(plan.budget); }
-  if ((ev.key === "Enter" || ev.key === " ") && ev.target.getAttribute && ev.target.getAttribute("role") === "button" && ev.target.hasAttribute("data-pregion")) {
+  if ((ev.key === "Enter" || ev.key === " ") && !ev.repeat && !ev.ctrlKey && !ev.altKey && !ev.metaKey && ev.target.getAttribute && ev.target.getAttribute("role") === "button" && ev.target.hasAttribute("data-pregion")) {
     ev.preventDefault(); ev.target.dispatchEvent(new MouseEvent("click", { bubbles: true })); // CC-292: a map section is a button for the keyboard too
   }
 });
