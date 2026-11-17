@@ -1,13 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- CC-275: the site dolphin (index.html #dolphin-art, brief section 4) on the lake, in the site lake and stripe colours. Plain attributes, no style element: the Content-Security-Policy would block inline CSS in this file. The navy tile reads on light and dark tab strips alike. -->
-  <defs><clipPath id="c"><path d="M94.8 27.4 C91.8 27.12 86.5 26.8 84 26 C82 18.7 76 14.7 66 16 C62 15.5 59 15.5 57 15.6 L50.4 4.4 C51.4 9.4 48 13 45 16.5 C34 19 24 25 17 33 C13 30 8 27 3 27 C7 31 10 35 12 38 C9 42 6 46 5 51 C11 47 16 42 20 39 C30 36 42 34 52 34.5 C54 38 55 42 52 47 C57 44 61 39 63 35 C72 35.6 80 35.4 85 33.88 C88 33 91 32.4 95.8 31.9 C102.8 31.3 101.8 27.4 94.8 27.4 Z"/></clipPath></defs>
-  <rect fill="#0E3A5B" width="64" height="64" rx="14"/>
-  <g transform="translate(32 32) scale(0.58) translate(-51.925 -35.76)">
-    <g transform="rotate(-21 50 28)">
-      <path fill="#9CD3EF" d="M94.8 27.4 C91.8 27.12 86.5 26.8 84 26 C82 18.7 76 14.7 66 16 C62 15.5 59 15.5 57 15.6 L50.4 4.4 C51.4 9.4 48 13 45 16.5 C34 19 24 25 17 33 C13 30 8 27 3 27 C7 31 10 35 12 38 C9 42 6 46 5 51 C11 47 16 42 20 39 C30 36 42 34 52 34.5 C54 38 55 42 52 47 C57 44 61 39 63 35 C72 35.6 80 35.4 85 33.88 C88 33 91 32.4 95.8 31.9 C102.8 31.3 101.8 27.4 94.8 27.4 Z"/>
-      <path fill="#fff" clip-path="url(#c)" d="M101.8 29.42 L100.05 29.42 C92.4 30.8 89.9 31.1 86.7 29.7 C84.1 32.6 75 33.2 66 33.4 C50 33.6 34 34.1 18 37.2 L20 41 C34 37.4 50 36.4 62 35.6 C76 36.5 88 37.5 101.8 37.5 Z"/>
-      <path fill="none" stroke="#0E2A40" stroke-width="1.2" stroke-linecap="round" d="M100.05 29.42 C92.4 30.8 89.9 31.1 86.7 29.7"/>
-      <circle cx="75.8" cy="23.2" r="3.2" fill="#fff"/><circle cx="75.1" cy="23.5" r="1.9" fill="#0E2A40"/>
-    </g>
+  <!-- CC-275: the Chicago flag's red star (index.html #chi-star, the site's star red) between the flag's two light-blue stripes (the site's stripe blue). Plain attributes, no style element: the Content-Security-Policy would block inline CSS in this file. -->
+  <defs><clipPath id="t"><rect width="64" height="64" rx="14"/></clipPath></defs>
+  <g clip-path="url(#t)">
+    <rect width="64" height="64" fill="#fff"/>
+    <rect y="8" width="64" height="9" fill="#9CD3EF"/>
+    <rect y="47" width="64" height="9" fill="#9CD3EF"/>
+    <polygon transform="translate(32 32) scale(1.2) translate(-12 -12)" fill="#C8102E" points="12,1 14.5,7.67 21.53,6.5 17,12 21.53,17.5 14.5,16.33 12,23 9.5,16.33 2.47,17.5 7,12 2.47,6.5 9.5,7.67"/>
   </g>
 </svg>
