@@ -99,3 +99,6 @@ document.addEventListener("click", function (ev) {
       lede.textContent = "The event list couldn't be loaded right now. Try reloading the page in a minute.";
     });
 })();
+
+// CC-291: the skip link. Focus goes to <main> and the address stays as it is (a "#main" hash would be read as a view).
+$("skip-link").addEventListener("click", function (ev) { ev.preventDefault(); $("main").focus(); });

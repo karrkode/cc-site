@@ -12,6 +12,13 @@ serves this site locally on http://localhost:4173.
 - `start.js` routes on the URL hash (`#account`, `#submit`, `#approvals`, ...). Links in emails use these.
 - Colors are theme tokens. Check new UI in both light and dark themes and at phone width.
 
+## Accessibility
+
+- `node scripts/test_skip_link.js` runs in CI: the skip link, and unique ids. `scripts/scan_a11y.js` is the full axe scan
+  (every page, light and dark, desktop and phone width). It needs a running site and Chrome, so run it before a release
+  and after changing a page. Setup and options are at the top of the file. It prints violations only.
+- Rows and cards draw their focus ring on the whole row (`:has(a:focus-visible)`), so the link itself shows no outline.
+
 ## Checking in the browser pane
 
 - Screenshots can lag behind the page. Check state with JS (`javascript_tool`) and click by `find` refs rather than

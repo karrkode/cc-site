@@ -1,0 +1,9 @@
+{
+  "name": "cc-site-a11y",
+  "private": true,
+  "description": "CC-291: the accessibility scan (../scan_a11y.js). Not part of the site; nothing here is deployed.",
+  "dependencies": {
+    "axe-core": "4.10.3",
+    "playwright-core": "1.52.0"
+  }
+}

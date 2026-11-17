@@ -98,6 +98,10 @@ The design brief is "Lakefront" (epic CC-135). The brief is not in this reposito
 - **Success pulses (CC-231):** `pulse(el)` in `util.js` plays one `--stripe` ring on the button or line that confirmed an action. Call it on the success path only, after any repaint, and only where visible words say it worked. It does nothing with reduced motion.
 - **List rows arrive (CC-230):** a list is a `[data-rows]` element (`#home-list`, `#grid`, `#planner-week`, `#myplans-grid`, `#crew-list`) and its rows have `data-row`, a key that survives repaints (on My week, a day or an event in Events you're interested in). After each paint the list calls `rowsPainted(root)`: only rows the last paint didn't have come in, `--stagger` apart, with the rest arriving alongside the tenth (`ROW_CAP`). A repaint during an entrance carries on from where it was. `show()` plays every row of a list it brings on screen, unless it's told `still`, which is how `closeEvent` goes back to a list. The move is opacity and `translate`, so the layout and the restored scroll don't change.
 
+### Accessibility (CC-291)
+
+A skip link is the first Tab stop (`start.js` sends focus to `<main id="main">`). In the code, each view's heading takes focus when the view opens (`VIEWS`, util.js), menus and dialogs close on Escape and return focus to what opened them, and live regions announce list changes. `scripts/scan_a11y.js` runs axe-core in Chrome over each page in both themes and at desktop and phone width (it needs a running site, so it isn't in CI); `scripts/test_skip_link.js` is the part that runs in CI (static ids only).
+
 ## 3. The API
 
 The API uses Python and FastAPI.
