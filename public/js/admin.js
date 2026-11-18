@@ -1354,13 +1354,15 @@ function paintVenueSuggestions() {
   $("vs-admin-list").innerHTML = VSUG.map(function (v) {
     var id = "vsa-" + v.id;
     return "<li data-vs=\"" + v.id + "\"><p><a href=\"" + esc(webLink(v.url)) + "\" target=\"_blank\" rel=\"noopener noreferrer\">" + esc(v.venue_name || v.url) + "</a> " +
-      "<span class=\"hint small\">from " + esc(v.suggested_by || "a former member") + "</span></p>" +
+      "<span class=\"hint small\">from " + esc(v.suggested_by || "a former member") + "</span>" +
+      (v.same_site > 1 ? " <strong class=\"vs-count\">" + v.same_site + " members suggested this site</strong>" : "") + "</p>" + // CC-210: the list is ranked by this
       (v.venue_name ? "<p class=\"hint small\">" + esc(v.url) + "</p>" : "") + (v.note ? "<p>" + esc(v.note) + "</p>" : "") +
-      "<div class=\"vs-act\"><div class=\"field\"><label for=\"" + id + "-name\">Name</label><input id=\"" + id + "-name\" type=\"text\" maxlength=\"200\" value=\"" + esc(v.venue_name) + "\"></div>" +
+      "<div class=\"vs-act\"><div class=\"row\"><button class=\"btn\" type=\"button\" data-vs-accept>Add as a source</button><button class=\"btn neutral\" type=\"button\" data-vs-decline>Decline</button></div>" +
+      "<details class=\"vs-more\"><summary>Change the name or type, or give a reason</summary><div class=\"vs-act\">" + // CC-210: adding is one click; these are optional
+      "<div class=\"field\"><label for=\"" + id + "-name\">Name</label><input id=\"" + id + "-name\" type=\"text\" maxlength=\"200\" value=\"" + esc(v.venue_name) + "\"></div>" +
       "<div class=\"field\"><label for=\"" + id + "-kind\">Type</label><select id=\"" + id + "-kind\">" +
         Object.keys(SOURCE_KINDS).map(function (k) { return "<option value=\"" + k + "\">" + esc(SOURCE_KINDS[k]) + "</option>"; }).join("") + "</select></div>" +
-      "<div class=\"field\"><label for=\"" + id + "-why\">Reason if declined <span class=\"opt-label\">(the member sees it)</span></label><input id=\"" + id + "-why\" type=\"text\" maxlength=\"200\"></div>" +
-      "<div class=\"row\"><button class=\"btn\" type=\"button\" data-vs-accept>Add as a source</button><button class=\"btn neutral\" type=\"button\" data-vs-decline>Decline</button></div>" +
+      "<div class=\"field\"><label for=\"" + id + "-why\">Reason if declined <span class=\"opt-label\">(the member sees it)</span></label><input id=\"" + id + "-why\" type=\"text\" maxlength=\"200\"></div></div></details>" +
       "<p class=\"form-error\" role=\"alert\"></p></div></li>";
   }).join("");
 }
