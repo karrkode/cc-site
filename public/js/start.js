@@ -92,8 +92,7 @@ document.addEventListener("click", function (ev) {
 });
 (function () {
   // Just the filter options and counts; each view then asks for the events it shows (CC-33).
-  var t = new Date(), today = t.getFullYear() + "-" + ("0" + (t.getMonth() + 1)).slice(-2) + "-" + ("0" + t.getDate()).slice(-2);
-  api("/events/facets?today=" + today).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+  api("/events/facets?today=" + isoDate(T)).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(function (facets) { boot(facets); })
     .catch(function () {
       var lede = document.getElementById("home-lede"); lede.hidden = false; // the only time this line shows (CC-107)
