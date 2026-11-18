@@ -14,7 +14,7 @@ function renderSubmit() {
   note.hidden = !hold;
   if (!hold) note.textContent = ""; else if (!note.textContent) confirmFirst(note);
   $("submit-sub").textContent = isAdmin() ? "You're an admin: choose whether it goes live now, at a set time, or waits for review." :
-    "Tell us about it. Someone from the crew checks each one before it goes on the list.";
+    "Please say so! Pasting a link will extract to the best of the program's ability but all events are human checked before going live.";
   $("s-publish").hidden = !isAdmin();
   paintVenueSuggest(signedIn);
   var name = signedIn ? (AUTH.user.display_name || "").trim() : "";

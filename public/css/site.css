@@ -2066,3 +2066,5 @@ dialog.dialog-leaving { display: block; position: fixed; z-index: 101; margin: 0
 .vs-state { font-weight: 600; margin-left: 8px; }
 .vs-act { display: grid; gap: 12px; margin-top: 8px; max-width: 36rem; }
 .vs-admin { margin-bottom: 28px; }
+.submit-thanks { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 28px; font-style: italic; }
+.submit-thanks .mark { width: 39px; height: 26px; }

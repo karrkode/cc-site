@@ -673,8 +673,8 @@
     <!-- Submit an event -->
     <section class="view plan lf-page" id="view-submit" hidden>
       <div class="view-head">
-        <h1 id="submit-title" tabindex="-1">Know something we're missing?</h1>
-        <p class="lf-deck" id="submit-sub">Tell us about it. Someone from the crew checks each one before it goes on the list.</p>
+        <h1 id="submit-title" tabindex="-1">Something missing?</h1>
+        <p class="lf-deck" id="submit-sub">Please say so! Pasting a link will extract to the best of the program's ability but all events are human checked before going live.</p>
       </div>
       <div class="panel" id="submit-signin" hidden>
         <p>You need an account to send us events, so we can follow up if anything's unclear.</p>
@@ -753,8 +753,8 @@
       </div>
       <!-- CC-209: suggest a venue's calendar link; the crew reviews it (paintVenueSuggest in submit.js) -->
       <section class="lf-form" id="vs-section" aria-labelledby="vs-title" hidden>
-        <h2 id="vs-title">Know a venue we should read?</h2>
-        <p class="lf-deck">Send us a link to its calendar or events page. Someone from the crew looks at it, and if it's a fit, we start reading it for new events.</p>
+        <h2 id="vs-title">Missing Venue?</h2>
+        <p class="lf-deck">Send us a link to its calendar or events page. All venues are human checked before they're officially added.</p>
         <form class="lf-form" id="vs-form" novalidate>
           <div class="field"><label for="vs-url">Link to its events page</label><input id="vs-url" type="url" maxlength="500" placeholder="https://" autocomplete="off" required></div>
           <div class="field"><label for="vs-name">Venue name <span class="opt-label">(optional)</span></label><input id="vs-name" type="text" maxlength="200" autocomplete="off"></div>
@@ -764,6 +764,7 @@
         </form>
         <ul class="vs-list" id="vs-mine" aria-label="Your suggestions"></ul>
       </section>
+      <p class="submit-thanks" id="submit-thanks"><em>-Thank you!</em> <svg class="mark" aria-hidden="true"><use href="#dolphin"></use></svg></p>
     </section>
 
     <!-- Review queue (admins) -->
