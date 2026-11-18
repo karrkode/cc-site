@@ -1184,7 +1184,7 @@ var EVERY = [[7, "Every week"], [14, "Every 2 weeks"], [30, "Every month"], [60,
 function openSources(focusSel, how, openId) {
   if (!isAdmin()) { openAccount(); return; }
   SOURCES_HOW = how || "all"; SOURCES_KIND = "all"; SG_OPEN = openId ? { id: +openId, tab: "health" } : null; SG_SAID = "";
-  show("sources"); loadSources(openId ? "#sg-panel-title" : focusSel);
+  show("sources"); loadSources(openId ? "#sg-panel-title" : focusSel); loadVenueSuggestions();
 }
 var SOURCES = null, SOURCES_HOW = "all", SOURCES_KIND = "all", SRC_ASK = null; // SRC_ASK: the source whose delete is being confirmed
 // CC-207: the site's three types. An opera source's events are Music, and comedy sources have no type now (CC-133),
@@ -1338,4 +1338,41 @@ $("card-print").addEventListener("click", function () {
 window.addEventListener("afterprint", function () {
   if (CARD_PAGE) { document.adoptedStyleSheets = document.adoptedStyleSheets.filter(function (x) { return x !== CARD_PAGE; }); CARD_PAGE = null; } // added only while printing
   document.documentElement.classList.remove("print-card");
+});
+
+// ---------- CC-209: members' venue suggestions, on the source grid page ----------
+// Accepting adds an event source that reads the link (and reloads the grid); declining can give a reason the member sees.
+var VSUG = [];
+function loadVenueSuggestions() {
+  return api("/admin/venue-suggestions").then(readJSON).then(function (res) {
+    if (!res.ok) { $("vs-admin-status").textContent = errorText(res); return; }
+    VSUG = res.body; paintVenueSuggestions();
+  }, function () { $("vs-admin-status").textContent = errorText(null); });
+}
+function paintVenueSuggestions() {
+  $("vs-admin").hidden = !VSUG.length && !$("vs-admin-status").textContent; // stays while it has something to say
+  $("vs-admin-list").innerHTML = VSUG.map(function (v) {
+    var id = "vsa-" + v.id;
+    return "<li data-vs=\"" + v.id + "\"><p><a href=\"" + esc(webLink(v.url)) + "\" target=\"_blank\" rel=\"noopener noreferrer\">" + esc(v.venue_name || v.url) + "</a> " +
+      "<span class=\"hint small\">from " + esc(v.suggested_by || "a former member") + "</span></p>" +
+      (v.venue_name ? "<p class=\"hint small\">" + esc(v.url) + "</p>" : "") + (v.note ? "<p>" + esc(v.note) + "</p>" : "") +
+      "<div class=\"vs-act\"><div class=\"field\"><label for=\"" + id + "-name\">Name</label><input id=\"" + id + "-name\" type=\"text\" maxlength=\"200\" value=\"" + esc(v.venue_name) + "\"></div>" +
+      "<div class=\"field\"><label for=\"" + id + "-kind\">Type</label><select id=\"" + id + "-kind\">" +
+        Object.keys(SOURCE_KINDS).map(function (k) { return "<option value=\"" + k + "\">" + esc(SOURCE_KINDS[k]) + "</option>"; }).join("") + "</select></div>" +
+      "<div class=\"field\"><label for=\"" + id + "-why\">Reason if declined <span class=\"opt-label\">(the member sees it)</span></label><input id=\"" + id + "-why\" type=\"text\" maxlength=\"200\"></div>" +
+      "<div class=\"row\"><button class=\"btn\" type=\"button\" data-vs-accept>Add as a source</button><button class=\"btn neutral\" type=\"button\" data-vs-decline>Decline</button></div>" +
+      "<p class=\"form-error\" role=\"alert\"></p></div></li>";
+  }).join("");
+}
+$("vs-admin-list").addEventListener("click", function (ev) {
+  var accept = ev.target.closest("[data-vs-accept]"), decline = ev.target.closest("[data-vs-decline]");
+  if (!accept && !decline) return;
+  var li = ev.target.closest("[data-vs]"), id = li.dataset.vs, p = "vsa-" + id, err = li.querySelector(".form-error");
+  var body = accept ? { name: $(p + "-name").value.trim(), kind: $(p + "-kind").value } : { reason: $(p + "-why").value.trim() };
+  err.textContent = ""; li.querySelectorAll("button").forEach(function (b) { b.disabled = true; });
+  api("/admin/venue-suggestions/" + id + (accept ? "/accept" : "/decline"), { method: "POST", body: body }).then(readJSON, function () { return null; }).then(function (res) {
+    if (!res || !res.ok) { err.textContent = errorText(res); li.querySelectorAll("button").forEach(function (b) { b.disabled = false; }); return; }
+    $("vs-admin-status").textContent = accept ? "Added as a source." : "Declined.";
+    loadVenueSuggestions(); if (accept) loadSources();
+  });
 });

@@ -2059,3 +2059,12 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
    for its backdrop. The script sets its box. */
 dialog.dialog-leaving { display: block; position: fixed; z-index: 101; margin: 0; max-width: none; max-height: none; box-sizing: border-box; }
 .dialog-scrim { position: fixed; inset: 0; z-index: 100; }
+
+/* CC-209: venue suggestions (the member's form and list, the admin's queue) */
+.vs-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.vs-list li { padding: 12px 0; border-top: 1px solid var(--line); }
+.vs-state { font-weight: 600; margin-left: 8px; }
+.vs-act { display: grid; gap: 12px; margin-top: 8px; max-width: 36rem; }
+.vs-admin { margin-bottom: 28px; }
+.submit-thanks { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 28px; font-style: italic; }
+.submit-thanks .mark { width: 39px; height: 26px; }
