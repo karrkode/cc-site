@@ -47,6 +47,8 @@ jobs:
         run: node scripts/test_lake.js
       - name: The crews page keeps every crew action, with plans as event rows
         run: node scripts/test_crews.js
+      - name: Crew date polls: the showtime grid, results, Lock in and Commit to (CC-297)
+        run: node scripts/test_polls.js
       - name: My week keeps its plans, Find something and the journal, with plans as event rows
         run: node scripts/test_week.js
       - name: Your own journal events (CC-248)

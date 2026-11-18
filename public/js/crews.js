@@ -29,7 +29,7 @@ function renderCrewsPage() {
   var u = AUTH.user;
   $("crews-signin").hidden = !!u; $("crews-main").hidden = !u;
   if (!u) { $("crew-list").innerHTML = ""; return; }
-  paintCrews(); paintPending(); loadCrews(); loadPending();
+  paintCrews(); paintPending(); loadCrews(); loadPending(); loadPolls(); // CC-297
 }
 $("crews-signin-btn").addEventListener("click", function () { signInFrom("crews"); });
 function showCrewForm(open) {
@@ -112,6 +112,7 @@ function crewDetailHTML(c) {
   var id = esc(c.id), manage = CREW_MANAGE === String(c.id), room = c.max_members - c.members.length;
   return '<div class="crew-detail" id="crew-d-' + id + '" data-drop><div class="crew-cols">' +
     '<section class="crew-col" aria-labelledby="crew-p-' + id + '">' + crewSubHTML("crew-p-" + id, "Plans", c.plans.length ? String(c.plans.length) : "") + crewPlansHTML(c) + "</section>" +
+    (typeof pollsCrewHTML === "function" ? pollsCrewHTML(c) : "") + // CC-297
     '<section class="crew-col" aria-labelledby="crew-m-' + id + '">' +
     crewSubHTML("crew-m-" + id, plural(c.members.length, "member", "members"), room > 0 ? "room for " + room + " more" : "full") +
     '<ul class="crew-members">' + c.members.map(function (m) {
@@ -543,14 +544,15 @@ function pendingItemHTML(p, where) {
 function paintPending() {
   // CC-91: the admin's offer to approve photos waits here too, before the crew invites (approvals.js)
   var offer = AUTH.user && AUTH.user.approver_offered ? [approverOfferHTML()] : [];
-  var n = AUTH.user ? PENDING.length + offer.length : 0;
+  var polls = typeof pollsWaitingHTML === "function" && AUTH.user ? pollsWaiting() : []; // CC-297: date polls you haven't answered
+  var inv = AUTH.user ? PENDING.length + offer.length : 0, n = inv + polls.length;
   $("crews-count").textContent = $("account-count").textContent = $("me-head-count").textContent = n ? String(n) : ""; // on your name, and on Crews in its menu (CC-105)
   $("pending-invites").hidden = !n;
-  $("pending-invites").innerHTML = n ? '<h2 id="pending-title">Waiting for you</h2>' + offer.join("") + PENDING.map(function (p) { return pendingItemHTML(p, "list"); }).join("") : "";
+  $("pending-invites").innerHTML = n ? '<h2 id="pending-title">Waiting for you</h2>' + offer.join("") + PENDING.map(function (p) { return pendingItemHTML(p, "list"); }).join("") + pollsWaitingHTML() : "";
   var banner = $("invite-banner");
-  banner.hidden = !n || PENDING_LATER || !visible("home"); // CC-106: the notice is on Home only; Crews lists them under "Waiting for you"
+  banner.hidden = !inv || PENDING_LATER || !visible("home"); // CC-106: the notice is on Home only; Crews lists them under "Waiting for you"
   banner.innerHTML = banner.hidden ? "" : offer.concat(PENDING.map(function (p) { return pendingItemHTML(p, "banner"); })).slice(0, 2).join("") +
-    '<p class="small">' + (n > 2 ? "And " + plural(n - 2, "more invite", "more invites") + " on " : "Also on ") +
+    '<p class="small">' + (inv > 2 ? "And " + plural(inv - 2, "more invite", "more invites") + " on " : "Also on ") +
     '<button class="textbtn" type="button" data-go="crews">Your crews</button>. <button class="textbtn" type="button" data-pending-act="later">Not now</button></p>';
 }
 document.addEventListener("click", function (ev) {

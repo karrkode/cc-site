@@ -2026,6 +2026,32 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 .hl-key i.s1 { background: var(--pie-1); } .hl-key i.s2 { background: var(--pie-2); } .hl-key i.s3 { background: var(--pie-3); }
 .hl-key i.s4 { background: var(--pie-4); } .hl-key i.s5 { background: var(--pie-5); } .hl-key i.s6 { background: var(--pie-6); }
 
+/* CC-297: crew date polls: the showtime grid (dates as rows, times as buttons; on a phone a list of days with time chips), the best times, and Lock in */
+.polls { display: grid; gap: 16px; margin-top: 18px; }
+.poll { display: grid; gap: 12px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--rule); border-radius: var(--r-card); }
+.poll-cancelled, .poll-ended { border-top-color: var(--line); }
+.poll-h { margin: 0; font-size: 1.125rem; }
+.poll-h:focus { outline: none; }
+.poll-count, .poll-none { margin: 0; color: var(--muted); }
+.poll-best { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.poll-best li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.poll-best-t { font-weight: 700; }
+.poll-tag { display: inline-block; padding: 0 8px; border: 2px solid var(--rule); border-radius: 999px; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.poll-days { margin: 0; padding: 0; list-style: none; display: grid; gap: 0; border-top: 1px solid var(--line); }
+.poll-day { display: grid; grid-template-columns: minmax(8.5rem, 11rem) minmax(0, 1fr); align-items: center; gap: 6px 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.poll-day-l { font-weight: 700; }
+.poll-times { display: flex; flex-wrap: wrap; gap: 8px; }
+.poll-cell { min-height: 44px; min-width: 44px; padding: 6px 14px; background: transparent; color: var(--text); border: 1px solid var(--field-line); border-radius: 999px; font: inherit; cursor: pointer; }
+.poll-cell[aria-pressed="true"] { background: var(--rule); color: var(--page); border-color: var(--rule); }
+.poll-cell-n { margin-left: 6px; font-variant-numeric: tabular-nums; opacity: 0.8; }
+.poll-manage { align-items: center; }
+.poll-lock { min-height: 44px; }
+.poll-start { display: grid; gap: 12px; }
+.poll-form label { display: grid; gap: 4px; }
+@media (max-width: 640px) {
+  .poll-day { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* CC-126: the invite QR code fills the screen to be scanned from the admin's phone. CC-147: always paper-white, in
    both themes, under a small flag band: the code is deep lake ink on white, which any phone can scan. The colours are
    fixed here, not tokens, so "Lights down" doesn't reach them. */
