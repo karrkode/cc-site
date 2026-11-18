@@ -775,7 +775,7 @@ function ownComing(o) { return o.date > isoDate(T); }
 // mixed by date (a catalog event's date is the day you marked it "I've been").
 function journalItems() {
   var today = isoDate(T);
-  var past = WENT_LIST.map(function (e) { return { went: e, on: WENT_AT[e.id] ? isoDate(new Date(WENT_AT[e.id])) : today }; })
+  var past = WENT_LIST.map(function (e) { return { went: e, on: WENT_AT[e.id] ? isoDate(today(new Date(WENT_AT[e.id]))) : today }; })
     .concat(OWN_LIST.filter(function (o) { return !ownComing(o); }).map(function (o) { return { own: o, on: o.date }; }));
   past.sort(function (a, b) { return a.on < b.on ? 1 : a.on > b.on ? -1 : 0; });
   return { coming: OWN_LIST.filter(ownComing).slice().reverse(), past: past.slice(0, JOURNAL_SHOWN) };

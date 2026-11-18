@@ -16,7 +16,6 @@ function chicagoNow(when) { // {y, m, d, h, min} in Chicago at an instant (defau
   return { y: p.year, m: p.month, d: p.day, h: p.hour % 24, min: p.minute };
 }
 function today(when) { var n = chicagoNow(when); return new Date(n.y, n.m - 1, n.d); }
-function chicagoToday(when) { return today(when); }
 function chicagoClock(when) { var n = chicagoNow(when); return ("0" + n.h).slice(-2) + ":" + ("0" + n.min).slice(-2); } // "19:30"
 function add(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
 function same(a, b) { return !!a && !!b && a.getTime() === b.getTime(); }

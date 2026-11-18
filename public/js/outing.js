@@ -247,7 +247,7 @@ function renderStep() {
     $("plan-help").textContent = "One outing in the city or suburbs. We only suggest shows with known showtimes, and exhibitions on days they're open.";
     html = whenChoices().map(function (w) { return optHTML('data-when="' + w[0] + '"', w[1], w[2], pool(w[3][0], w[3][1], null, null, null, w[4]).length); }).join("") +
       '<div class="datepick"><div class="field"><label for="plan-date">Or pick a date</label><input type="date" id="plan-date" min="' +
-      T.getFullYear() + "-" + ("0" + (T.getMonth() + 1)).slice(-2) + "-" + ("0" + T.getDate()).slice(-2) + '"></div>' +
+      isoDate(T) + '"></div>' +
       '<button type="button" class="btn ghost" id="plan-date-go">Use this date</button></div>';
   } else if (plan.step === 1) {
     $("plan-title").textContent = "What's the budget per person?";
