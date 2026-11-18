@@ -24,7 +24,7 @@ function loadHealth() {
 function hlMs(v) { return v === null || v === undefined ? "–" : v < 1 ? "<1 ms" : v >= 1000 ? (v / 1000).toFixed(1) + " s" : Math.round(v) + " ms"; }
 function hlCount(n) { return Number(n).toLocaleString("en-US"); }
 function hlWhen(iso) {
-  return new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(iso));
+  return F.stamp.format(new Date(iso));
 }
 function hlSince(iso, now) { // "3 days", "5 hours", "12 minutes"
   var m = Math.max(0, Math.round((new Date(now) - new Date(iso)) / 60000));

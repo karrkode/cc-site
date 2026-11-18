@@ -46,7 +46,7 @@ function withPlanEvents(ws, we, then) {
 // slot: "day" (any time that day), "today" (before 5 PM), "tonight" (5 PM or later; exhibitions open past 6 PM).
 // On today, anything already started or already closed is left out.
 var DOW = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"], EVENING = "17:00", LATE = "18:00", USUAL = ["10:00", "17:00"];
-function clockNow() { var d = new Date(); return ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2); }
+function clockNow() { return chicagoClock(); }
 function isExhibit(e) { return isArt(e) && !e.sched.dates.length; } // a talk or opening with its own times is a performance
 // Start times on day d ("" = a date without a time), or null when there's no schedule to go by.
 function timesOn(e, d) {
@@ -179,7 +179,7 @@ function pool(ws, we, budget, types, regions, slot) {
 // The "when" choices: Today (until 5 PM), Tonight (until 9 PM), This weekend (Friday to Sunday; not on a
 // Sunday, when Next weekend is the coming one), Next weekend, or a date.
 function whenChoices() {
-  var hour = new Date().getHours(), out = [];
+  var hour = chicagoNow().h, out = [];
   if (hour < 17) out.push(["today", "Today", "Before 5 PM", [T, T], "today"]);
   if (hour < 21) out.push(["tonight", "Tonight", "After 5 PM", [T, T], "tonight"]);
   if (T.getDay() !== 0) { var wk = thisWeekend(); out.push(["weekend", "This weekend", windowText(wk[0], wk[1]), wk, "day"]); }

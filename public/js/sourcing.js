@@ -21,8 +21,8 @@ function needRowHTML(n, name, sub, href) {
 }
 function money(usd) { return "$" + usd.toFixed(2); }
 function wholeMoney(usd) { return "$" + (usd % 1 ? usd.toFixed(2) : usd.toFixed(0)); } // "$10", but "$12.50"
-function chicagoDate(iso, parts) { // iso: a plain date; noon keeps it on that day everywhere
-  return new Intl.DateTimeFormat("en-US", Object.assign({ timeZone: "America/Chicago" }, parts)).format(new Date(iso + "T12:00:00-06:00"));
+function chicagoDate(iso, parts) { // iso: a plain calendar date; parsed as that day, so no UTC offset can move it (CC-286)
+  return new Intl.DateTimeFormat("en-US", parts).format(parseISO(iso));
 }
 function paintSourcing(o) {
   var rows = [], bad = o.unreadable, names = function (list) { return list.join(", "); };
@@ -36,7 +36,7 @@ function paintSourcing(o) {
   $("sourcing-live").hidden = false; // before the graph, which is drawn to the width it has
 
   var g = gaugeAt(o.spent_month_usd, o.budget_usd, o.budget_state);
-  var month = new Intl.DateTimeFormat("en-US", { month: "long", timeZone: "America/Chicago" }).format(new Date());
+  var month = F.nowMonth.format(new Date());
   var spent = money(o.spent_month_usd) + " of " + wholeMoney(o.budget_usd);
   $("budget-gauge").innerHTML = gaugeHTML(g, o.budget_usd, "Budget speedometer: " + spent + " spent in " + month + ", an estimate. That's " + g.pct + "% of the budget: " + g.words + ".");
   $("budget-spent").innerHTML = esc(money(o.spent_month_usd)) + " <span>of " + esc(wholeMoney(o.budget_usd)) + " in " + esc(month) + ", " + esc(g.words) + "</span>";

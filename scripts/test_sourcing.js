@@ -14,6 +14,7 @@ const html = read("index.html");
 const el = () => ({ addEventListener() {}, innerHTML: "", textContent: "", hidden: false });
 const g = { window: { addEventListener() {} }, document: { addEventListener() {} }, Intl, Math, Date, $: el, esc: (s) => String(s), plural: (n, a, b) => n + " " + (n === 1 ? a : b) };
 vm.createContext(g);
+g.parseISO = (s) => { const p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }; // from util.js, which loads first on the page
 vm.runInContext(read("js/sourcing.js"), g);
 
 // --- CC-208: what a batch says afterwards, and the day heads ---

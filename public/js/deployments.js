@@ -14,7 +14,7 @@ function state(run){
  return {text:run.conclusion||'Unknown',cls:'unknown'};
 }
 function duration(run){if(!run||!run.run_started_at||run.status!=='completed')return '—';const ms=new Date(run.updated_at)-new Date(run.run_started_at);if(ms<0||!Number.isFinite(ms))return '—';return Math.floor(ms/60000)+'m '+Math.floor(ms%60000/1000)+'s'}
-function date(value){return value?new Date(value).toLocaleString():'—'}
+function date(value){return value?new Date(value).toLocaleString('en-US',{timeZone:'America/Chicago'}):'—'}
 async function getRuns(service){
  const url='https://api.github.com/repos/'+service.repo+'/actions/workflows/ci-cd.yml/runs?branch=main&event=push&per_page=20';
  const response=await fetch(url,{headers:{Accept:'application/vnd.github+json'},cache:'no-store'});
@@ -49,7 +49,7 @@ async function load(){
  cards.replaceChildren(...results.map(x=>drawCard(x.service,x.runs,x.error)));
  drawRows(results.filter(x=>!x.error));
  const errors=results.filter(x=>x.error).length;
- updated.textContent='Last checked: '+new Date().toLocaleTimeString()+(errors?' · '+errors+' service(s) unavailable':'');
+ updated.textContent='Last checked: '+new Date().toLocaleTimeString('en-US',{timeZone:'America/Chicago'})+(errors?' · '+errors+' service(s) unavailable':'');
  }finally{busy=false;refresh.disabled=false}
 }
 refresh.addEventListener('click',load);load();setInterval(()=>{if(!document.hidden)load()},60000);

@@ -7,11 +7,21 @@ var DAY = 86400000;
 
 // ---------- dates ----------
 function parseISO(s) { if (!s) return null; var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
-function today() { var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+// CC-286: "today" and the clock are Chicago's, whatever the visitor's own clock says. Every day here is a Date at local
+// midnight (so the F formatters below, which have no time zone, print the day they were built from).
+var CHICAGO = "America/Chicago";
+var CHI_CLOCK = new Intl.DateTimeFormat("en-US", { timeZone: CHICAGO, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+function chicagoNow(when) { // {y, m, d, h, min} in Chicago at an instant (default: now)
+  var p = {}; CHI_CLOCK.formatToParts(when || new Date()).forEach(function (x) { p[x.type] = +x.value; });
+  return { y: p.year, m: p.month, d: p.day, h: p.hour % 24, min: p.minute };
+}
+function today(when) { var n = chicagoNow(when); return new Date(n.y, n.m - 1, n.d); }
+function chicagoToday(when) { return today(when); }
+function chicagoClock(when) { var n = chicagoNow(when); return ("0" + n.h).slice(-2) + ":" + ("0" + n.min).slice(-2); } // "19:30"
 function add(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
 function same(a, b) { return !!a && !!b && a.getTime() === b.getTime(); }
 function diff(a, b) { return Math.round((a - b) / DAY); }
-function ymd(d) { return "" + d.getFullYear() + ("0" + (d.getMonth() + 1)).slice(-2) + ("0" + d.getDate()).slice(-2); }
+function ymd(d) { return isoDate(d).replace(/-/g, ""); }
 function fromYmd(s) { return new Date(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8)); }
 var T = today();
 var F = {
@@ -23,7 +33,11 @@ var F = {
   wd: new Intl.DateTimeFormat("en-US", { weekday: "long" }),
   month: new Intl.DateTimeFormat("en-US", { month: "long" }),
   monthY: new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }),
-  long: new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" })
+  long: new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }),
+  // These take a real instant (a timestamp, or now), so they say which clock: Chicago's.
+  mastDay: new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: CHICAGO }),
+  nowMonth: new Intl.DateTimeFormat("en-US", { month: "long", timeZone: CHICAGO }),
+  stamp: new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: CHICAGO })
 };
 function short(d) { return d.getFullYear() === T.getFullYear() ? F.md.format(d) : F.mdy.format(d); }
 function clockText(t) { // "19:30" -> "7:30 PM", "14:00" -> "2 PM" (venue hours and Find an outing, CC-78/79)
@@ -583,7 +597,7 @@ function rowsSettle() { // before the tile becomes the poster, which photographs
 // Full on home and the join page, compact on every other view. On a phone the nav is a sheet the hamburger opens;
 // Escape, a click outside or tabbing out closes it. The date is Chicago's, like the listings.
 var MAST_PHONE = window.matchMedia("(max-width: 960px)");
-$("mast-date").textContent = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "America/Chicago" }).format(new Date());
+$("mast-date").textContent = F.mastDay.format(new Date());
 function paintMast(name) {
   $("mast").classList.toggle("mast-full", name === "home" || name === "join");
   $("me-menu").querySelectorAll("[data-me]").forEach(function (b) { // the you menu shows the current page in bold
