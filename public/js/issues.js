@@ -238,6 +238,8 @@ $("issues-list").addEventListener("click", function (ev) {
     $("jr-heading").textContent = "Create a Jira ticket for " + i.key;
     $("jr-type").value = d.issue_type; $("jr-priority").value = d.priority; $("jr-summary").value = d.summary;
     $("jr-description").value = d.description; $("jr-reference").textContent = d.reference;
+    var hasMW = typeof d.member_words === "string";  // an older API has none: the description holds the text, nothing to send back
+    $("jr-member-field").hidden = !hasMW; $("jr-member").value = hasMW ? d.member_words : "";
     $("jr-offline").hidden = d.connected; $("jr-error").textContent = ""; $("jr-send").disabled = false;
     openDialog($("jira-dialog"), b); $("jr-summary").focus();
   }, function () { b.disabled = false; $("issues-status").textContent = errorText(null); });
@@ -250,6 +252,7 @@ $("jira-form").addEventListener("submit", function (ev) {
   if ($("jr-summary").value.trim().length < 3) { $("jr-error").textContent = "Give the ticket a summary."; $("jr-summary").focus(); return; }
   $("jr-send").disabled = true; $("jr-send").textContent = "Creating…";
   var body = { issue_type: $("jr-type").value, priority: $("jr-priority").value, summary: $("jr-summary").value, description: $("jr-description").value };
+  if (!$("jr-member-field").hidden) body.member_words = $("jr-member").value;
   function done() { $("jr-send").disabled = false; $("jr-send").textContent = "Create ticket in Jira"; }
   api("/admin/issues/" + i.id + "/jira", { method: "POST", body: body }).then(readJSON).then(function (res) {
     done();
