@@ -548,7 +548,7 @@ function paintPending() {
   var inv = AUTH.user ? PENDING.length + offer.length : 0, n = inv + polls.length;
   $("crews-count").textContent = $("account-count").textContent = $("me-head-count").textContent = n ? String(n) : ""; // on your name, and on Crews in its menu (CC-105)
   $("pending-invites").hidden = !n;
-  $("pending-invites").innerHTML = n ? '<h2 id="pending-title">Waiting for you</h2>' + offer.join("") + PENDING.map(function (p) { return pendingItemHTML(p, "list"); }).join("") + pollsWaitingHTML() : "";
+  $("pending-invites").innerHTML = n ? '<h2 id="pending-title">Waiting for you</h2>' + offer.join("") + PENDING.map(function (p) { return pendingItemHTML(p, "list"); }).join("") + (polls.length ? pollsWaitingHTML() : "") : "";
   var banner = $("invite-banner");
   banner.hidden = !inv || PENDING_LATER || !visible("home"); // CC-106: the notice is on Home only; Crews lists them under "Waiting for you"
   banner.innerHTML = banner.hidden ? "" : offer.concat(PENDING.map(function (p) { return pendingItemHTML(p, "banner"); })).slice(0, 2).join("") +

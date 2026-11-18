@@ -80,4 +80,8 @@ g.__ev = ev;
 const opts = run("pollOptions(__ev, '" + d(1) + "', '" + d(9) + "')");
 assert.deepStrictEqual(JSON.parse(JSON.stringify(opts)), [{ date: d(2), time: "19:30" }, { date: d(3), time: "14:00" }, { date: d(3), time: "19:30" }]);
 assert.deepStrictEqual(JSON.parse(JSON.stringify(run("pollWindow(__ev)"))), [d(2), d(3)], "the next show to the last");
+// The same poll drawn on the event's page and on the crew's page (both are in the document at once) shares no ids
+const ids = (h) => (h.match(/ id="[^"]+"/g) || []);
+const both = ids(run("pollCardHTML(" + JSON.stringify(poll()) + ", 'event')")).concat(ids(run("pollCardHTML(" + JSON.stringify(poll()) + ", 'crew')")));
+assert.strictEqual(new Set(both).size, both.length, "unique ids across views");
 console.log("ok: test_polls");
