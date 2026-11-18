@@ -16,6 +16,7 @@ function renderSubmit() {
   $("submit-sub").textContent = isAdmin() ? "You're an admin: choose whether it goes live now, at a set time, or waits for review." :
     "Tell us about it. Someone from the crew checks each one before it goes on the list.";
   $("s-publish").hidden = !isAdmin();
+  paintVenueSuggest(signedIn);
   var name = signedIn ? (AUTH.user.display_name || "").trim() : "";
   $("s-credit").disabled = !name; if (!name) $("s-credit").checked = false;
   $("s-credit-hint").textContent = name ? 'Optional. The event will say "Suggested by ' + name + '".' :
@@ -292,4 +293,32 @@ $("sd-another").addEventListener("click", function () {
 });
 $("sd-account").addEventListener("click", function () {
   openAccount(); $("my-submissions-title").focus();
+});
+
+// ---------- CC-209: suggest a venue ----------
+// A member sends a venue's calendar link; admins accept it (it becomes an event source) or decline it. Nobody is credited publicly.
+var VS_STATUS = { pending: "Waiting for the crew", accepted: "Added. Thank you!", declined: "Not added" };
+function paintVenueSuggest(signedIn) {
+  $("vs-section").hidden = !signedIn;
+  if (!signedIn) return;
+  api("/venue-suggestions/mine").then(readJSON).then(function (res) {
+    if (!res.ok) return;
+    $("vs-mine").innerHTML = res.body.map(function (v) {
+      return "<li><span class=\"vs-what\">" + esc(v.venue_name || v.url) + "</span> <span class=\"vs-state vs-" + esc(v.status) + "\">" + esc(VS_STATUS[v.status] || v.status) + "</span>" +
+        (v.status === "declined" && v.decline_reason ? " <span class=\"hint small\">" + esc(v.decline_reason) + "</span>" : "") + "</li>";
+    }).join("");
+  }, function () {});
+}
+$("vs-form").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var err = $("vs-error"), msg = $("vs-msg"), btn = $("vs-btn"), url = $("vs-url").value.trim();
+  err.textContent = msg.textContent = "";
+  if (!/^https?:\/\/\S+\.\S+/i.test(url)) { err.textContent = "Paste the link, starting with https://"; $("vs-url").focus(); return; }
+  btn.disabled = true;
+  api("/venue-suggestions", { method: "POST", body: { url: url, venue_name: $("vs-name").value, note: $("vs-note").value } }).then(readJSON, function () { return null; }).then(function (res) {
+    btn.disabled = false;
+    if (!res || !res.ok) { err.textContent = errorText(res); return; }
+    $("vs-url").value = $("vs-name").value = $("vs-note").value = "";
+    msg.textContent = "Thank you! The crew will take a look."; paintVenueSuggest(true);
+  });
 });

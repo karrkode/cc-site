@@ -751,6 +751,19 @@
         </dl>
         <div class="row"><button class="btn" type="button" id="sd-another">Suggest another</button><button class="btn neutral" type="button" id="sd-account">See it on your account</button></div>
       </div>
+      <!-- CC-209: suggest a venue's calendar link; the crew reviews it (paintVenueSuggest in submit.js) -->
+      <section class="lf-form" id="vs-section" aria-labelledby="vs-title" hidden>
+        <h2 id="vs-title">Know a venue we should read?</h2>
+        <p class="lf-deck">Send us a link to its calendar or events page. Someone from the crew looks at it, and if it's a fit, we start reading it for new events.</p>
+        <form class="lf-form" id="vs-form" novalidate>
+          <div class="field"><label for="vs-url">Link to its events page</label><input id="vs-url" type="url" maxlength="500" placeholder="https://" autocomplete="off" required></div>
+          <div class="field"><label for="vs-name">Venue name <span class="opt-label">(optional)</span></label><input id="vs-name" type="text" maxlength="200" autocomplete="off"></div>
+          <div class="field"><label for="vs-note">Anything we should know <span class="opt-label">(optional)</span></label><input id="vs-note" type="text" maxlength="500" autocomplete="off"></div>
+          <p class="form-error" id="vs-error" role="alert"></p>
+          <div class="row"><button class="btn" type="submit" id="vs-btn">Suggest this venue</button><span class="hint" id="vs-msg" role="status"></span></div>
+        </form>
+        <ul class="vs-list" id="vs-mine" aria-label="Your suggestions"></ul>
+      </section>
     </section>
 
     <!-- Review queue (admins) -->
@@ -940,6 +953,11 @@
       </div>
       <p class="hint" id="sources-status" role="status"></p>
       <div class="stat-summary" id="sources-summary"></div>
+      <section class="vs-admin" id="vs-admin" aria-labelledby="vs-admin-title" hidden><!-- CC-209: members' suggestions (admin.js) -->
+        <h2 id="vs-admin-title">Suggested by members</h2>
+        <p class="hint" id="vs-admin-status" role="status"></p>
+        <ul class="vs-list" id="vs-admin-list"></ul>
+      </section>
       <p class="notice" id="sources-budget-note"></p>
       <form class="found-filters" id="budget-form" novalidate>
         <div class="field"><label for="budget-usd">Monthly budget (dollars)</label><input id="budget-usd" type="number" min="1" max="100" step="1" inputmode="decimal" aria-describedby="budget-hint"></div>

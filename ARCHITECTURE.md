@@ -57,6 +57,7 @@ The site has these views:
 - Join page (`/join`), and the invite page (`/invite`)
 - Catalog
 - Find an outing
+- Suggest a venue (CC-209, `submit.js`, below the Submit an event form): a signed-in member sends a venue's calendar link, with an optional name and note, and sees the state of their own suggestions (waiting, added, or not added with the admin's reason). Admins see the queue above the Source grid (`admin.js`) and either add it as a source (name and type can be fixed) or decline it. Nobody is credited publicly.
 - Submit an event: paste the event's link and the API fills in the form from the page (CC-124), or enter it by hand. The form opens as soon as the link is pasted, and the read fills only what the member hasn't typed (CC-215)
 - Your account
 - Review (admins only): a menu in the masthead (CC-206; `public/js/hubs.js`), a plain list under "Review" in the phone sheet. Its options are Waiting for review (the queue, `#review`) and three group pages of links with counts:
