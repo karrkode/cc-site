@@ -1,5 +1,5 @@
-// Culture Crew site: a photo with "I've been" (CC-76).
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they
+// Chi Culture Crew site: a photo with "I've been" (CC-76).
+// Loaded by index.html in order (core, util, catalog, outing, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they
 // share one global scope, so anything declared here is visible to the files after it.
 "use strict";
 // Optional, one per event. The browser shrinks the photo (longest side 1600px) and draws it afresh as a JPEG, which
@@ -30,7 +30,7 @@ function openPhoto(e, opener) {
 }
 function photoState(p) {
   return p.status === "rejected" ? "Not approved" + (p.reason ? ": " + p.reason : ".") + " You can send another." :
-    p.status === "approved" ? "Approved. Thanks for showing you were there!" : "Waiting for approval. Only you and Culture Crew's approvers can see it.";
+    p.status === "approved" ? "Approved. Thanks for showing you were there!" : "Waiting for approval. Only you and Chi Culture Crew's approvers can see it.";
 }
 function showPhoto(src, state) {
   $("ph-box").hidden = !src;

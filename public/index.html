@@ -27,7 +27,7 @@
 <meta property="og:image" content="https://chiculturecrew.com/img/preview.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Culture Crew: What's the crew seeing next?">
+<meta property="og:image:alt" content="Chi Culture Crew: What's the crew seeing next?">
 <meta name="twitter:card" content="summary_large_image">
 <!-- Where the API lives. Leave empty to use api.<this host> (or localhost:8000 when running locally). -->
 <meta name="cc-api" content="">
@@ -97,7 +97,7 @@
     <h2 id="ph-heading" tabindex="-1">Add a photo</h2>
     <p class="hint" id="ph-encourage">Posting pics lets us know you've been there! We ~strongly encourage you not to include people not in your party but a selfie with you and your crew is always encouraged!</p>
     <div class="photo-box" id="ph-box" hidden><img id="ph-img" alt=""><p class="small" id="ph-state" role="status"></p></div>
-    <div class="field"><label for="ph-file">Choose a photo</label><input id="ph-file" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" aria-describedby="ph-file-hint"><span class="hint small" id="ph-file-hint">We shrink it and remove its location before it's sent. Someone from Culture Crew checks each photo before it counts.</span></div>
+    <div class="field"><label for="ph-file">Choose a photo</label><input id="ph-file" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" aria-describedby="ph-file-hint"><span class="hint small" id="ph-file-hint">We shrink it and remove its location before it's sent. Someone from Chi Culture Crew checks each photo before it counts.</span></div>
     <p class="form-error" id="ph-error" role="alert"></p>
     <div class="row"><button class="btn" type="submit" id="ph-send" disabled>Send photo</button><button class="btn danger" type="button" id="ph-remove" hidden>Remove photo</button><button class="btn ghost" type="button" id="ph-cancel">Close</button></div>
   </form>
@@ -295,7 +295,7 @@
         <button class="me-head" type="button" id="me-head" aria-expanded="false" aria-controls="me-menu" hidden><span id="me-head-name"></span><span class="count" id="me-head-count"></span><svg class="me-caret" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg></button><!-- in the phone sheet, your name heads the you menu (CC-137) -->
         <span class="me-menu" id="me-menu" role="menu" aria-labelledby="nav-account" hidden>
           <button type="button" role="menuitem" tabindex="-1" data-me="crews">Crews<span class="count" id="crews-count"></span></button>
-          <button type="button" role="menuitem" tabindex="-1" data-me="planner">My week</button>
+          <button type="button" role="menuitem" tabindex="-1" data-me="week">My week</button>
           <button type="button" role="menuitem" tabindex="-1" data-me="journal">Cultural journal</button>
           <button type="button" role="menuitem" tabindex="-1" data-me="invite">Invite a friend</button>
           <button type="button" role="menuitem" tabindex="-1" data-me="account">Account settings</button>
@@ -356,7 +356,7 @@
         <!-- CC-126: the same page at chiculturecrew.com/invite, where an admin's Invite a friend leads, with the admins' own pitch.
              CC-147: the owner approves any change to its wording -->
         <div class="jp-pitch ip-pitch" id="ip-pitch" hidden>
-          <h1 id="ip-title" tabindex="-1">Yours truly wants you to be part of the Culture Crew.</h1>
+          <h1 id="ip-title" tabindex="-1">Yours truly wants you to be part of the Chi Culture Crew.</h1>
           <p class="ip-why"><span class="ip-ask">Why, you ask?</span> Because live arts need people to choose, commit and communicate in order to thrive. To make that happen, create a profile that saves events and recommends shows.</p>
           <p class="ip-why"><span class="ip-ask">Next, create your crew! Why a crew, you ask?</span> Because anything worth seeing is worth seeing together.</p>
         </div>
@@ -366,7 +366,7 @@
           <div class="field"><label for="jp-email">Email</label><input id="jp-email" type="email" autocomplete="email" required></div>
           <div class="field"><label for="jp-password">Password</label><input id="jp-password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required aria-describedby="jp-password-hint"><span class="hint small" id="jp-password-hint">At least 8 characters, and not a common one.</span></div>
           <p class="form-error" id="jp-error" role="alert"></p>
-          <button class="btn" type="submit" id="jp-go">Join Culture Crew</button>
+          <button class="btn" type="submit" id="jp-go">Join Chi Culture Crew</button>
           <p class="hint">We'll email you a link to confirm your address.</p>
           <p class="jp-member">Already a member? <button class="textbtn" type="button" id="jp-signin">Sign in</button></p>
         </form>
@@ -388,9 +388,9 @@
       <form class="filters" id="filters" autocomplete="off">
         <div class="chip-row">
           <div class="chips segs" id="type-chips" role="group" aria-label="Type of event"></div>
-          <div class="chips segs" id="mine-chips" role="group" aria-label="Culture Crew picks">
+          <div class="chips segs" id="mine-chips" role="group" aria-label="Chi Culture Crew picks">
             <button type="button" class="chip mine" data-mine="interested" aria-pressed="false" aria-describedby="mine-int-tip"><svg class="mark mark-host-int" aria-hidden="true"><use href="#dolphin"></use></svg>Interested<span class="tip" id="mine-int-tip" aria-hidden="true">Events yours truly is interested in.</span></button>
-            <button type="button" class="chip mine" data-mine="going" aria-pressed="false" aria-describedby="mine-going-tip"><svg class="mark mark-host" aria-hidden="true"><use href="#dolphin-ring"></use></svg>Going<span class="tip" id="mine-going-tip" aria-hidden="true">Events yours truly is committed to!</span></button>
+            <button type="button" class="chip mine" data-mine="going" aria-pressed="false" aria-describedby="mine-going-tip"><svg class="mark mark-host" aria-hidden="true"><use href="#dolphin-ring"></use></svg>Going<span class="tip" id="mine-going-tip" aria-hidden="true">Events yours truly is going to!</span></button>
           </div>
           <div class="chips segs" id="crews-chips" role="group" aria-label="Your crews" hidden>
             <button type="button" class="chip" id="crews-chip" aria-pressed="false">Your Crews Catalog</button>
@@ -443,7 +443,7 @@
       <div class="more-row" id="more-row" hidden><button class="btn ghost" type="button" id="more-btn">Show more</button></div>
     </section>
 
-    <!-- Planner -->
+    <!-- Find an outing -->
     <!-- CC-117: one event, opened from a card (#e/<id>): its details, your plans, your crews', and the way out to tickets.
          CC-142: set as a poster (catalog.js eventViewHTML). -->
     <section class="view event-view" id="view-event" hidden>
@@ -452,7 +452,7 @@
       <div id="ev-body"></div>
     </section>
     <section class="view plan lf-page" id="view-plan" hidden>
-      <!-- CC-255: the five steps as chevrons; planner.js fills it in -->
+      <!-- CC-255: the five steps as chevrons; outing.js fills it in -->
       <nav class="plan-bar" id="plan-bar" aria-label="Progress" hidden></nav>
       <div class="plan-stage" id="plan-stage">
       <div id="plan-questions">
@@ -480,7 +480,7 @@
     <!-- Account: sign in / create account, or your lists once signed in -->
     <section class="view acct-view" id="view-account" hidden>
       <!-- CC-148: Lakefront (design/lakefront-brief.md section 10). Signed out: a title and an italic deck, then Sign in
-           beside "New here? Make an account". Signed in: "Hi, name" and Sign out, then 7/5: your profile and password on
+           beside "New here? Create an account". Signed in: "Hi, name" and Sign out, then 7/5: your profile and password on
            the left, the events you've sent us, your reports and photo approvals on the right. -->
       <div class="acct-head">
         <h1 id="account-title" tabindex="-1">Sign in</h1>
@@ -496,11 +496,11 @@
       </section>
       <div class="acct-cols acct-halves" id="signed-out">
         <div class="acct-col">
-          <form class="acct-form" id="login-form" novalidate aria-labelledby="login-h">
-            <h2 class="acct-sub" id="login-h">Sign in</h2>
-            <div class="field"><label for="login-email">Email</label><input id="login-email" type="email" autocomplete="username" spellcheck="false" required></div>
-            <div class="field"><label for="login-password">Password</label><input id="login-password" type="password" autocomplete="current-password" required></div>
-            <p class="form-error" id="login-error" role="alert"></p>
+          <form class="acct-form" id="signin-form" novalidate aria-labelledby="signin-h">
+            <h2 class="acct-sub" id="signin-h">Sign in</h2>
+            <div class="field"><label for="signin-email">Email</label><input id="signin-email" type="email" autocomplete="username" spellcheck="false" required></div>
+            <div class="field"><label for="signin-password">Password</label><input id="signin-password" type="password" autocomplete="current-password" required></div>
+            <p class="form-error" id="signin-error" role="alert"></p>
             <div class="acct-acts"><button class="btn" type="submit">Sign in</button><button class="acct-tbtn" type="button" id="forgot-open" aria-expanded="false" aria-controls="forgot-form">Forgot password?</button></div>
           </form>
           <form class="acct-form acct-forgot" id="forgot-form" novalidate hidden aria-labelledby="forgot-h">
@@ -513,7 +513,7 @@
         </div>
         <div class="acct-col">
           <form class="acct-form" id="register-form" novalidate aria-labelledby="register-h">
-            <h2 class="acct-sub" id="register-h">New here? Make an account</h2>
+            <h2 class="acct-sub" id="register-h">New here? Create an account</h2>
             <div class="field"><label for="reg-name">Name <span class="opt-label">(optional)</span></label><input id="reg-name" type="text" autocomplete="name" maxlength="80"></div>
             <div class="field"><label for="reg-email">Email</label><input id="reg-email" type="email" autocomplete="email" spellcheck="false" required></div>
             <div class="field"><label for="reg-password">Password</label><input id="reg-password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required aria-describedby="reg-password-hint"><span class="hint" id="reg-password-hint">At least 8 characters, and not a common one.</span></div>
@@ -573,18 +573,18 @@
       </div>
     </section>
 
-    <!-- My week (CC-105, renamed from Culture Planner in CC-118): the week ahead, at #planner (the journal moved to #journal in CC-159) -->
-    <section class="view" id="view-planner" hidden>
+    <!-- My week (CC-105, renamed from Culture Planner in CC-118): the week ahead, at #week (the journal moved to #journal in CC-159) -->
+    <section class="view" id="view-week" hidden>
       <!-- CC-146: Lakefront. A title and an italic deck; the week bar; the week (7) beside Events you're interested in (5); a line to the journal below -->
       <div class="week-head">
-        <h1 id="planner-title" tabindex="-1">My week</h1>
+        <h1 id="week-title" tabindex="-1">My week</h1>
         <p class="week-deck">Where you're going this week, and the events you're interested in.</p>
       </div>
-      <div class="panel" id="planner-signin" hidden>
-        <p>Mark events you're interested in or committed to, and they're laid out by the day here.</p>
-        <div class="row"><button class="btn" type="button" id="planner-signin-btn">Sign in or make an account</button></div>
+      <div class="panel" id="week-signin" hidden>
+        <p>Mark events you're interested in or going to, and they're laid out by the day here.</p>
+        <div class="row"><button class="btn" type="button" id="week-signin-btn">Sign in or create an account</button></div>
       </div>
-      <div id="planner-main" hidden>
+      <div id="week-main" hidden>
         <div class="week-bar">
           <p class="week-range" id="week-range" aria-live="polite"></p>
           <div class="week-steps" role="group" aria-label="Weeks">
@@ -601,17 +601,17 @@
             <h2 class="week-sub"><span id="myplans-title" tabindex="-1">The week ahead</span><span class="week-sub-n" id="week-n"></span></h2>
             <div class="week-state" id="week-state" hidden></div>
             <div class="week-undo-box" id="week-undo"></div><!-- CC-262: Undo for Commit! from a day's Find something list -->
-            <div class="week-days" id="planner-week" data-rows></div>
+            <div class="week-days" id="week-list" data-rows></div>
           </section>
-          <section class="week-col" aria-labelledby="deciding-title">
-            <h2 class="week-sub"><span id="deciding-title" tabindex="-1">Events you're interested in</span><span class="week-sub-n" id="deciding-n"></span></h2>
-            <div class="week-undo-box" id="deciding-undo"></div><!-- CC-160: Undo for Withdraw interest -->
+          <section class="week-col" aria-labelledby="interested-title">
+            <h2 class="week-sub"><span id="interested-title" tabindex="-1">Events you're interested in</span><span class="week-sub-n" id="interested-n"></span></h2>
+            <div class="week-undo-box" id="interested-undo"></div><!-- CC-160: Undo for Withdraw interest -->
             <ul class="week-rows" id="myplans-grid" data-rows></ul>
-            <p class="week-hint" id="deciding-hint"></p>
+            <p class="week-hint" id="interested-hint"></p>
           </section>
         </div>
-        <!-- CC-159: the journal has its own page now; a line here takes old #planner links on to it -->
-        <p class="week-tojournal">Notes on where you've been are in your <button type="button" class="week-tbtn" id="planner-tojournal" data-go="journal">Cultural journal &rarr;</button></p>
+        <!-- CC-159: the journal has its own page now; a line here takes old #week links on to it -->
+        <p class="week-tojournal">Notes on where you've been are in your <button type="button" class="week-tbtn" id="week-tojournal" data-go="journal">Cultural journal &rarr;</button></p>
       </div>
     </section>
 
@@ -645,7 +645,7 @@
       </div>
       <div class="panel" id="crews-signin" hidden>
         <p>A crew is a few friends you go out with. Share your plans with them, see what they're up to, and pick something together.</p>
-        <div class="row"><button class="btn" type="button" id="crews-signin-btn">Sign in or make an account</button></div>
+        <div class="row"><button class="btn" type="button" id="crews-signin-btn">Sign in or create an account</button></div>
       </div>
       <div id="crews-main" hidden>
         <p class="form-error" id="crews-status" role="alert"></p>
@@ -1074,7 +1074,7 @@
             <label class="radio"><input type="checkbox" id="i-closed"> Include closed events</label>
           </div>
         </div>
-        <p class="interest-legend" aria-hidden="true"><span class="sw going"></span>Committed <span class="sw interested"></span>Interested</p>
+        <p class="interest-legend" aria-hidden="true"><span class="sw going"></span>Going <span class="sw interested"></span>Interested</p>
         <p class="hint" id="interest-status" role="status"></p>
         <ol class="interest-list" id="interest-list"></ol>
       </section>
@@ -1144,7 +1144,7 @@
 <script src="js/listings.js?v=dev"></script>
 <script src="js/catalog.js?v=dev"></script>
 <script src="js/leadstack.js?v=dev"></script>
-<script src="js/planner.js?v=dev"></script>
+<script src="js/outing.js?v=dev"></script>
 <script src="js/account.js?v=dev"></script>
 <script src="js/vendor/qrcode.js?v=dev"></script>
 <script src="js/crews.js?v=dev"></script>

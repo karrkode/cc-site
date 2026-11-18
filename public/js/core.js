@@ -1,5 +1,5 @@
-// Culture Crew site: the theme button and talking to the API (sign-in, tokens, errors).
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
+// Chi Culture Crew site: the theme button and talking to the API (sign-in, tokens, errors).
+// Loaded by index.html in order (core, util, catalog, outing, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- light/dark switch (CC-49), "Lights down" since CC-136 ----------
@@ -77,7 +77,7 @@ var FIELD_NAMES = { email: "Email", password: "Password", display_name: "Name", 
   begin_date: "Opens", end_date: "Closes", cost_text: "Price", min_price: "Price", name: "Venue", neighborhood: "Neighborhood",
   words: "Three words", review: "Review" };
 function errorText(res) {
-  if (!res) return "Couldn't reach Culture Crew. Check your connection and try again.";
+  if (!res) return "Couldn't reach Chi Culture Crew. Check your connection and try again.";
   var d = res.body && res.body.detail;
   if (typeof d === "string") return d;
   if (Array.isArray(d) && d.length) {

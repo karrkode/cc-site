@@ -60,7 +60,7 @@ function page(user, stored, blocked) {
   return { g, els, calls, store };
 }
 
-test("signed out: the box shows with the register line and no close; it opens Make an account, back to the journal", () => {
+test("signed out: the box shows with the register line and no close; it opens Create an account, back to the journal", () => {
   const p = page(null, { cc_journal_welcome: "off" });
   p.g.renderJournalPage();
   assert.strictEqual(p.els["journal-welcome"].hidden, false, "shows even if put away while signed in");

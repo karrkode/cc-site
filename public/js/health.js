@@ -1,4 +1,4 @@
-// Culture Crew site: Site health (admins, CC-244), from Engagement. The API keeps its own numbers (cc-backend
+// Chi Culture Crew site: Site health (admins, CC-244), from Engagement. The API keeps its own numbers (cc-backend
 // app/health.py): each request's route, status and time, and a check of the database each minute. This page shows
 // them for the last hour, day, week or 30 days: is it answering, how fast, the database, and a pie of the non-200s.
 "use strict";

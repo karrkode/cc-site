@@ -1,12 +1,12 @@
-// Culture Crew site: Venue hours (admins, CC-78): opening hours and usual show times, on the Venues page.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
+// Chi Culture Crew site: Venue hours (admins, CC-78): opening hours and usual show times, on the Venues page.
+// Loaded by index.html in order (core, util, catalog, outing, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // Times are typed ("10 AM", "9:30 PM") rather than picked: browsers' time pickers look filled in before
 // every part is set (Safari shows a placeholder AM/PM) and then report no time at all.
 // Each venue keeps open_hours ({day: [opens, closes] | null for closed}; a day left out isn't known) and
 // show_times ({day: [start times]}), both 24-hour "HH:MM". Event discovery fills them in from the venue's
-// site; once an admin saves them here, discovery leaves them alone. They're stored for the planner (CC-79).
+// site; once an admin saves them here, discovery leaves them alone. They're stored for Find an outing (CC-79).
 var HOUR_DAYS = [["mon", "Monday"], ["tue", "Tuesday"], ["wed", "Wednesday"], ["thu", "Thursday"], ["fri", "Friday"], ["sat", "Saturday"], ["sun", "Sunday"]];
 var HDLG = null; // { v, opener }
 

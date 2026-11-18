@@ -24,7 +24,7 @@ function back(from) {
     posterMove: (_s, _b, done) => done(),
     show: (v) => calls.push("show:" + v),
     renderCatalog: () => calls.push("renderCatalog"),
-    renderPlannerPage: () => calls.push("renderPlannerPage"),
+    renderWeekPage: () => calls.push("renderWeekPage"),
     renderAccount: () => calls.push("renderAccount"),
     renderJournalPage: () => calls.push("renderJournalPage"),
   };
@@ -33,7 +33,7 @@ function back(from) {
   return calls;
 }
 
-assert.deepStrictEqual(back("planner"), ["renderPlannerPage", "show:planner"], "My week is drawn again before it shows");
+assert.deepStrictEqual(back("week"), ["renderWeekPage", "show:week"], "My week is drawn again before it shows");
 assert.deepStrictEqual(back("account"), ["renderAccount", "show:account"]);
 assert.deepStrictEqual(back("journal"), ["renderJournalPage", "show:journal"]);
 assert.deepStrictEqual(back("catalog"), ["show:catalog"], "the catalog keeps its own list");

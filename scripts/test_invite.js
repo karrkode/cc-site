@@ -64,7 +64,7 @@ const join = between(html, '<section class="view" id="view-join"', "</section>")
 lacks(join, 'class="eyebrow"', "no eyebrows");
 lacks(join, "<em>", "the headline is one colour");
 has(join, '<h1 id="jp-title" tabindex="-1">Ready to join the culture crew?</h1>');
-has(join, '<h1 id="ip-title" tabindex="-1">Yours truly wants you to be part of the Culture Crew.</h1>', "no exclamation mark");
+has(join, '<h1 id="ip-title" tabindex="-1">Yours truly wants you to be part of the Chi Culture Crew.</h1>', "no exclamation mark");
 has(join, "Because live arts need people to choose, commit and communicate in order to thrive. To make that happen, create a profile that saves events and recommends shows.",
   "the pitch's wording stays (the owner approves any change)");
 has(join, "Because anything worth seeing is worth seeing together.");

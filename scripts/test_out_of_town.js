@@ -20,7 +20,7 @@ assert.ok(!catalog.includes("out_of_town"), "not in the catalog's Where filter")
 assert.ok(!/AREA_NAMES = .*out_of_town/.test(util), "not in the area names");
 assert.ok(!/REGIONS = \[[^;]*out_of_town/.test(util), "not in the sides of town, so not in My week or Find an outing");
 has(util, "far: e.venue.area === \"out_of_town\"", "an old venue is still told apart until the clean-up has run");
-has(read("js/planner.js"), "return !e.far &&", "and never suggested");
+has(read("js/outing.js"), "return !e.far &&", "and never suggested");
 
 // --- an old out-of-town venue saved from the form sends nothing it can't ---
 has(admin, 'if ($("vd-area").value && $("vd-area").value !== v.area)');

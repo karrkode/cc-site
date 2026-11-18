@@ -1,5 +1,5 @@
-// Culture Crew site: opening the right view for the link, and starting the page.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
+// Chi Culture Crew site: opening the right view for the link, and starting the page.
+// Loaded by index.html in order (core, util, catalog, outing, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // ---------- start ----------
@@ -13,6 +13,7 @@ function openFromHash() {
     return true;
   }
   var h = (location.hash || "").replace(/^#/, "");
+  if (h === "planner") h = "week"; // CC-277: My week used to live at #planner; old links still open it (the address is rewritten to #week)
   // CC-117: an event (#e/<id>, from a card, a shared page or a reload), or Back out of one
   var em = /^e\/(\d{1,9})$/.exec(h);
   if (em) { (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(function () { openEvent(em[1], false); }); return true; }
@@ -37,7 +38,7 @@ function openFromHash() {
   if (!h && onJoinPage()) { (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(openJoinPage); return true; }
   if (h === "plan") { startPlan(); return true; }
   if (h === "account") { openAccount(); return true; }
-  if (h === "planner") { (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(function () { openPlanner(); }); return true; } // CC-105
+  if (h === "week") { (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(function () { openWeek(); }); return true; } // CC-105
   if (h === "journal") { (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(function () { openJournal(); }); return true; } // CC-159
   if (h === "crews") { (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(function () { openCrews(); }); return true; } // CC-104
   if (h === "submit") { openSubmit(); return true; }

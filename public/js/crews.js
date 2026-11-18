@@ -1,5 +1,5 @@
-// Culture Crew site: Culture crews (CC-74): the crews page (#crews, CC-104), invite links, and joining.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
+// Chi Culture Crew site: Culture crews (CC-74): the crews page (#crews, CC-104), invite links, and joining.
+// Loaded by index.html in order (core, util, catalog, outing, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 // A member can be in several crews; any member can make an invite link (7 days, revocable by its maker or
@@ -339,7 +339,7 @@ $("crew-list").addEventListener("click", function (ev) {
     var input = $("crew-link-" + c.id), said = $("crew-copied-" + c.id);
     var fallback = function () { input.focus(); input.select(); said.textContent = "Copy the link above."; };
     if (act === "share") { // the phone's share sheet; the person picks where it goes
-      navigator.share({ title: "Join " + c.name + " on Culture Crew", url: input.value }).then(function () { said.textContent = "Shared."; pulse(b); },
+      navigator.share({ title: "Join " + c.name + " on Chi Culture Crew", url: input.value }).then(function () { said.textContent = "Shared."; pulse(b); },
         function (err) { if (!err || err.name !== "AbortError") fallback(); });
       return;
     }

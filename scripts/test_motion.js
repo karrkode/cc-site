@@ -484,9 +484,9 @@ assert.strictEqual(+grid.match(/SG_PAUSE = (\d+)/)[1], parseFloat(css.match(/--d
 
 // ---------- the price slider (CC-229) ----------
 {
-const planner = read("js/planner.js");
-const code = planner.slice(planner.indexOf("function priceFill"), planner.indexOf('$("plan-opts").addEventListener("input"'));
-assert.ok(/id="plan-price" min="0" max="' \+ last \+ '" step="any"/.test(planner), "the thumb is free to sit between stops");
+const outing = read("js/outing.js");
+const code = outing.slice(outing.indexOf("function priceFill"), outing.indexOf('$("plan-opts").addEventListener("input"'));
+assert.ok(/id="plan-price" min="0" max="' \+ last \+ '" step="any"/.test(outing), "the thumb is free to sit between stops");
 assert.ok(/touch-action: pan-y/.test(read("css/site.css").match(/\.price-pick input\[type="range"\] \{[^}]*\}/)[0]), "a sideways drag on a phone stays with the thumb");
 
 function slider(opt) {
@@ -625,7 +625,7 @@ assert.strictEqual(l.paint(5).length, 0, "reduced motion: nothing plays");
 
 // the four lists, and the water
 const html = read("index.html");
-["home-list", "grid", "planner-week", "myplans-grid", "crew-list"].forEach((id) => {
+["home-list", "grid", "week-list", "myplans-grid", "crew-list"].forEach((id) => {
   assert.ok(new RegExp('id="' + id + '"[^>]*data-rows').test(html), id + " is a list whose rows arrive");
 });
 ["catalog.js", "account.js", "crews.js"].forEach((f) => assert.ok(/rowsPainted\(/.test(read("js/" + f)), f + " tells it when it paints"));
@@ -661,7 +661,7 @@ pulsing().g.pulse(null); // the button may have gone in a repaint
 
 assert.ok(/--dur-pulse: 500ms;/.test(css), "the token");
 // where it goes: each one beside the words that say it worked
-[["catalog.js", /msg\.textContent = "Link copied\."; pulse\(t\); \}, fallback/], ["planner.js", /msg\.textContent = "Link copied\."; pulse\(t\); \}, fallback/],
+[["catalog.js", /msg\.textContent = "Link copied\."; pulse\(t\); \}, fallback/], ["outing.js", /msg\.textContent = "Link copied\."; pulse\(t\); \}, fallback/],
   ["account.js", /msg\.textContent = "Link copied\."; pulse\(\$\("invite-copy"\)\); \}, fallback/], ["crews.js", /said\.textContent = "Link copied\."; pulse\(b\); \}, fallback/],
   ["crews.js", /said\.textContent = "Shared\."; pulse\(b\); \}/], ["crews.js", /"Saved " \+ name \+ "\."; pulse\(\$\("crew-h-" \+ id\)\)/],
   ["crews.js", /res\.body\.message;\n\s*pulse\(document\.querySelector\('\[data-crew-email/], ["crews.js", /redrawCards\(id, card, "\[data-crewshare-toggle\]"\); \}\)\n\s*\.then\(function \(\) \{ Array[^\n]*pulse\(b\)/],
@@ -671,7 +671,7 @@ assert.ok(/--dur-pulse: 500ms;/.test(css), "the token");
   ["admin.js", /"Added " \+ venueLabel\(res\.body\) \+ "\."; pulse\(\$\("vn-go"\)\)/], ["sourcegrid.js", /SG_SAID = "Saved\."; loadSources\("#sg-save"\)\.then\(function \(\) \{ pulse\(\$\("sg-save"\)\)/],
 ].forEach(([f, re]) => assert.ok(re.test(read("js/" + f)), f + " pulses: " + re));
 // a failure never does, and the moments stay their own
-["account.js", "admin.js", "catalog.js", "crews.js", "issues.js", "photos.js", "planner.js", "sourcegrid.js", "submit.js"].forEach((f) => {
+["account.js", "admin.js", "catalog.js", "crews.js", "issues.js", "photos.js", "outing.js", "sourcegrid.js", "submit.js"].forEach((f) => {
   read("js/" + f).split("\n").forEach((line) => assert.ok(!/pulse\(/.test(line) || !/errorText|checkThis/.test(line.slice(0, line.indexOf("pulse("))) || /res\.ok\) \{ box/.test(line), f + " pulses beside a failure: " + line));
 });
 assert.ok(!/pulse\(/.test(read("js/catalog.js").match(/function evMotionCarry[\s\S]*?\n}\n/)[0]), "the Going leap is left alone");

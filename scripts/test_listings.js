@@ -95,7 +95,7 @@ assert.ok(!/<a [^>]*>(?:(?!<\/a>)[\s\S])*<button/.test(row), "no button inside t
 assert.strictEqual((row.match(/<button/g) || []).length, 1, "the dolphin is the row's one button");
 assert.ok(!/<input|<select/.test(row), "no other controls");
 // CC-155: the button's name is the event page's sentence, which the tip shows; the mark inside is hidden, so it's said once
-assert.match(row, /<button type="button" class="row-pick" data-row-pick aria-label="Andrew is committed to seeing this\."><svg class="mark mark-host" aria-hidden="true">/,
+assert.match(row, /<button type="button" class="row-pick" data-row-pick aria-label="Andrew is going to see this\."><svg class="mark mark-host" aria-hidden="true">/,
   "the admin going: the gold ring, in a button that says what it means");
 assert.ok(row.includes('aria-label="' + g.pickText(art.pick) + '"'), "the same words as the event page's line");
 assert.match(row, /class="tile water-field cat-art"><canvas class="water" aria-hidden="true" data-water="tile"/);

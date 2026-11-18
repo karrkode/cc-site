@@ -1,8 +1,8 @@
-// Culture Crew site: Find an outing: the four questions, the pick and its backups, share links.
-// Loaded by index.html in order (core, util, catalog, planner, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
+// Chi Culture Crew site: Find an outing: the four questions, the pick and its backups, share links.
+// Loaded by index.html in order (core, util, catalog, outing, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
-// ---------- planner ----------
+// ---------- Find an outing ----------
 // budget: "free", "any", or a top price in whole dollars (CC-128, CC-254: the one maximum-price bar)
 var plan = { step: 0, when: null, ws: null, we: null, slot: "day", budget: null, types: {}, regions: {} };
 var pick = null; // { ws, we, stops: [event], alts: [event], total, shared }
@@ -24,7 +24,7 @@ function priceStops(events) {
 }
 function budgetText(b) { return b === "any" ? "Any price" : b === "free" ? "Free" : "Up to $" + b; }
 
-// The planner only needs city and suburb events in the window being planned, so it loads those
+// Find an outing only needs city and suburb events in the window being planned, so it loads those
 // (the next five weeks to start with: every preset fits) instead of the whole list.
 var PLAN_EVENTS = [], PLAN_RANGE = null;
 function withPlanEvents(ws, we, then) {
@@ -38,7 +38,7 @@ function withPlanEvents(ws, we, then) {
           function () { $("plan-opts").innerHTML = '<p class="form-error">The events couldn\'t be loaded. Check your connection and try again.</p>'; });
 }
 // ---------- what's actually on (CC-79) ----------
-// The planner only suggests what's happening when you can go. A performance needs a schedule: its own
+// Find an outing only suggests what's happening when you can go. A performance needs a schedule: its own
 // dates and times (from the venue's site), else a weekly pattern (its own, else the venue's show times);
 // with neither it's never suggested here (it's still in the catalog). An exhibition is on when its venue
 // is open; a venue whose hours aren't known yet counts as open 10 AM to 5 PM, but never for Tonight,
