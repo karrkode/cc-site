@@ -1350,10 +1350,10 @@ function loadVenueSuggestions() {
   }, function () { $("vs-admin-status").textContent = errorText(null); });
 }
 function paintVenueSuggestions() {
-  $("vs-admin").hidden = !VSUG.length;
+  $("vs-admin").hidden = !VSUG.length && !$("vs-admin-status").textContent; // stays while it has something to say
   $("vs-admin-list").innerHTML = VSUG.map(function (v) {
     var id = "vsa-" + v.id;
-    return "<li data-vs=\"" + v.id + "\"><p><a href=\"" + esc(v.url) + "\" target=\"_blank\" rel=\"noopener noreferrer\">" + esc(v.venue_name || v.url) + "</a> " +
+    return "<li data-vs=\"" + v.id + "\"><p><a href=\"" + esc(webLink(v.url)) + "\" target=\"_blank\" rel=\"noopener noreferrer\">" + esc(v.venue_name || v.url) + "</a> " +
       "<span class=\"hint small\">from " + esc(v.suggested_by || "a former member") + "</span></p>" +
       (v.venue_name ? "<p class=\"hint small\">" + esc(v.url) + "</p>" : "") + (v.note ? "<p>" + esc(v.note) + "</p>" : "") +
       "<div class=\"vs-act\"><div class=\"field\"><label for=\"" + id + "-name\">Name</label><input id=\"" + id + "-name\" type=\"text\" maxlength=\"200\" value=\"" + esc(v.venue_name) + "\"></div>" +
