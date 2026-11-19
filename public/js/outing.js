@@ -68,7 +68,7 @@ function hoursOn(e, d) { // [opens, closes, known] or null when closed
   if (!Object.prototype.hasOwnProperty.call(h, k)) return [USUAL[0], USUAL[1], false];
   return h[k] ? [h[k][0], h[k][1], true] : null;
 }
-// CC-260: can you go on day d (Pick a day in My week, and every Going picker)? In this order: a fixed run's listed dates (and, up to the last of them,
+// CC-260: can you go on day d (Pick a day in My Week, and every Going picker)? In this order: a fixed run's listed dates (and, up to the last of them,
 // the dates read from its venue's site); else the event's own show days; else its venue's, by the venue's category (CC-258's
 // rule): Visual Art by its opening hours (a day marked Closed is out; a day not filled in counts as open, as above),
 // Theater and Music by its usual show times, a venue with no category by either; with nothing known, any day of its run.

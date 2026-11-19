@@ -13,7 +13,7 @@ function openFromHash() {
     return true;
   }
   var h = (location.hash || "").replace(/^#/, "");
-  if (h === "planner") h = "week"; // CC-277: My week used to live at #planner; old links still open it (the address is rewritten to #week)
+  if (h === "planner") h = "week"; // CC-277: My Week used to live at #planner; old links still open it (the address is rewritten to #week)
   // CC-117: an event (#e/<id>, from a card, a shared page or a reload), or Back out of one
   var em = /^e\/(\d{1,9})$/.exec(h);
   if (em) { (AUTH.token || !maybeSignedIn() ? Promise.resolve() : refreshSession()).then(function () { openEvent(em[1], false); }); return true; }

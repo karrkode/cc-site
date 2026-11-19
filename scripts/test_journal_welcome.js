@@ -31,7 +31,7 @@ test("four ways in, the journal's above Read the listings", () => {
   assert.ok(ways.includes('<h2 class="front-h" id="ways-h">Four ways in</h2>'));
   const gos = [...ways.matchAll(/<button class="way" type="button" data-go="(\w+)">/g)].map((m) => m[1]);
   assert.deepStrictEqual(gos, ["plan", "crews", "journal", "catalog"]);
-  assert.ok(ways.includes('<span class="way-t">Update your cultural journal&nbsp;→</span><span class="way-d">Where you\'ve been, in three words each.</span>'));
+  assert.ok(ways.includes('<span class="way-t">Update your Culture Journal&nbsp;→</span><span class="way-d">Where you\'ve been, in three words each.</span>'));
   assert.ok(css.includes(".ways.rise .way:nth-of-type(4) { animation-delay: 0.36s; }"), "the fourth rises 120ms after the third");
 });
 

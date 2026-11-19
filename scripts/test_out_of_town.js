@@ -18,7 +18,7 @@ const has = (s, part, msg) => assert.ok(s.includes(part), msg || "has " + part);
 assert.ok(!html.includes('value="out_of_town"'), "not in the venue form");
 assert.ok(!catalog.includes("out_of_town"), "not in the catalog's Where filter");
 assert.ok(!/AREA_NAMES = .*out_of_town/.test(util), "not in the area names");
-assert.ok(!/REGIONS = \[[^;]*out_of_town/.test(util), "not in the sides of town, so not in My week or Find an outing");
+assert.ok(!/REGIONS = \[[^;]*out_of_town/.test(util), "not in the sides of town, so not in My Week or Find an outing");
 has(util, "far: e.venue.area === \"out_of_town\"", "an old venue is still told apart until the clean-up has run");
 has(read("js/outing.js"), "return !e.far &&", "and never suggested");
 

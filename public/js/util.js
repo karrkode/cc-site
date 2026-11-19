@@ -122,7 +122,7 @@ function setFacets(f) {
   TYPES.sort(function (a, b) { var i = TYPE_ORDER.indexOf(a), j = TYPE_ORDER.indexOf(b); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j) || a.localeCompare(b); });
 }
 var WENT = {}, WENT_LIST = [], WENT_PHOTO = {}; // WENT_PHOTO: your photos from events you've been to, by event (CC-76)
-// CC-98: your Cultural Journal entries, by event: { words, review, recommend } as saved, and what's typed but not saved yet.
+// CC-98: your Culture Journal entries, by event: { words, review, recommend } as saved, and what's typed but not saved yet.
 var WENT_JOURNAL = {}, JOURNAL_DRAFT = {};
 // CC-112: whether each entry is shared on its event's page, by event: { shared, anonymous }.
 var WENT_SHARE = {};
@@ -296,7 +296,7 @@ function goingRange(e) {
   var lo = e.b && e.b > T ? e.b : T, far = add(T, 730), hi = e.n && e.n < far ? e.n : far;
   return lo <= hi ? [lo, hi] : null;
 }
-function myplanToggleHTML(e, label) { // label: what it says once you have a plan (My week's Events you're interested in: "Pick a day", CC-146)
+function myplanToggleHTML(e, label) { // label: what it says once you have a plan (My Week's Events you're interested in: "Pick a day", CC-146)
   var mine = MYPLANS[e.id];
   if (!mine && !goingRange(e)) return ""; // closed: nothing left to plan
   MYPLAN_SEQ += 1;
@@ -313,7 +313,7 @@ function calendarLinkHTML(e, mine) {
 
     '" aria-label="Add ' + esc(e.title) + ' to your calendar">Add to calendar</a>';
 }
-// days: in place of the Going row, My week's own (the days, in Events you're interested in, of the shown week, CC-260)
+// days: in place of the Going row, My Week's own (the days, in Events you're interested in, of the shown week, CC-260)
 function myplanHTML(e, days) {
   var mine = MYPLANS[e.id], range = goingRange(e), n = MYPLAN_SEQ, id = esc(e.id);
   if (!mine && !range) return "";
@@ -515,7 +515,7 @@ function dialogFrames(box, to) {
   return [{ opacity: 0, transform: "translate(" + (x - box.left - box.width / 2) + "px, " + (y - box.top - box.height / 2) + "px) scale(" + size + ")" },
     { opacity: 1, offset: 0.4 }, { opacity: 1, transform: "none" }];
 }
-// `back` is for a dialog whose opener won't be there when it closes (Invite a friend, from the you menu)
+// `back` is for a dialog whose opener won't be there when it closes (Invite a Friend, from the you menu)
 function openDialog(d, back) {
   moveStop(d);
   var from = PRESSED; PRESSED = null;

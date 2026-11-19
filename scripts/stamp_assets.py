@@ -24,7 +24,7 @@ JOIN_TITLE = "Ready to join the culture crew? · Chi Culture Crew"
 JOIN_DESCRIPTION = ("Chicago theater, music and art, and the people you go with. "
                     "Join in one step, and look around the catalog first.")
 JOIN_URL = "https://chiculturecrew.com/join"
-# CC-126: chiculturecrew.com/invite, where an admin's Invite a friend leads: the join page with the admins' pitch
+# CC-126: chiculturecrew.com/invite, where an admin's Invite a Friend leads: the join page with the admins' pitch
 INVITE_TITLE = "Yours truly wants you to be part of the Chi Culture Crew!"
 INVITE_DESCRIPTION = ("Live arts need people to choose, commit and communicate in order to thrive. "
                       "Save events, get shows recommended, and start a crew: anything worth seeing is worth seeing together.")

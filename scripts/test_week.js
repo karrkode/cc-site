@@ -1,4 +1,4 @@
-// Checks run in CI before the site deploys (CC-146): My week in Lakefront, in public/js/account.js.
+// Checks run in CI before the site deploys (CC-146): My Week in Lakefront, in public/js/account.js.
 // One line a day in listings style: plans as event rows with Change plan and Tell a crew, an empty day as one
 // "Find something →" line; Events you're interested in beside it with Pick a day and I've been; the journal (its own page at
 // #journal since CC-159) with only the entry being written open, a finished one folded to its three words; errors say "Check this:".
@@ -134,7 +134,7 @@ set("CREWS = [{ id: 7, name: 'Thursday Theater' }];");
 // --- CC-260: Pick a day offers only days you can go: a fixed run's dates, else the event's show days, else its venue's
 // hours by the venue's category, else any day of the run; a week with none says so and offers the next ---
 const DOW = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-const week = [0, 1, 2, 3, 4, 5, 6].map((i) => g.add(g.T, i)); // the week My week shows first
+const week = [0, 1, 2, 3, 4, 5, 6].map((i) => g.add(g.T, i)); // the week My Week shows first
 const ok = (e) => week.filter((d) => g.canGoOn(e, d)).map(iso);
 const sched = (over) => Object.assign({ dates: [], weekly: {}, weekly_from: "", weeks: {}, hours: {} }, over);
 const venue = (category) => ({ id: 2, name: "Lakeside Hall", neighborhood: "Old Town", area: "city", region: "north", category: category });
@@ -216,7 +216,7 @@ assert.deepStrictEqual([...html.matchAll(/<option value="([\dT:-]+)"/g)].map((m)
 has(html, ">" + g.goingDay(iso(week[2])) + " · 11 AM</option>");
 set("MYPLANS[" + JSON.stringify(two.id) + "] = " + JSON.stringify({ status: "going", date: iso(week[2]), time: "16:00", crews: [] }) + ";");
 has(g.myplanHTML(two), '<option value="' + iso(week[2]) + 'T16:00" selected>', "your show chosen");
-has(g.weekRowHTML(two, week[2]), "<span>4 PM</span>", "My week: the show you chose, not every show that day");
+has(g.weekRowHTML(two, week[2]), "<span>4 PM</span>", "My Week: the show you chose, not every show that day");
 has(g.myplanHTML(two), "calendar.ics?date=" + iso(week[2]) + "&amp;time=16%3A00", "Add to calendar: that show");
 assert.strictEqual(g.myplanSaid(g.MYPLANS[two.id]), "Going on " + g.dayName(week[2]) + " at 4 PM");
 plan(two, "going", iso(week[4]));
@@ -326,7 +326,7 @@ assert.ok(!/still deciding/i.test(page + read("account.js") + read("util.js")), 
 has(read("account.js"), "Undo is at the top of Events you\\u2019re interested in.", "Withdraw's live message");
 has(read("account.js"), '"Back in Events you\\u2019re interested in: "', "and Undo's");
 
-console.log("ok: My week (CC-146, CC-156, CC-160, CC-261)");
+console.log("ok: My Week (CC-146, CC-156, CC-160, CC-261)");
 
 // --- CC-262: Commit! on an event in a day's Find something list ---
 {
@@ -352,7 +352,7 @@ console.log("ok: My week (CC-146, CC-156, CC-160, CC-261)");
     assert.ok(calls[0].startsWith("PUT /me/plans/") && calls[0].includes('"status":"going","date":"' + cd + '"'), "saves going on that day");
     assert.strictEqual(set("MYPLANS[" + JSON.stringify(cplay.id) + "].status"), "going");
     assert.ok(!g.FIND_DAY_OPEN[cd], "the list closes");
-    assert.deepStrictEqual(redraws, [cplay.id], "My week is drawn again");
+    assert.deepStrictEqual(redraws, [cplay.id], "My Week is drawn again");
     has(live.textContent, "Going: Commit Play, ", "live message"); has(live.textContent, "Undo is at the top");
     has(g.justGoingHTML(), 'data-commit-undo="' + cplay.id + '">Undo</button>', "Undo is offered");
     await run(() => g.undoCommit(btn({})));
