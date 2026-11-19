@@ -1391,10 +1391,18 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 
 /* the open crew, 7/5. Opening is instant. */
 .crew-detail { padding-bottom: 24px; }
-.crew-cols { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 32px 48px; align-items: start; }
+.crew-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+.crew-dd > summary { cursor: pointer; list-style: none; align-items: center; min-height: 44px; }
+.crew-dd > summary::-webkit-details-marker { display: none; }
+.crew-dd > summary > span:first-child { flex: 1; min-width: 0; } /* the count sits against the caret, so every row lines up */
+.crew-dd > summary .crew-caret { flex: none; }
+.crew-dd[open] > summary .crew-caret { transform: rotate(180deg); }
+.crew-dd[open] { padding-bottom: 12px; }
+.crew-dd > summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .crew-col { min-width: 0; }
 .crew-sub { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--rule);
   font-family: var(--sign); font-weight: 700; font-size: 1.25rem; }
+.crew-sub-t { margin: 6px 0 0; color: var(--muted); font-size: 1rem; }
 .crew-sub-n { color: var(--muted); font-size: 1.0625rem; text-align: right; }
 .crew-none { padding: 14px 0; color: var(--muted); font-size: 1rem; border-bottom: 1px solid var(--line); }
 .crew-members, .crew-plans, .crew-invites { list-style: none; margin: 0; padding: 0; }
@@ -1450,7 +1458,7 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
   .crew-banner { grid-column: 1 / -1; grid-row: 2; flex-wrap: wrap; }
   .crew-caret { grid-column: 2; grid-row: 1; }
   .crew-top { font-size: 1.5625rem; --fs: 25; }
-  .crew-cols { grid-template-columns: minmax(0, 1fr); } /* plans, then members */
+  
   .crew-plan-a { grid-template-columns: minmax(0, 1fr); }
   .crew-plan .listing-t { font-size: 1.3125rem; --fs: 21; }
   .crew-plan-when { grid-column: 1; grid-row: auto; text-align: left; font-size: 1rem; }
@@ -2025,6 +2033,45 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 .hl-key i { width: 16px; height: 16px; display: block; }
 .hl-key i.s1 { background: var(--pie-1); } .hl-key i.s2 { background: var(--pie-2); } .hl-key i.s3 { background: var(--pie-3); }
 .hl-key i.s4 { background: var(--pie-4); } .hl-key i.s5 { background: var(--pie-5); } .hl-key i.s6 { background: var(--pie-6); }
+
+/* CC-297: crew date polls: the showtime grid (dates as rows, times as buttons; on a phone a list of days with time chips), the best times, and Lock in */
+.polls { display: grid; gap: 16px; margin-top: 18px; }
+.poll { display: grid; gap: 12px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--rule); border-radius: var(--r-card); }
+.poll-cancelled, .poll-ended { border-top-color: var(--line); }
+.poll-h { margin: 0; font-size: 1.125rem; }
+.poll-h:focus { outline: none; }
+.poll-count, .poll-none { margin: 0; color: var(--muted); }
+.poll-best { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.poll-best li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.poll-best-t { font-weight: 700; }
+.poll-tag { display: inline-block; padding: 0 8px; border: 2px solid var(--rule); border-radius: 999px; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.poll-days { margin: 0; padding: 0; list-style: none; display: grid; gap: 0; border-top: 1px solid var(--line); }
+.poll-day { display: grid; grid-template-columns: minmax(8.5rem, 11rem) minmax(0, 1fr); align-items: center; gap: 6px 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.poll-day-l { font-weight: 700; }
+.poll-times { display: flex; flex-wrap: wrap; gap: 8px; }
+.poll-cell { min-height: 44px; min-width: 44px; padding: 6px 14px; background: transparent; color: var(--text); border: 1px solid var(--field-line); border-radius: 999px; font: inherit; cursor: pointer; }
+.poll-cell[aria-pressed="true"] { background: var(--rule); color: var(--page); border-color: var(--rule); }
+.poll-cell-n { margin-left: 6px; font-variant-numeric: tabular-nums; opacity: 0.8; }
+.poll-new { position: relative; overflow: hidden; }
+.poll-new::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / 0.55) 50%, transparent 70%); transform: translateX(-100%); animation: poll-shimmer 2.6s ease-in-out infinite; pointer-events: none; }
+@keyframes poll-shimmer { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .poll-new::after { animation: none; } .poll-new { box-shadow: inset 0 0 0 3px var(--focus); } }
+.poll-body { display: grid; gap: 12px; margin-top: 12px; }
+.poll-body[hidden] { display: none; }
+.btn.poll-toggle, #view-crews .btn.poll-toggle, #view-week .btn.poll-toggle { min-height: 44px; height: auto; min-width: 0; padding: 8px 20px; text-align: left; max-width: 100%; white-space: normal; justify-self: start; }
+.poll-result { display: grid; gap: 12px; animation: poll-in 0.35s ease both; }
+@keyframes poll-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .poll-result { animation: none; } }
+.poll-manage { align-items: center; }
+.poll-lock { min-height: 44px; }
+.poll-start { display: grid; gap: 12px; }
+
+.poll-preview { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; font-size: 0.9375rem; }
+.poll-cell:disabled { opacity: 0.5; cursor: not-allowed; }
+.poll-form label { display: grid; gap: 4px; }
+@media (max-width: 640px) {
+  .poll-day { grid-template-columns: minmax(0, 1fr); }
+}
 
 /* CC-126: the invite QR code fills the screen to be scanned from the admin's phone. CC-147: always paper-white, in
    both themes, under a small flag band: the code is deep lake ink on white, which any phone can scan. The colours are

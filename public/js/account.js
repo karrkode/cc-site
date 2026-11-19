@@ -47,6 +47,7 @@ function onAuthChange() {
   loadWent(); loadOwn(); loadMyPlans().then(rerenderLists);
   loadCrews().then(function () { buildCrewFilter(); rerenderLists(); }); // crews to share plans with (CC-75)
   loadPending(true); // crew invites waiting for you (CC-59): the notice on sign-in
+  loadPolls(); // CC-297
   if (isAdmin()) updateIssuesCount();
 }
 // Where signing in leads (AFTER_SIGN_IN): back to the page that asked (CC-104, CC-105, CC-117, CC-159, CC-237), or Home
@@ -407,7 +408,7 @@ function undoWithdraw(b) {
     MYPLANS[w.id] = { status: w.mine.status, date: w.mine.date, time: w.mine.time || null, crews: [] };
     return !(w.mine.crews || []).length ? null : api("/me/plans/" + encodeURIComponent(w.id) + "/crews", { method: "PUT", body: { crews: w.mine.crews } }).then(readJSON).then(function (r) {
       if (!r.ok) throw r;
-      MYPLANS[w.id].crews = r.body.crews;
+      MYPLANS[w.id].crews = r.body.crews; if (typeof pollInterestStale === "function") pollInterestStale();
     });
   }).then(function () {
     WITHDRAWN = null;

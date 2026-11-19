@@ -29,7 +29,7 @@ function renderCrewsPage() {
   var u = AUTH.user;
   $("crews-signin").hidden = !!u; $("crews-main").hidden = !u;
   if (!u) { $("crew-list").innerHTML = ""; return; }
-  paintCrews(); paintPending(); loadCrews(); loadPending();
+  paintCrews(); paintPending(); loadCrews(); loadPending(); loadPolls(); // CC-297
 }
 $("crews-signin-btn").addEventListener("click", function () { signInFrom("crews"); });
 function showCrewForm(open) {
@@ -110,14 +110,21 @@ function crewSubHTML(id, label, note) {
 // then Manage crew. Roles are words, not pills.
 function crewDetailHTML(c) {
   var id = esc(c.id), manage = CREW_MANAGE === String(c.id), room = c.max_members - c.members.length;
+  var going = c.plans.filter(crewRowGoing), onCalendar = going.map(function (r) { return String(r.event.id); });
+  // a locked poll sits on the calendar too, unless the event is already there as a plan and you have nothing left to commit to
+  var locked = (typeof pollsLockedHTML === "function" ? pollsLockedHTML(c) : []).filter(function (p) { return onCalendar.indexOf(String(p.event_id)) < 0 || (p.locked && p.locked.yours && !pollCommitted(p)); }), only = c.plans.filter(function (r) { return !crewRowGoing(r); });
   return '<div class="crew-detail" id="crew-d-' + id + '" data-drop><div class="crew-cols">' +
-    '<section class="crew-col" aria-labelledby="crew-p-' + id + '">' + crewSubHTML("crew-p-" + id, "Plans", c.plans.length ? String(c.plans.length) : "") + crewPlansHTML(c) + "</section>" +
-    '<section class="crew-col" aria-labelledby="crew-m-' + id + '">' +
-    crewSubHTML("crew-m-" + id, plural(c.members.length, "member", "members"), room > 0 ? "room for " + room + " more" : "full") +
-    '<ul class="crew-members">' + c.members.map(function (m) {
-      var role = [m.owner ? "Crew leader" : "", m.you ? "you" : ""].filter(Boolean).join(" · ");
-      return "<li>" + crewDotHTML(m.name, m.you, "face-l") + '<span class="who">' + esc(m.name) + "</span>" + (role ? '<span class="crew-role">' + role + "</span>" : "") + "</li>";
-    }).join("") + "</ul></section></div>" +
+    // CC-297: four dropdowns: what the crew has committed to, what they are only interested in, the poll to settle a date, and who's in
+    crewDD(c, "cal", "Shared Calendar", going.length + locked.length ? String(going.length + locked.length) : "", "Events that either other crew members or the crew as a whole have committed to!",
+      (going.length || !locked.length ? crewPlansHTML(c, going, "Nothing committed to yet.") : "") + locked.map(function (p) { return pollCardHTML(p, "crew"); }).join("")) + // a poll the leader locked in
+
+    crewDD(c, "int", "What interest’s y’all", only.length ? String(only.length) : "", "", crewPlansHTML(c, only, "No plans shared yet. Use “Invite your Crew?” on an event you’re interested in.")) +
+    (typeof pollsCrewHTML === "function" ? pollsCrewHTML(c) : "") +
+    crewDD(c, "mem", plural(c.members.length, "member", "members"), room > 0 ? "room for " + room + " more" : "full", "",
+      '<ul class="crew-members">' + c.members.map(function (m) {
+        var role = [m.owner ? "Crew leader" : "", m.you ? "you" : ""].filter(Boolean).join(" · ");
+        return "<li>" + crewDotHTML(m.name, m.you, "face-l") + '<span class="who">' + esc(m.name) + "</span>" + (role ? '<span class="crew-role">' + role + "</span>" : "") + "</li>";
+      }).join("") + "</ul>") + "</div>" +
     '<div class="crew-manage-wrap"><button class="crew-manage-btn" type="button" data-crew-act="manage" data-crew="' + id + '" aria-expanded="' + manage +
     '" aria-controls="crew-mg-' + id + '">Manage crew' + CREW_CARET + "</button>" +
     (manage ? crewManageHTML(c) : '<div id="crew-mg-' + id + '" data-drop hidden></div>') + "</div></div>";
@@ -241,9 +248,18 @@ function beenLineHTML(been) {
 // interested), and the line in words. The count buttons can't sit inside a link, so the row's link is the tile, name,
 // venue and dates, and the lines follow it.
 var CREW_PLAN_DOTS = 4;
-function crewPlansHTML(c) {
-  if (!c.plans.length) return '<p class="crew-none">No plans shared yet. Use “Invite your Crew?” on an event you’re interested in.</p>';
-  return '<ul class="crew-plans">' + c.plans.map(function (row) {
+function crewRowGoing(row) { return row.people.some(function (p) { return p.status === "going"; }); }
+var CREW_DD = {}; // "crewId:part" -> open? (a dropdown stays as you left it when the page redraws)
+function crewDD(c, key, label, note, text, body) { // a dropdown part of an open crew: its name and a count on the rule, then what's inside
+  var k = c.id + ":" + key;
+  return '<details class="crew-dd" data-dd="' + esc(k) + '"' + (CREW_DD[k] ? " open" : "") + '><summary class="crew-sub"><span>' + esc(label) + "</span>" +
+    (note ? '<span class="crew-sub-n">' + esc(note) + "</span>" : "") + CREW_CARET + "</summary>" + (text ? crewSubText(text) : "") + body + "</details>";
+}
+document.addEventListener("toggle", function (ev) { var d = ev.target; if (d.getAttribute && d.getAttribute("data-dd")) CREW_DD[d.getAttribute("data-dd")] = d.open; }, true);
+function crewSubText(t) { return '<p class="crew-sub-t">' + esc(t) + "</p>"; }
+function crewPlansHTML(c, rows, none) {
+  if (!rows.length) return '<p class="crew-none">' + esc(none) + "</p>";
+  return '<ul class="crew-plans">' + rows.map(function (row) {
     var e = toEvent(row.event), id = esc(e.id), going = row.people.some(function (p) { return p.status === "going"; });
     return '<li class="crew-plan" data-row="' + esc(c.id) + "-" + id + '"><a class="crew-plan-a" href="#e/' + id + '" data-ev-open="' + id + '">' +
       eventTileHTML(e) +
@@ -504,6 +520,7 @@ document.addEventListener("click", function (ev) {
   api("/me/plans/" + encodeURIComponent(id) + "/crews", { method: "PUT", body: { crews: picked } }).then(readJSON).then(function (res) {
     if (!res.ok) throw res;
     if (MYPLANS[id]) MYPLANS[id].crews = res.body.crews;
+    pollInterestStale();
     var names = CREWS.filter(function (c) { return res.body.crews.indexOf(c.id) >= 0; }).map(function (c) { return c.name; });
     $("myplan-live").textContent = (names.length ? "Shared with " + names.join(" and ") : "Not shared with any crew") + ": " + KNOWN[id].title;
     if (visible("crews")) loadCrews();
@@ -543,14 +560,15 @@ function pendingItemHTML(p, where) {
 function paintPending() {
   // CC-91: the admin's offer to approve photos waits here too, before the crew invites (approvals.js)
   var offer = AUTH.user && AUTH.user.approver_offered ? [approverOfferHTML()] : [];
-  var n = AUTH.user ? PENDING.length + offer.length : 0;
+  var polls = typeof pollsWaitingHTML === "function" && AUTH.user ? pollsWaiting() : []; // CC-297: date polls you haven't answered
+  var inv = AUTH.user ? PENDING.length + offer.length : 0, n = inv + polls.length;
   $("crews-count").textContent = $("account-count").textContent = $("me-head-count").textContent = n ? String(n) : ""; // on your name, and on Crews in its menu (CC-105)
   $("pending-invites").hidden = !n;
-  $("pending-invites").innerHTML = n ? '<h2 id="pending-title">Waiting for you</h2>' + offer.join("") + PENDING.map(function (p) { return pendingItemHTML(p, "list"); }).join("") : "";
+  $("pending-invites").innerHTML = n ? '<h2 id="pending-title">Waiting for you</h2>' + offer.join("") + PENDING.map(function (p) { return pendingItemHTML(p, "list"); }).join("") + (polls.length ? pollsWaitingHTML() : "") : "";
   var banner = $("invite-banner");
-  banner.hidden = !n || PENDING_LATER || !visible("home"); // CC-106: the notice is on Home only; Crews lists them under "Waiting for you"
+  banner.hidden = !inv || PENDING_LATER || !visible("home"); // CC-106: the notice is on Home only; Crews lists them under "Waiting for you"
   banner.innerHTML = banner.hidden ? "" : offer.concat(PENDING.map(function (p) { return pendingItemHTML(p, "banner"); })).slice(0, 2).join("") +
-    '<p class="small">' + (n > 2 ? "And " + plural(n - 2, "more invite", "more invites") + " on " : "Also on ") +
+    '<p class="small">' + (inv > 2 ? "And " + plural(inv - 2, "more invite", "more invites") + " on " : "Also on ") +
     '<button class="textbtn" type="button" data-go="crews">Your crews</button>. <button class="textbtn" type="button" data-pending-act="later">Not now</button></p>';
 }
 document.addEventListener("click", function (ev) {

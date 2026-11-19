@@ -497,7 +497,7 @@ function eventViewHTML(e) {
   } else {
     var more = (goingLater(e) && !WENT[e.id] ? "" : wentHTML(e)) + (WENT[e.id] ? photoButtonHTML(e) : crewShareToggleHTML(e)) +
       (isAdmin() ? editButtonHTML(e, "went") : "");
-    main += evPlanHTML(e) + (more ? '<div class="ev-more">' + more + (WENT[e.id] ? "" : crewShareHTML(e)) + "</div>" : "") + "</div>";
+    main += evPlanHTML(e) + (more ? '<div class="ev-more">' + more + (WENT[e.id] ? "" : crewShareHTML(e)) + "</div>" : "") + (typeof pollsEventHTML === "function" ? pollsEventHTML(e) : "") + "</div>"; // CC-297: date polls
     var crews = e.crewPlans.map(evCrewHTML).join("");
     side += crews || '<p class="hint">' + (CREWS.length ? "Nobody from your crews has this on their list yet." : "Start a crew to see who's going with you.") + "</p>";
     side += "</aside>";
@@ -528,7 +528,7 @@ function loadEventView() {
       $("event-title").focus({ preventScroll: true });
       return;
     }
-    EV.e = toEvent(res.body); renderEventView();
+    EV.e = toEvent(res.body); renderEventView(); if (AUTH.user) loadPolls(); // CC-297
   }, function () { if (req === EV.req) $("ev-status").textContent = errorText(null); });
 }
 // Open event id: push (from a card) adds #e/<id> to the history so Back comes back here; otherwise (a link or a
