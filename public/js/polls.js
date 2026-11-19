@@ -5,6 +5,7 @@
 "use strict";
 var POLL_BUSY = {}, POLL_ERR = {}; // POLL_BUSY: a poll whose answer is being saved; POLL_ERR: the last error shown on a poll's card
 var POLLS = [], POLL_OPEN = {}, POLL_ASK = null; // POLL_OPEN: "event-crew" keys whose start panel is open; POLL_ASK: a poll being cancelled
+var POLL_INT = {}; // by event id: {at, list}: per crew, how many members have shared interest in it (a poll can start once more than half have)
 var POLL_SHOW = {}, POLL_EDIT = {}, POLL_DRAFT = {}; // by poll id: its card is expanded; you are (re)choosing times; the option ids ticked but not yet submitted
 function pollsFor(test) { return AUTH.user ? POLLS.filter(test) : []; }
 function pollsOfEvent(id) { return pollsFor(function (p) { return String(p.event_id) === String(id); }); }
@@ -108,12 +109,30 @@ function pollCardHTML(p, where) {
 }
 
 // ---------- on the event's page ----------
+function pollInterest(id) { // the cached count for an event, fetched again in the background when it is more than a few seconds old
+  var c = POLL_INT[id];
+  if (!c || (!c.busy && Date.now() - c.at > 5000)) {
+    var keep = c ? c.list : null; POLL_INT[id] = { at: Date.now(), list: keep, busy: true };
+    api("/crews/poll-interest?event_id=" + encodeURIComponent(id)).then(readJSON).then(function (res) {
+      POLL_INT[id] = { at: Date.now(), list: res.ok ? res.body : keep };
+      if (res.ok && JSON.stringify(res.body) !== JSON.stringify(keep)) pollsRepaint();
+    }, function () { POLL_INT[id] = { at: Date.now(), list: keep }; });
+  }
+  return POLL_INT[id].list;
+}
+function pollInterestStale() { Object.keys(POLL_INT).forEach(function (k) { POLL_INT[k].at = 0; }); } // someone shared or unshared: count again at the next draw
 function pollsEventHTML(e) { // the crews' polls for this event, and a button for each crew that has none open yet
   if (!AUTH.user || !CREWS.length) return "";
   var mine = pollsOfEvent(e.id), open = mine.filter(function (p) { return p.status === "open"; });
   var h = mine.map(function (p) { return pollCardHTML(p, "event"); }).join("");
   var canStart = !isPast(e) && !isExhibit(e) && goDays(e, 1).length;
-  if (canStart) CREWS.filter(function (c) { return !open.some(function (p) { return p.crew_id === c.id; }); }).forEach(function (c) {
+  var interest = canStart ? pollInterest(e.id) : null;
+  if (canStart && interest) CREWS.filter(function (c) { return !open.some(function (p) { return p.crew_id === c.id; }); }).forEach(function (c) {
+    var inf = interest.filter(function (x) { return x.crew_id === c.id; })[0]; if (!inf) return;
+    if (!inf.ready) { // not enough interest yet: say where it stands, and no button
+      h += '<p class="hint poll-wait">' + esc(c.name) + ": " + inf.shared + " of " + inf.members_total + " have shared interest in this event. A poll opens once more than half have.</p>";
+      return;
+    }
     var key = esc(e.id + "-" + c.id), on = !!POLL_OPEN[e.id + "-" + c.id];
     h += '<div class="poll-start"><button class="btn ghost poll-toggle" type="button" data-poll-act="start-open" data-key="' + key + '" aria-expanded="' + on + '" aria-controls="poll-form-' + key + '">Open poll for this event with “' + esc(c.name) + "”</button>" +
       (on ? pollFormHTML(e, c) : "") + "</div>";

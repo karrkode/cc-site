@@ -408,7 +408,7 @@ function undoWithdraw(b) {
     MYPLANS[w.id] = { status: w.mine.status, date: w.mine.date, time: w.mine.time || null, crews: [] };
     return !(w.mine.crews || []).length ? null : api("/me/plans/" + encodeURIComponent(w.id) + "/crews", { method: "PUT", body: { crews: w.mine.crews } }).then(readJSON).then(function (r) {
       if (!r.ok) throw r;
-      MYPLANS[w.id].crews = r.body.crews;
+      MYPLANS[w.id].crews = r.body.crews; if (typeof pollInterestStale === "function") pollInterestStale();
     });
   }).then(function () {
     WITHDRAWN = null;

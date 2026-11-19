@@ -96,4 +96,11 @@ assert.deepStrictEqual(JSON.parse(JSON.stringify(run("pollWindow(__ev)"))), [d(2
 const ids = (h) => (h.match(/ id="[^"]+"/g) || []);
 const both = ids(run("pollCardHTML(" + JSON.stringify(poll()) + ", 'event')")).concat(ids(run("pollCardHTML(" + JSON.stringify(poll()) + ", 'crew')")));
 assert.strictEqual(new Set(both).size, both.length, "unique ids across views");
+// A crew's poll can be started once more than half of it has shared interest; before that, only where it stands
+run("POLLS = []; CREWS = [{ id: 4, name: 'Thursday Theater' }]; POLL_OPEN = {}; POLL_INT = { 9: { at: Date.now(), list: [{ crew_id: 4, shared: 2, members_total: 5, ready: false }] } }");
+html = run("pollsEventHTML(__ev)");
+assert(html.includes("2 of 5 have shared interest") && html.includes("more than half") && !html.includes("start-open"), "no button below a majority");
+run("POLL_INT[9].list[0].ready = true; POLL_INT[9].list[0].shared = 3");
+html = run("pollsEventHTML(__ev)");
+assert(html.includes('data-poll-act="start-open"') && html.includes("Open poll for this event with “Thursday Theater”") && !html.includes("more than half"), "the button at a majority");
 console.log("ok: test_polls");

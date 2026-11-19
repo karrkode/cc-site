@@ -505,6 +505,7 @@ document.addEventListener("click", function (ev) {
   api("/me/plans/" + encodeURIComponent(id) + "/crews", { method: "PUT", body: { crews: picked } }).then(readJSON).then(function (res) {
     if (!res.ok) throw res;
     if (MYPLANS[id]) MYPLANS[id].crews = res.body.crews;
+    pollInterestStale();
     var names = CREWS.filter(function (c) { return res.body.crews.indexOf(c.id) >= 0; }).map(function (c) { return c.name; });
     $("myplan-live").textContent = (names.length ? "Shared with " + names.join(" and ") : "Not shared with any crew") + ": " + KNOWN[id].title;
     if (visible("crews")) loadCrews();
