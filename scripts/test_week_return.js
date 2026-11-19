@@ -1,5 +1,5 @@
 // Check run in CI before the site deploys (CC-259): going back from an event to the view it was opened from draws that
-// view again. A plan saved on the event page redraws only the views that are showing, so My week (and the account and
+// view again. A plan saved on the event page redraws only the views that are showing, so My Week (and the account and
 // journal pages) would otherwise come back as they were: the new plan only appeared after a refresh.
 //
 //     node scripts/test_week_return.js
@@ -33,8 +33,8 @@ function back(from) {
   return calls;
 }
 
-assert.deepStrictEqual(back("week"), ["renderWeekPage", "show:week"], "My week is drawn again before it shows");
+assert.deepStrictEqual(back("week"), ["renderWeekPage", "show:week"], "My Week is drawn again before it shows");
 assert.deepStrictEqual(back("account"), ["renderAccount", "show:account"]);
 assert.deepStrictEqual(back("journal"), ["renderJournalPage", "show:journal"]);
 assert.deepStrictEqual(back("catalog"), ["show:catalog"], "the catalog keeps its own list");
-console.log("ok: going back from an event redraws My week, the account and the journal");
+console.log("ok: going back from an event redraws My Week, the account and the journal");

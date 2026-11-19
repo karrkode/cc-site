@@ -89,7 +89,7 @@ def main() -> int:
                 problems.append(f'{path.name}: the heading "{heading.strip()}" repeats its eyebrow')
         for old in ("Plan an outing", "Plan your outing", "Pick an outing", "Culture Planner"):
             if re.search(r'>[^<]*' + old, text) or re.search(r'"[^"\n]*' + old, text):
-                problems.append(f'{path.name}: still says "{old}" (CC-118 named it Find an outing / My week)')
+                problems.append(f'{path.name}: still says "{old}" (CC-118 named it Find an outing / My Week)')
         # CC-120: the crew board says who's been in plain words
         for old in ("been...maybe", "very much ha"):
             if old in text:

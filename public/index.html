@@ -106,7 +106,7 @@
      CC-147: Lakefront, a square dialog on the lake scrim -->
 <dialog class="editor invite-dlg" id="invite-dialog" aria-labelledby="invite-heading">
   <form id="invite-form" method="dialog">
-    <h2 id="invite-heading" tabindex="-1">Invite a friend</h2>
+    <h2 id="invite-heading" tabindex="-1">Invite a Friend</h2>
     <p id="invite-hint">Send them this link. They can look around without an account, and sign up when they want to go out with you.</p>
     <div class="field"><label for="invite-url">Link to the site</label><input type="text" id="invite-url" readonly></div>
     <p class="hint" id="invite-msg" role="status"></p>
@@ -297,9 +297,9 @@
         <button class="me-head" type="button" id="me-head" aria-expanded="false" aria-controls="me-menu" hidden><span id="me-head-name"></span><span class="count" id="me-head-count"></span><svg class="me-caret" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg></button><!-- in the phone sheet, your name heads the you menu (CC-137) -->
         <span class="me-menu" id="me-menu" role="menu" aria-labelledby="nav-account" hidden>
           <button type="button" role="menuitem" tabindex="-1" data-me="crews">Crews<span class="count" id="crews-count"></span></button>
-          <button type="button" role="menuitem" tabindex="-1" data-me="week">My week</button>
-          <button type="button" role="menuitem" tabindex="-1" data-me="journal">Cultural journal</button>
-          <button type="button" role="menuitem" tabindex="-1" data-me="invite">Invite a friend</button>
+          <button type="button" role="menuitem" tabindex="-1" data-me="week">My Week</button>
+          <button type="button" role="menuitem" tabindex="-1" data-me="journal">Culture Journal</button>
+          <button type="button" role="menuitem" tabindex="-1" data-me="invite">Invite a Friend</button>
           <button type="button" role="menuitem" tabindex="-1" data-me="account">Account settings</button>
           <button type="button" role="menuitem" tabindex="-1" data-me="signout">Sign out</button>
         </span>
@@ -328,7 +328,7 @@
           <h2 class="front-h" id="ways-h">Four ways in</h2>
           <button class="way" type="button" data-go="plan"><span class="way-t">Find an outing&nbsp;→</span><span class="way-d">Four questions. One pick and a few backups.</span></button>
           <button class="way" type="button" data-go="crews"><span class="way-t">Check in on the crew&nbsp;→</span><span class="way-d" id="way-crews-d">The friends you go out with. Sign in to start one or join one.</span></button>
-          <button class="way" type="button" data-go="journal"><span class="way-t">Update your cultural journal&nbsp;→</span><span class="way-d">Where you've been, in three words each.</span></button><!-- CC-252 -->
+          <button class="way" type="button" data-go="journal"><span class="way-t">Update your Culture Journal&nbsp;→</span><span class="way-d">Where you've been, in three words each.</span></button><!-- CC-252 -->
           <button class="way" type="button" data-go="catalog"><span class="way-t">Read the listings&nbsp;→</span><span class="way-d" id="way-catalog-d">Every event, opening soonest first.</span></button>
         </nav>
         <section class="last-col" aria-labelledby="last-h">
@@ -355,7 +355,7 @@
             <li>Start a crew and see what your friends are going to.</li>
           </ul>
         </div>
-        <!-- CC-126: the same page at chiculturecrew.com/invite, where an admin's Invite a friend leads, with the admins' own pitch.
+        <!-- CC-126: the same page at chiculturecrew.com/invite, where an admin's Invite a Friend leads, with the admins' own pitch.
              CC-147: the owner approves any change to its wording -->
         <div class="jp-pitch ip-pitch" id="ip-pitch" hidden>
           <h1 id="ip-title" tabindex="-1">Yours truly wants you to be part of the Chi Culture Crew.</h1>
@@ -575,11 +575,11 @@
       </div>
     </section>
 
-    <!-- My week (CC-105, renamed from Culture Planner in CC-118): the week ahead, at #week (the journal moved to #journal in CC-159) -->
+    <!-- My Week (CC-105, renamed from Culture Planner in CC-118): the week ahead, at #week (the journal moved to #journal in CC-159) -->
     <section class="view" id="view-week" hidden>
       <!-- CC-146: Lakefront. A title and an italic deck; the week bar; the week (7) beside Events you're interested in (5); a line to the journal below -->
       <div class="week-head">
-        <h1 id="week-title" tabindex="-1">My week</h1>
+        <h1 id="week-title" tabindex="-1">My Week</h1>
         <p class="week-deck">Where you're going this week, and the events you're interested in.</p>
       </div>
       <div class="panel" id="week-signin" hidden>
@@ -613,14 +613,14 @@
           </section>
         </div>
         <!-- CC-159: the journal has its own page now; a line here takes old #week links on to it -->
-        <p class="week-tojournal">Notes on where you've been are in your <button type="button" class="week-tbtn" id="week-tojournal" data-go="journal">Cultural journal &rarr;</button></p>
+        <p class="week-tojournal">Notes on where you've been are in your <button type="button" class="week-tbtn" id="week-tojournal" data-go="journal">Culture Journal &rarr;</button></p>
       </div>
     </section>
 
-    <!-- Cultural journal (CC-98): its own page at #journal since CC-159, opened from the you menu; it was the foot of My week -->
+    <!-- Culture Journal (CC-98): its own page at #journal since CC-159, opened from the you menu; it was the foot of My Week -->
     <section class="view" id="view-journal" hidden>
       <div class="week-head">
-        <h1 id="journal-title" tabindex="-1">Cultural journal</h1>
+        <h1 id="journal-title" tabindex="-1">Culture Journal</h1>
         <p class="week-deck">Where you've been, in three words each. Only you can see it, unless you share an entry.</p>
       </div>
       <!-- CC-252: the welcome box. Signed out it takes the sign-in panel's place and leads to making an account; signed in
