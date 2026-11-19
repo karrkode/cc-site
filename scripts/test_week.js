@@ -138,10 +138,9 @@ const week = [0, 1, 2, 3, 4, 5, 6].map((i) => g.add(g.T, i)); // the week My Wee
 const ok = (e) => week.filter((d) => g.canGoOn(e, d)).map(iso);
 const sched = (over) => Object.assign({ dates: [], weekly: {}, weekly_from: "", weeks: {}, hours: {} }, over);
 const venue = (category) => ({ id: 2, name: "Lakeside Hall", neighborhood: "Old Town", area: "city", region: "north", category: category });
-// 1. a fixed run: its dates only, even where the venue has show times
-const run = ev({ schedule: sched({ dates: [{ date: iso(week[2]), time: "19:30" }, { date: iso(week[5]), time: null }],
-  weekly: { [DOW[week[0].getDay()]]: ["19:30"] }, weekly_from: "venue" }), venue: venue("Theater"),
-  run_dates: [{ date: iso(week[2]), time: "19:30" }, { date: iso(week[5]), time: null }] });
+// 1. a Show Run (CC-301): its dates only, even where the venue has show times
+const run = ev({ schedule: sched({ dates: [{ date: iso(week[2]), time: "19:30" }, { date: iso(week[5]), time: null }], dates_from: "event", // CC-301: a Show Run
+  weekly: { [DOW[week[0].getDay()]]: ["19:30"] }, weekly_from: "venue" }), venue: venue("Theater") });
 assert.deepStrictEqual(ok(run), [iso(week[2]), iso(week[5])], "a fixed run: its listed dates");
 const listed = ev({ end_date: iso(g.add(g.T, 20)), schedule: sched({ dates: [{ date: iso(week[2]), time: "19:30" }], weekly: { [DOW[week[0].getDay()]]: ["19:30"] }, weekly_from: "venue" }),
   venue: venue("Theater") });
@@ -229,8 +228,7 @@ html = g.goTimeFieldHTML(venueTwo, iso(week[3]), "19:30");
 has(html, '<select class="go-time" aria-label="Show time for Every night">'); has(html, '<option value="19:30" selected>7:30 PM</option>');
 has(g.goDayFieldHTML(venueTwo, 'id="x"', iso(week[3])), '<input type="date" id="x"'); has(g.goDayFieldHTML(venueTwo, 'id="x"', iso(week[3])), 'class="go-time"');
 // a one-day run with two shows: Commit to each
-const oneDay = ev({ title: "One day", begin_date: iso(week[2]), end_date: iso(week[2]), schedule: sched({ dates: [{ date: iso(week[2]), time: "11:00" }, { date: iso(week[2]), time: "16:00" }] }),
-  run_dates: [{ date: iso(week[2]), time: "11:00" }, { date: iso(week[2]), time: "16:00" }] });
+const oneDay = ev({ title: "One day", begin_date: iso(week[2]), end_date: iso(week[2]), schedule: sched({ dates: [{ date: iso(week[2]), time: "11:00" }, { date: iso(week[2]), time: "16:00" }], dates_from: "event" }) });
 html = g.myplanHTML(oneDay);
 has(html, 'data-time="11:00" aria-pressed="false">'); has(html, "Commit to " + g.goingDay(iso(week[2])) + " · 4 PM</button>");
 

@@ -81,6 +81,8 @@ jobs:
         run: node scripts/test_suggest_link.js
       - name: The edit dialog's Link label opens only http(s) addresses (CC-256)
         run: node scripts/test_edit_link.js
+      - name: The Show Run calendar in the event edit form (CC-301)
+        run: node scripts/test_show_run.js
       - name: Found events have one Edit/Approve button, and a short run opens as its days with a time each
         run: node scripts/test_found.js
       - name: Event Sourcing page

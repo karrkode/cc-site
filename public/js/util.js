@@ -1,5 +1,5 @@
 // Chi Culture Crew site: Shared helpers: dates, the event shape, DOM helpers and switching views.
-// Loaded by index.html in order (core, util, catalog, outing, account, crews, submit, admin, hours, found, issues, photos, approvals, start); they share one
+// Loaded by index.html in order (core, util, catalog, outing, account, crews, submit, admin, hours, showrun, found, issues, photos, approvals, start); they share one
 // global scope, so anything declared here is visible to the files after it.
 "use strict";
 var PAGE_URL = "";
@@ -39,7 +39,8 @@ var F = {
   stamp: new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: CHICAGO })
 };
 function short(d) { return d.getFullYear() === T.getFullYear() ? F.md.format(d) : F.mdy.format(d); }
-function clockText(t) { // "19:30" -> "7:30 PM", "14:00" -> "2 PM" (venue hours and Find an outing, CC-78/79)
+function clockText(t) { // "19:30" -> "7:30 PM", "14:00" -> "2 PM" (venue hours and Find an outing, CC-78/79); "" for no time (CC-301)
+  if (!t) return "";
   var p = t.split(":"), h = +p[0], m = p[1];
   return (h % 12 || 12) + (m === "00" ? "" : ":" + m) + (h < 12 ? " AM" : " PM");
 }
@@ -95,10 +96,13 @@ function fromApi(e) {
     region: e.venue.region || null, // the side of town (CC-73)
     far: e.venue.area === "out_of_town" || e.venue.region === "out_of_town", // CC-217: never suggested; gone once the clean-up has been run
     pick: e.pick ? { status: e.pick.status, date: e.pick.date, time: e.pick.time || null, by: e.pick.by } : null, // the owner's public pick (CC-66)
-    sched: e.schedule || { dates: [], weekly: {}, weekly_from: "", hours: {} }, // when it's on, for Find an outing (CC-79)
+    sched: e.schedule || { dates: [], dates_from: "", weekly: {}, weekly_from: "", hours: {} }, // when it's on, for Find an outing (CC-79)
     crewPlans: (e.crew_plans || []).map(function (c) { c.been = c.been || []; return c; }), // signed in: crew-mates' shared plans (CC-75), and who's been (CC-117)
     takes: e.takes || [], // members' shared journal entries, GET /events/<id> only (CC-112)
-    runDates: (e.run_dates || []).map(function (r) { return { date: r.date, time: r.time, end_time: r.end_time || "" }; }), // a fixed run (CC-96)
+    // CC-301: the Show Run, every show with its time ("" when none is posted). Only GET, POST and PATCH /events/<id> carry it; lists send
+    // an empty one, so null means "not known here" (the editor reads the event first) and the upcoming shows are in sched.dates.
+    showRun: e.show_run && e.show_run.length ? e.show_run.map(function (r) { return { date: r.date, time: r.time || "", end_time: r.end_time || "" }; }) : null,
+    exactRun: !!e.schedule && e.schedule.dates_from === "event", // the event is on its Show Run's dates only; other dates came from a venue's page
     b: parseISO(e.begin_date), n: parseISO(e.end_date)
   };
 }
@@ -203,13 +207,24 @@ function capList(list, n, label) {
   if (!/^(UL|OL)$/.test(list.tagName)) list.setAttribute("role", "region");
 }
 function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
-// CC-96: a fixed run's upcoming dates and times, in the event view ("Fri, Oct 24, 8 PM · Sun, Nov 2, 7:30 PM · 2 more").
+// CC-96, CC-301: a Show Run's upcoming shows, a day each, in the event view ("Fri, Oct 24, 8 PM · Sat, Nov 8, 2 PM and 8 PM · 2 more").
+// A day with no time posted is its date alone.
 var RUN_SHOWN = 3;
+function upcomingShows(e) { // [{date, time, end_time?}]: the whole Show Run when the event carries it, else the API's upcoming dates
+  return (e.showRun || e.sched.dates || []).filter(function (r) { return parseISO(r.date) >= T; });
+}
 function runDatesText(e) {
-  var left = e.runDates.filter(function (r) { return parseISO(r.date) >= T; });
-  return left.slice(0, RUN_SHOWN).map(function (r) {
-    return goingDay(r.date) + ", " + clockText(r.time) + (r.end_time ? "–" + clockText(r.end_time) : "");
-  }).join(" · ") + (left.length > RUN_SHOWN ? " · " + (left.length - RUN_SHOWN) + " more" : "");
+  var days = [], by = {};
+  upcomingShows(e).forEach(function (r) {
+    var d = by[r.date]; if (!d) { d = by[r.date] = { date: r.date, times: [] }; days.push(d); }
+    if (r.time) d.times.push(clockText(r.time) + (r.end_time ? "–" + clockText(r.end_time) : ""));
+  });
+  return days.slice(0, RUN_SHOWN).map(function (d) { return goingDay(d.date) + (d.times.length ? ", " + d.times.join(" and ") : ""); }).join(" · ") +
+    (days.length > RUN_SHOWN ? " · " + (days.length - RUN_SHOWN) + " more" : "");
+}
+function showRunCountText(e) { // "Show Run: 38 upcoming shows" for the review queue; "" when the event isn't on a Show Run
+  var n = e.exactRun ? upcomingShows(e).length : 0;
+  return n ? "Show Run: " + plural(n, "upcoming show", "upcoming shows") : "";
 }
 function cardHTML(e) {
   var mine = AUTH.user ? MYPLANS[e.id] : null, going = mine && mine.status === "going";

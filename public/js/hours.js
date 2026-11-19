@@ -188,6 +188,7 @@ $("hours-form").addEventListener("submit", function (ev) {
 // these show days, else the venue's usual show times. Only Theater and Music have them (musicals are
 // theater); Visual Art goes by the venue's opening hours.
 var SHOW_TYPES = { Theater: 1, Music: 1 }; // CC-125: Concert is now Music
+var ED_MODE = null; // CC-301: how the edit form takes dates: "showrun", "open", "range" or "dates" (showrun.js); null while approving a found event
 var SHOW_DAYS = {}; // per form: { days: {mon: ["8 PM", ...]} as typed, weeks: {mon: [1, 3]} (some weeks of the month only),
                     //   some: {mon: true} while "Some weeks" is chosen, from: the pattern the form started with }
 var WEEK_NAMES = [[1, "1st"], [2, "2nd"], [3, "3rd"], [4, "4th"], [5, "Last"]];
@@ -276,7 +277,10 @@ function setShowDays(f, weekly, weeks) {
   });
   sd.from = { weekly: weekly || {}, weeks: weeks || {} }; paintShowDays(f);
 }
-function showDaysFor(f, type) { $(f + "-sched").hidden = !SHOW_TYPES[type] || isFixedRun(f) || datesUnknown(f); } // a fixed run has its own times (CC-96)
+function showDaysFor(f, type) { // a fixed run has its own times (CC-96); in the edit form only an open run has show days (CC-301)
+  if (f === "ed" && ED_MODE) { $("ed-sched").hidden = ED_MODE !== "open"; return; }
+  $(f + "-sched").hidden = !SHOW_TYPES[type] || isFixedRun(f) || datesUnknown(f);
+}
 // The show days as entered: {weekly, weeks} ({} for none), or {error, id} for a day without a time, a time we can't read,
 // or "Some weeks" without any weeks chosen.
 function readShowDays(f) {
@@ -324,7 +328,7 @@ function fillWeekly(e) { // e: an event as fromApi makes it
   var own = e.sched.weekly_from === "event", venue = e.sched.weekly_from === "venue" ? e.sched.weekly : {};
   setShowDays("ed", own ? e.sched.weekly : venue, own ? e.sched.weeks : {});
   SHOW_DAYS.ed.from = own ? { weekly: e.sched.weekly, weeks: e.sched.weeks || {} } : { weekly: {}, weeks: {} }; SHOW_DAYS.ed.venue = venue;
-  $("ed-sched-hint").textContent = (e.sched.dates.length ? plural(e.sched.dates.length, "upcoming date", "upcoming dates") +
+  $("ed-sched-hint").textContent = (e.sched.dates_from === "found" && e.sched.dates.length ? plural(e.sched.dates.length, "upcoming date", "upcoming dates") +
     " came from the venue's website; those come first. " : "") +
     (own ? "" : Object.keys(venue).length ? "These are the venue's usual show times; change them if this show is different. " :
       "Choose the days, and give a start time for each. ") + "Without any, Find an outing won't suggest it.";
@@ -349,6 +353,7 @@ function isFixedRun(f) { var r = document.querySelector('input[name="' + f + '-r
 // CC-102: "Don't know!" (Submit only): sent with no dates at all, and the crew looks them up
 function datesUnknown(f) { var r = document.querySelector('input[name="' + f + '-runkind"]:checked'); return !!r && r.value === "unknown"; }
 function paintRunKind(f) {
+  if (f === "ed" && ED_MODE) { srRunKindChanged(); return; } // the edit form's own modes (showrun.js)
   var fixed = isFixedRun(f), unknown = datesUnknown(f);
   $(f + "-range").hidden = fixed || unknown; $(f + "-run").hidden = !fixed;
   showDaysFor(f, $(f + "-category").value);
@@ -398,7 +403,7 @@ document.addEventListener("click", function (ev) {
     var f = add.getAttribute("data-run-add"), input = $(f + "-run-day"), day = input.value;
     var say = function (text) { $(f === "s" ? "submit-error" : "ed-error").textContent = text; input.focus(); };
     if (!day) return say("Pick a date to add.");
-    if (day < isoDate(T) && !(f === "ed" && EDITING && EDITING.e.runDates && EDITING.e.runDates.some(function (r) { return r.date === day; }))) return say("That date has passed.");
+    if (day < isoDate(T)) return say("That date has passed.");
     if (RUN[f].some(function (r) { return r.date === day; })) return say(goingDay(day) + " is already in the run.");
     if (RUN[f].length >= RUN_MAX) return say("A fixed run can have up to " + RUN_MAX + " dates.");
     var last = RUN[f][RUN[f].length - 1]; // a new date starts at the time the last one had, which is usually right

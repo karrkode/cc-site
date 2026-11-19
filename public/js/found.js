@@ -239,6 +239,7 @@ $("rules-list").addEventListener("click", function (ev) {
 // ---------- "Edit/Approve": the event edit form (CC-56), filled from the found item ----------
 function foundMode(i) { // i: the found item, or null for the ordinary edit form
   var on = !!i, sel = $("ed-category"), blank = sel.querySelector('option[value=""]');
+  srOff(); // dates work as before here; the ordinary edit form's Show Run modes start after this (CC-301, showrun.js)
   $("ed-found").hidden = !on; $("ed-remove").hidden = on; $("ed-picture-controls").hidden = on;
   $("ed-save").textContent = on ? "Approve" : "Save changes";
   $("ed-delay").hidden = !on; $("ed-delay").setAttribute("aria-expanded", "false"); $("ed-delay-choices").hidden = true; $("ed-delay-hint").hidden = true; // CC-257

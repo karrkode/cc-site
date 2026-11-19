@@ -464,7 +464,7 @@ function posterPhotoHTML(e) {
 // element, data-poster="<id>", for CC-144's tile-becomes-poster transition.
 function eventViewHTML(e) {
   var st = eventStatus(e), past = isPast(e), facts = [["When", dateText(e)], ["Price", costText(e)]];
-  var times = e.runDates.length ? runDatesText(e) : SHOW_TYPES[e.type] && !oneNight(e) && !past ? showDaysText(e.sched.weekly, e.sched.weeks) : "";
+  var times = e.exactRun ? runDatesText(e) : SHOW_TYPES[e.type] && !oneNight(e) && !past ? showDaysText(e.sched.weekly, e.sched.weeks) : "";
   if (times) facts.splice(1, 0, ["Shows", times]);
   if (e.address) facts.push(["Address", e.address, e.mapUrl]); // CC-218: neither the address nor the link when there's none
   var photo = posterPhotoHTML(e);

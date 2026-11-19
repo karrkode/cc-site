@@ -10,13 +10,13 @@ function submitterText(who) { // null: came from the old Google Sheet, or the ac
 }
 function creditText(e) { return e.suggestedBy ? " · wants public credit" : e.creditMe ? " · wants credit, but has no name to show" : ""; }
 // CC-102: sent with "Don't know!" (or otherwise without any dates): the crew looks them up
-function datesToLookUp(e) { return !e.b && !e.n && !e.openRun && !(e.runDates && e.runDates.length); }
+function datesToLookUp(e) { return !e.b && !e.n && !e.openRun && !(e.sched && e.sched.dates && e.sched.dates.length); }
 function queueItemHTML(e, actions, note) { // note: an extra line, such as which rule caught it (CC-100)
   return '<div class="queue-item"><div class="alt-text"><p class="kind">' + esc(e.label) + '</p><p class="alt-title">' +
     (e.url ? '<a href="' + esc(safeUrl(e.url)) + '" target="_blank" rel="noopener">' + esc(e.title) + "</a>" : esc(e.title)) + "</p>" +
     '<p class="alt-meta">' + esc(placeText(e)) + " · " + (datesToLookUp(e) ? '<span class="state">Dates to look up</span>' : esc(e.b || e.n ? dateText(e) : "Dates not given")) +
       " · " + esc(costText(e)) + "</p>" +
-    (e.runDates && e.runDates.length ? '<p class="alt-meta">Fixed run: ' + esc(e.runDates.map(function (r) { return goingDay(r.date) + " " + clockText(r.time); }).join(", ")) + "</p>" : "") +
+    (showRunCountText(e) ? '<p class="alt-meta">' + esc(showRunCountText(e)) + "</p>" : "") +
     (e.submitter !== undefined ? '<p class="alt-meta">' + submitterText(e.submitter) + creditText(e) + "</p>" :
       e.suggestedBy ? '<p class="alt-meta">Credited as "Suggested by ' + esc(e.suggestedBy) + '"</p>' : "") +
     (note ? '<p class="alt-meta">' + esc(note) + "</p>" : "") + "</div>" +
@@ -838,11 +838,11 @@ function openEditor(e, opener) {
   $("ed-title").value = e.title; $("ed-category").value = TYPE_ORDER.indexOf(e.type) >= 0 ? e.type : ""; $("ed-status").value = e.status || "approved";
   $("ed-opera").checked = !!e.opera; // CC-125
   $("ed-venue").value = e.venue; $("ed-hood").value = e.hood || "";
-  $("ed-begin").value = e.begin || ""; $("ed-end").value = e.end || ""; $("ed-open-run").checked = !!e.openRun;
+  $("ed-begin").value = e.begin || ""; $("ed-end").value = e.end || "";
   $("ed-cost").value = e.costRaw || ""; $("ed-url").value = e.url || ""; edLinkSync();
   $("ed-publish-at").value = e.publishAt ? localInputValue(e.publishAt) : "";
   fillWeekly(e); // its own show times, for Find an outing (CC-79; hours.js)
-  setRun("ed", e.runDates); $("ed-runkind").hidden = false; // its fixed run, if it has one (CC-96; hours.js)
+  setRun("ed", []); srOpen(e); // CC-301: the Show Run calendar, or Opens and Closes, by the type (showrun.js; e carries its whole Show Run)
   $("ed-dates-note").hidden = !datesToLookUp(e); // CC-102: a reminder to find its dates
   $("ed-withdraw").textContent = e.status === "withdrawn" ? "Restore" : "Withdraw";
   $("ed-error").textContent = ""; $("ed-confirm").hidden = true; setEditorBusy(false);
@@ -867,9 +867,16 @@ function refocusAfterEdit() {
 function setEditorBusy(on) {
   Array.prototype.forEach.call($("edit-form").querySelectorAll("button, input, select"), function (x) { x.disabled = on; });
 }
+// CC-301: lists send no Show Run, so the editor reads the event itself first
+function editEvent(e, opener) {
+  api("/events/" + encodeURIComponent(e.id)).then(readJSON).then(function (res) {
+    if (!res.ok) { $("edit-live").textContent = "Couldn't open " + e.title + " to edit it. " + errorText(res); return; }
+    openEditor(fromApi(res.body), opener);
+  }, function () { $("edit-live").textContent = "Couldn't open " + e.title + " to edit it. Check your connection and try again."; });
+}
 document.addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-edit]"); if (!b || !isAdmin()) return;
-  var e = KNOWN[b.getAttribute("data-edit")]; if (e) openEditor(e, b);
+  var e = KNOWN[b.getAttribute("data-edit")]; if (e) editEvent(e, b);
 });
 $("ed-cancel").addEventListener("click", closeEditor);
 $("ed-url").addEventListener("input", edLinkSync);
@@ -925,29 +932,21 @@ $("edit-form").addEventListener("submit", function (ev) {
   if (EDITING && EDITING.found) { approveFromEditor(); return; } // "Edit/Approve" a found event (found.js)
   var e = EDITING && EDITING.e; if (!e) return;
   var title = $("ed-title").value.trim(), venue = $("ed-venue").value.trim(), hood = $("ed-hood").value.trim();
-  var fixed = isFixedRun("ed"), begin = $("ed-begin").value || null, end = $("ed-end").value || null, url = $("ed-url").value.trim(), cost = $("ed-cost").value.trim();
+  var url = $("ed-url").value.trim(), cost = $("ed-cost").value.trim();
   var at = $("ed-publish-at").value ? new Date($("ed-publish-at").value) : null; // read as local time
   var bad = !title ? ["ed-title", "Give the event's name."] : !$("ed-category").value ? ["ed-category", "Choose a type."] : !venue ? ["ed-venue", "Say where it's happening."] :
-    (!fixed && begin && end && end < begin) ? ["ed-end", "The closing date is before the opening date."] :
     (url && !/^https?:\/\//i.test(url)) ? ["ed-url", "The link should start with https://"] :
     (at && isNaN(at)) ? ["ed-publish-at", "Pick a date and time, or leave it blank."] : null;
   if (bad) { editorFail(null, bad[0], bad[1]); return; }
-  var run = fixed ? readRun("ed") : { run_dates: [] }; // CC-96
-  if (run.error) { editorFail(null, run.id, run.error); return; }
-  var weekly = $("ed-sched").hidden ? null : weeklyChange("ed"); // CC-88: null when the show days are as they were
-  if (weekly && weekly.error) { editorFail(null, weekly.id, weekly.error); return; }
-  var body = {}, openRun = $("ed-open-run").checked;
+  var dates = editorDates(e); // CC-301: the Show Run, or Opens, Closes and the show days (showrun.js); never the legacy run_dates
+  if (dates.error) { editorFail(null, dates.date ? null : dates.id, dates.error); if (dates.date) srFocusDay(dates.date); return; }
+  var body = dates.body;
   if (title !== e.title) body.title = title;
   if ($("ed-category").value !== e.type) body.category = $("ed-category").value;
   if ($("ed-opera").checked !== !!e.opera) body.opera = $("ed-opera").checked;
   if ($("ed-status").value !== e.status) body.status = $("ed-status").value;
-  if (JSON.stringify(run.run_dates) !== JSON.stringify(e.runDates)) body.run_dates = run.run_dates; // the run sets its own dates
-  if (!fixed && begin !== (e.begin || null)) body.begin_date = begin;
-  if (!fixed && end !== (e.end || null)) body.end_date = end;
-  if (!fixed && openRun !== !!e.openRun) body.open_run = openRun;
   if (cost !== (e.costRaw || "")) { body.cost_text = cost; body.min_price = minPrice(cost); }
   if (url !== (e.url || "")) body.url = url;
-  if (weekly) { body.weekly = weekly.weekly; body.weeks = weekly.weeks; }
   var wasAt = e.publishAt ? e.publishAt.getTime() : null, nowAt = at ? at.getTime() : null;
   if (Math.floor((wasAt || 0) / 60000) !== Math.floor((nowAt || 0) / 60000)) body.publish_at = at ? at.toISOString() : null;
   var venueChanged = venue.toLowerCase() !== e.venue.toLowerCase() || hood.toLowerCase() !== (e.hood || "").toLowerCase();
