@@ -103,7 +103,7 @@ async function check(name, fn) { await fn(); n++; console.log("ok  " + name); }
     }
   });
 
-  await check("CC-277: the old #planner link opens My week, and the address becomes #week", async () => {
+  await check("CC-277: the old #planner link opens My Week, and the address becomes #week", async () => {
     const t = tab("/#planner");
     t.g.openFromHash(); await tick();
     assert.strictEqual(view(t), "week"); assert.strictEqual(addr(t), "/#week");
@@ -120,11 +120,11 @@ async function check(name, fn) { await fn(); n++; console.log("ok  " + name); }
     }
   });
 
-  await check("the journal (CC-159): its own address from the you menu and My week, and Back returns to My week", async () => {
+  await check("the journal (CC-159): its own address from the you menu and My Week, and Back returns to My Week", async () => {
     const html = fs.readFileSync(path.join(__dirname, "..", "public", "index.html"), "utf8");
     assert.match(html, /data-me="journal"/, "the you menu (and the phone sheet, the same list) opens it");
-    assert.match(html, /id="week-tojournal" data-go="journal"/, "My week keeps a line to it, so old #week links reach it");
-    assert.doesNotMatch(html.match(/id="view-week"[\s\S]*?<\/section>\s*<!-- Cultural journal/)[0], /went-grid/, "My week no longer holds the journal");
+    assert.match(html, /id="week-tojournal" data-go="journal"/, "My Week keeps a line to it, so old #week links reach it");
+    assert.doesNotMatch(html.match(/id="view-week"[\s\S]*?<\/section>\s*<!-- Culture Journal/)[0], /went-grid/, "My Week no longer holds the journal");
     assert.match(html, /id="view-journal"[\s\S]*id="went-grid"/);
     const t = tab("/");
     t.g.show("week"); t.g.openJournal();

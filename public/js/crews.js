@@ -463,7 +463,7 @@ $("join-no").addEventListener("click", function () { JOIN = null; paintJoin(); $
 // Once you have a plan for an event and you're in a crew, the card offers "Invite your Crew?": a checkbox per
 // crew. Only the crews you tick see it; changing the plan keeps them; clearing it, or "I've been", unshares it.
 var CREWSHARE_SEQ = 0;
-function crewShareToggleHTML(e, label) { // label: what it says before it's shared (My week: "Tell a crew", CC-146)
+function crewShareToggleHTML(e, label) { // label: what it says before it's shared (My Week: "Tell a crew", CC-146)
   var mine = MYPLANS[e.id];
   if (!mine || !CREWS.length) return "";
   CREWSHARE_SEQ += 1;

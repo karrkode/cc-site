@@ -20,7 +20,7 @@ function onAuthChange() {
   $("rv-wrap").hidden = !isAdmin();
   WENT = {}; WENT_LIST = []; WENT_PHOTO = {}; WENT_JOURNAL = {}; JOURNAL_DRAFT = {}; WENT_SHARE = {}; WENT_AT = {}; MYPLANS = {}; MYPLAN_LIST = [];
   OWN_LIST = []; OWN_CATS = []; OWN_STATE = "loading"; OWN_OPEN = null; OWN_DRAFT = {}; OWN_SAID = {}; OWN_CATS_OPEN = false; OWN_NEW_PHOTO = null; // CC-248
-  PLANS_STATE = "loading"; WENT_STATE = "loading"; JOURNAL_OPEN = null; // CC-146: My week waits for them
+  PLANS_STATE = "loading"; WENT_STATE = "loading"; JOURNAL_OPEN = null; // CC-146: My Week waits for them
   if (!AUTH.user) {
     NOTICE_SET = false; $("account-notice").textContent = "";
     if (visible("review") || visible("sourcing") || visible("engagement") || visible("people") || visible("venues") || visible("stats") || visible("sources") || visible("found") || visible("issues")) show("home");
@@ -95,7 +95,7 @@ document.addEventListener("click", function (ev) {
     else { delete WENT[id]; delete WENT_PHOTO[id]; delete WENT_JOURNAL[id]; delete JOURNAL_DRAFT[id]; delete WENT_SHARE[id]; WENT_LIST = WENT_LIST.filter(function (e) { return e.id !== id; }); } // its photo goes too (CC-76)
     if (on && MYPLANS[id]) { // been: the server cleared the plan, so the card moves from plans to gone (CC-63)
       delete MYPLANS[id];
-      $("myplan-live").textContent = "Moved to your Cultural Journal: " + KNOWN[id].title;
+      $("myplan-live").textContent = "Moved to your Culture Journal: " + KNOWN[id].title;
     }
     // Redraw every copy of the card (home, catalog and account can all show it): marking it also takes
     // away the plan button, and un-marking brings it back.
@@ -148,7 +148,7 @@ function redrawCardsNow(id, from, focusOn) {
     if (visible("journal")) renderJournalPage(); // CC-159
     var item = '[data-card="' + id + '"],[data-day-item="' + id + '"],[data-journal="' + id + '"]', inWeek = WEEK_LISTS.indexOf(listId) >= 0;
     var card = listId && $(listId) ? $(listId).querySelector(item) : null;
-    if (!card && inWeek) card = $("week-main").querySelector(item); // moved within My week
+    if (!card && inWeek) card = $("week-main").querySelector(item); // moved within My Week
     // CC-159: "I've been" moves it to the journal, now its own page: focus the line that goes there
     var target = card ? card.querySelector(focusOn || "[data-myplan-toggle]") : inWeek ? (WENT[id] ? $("week-tojournal") : $("myplans-title")) : listId === "went-grid" ? $("journal-title") : null;
     if (target) target.focus();
@@ -211,7 +211,7 @@ document.addEventListener("click", function (ev) {
   if (on) evLeap(t, id);
   saveMyPlan(id, { status: "going", date: day, time: goTimeFor(id, day, c.time) }, box, back);
 });
-// CC-264: the day and show a Going picker holds: a button's own (My week's days, a one-day run's shows), else its day field
+// CC-264: the day and show a Going picker holds: a button's own (My Week's days, a one-day run's shows), else its day field
 // ("2026-11-14", or "2026-11-14T16:00" from a drop-down that lists each show) and, beside a date field, its Show drop-down
 function goChoice(box, t) {
   var input = box.querySelector('input[type="date"], select.go-day'), show = box.querySelector("select.go-time");
@@ -251,7 +251,7 @@ document.addEventListener("keydown", function (ev) { // Escape closes the picker
   if (toggle) { closeMyPlan(toggle); toggle.focus(); }
 });
 
-// ---------- My week: the week ahead (CC-97; Lakefront since CC-146) ----------
+// ---------- My Week: the week ahead (CC-97; Lakefront since CC-146) ----------
 // A week at a time from today, one line per day in listings style (design brief, section 10): the events you're going
 // to that day as event rows (CC-140) with Change plan and Tell a crew, or, on an empty day, one "Find something →"
 // line (CC-131). Previous and Next step a week at a time (never before this week; at most two years out, as far as a
@@ -318,7 +318,7 @@ document.addEventListener("click", function (ev) { // CC-260: "Next: Fri, Nov 20
 // One day: its name, then its plans as rows, or "Nothing yet…" and Find something (the list opens under it).
 function weekDayHTML(day) {
   var now = same(day.d, T), whole = (now ? "Today, " : "") + dayName(day.d), iso = isoDate(day.d), own = day.own || [], n = day.items.length + own.length;
-  return '<section class="wk-day' + (now ? " today" : "") + '" data-row="' + iso + '" aria-label="' + esc(whole) + '">' + // CC-230: on My week the row that arrives is the day
+  return '<section class="wk-day' + (now ? " today" : "") + '" data-row="' + iso + '" aria-label="' + esc(whole) + '">' + // CC-230: on My Week the row that arrives is the day
     '<div class="wk-day-h"><h3 class="wk-day-t">' + esc((now ? "Today, " : "") + listingDay(day.d)) + "</h3>" +
     (n ? "" : '<span class="wk-none">Nothing yet\u2026</span>' + dayFindHTML(iso, dayName(day.d))) + "</div>" +
     (n ? '<ul class="wk-rows">' + day.items.map(function (e) { return weekRowHTML(e, day.d); }).join("") + own.map(ownWeekRowHTML).join("") + "</ul>" :
@@ -593,7 +593,7 @@ document.addEventListener("click", function (ev) {
   setDayKind(iso, "", true); // another day: its list starts with them all, and the last day's choice clears
 });
 
-// ---------- Cultural Journal (CC-98) ----------
+// ---------- Culture Journal (CC-98) ----------
 // The five events you've been to most recently (older entries are kept, just not listed), each with three words
 // (required to save, one a box), a review and "Would you recommend?" (both optional), all private to you, and your photo from it while it's
 // waiting or approved. What you type is kept as a draft until you save, so the page redrawing doesn't lose it.
@@ -756,7 +756,7 @@ document.addEventListener("submit", function (ev) {
 // Events that aren't in the catalog, added by you and private to you: never shared, never shown to crews. Each has a
 // title and a date (past or future), and a venue, a category, your three words, a review, "Would you recommend?" and a
 // photo when you like (no approver: only you see it). They're mixed in by date with the events you've been to, marked
-// "Added by you", and ones still to come sit above under "Coming up" and show in My week on their day. A category is
+// "Added by you", and ones still to come sit above under "Coming up" and show in My Week on their day. A category is
 // one of the catalog's three or one of your own; deleting your own keeps its events, with no category.
 var OWN_LIST = [], OWN_CATS = [], OWN_STATE = "loading", OWN_OPEN = null, OWN_DRAFT = {}, OWN_CATS_OPEN = false, OWN_SAID = {};
 var OWN_TITLE_MAX = 120, OWN_VENUE_MAX = 120, OWN_CAT_MAX = 30, OWN_CATALOG = ["Theater", "Music", "Visual Art"];
@@ -1014,7 +1014,7 @@ document.addEventListener("submit", function (ev) {
     ownReplace(res.body); delete OWN_DRAFT[key];
     if (key === "new") {
       var added = res.body, photo = OWN_NEW_PHOTO; OWN_NEW_PHOTO = null;
-      OWN_OPEN = null; $("edit-live").textContent = "Added " + added.title + " to your journal" + (ownComing(added) ? ". It’s in My week on its day." : ".");
+      OWN_OPEN = null; $("edit-live").textContent = "Added " + added.title + " to your journal" + (ownComing(added) ? ". It’s in My Week on its day." : ".");
       renderJournal(); ownFocus('[data-own-open="' + added.id + '"]'); pulse(document.querySelector('[data-own="' + added.id + '"]') || document.body);
       if (photo) api("/me/own-events/" + encodeURIComponent(added.id) + "/photo", { method: "PUT", raw: photo.blob }).then(readJSON).then(function (r2) {
         URL.revokeObjectURL(photo.url);
@@ -1031,7 +1031,7 @@ document.addEventListener("submit", function (ev) {
     var e2 = document.querySelector('[data-own-form="' + key + '"] [data-own-error]'); if (e2) e2.textContent = msg;
   });
 });
-// My week: an own event still to come shows on its day, a row that opens it in the journal.
+// My Week: an own event still to come shows on its day, a row that opens it in the journal.
 function ownWeekRowHTML(o) {
   var id = esc(o.id);
   return '<li class="wk-row own" data-own-day="' + id + '"><a class="wk-row-a" href="#journal" data-own-go="' + id + '">' + ownTileHTML(o, false) +
@@ -1039,7 +1039,7 @@ function ownWeekRowHTML(o) {
     '<span class="wk-when"><span>Added by you</span></span></a></li>';
 }
 
-// ---------- My week page (CC-105; renamed in CC-118) ----------
+// ---------- My Week page (CC-105; renamed in CC-118) ----------
 // The week ahead, on its own page (#week). Signed out, a word on what it's for and a way to sign in that comes back here.
 var AFTER_SIGN_IN = null; // where to go once signed in: "crews", "week", "journal", "submit", "e/<id>" or "home"
 function openWeek() { renderWeekPage(); show("week"); }
@@ -1049,7 +1049,7 @@ function renderWeekPage() {
   if (u) renderWeek();
 }
 $("week-signin-btn").addEventListener("click", function () { signInFrom("week"); });
-// CC-159: the Cultural Journal, on its own page (#journal), from the you menu, My week's line to it and the front page's
+// CC-159: the Culture Journal, on its own page (#journal), from the you menu, My Week's line to it and the front page's
 // ways in (CC-252). CC-252: a welcome box heads it. Signed out it takes the sign-in panel's place and leads to making an
 // account, then back here; signed in it can be put away, for good in this browser (localStorage, not the account, so a new
 // device shows it again). Putting it away squeezes it shut (dropClose); with reduced motion it goes at once.
@@ -1076,7 +1076,7 @@ $("journal-welcome-x").addEventListener("click", function () {
 });
 
 // ---------- your name in the header, and its menu (CC-105) ----------
-// Signed in, the header shows your name (or "Your account"); it opens a menu: Crews, My week, Cultural journal (CC-159), Invite a friend, Account
+// Signed in, the header shows your name (or "Your account"); it opens a menu: Crews, My Week, Culture Journal (CC-159), Invite a Friend, Account
 // settings, Sign out. Arrow keys, Home and End move through it; Escape or Tab closes it and returns to your name.
 // CC-137: on a phone the menu sits in the masthead's sheet instead, as a plain list under your name. CC-242: your name
 // is a bar there that opens and shuts the list (sheetBar, util.js).

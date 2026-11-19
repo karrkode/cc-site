@@ -1,4 +1,4 @@
-// Checks run in CI before the site deploys (CC-147): Invite a friend and the invite page in Lakefront.
+// Checks run in CI before the site deploys (CC-147): Invite a Friend and the invite page in Lakefront.
 // The dialog's link has a visible label and returns focus to what opened it; the QR screen is paper-white with the
 // code in deep lake ink, made here in the browser; the join and invite pages have one-colour headlines with no
 // eyebrow and no exclamation mark, and their errors say "Check this:".
@@ -17,7 +17,7 @@ const has = (s, part, msg) => assert.ok(s.includes(part), msg || "has " + part);
 const lacks = (s, part, msg) => assert.ok(!s.includes(part), msg || "lacks " + part);
 const between = (s, from, to) => { const i = s.indexOf(from); assert.ok(i >= 0, "finds " + from); return s.slice(i, s.indexOf(to, i)); };
 
-// --- Invite a friend: a square dialog with a labelled link, Copy or Share, Show a QR code, and Done ---
+// --- Invite a Friend: a square dialog with a labelled link, Copy or Share, Show a QR code, and Done ---
 const dlg = between(html, '<dialog class="editor invite-dlg" id="invite-dialog"', "</dialog>");
 has(dlg, '<label for="invite-url">Link to the site</label>', "the link has a visible label");
 ["invite-share", "invite-copy", "invite-qr"].forEach((id) => has(dlg, 'id="' + id + '"'));
@@ -79,4 +79,4 @@ has(account, '"You\'re already in"', "a signed-in visitor sees You're already in
 has(account, 'sessionStorage.setItem("cc_join", JSON.stringify(VISIT_SOURCE || {}))');
 has(account, 'function adminInviteUrl(medium) { return location.origin + "/invite?utm_source=invite&utm_medium=" + medium + "&utm_campaign=friend"; }');
 
-console.log("ok: Invite a friend, the QR screen and the invite page");
+console.log("ok: Invite a Friend, the QR screen and the invite page");

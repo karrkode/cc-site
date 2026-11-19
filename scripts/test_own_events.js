@@ -1,6 +1,6 @@
-// Checks run in CI before the site deploys (CC-248): your own events in the Cultural journal and My week, in
+// Checks run in CI before the site deploys (CC-248): your own events in the Culture Journal and My Week, in
 // public/js/account.js. They mix in by date with the events you've been to, carry "Added by you" and no event link,
-// ones still to come sit under "Coming up" and show in My week on their day; the form's category is one of the
+// ones still to come sit under "Coming up" and show in My Week on their day; the form's category is one of the
 // catalog's three, one of yours, or a new one.
 //
 //     node scripts/test_own_events.js
@@ -96,7 +96,7 @@ set("OWN_OPEN = null; OWN_CATS_OPEN = true;");
 html = g.ownBarHTML();
 has(html, 'id="own-cats"'); has(html, 'value="Spoken word"'); has(html, "1 event"); has(html, 'data-own-cat-delete="4"');
 
-// --- My week: an own event on its day, with the catalog plans ---
+// --- My Week: an own event on its day, with the catalog plans ---
 html = g.weekDayHTML({ d: g.add(g.T, 2), items: [], own: [soon] });
 has(html, 'data-own-day="3"'); has(html, 'data-own-go="3"'); has(html, "Film night"); has(html, "Added by you");
 lacks(html, "Nothing yet…", "a day with your own event isn't empty");
