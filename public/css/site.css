@@ -1395,6 +1395,7 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 .crew-col { min-width: 0; }
 .crew-sub { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--rule);
   font-family: var(--sign); font-weight: 700; font-size: 1.25rem; }
+.crew-sub-t { margin: 6px 0 0; color: var(--muted); font-size: 1rem; }
 .crew-sub-n { color: var(--muted); font-size: 1.0625rem; text-align: right; }
 .crew-none { padding: 14px 0; color: var(--muted); font-size: 1rem; border-bottom: 1px solid var(--line); }
 .crew-members, .crew-plans, .crew-invites { list-style: none; margin: 0; padding: 0; }

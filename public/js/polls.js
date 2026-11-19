@@ -76,7 +76,7 @@ function pollCommitted(p) { // you're already Going on the locked day and time
   return !!mine && mine.status === "going" && p.locked && mine.date === p.locked.date && (mine.time || "") === (p.locked.time || "");
 }
 function pollCardHTML(p, where) {
-  var lv = where === "crew" ? "h5" : "h2"; // under the crew's "Date polls" h4, or the event page's h1
+  var lv = where === "crew" ? "h5" : "h2"; // under the crew's "Let's lock in" h4, or the event page's h1
   var id = esc(p.id), head = where === "crew" ? p.event_title : where === "event" ? p.crew_name : p.event_title + " · " + p.crew_name;
   var err = '<p class="form-error" role="alert" data-poll-err="' + id + '">' + esc(POLL_ERR[p.id] || "") + "</p>";
   var h = '<div class="poll poll-' + esc(p.status) + '" data-poll-card="' + id + '">';
@@ -274,10 +274,12 @@ document.addEventListener("click", function (ev) {
   else if (act === "commit") pollCommit(p, b);
 });
 // ---------- on the crew's page, and under Waiting for you ----------
-function pollsCrewHTML(c) {
-  var mine = pollsOfCrew(c.id); if (!mine.length) return "";
-  return '<section class="crew-col crew-polls" aria-labelledby="crew-dp-' + esc(c.id) + '">' + crewSubHTML("crew-dp-" + c.id, "Date polls", String(mine.length)) +
-    mine.map(function (p) { return pollCardHTML(p, "crew"); }).join("") + "</section>";
+function pollsCrewHTML(c) { // the crew page's third part, always there: "Let's lock in"
+  var mine = pollsOfCrew(c.id);
+  return '<section class="crew-col crew-polls" aria-labelledby="crew-dp-' + esc(c.id) + '">' + crewSubHTML("crew-dp-" + c.id, "Let’s lock in", "") +
+    crewSubText("Use this poll to commit with your crew for the best date possible!") +
+    (mine.length ? mine.map(function (p) { return pollCardHTML(p, "crew"); }).join("") :
+      '<p class="crew-none">No polls yet. Open one from an event page once more than half of your crew has shared interest.</p>') + "</section>";
 }
 function pollsWaitingHTML() {
   return pollsWaiting().map(function (p) {

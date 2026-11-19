@@ -111,8 +111,12 @@ function crewSubHTML(id, label, note) {
 function crewDetailHTML(c) {
   var id = esc(c.id), manage = CREW_MANAGE === String(c.id), room = c.max_members - c.members.length;
   return '<div class="crew-detail" id="crew-d-' + id + '" data-drop><div class="crew-cols">' +
-    '<section class="crew-col" aria-labelledby="crew-p-' + id + '">' + crewSubHTML("crew-p-" + id, "Plans", c.plans.length ? String(c.plans.length) : "") + crewPlansHTML(c) + "</section>" +
-    (typeof pollsCrewHTML === "function" ? pollsCrewHTML(c) : "") + // CC-297
+    // CC-297: three parts: what the crew has committed to, what they are only interested in, and the poll to settle a date
+    '<section class="crew-col" aria-labelledby="crew-p-' + id + '">' + crewSubHTML("crew-p-" + id, "Shared Calendar", "") + crewSubText("This is what your crew has committed to!") +
+    crewPlansHTML(c, c.plans.filter(crewRowGoing), "Nothing committed to yet.") + "</section>" +
+    '<section class="crew-col" aria-labelledby="crew-i-' + id + '">' + crewSubHTML("crew-i-" + id, "What interest’s y’all", "") +
+    crewPlansHTML(c, c.plans.filter(function (r) { return !crewRowGoing(r); }), "No plans shared yet. Use “Invite your Crew?” on an event you’re interested in.") + "</section>" +
+    (typeof pollsCrewHTML === "function" ? pollsCrewHTML(c) : "") +
     '<section class="crew-col" aria-labelledby="crew-m-' + id + '">' +
     crewSubHTML("crew-m-" + id, plural(c.members.length, "member", "members"), room > 0 ? "room for " + room + " more" : "full") +
     '<ul class="crew-members">' + c.members.map(function (m) {
@@ -242,9 +246,11 @@ function beenLineHTML(been) {
 // interested), and the line in words. The count buttons can't sit inside a link, so the row's link is the tile, name,
 // venue and dates, and the lines follow it.
 var CREW_PLAN_DOTS = 4;
-function crewPlansHTML(c) {
-  if (!c.plans.length) return '<p class="crew-none">No plans shared yet. Use “Invite your Crew?” on an event you’re interested in.</p>';
-  return '<ul class="crew-plans">' + c.plans.map(function (row) {
+function crewRowGoing(row) { return row.people.some(function (p) { return p.status === "going"; }); }
+function crewSubText(t) { return '<p class="crew-sub-t">' + esc(t) + "</p>"; }
+function crewPlansHTML(c, rows, none) {
+  if (!rows.length) return '<p class="crew-none">' + esc(none) + "</p>";
+  return '<ul class="crew-plans">' + rows.map(function (row) {
     var e = toEvent(row.event), id = esc(e.id), going = row.people.some(function (p) { return p.status === "going"; });
     return '<li class="crew-plan" data-row="' + esc(c.id) + "-" + id + '"><a class="crew-plan-a" href="#e/' + id + '" data-ev-open="' + id + '">' +
       eventTileHTML(e) +

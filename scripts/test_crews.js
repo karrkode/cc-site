@@ -86,7 +86,12 @@ has(html, '<span class="face tone-' + g.crewTone("Yours Truly") + '" data-you ti
 set("CREW_OPEN = '7';");
 html = g.crewHTML(c);
 has(html, 'aria-expanded="true" aria-controls="crew-d-7"');
-has(html, '<h4 class="crew-sub" id="crew-p-7"><span>Plans</span><span class="crew-sub-n">2</span></h4>');
+// CC-297: three parts: Shared Calendar (someone's going), What interest’s y’all (only interested), Let’s lock in (the polls)
+has(html, '<h4 class="crew-sub" id="crew-p-7"><span>Shared Calendar</span></h4><p class="crew-sub-t">This is what your crew has committed to!</p>');
+has(html, '<h4 class="crew-sub" id="crew-i-7"><span>What interest’s y’all</span></h4>');
+const calendar = html.slice(html.indexOf('id="crew-p-7"'), html.indexOf('id="crew-i-7"'));
+assert.strictEqual((calendar.match(/<li class="crew-plan"/g) || []).length, 1, "the going plan is on the calendar");
+assert.strictEqual((html.slice(html.indexOf('id="crew-i-7"')).match(/<li class="crew-plan"/g) || []).length, 1, "the interested-only one is under interest");
 has(html, '<h4 class="crew-sub" id="crew-m-7"><span>3 members</span><span class="crew-sub-n">room for 22 more</span></h4>');
 has(html, '<span class="who">Yours Truly</span><span class="crew-role">Crew leader · you</span>');
 lacks(html, '<span class="who">Maya Chen</span><span class="crew-role">', "no role, no words");

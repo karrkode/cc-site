@@ -80,7 +80,8 @@ run("POLLS = " + JSON.stringify([poll({ you_answered: false }), poll({ id: 8, yo
 const waiting = run("pollsWaitingHTML()");
 assert.strictEqual((waiting.match(/data-poll-waiting/g) || []).length, 1, "one poll waits for you");
 assert(waiting.includes("Hamlet") && waiting.includes('href="#e/9"'));
-assert(run("pollsCrewHTML({ id: 4 })").includes("Date polls") && run("pollsCrewHTML({ id: 99 })") === "", "a crew's polls, and nothing for another");
+assert(run("pollsCrewHTML({ id: 4 })").includes("Let’s lock in") && run("pollsCrewHTML({ id: 4 })").includes("data-poll-card"), "a crew's polls");
+assert(run("pollsCrewHTML({ id: 99 })").includes("No polls yet") && !run("pollsCrewHTML({ id: 99 })").includes("data-poll-card"), "nothing of another crew's");
 run("AUTH.user = null");
 assert.strictEqual(run("pollsWaitingHTML()"), "", "nothing signed out");
 run("AUTH.user = { id: 'u-ana' }");
