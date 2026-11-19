@@ -110,10 +110,14 @@ function crewSubHTML(id, label, note) {
 // then Manage crew. Roles are words, not pills.
 function crewDetailHTML(c) {
   var id = esc(c.id), manage = CREW_MANAGE === String(c.id), room = c.max_members - c.members.length;
-  var going = c.plans.filter(crewRowGoing), only = c.plans.filter(function (r) { return !crewRowGoing(r); });
+  var going = c.plans.filter(crewRowGoing), onCalendar = going.map(function (r) { return String(r.event.id); });
+  // a locked poll sits on the calendar too, unless the event is already there as a plan and you have nothing left to commit to
+  var locked = (typeof pollsLockedHTML === "function" ? pollsLockedHTML(c) : []).filter(function (p) { return onCalendar.indexOf(String(p.event_id)) < 0 || (p.locked && p.locked.yours && !pollCommitted(p)); }), only = c.plans.filter(function (r) { return !crewRowGoing(r); });
   return '<div class="crew-detail" id="crew-d-' + id + '" data-drop><div class="crew-cols">' +
     // CC-297: four dropdowns: what the crew has committed to, what they are only interested in, the poll to settle a date, and who's in
-    crewDD(c, "cal", "Shared Calendar", going.length ? String(going.length) : "", "This is what your crew has committed to!", crewPlansHTML(c, going, "Nothing committed to yet.")) +
+    crewDD(c, "cal", "Shared Calendar", going.length + locked.length ? String(going.length + locked.length) : "", "Events that either other crew members or the crew as a whole have committed to!",
+      (going.length || !locked.length ? crewPlansHTML(c, going, "Nothing committed to yet.") : "") + locked.map(function (p) { return pollCardHTML(p, "crew"); }).join("")) + // a poll the leader locked in
+
     crewDD(c, "int", "What interest’s y’all", only.length ? String(only.length) : "", "", crewPlansHTML(c, only, "No plans shared yet. Use “Invite your Crew?” on an event you’re interested in.")) +
     (typeof pollsCrewHTML === "function" ? pollsCrewHTML(c) : "") +
     crewDD(c, "mem", plural(c.members.length, "member", "members"), room > 0 ? "room for " + room + " more" : "full", "",

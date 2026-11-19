@@ -4,7 +4,7 @@
 // one global scope. Data: GET /crews/polls (every poll of your crews, open or closed in the last two weeks).
 "use strict";
 var POLL_BUSY = {}, POLL_ERR = {}; // POLL_BUSY: a poll whose answer is being saved; POLL_ERR: the last error shown on a poll's card
-var POLLS = [], POLL_OPEN = {}, POLL_ASK = null; // POLL_OPEN: "event-crew" keys whose start panel is open; POLL_ASK: a poll being cancelled
+var POLLS = [], POLL_ASK = null, POLL_AUTO = {}; // POLL_ASK: a poll being cancelled; POLL_AUTO: "crew-event" pairs the site has already tried to open a poll for this visit
 var POLL_INT = {}; // by event id: {at, list}: per crew, how many members have shared interest in it (a poll can start once more than half have)
 var POLL_SHOW = {}, POLL_EDIT = {}, POLL_DRAFT = {}; // by poll id: its card is expanded; you are (re)choosing times; the option ids ticked but not yet submitted
 function pollsFor(test) { return AUTH.user ? POLLS.filter(test) : []; }
@@ -17,6 +17,7 @@ function loadPolls() {
   if (!AUTH.user) { POLLS = []; return Promise.resolve(); }
   return api("/crews/polls").then(readJSON).then(function (res) {
     if (res.ok) { POLLS = res.body; pollsRepaint(); }
+    return pollAutoCheck();
   }, function () {});
 }
 function pollsRepaint() {
@@ -83,11 +84,11 @@ function pollCardHTML(p, where) {
   if (p.status === "open") {
     var shown = !!POLL_SHOW[p.id], body = "poll-body-" + esc(where) + "-" + id;
     var what = where === "event" ? " this event with “" + esc(p.crew_name) + "”" : where === "crew" ? " “" + esc(p.event_title) + "”" : " “" + esc(p.event_title) + "” with “" + esc(p.crew_name) + "”";
-    h += '<button class="btn ghost poll-toggle" type="button" data-poll-act="toggle" data-poll="' + id + '" aria-expanded="' + shown + '" aria-controls="' + body + '">' + (shown ? "Close poll for" : "Open poll for") + what + "</button>";
+    h += '<button class="btn ghost poll-toggle' + (!shown && !p.you_answered ? " poll-new" : "") + '" type="button" data-poll-act="toggle" data-poll="' + id + '" aria-expanded="' + shown + '" aria-controls="' + body + '">' + (shown ? "Close poll for" : p.you_answered ? "Open poll for" : "New poll for") + what + "</button>";
     h += '<div class="poll-body" id="' + body + '"' + (shown ? "" : " hidden") + ">";
     if (shown) {
       h += "<" + lv + ' class="poll-h sr-only" id="poll-h-' + where + "-" + id + '">Date poll: ' + esc(head) + "</" + lv + ">" +
-        '<p class="poll-count">' + p.answered_count + " of " + p.members_total + " have answered · started by " + esc(p.started_by) + "</p>";
+        '<p class="poll-count">' + p.answered_count + " of " + p.members_total + " have answered</p>";
       if (pollEditing(p)) h += '<p class="hint">Tick the times that work for you, then Submit.</p>' + pollGridHTML(p, where);
       else h += '<div class="poll-result">' + pollBestHTML(p) + pollManageHTML(p, where) +
         '<div class="row"><button class="btn ghost" type="button" data-poll-act="modify" data-poll="' + id + '">Modify</button>' + (where === "crew" ? "" : '<a class="btn" href="#crews">Go to my crews</a>') + "</div></div>";
@@ -120,22 +121,15 @@ function pollInterest(id) { // the cached count for an event, fetched again in t
   }
   return POLL_INT[id].list;
 }
-function pollInterestStale() { Object.keys(POLL_INT).forEach(function (k) { POLL_INT[k].at = 0; }); } // someone shared or unshared: count again at the next draw
-function pollsEventHTML(e) { // the crews' polls for this event, and a button for each crew that has none open yet
+function pollInterestStale() { Object.keys(POLL_INT).forEach(function (k) { POLL_INT[k].at = 0; }); pollAutoCheck(); } // someone shared or unshared: count again at the next draw
+function pollsEventHTML(e) { // the crews' polls for this event; a poll opens by itself once a crew has a majority, so before that only where it stands
   if (!AUTH.user || !CREWS.length) return "";
-  var mine = pollsOfEvent(e.id), open = mine.filter(function (p) { return p.status === "open"; });
-  var h = mine.map(function (p) { return pollCardHTML(p, "event"); }).join("");
+  var mine = pollsOfEvent(e.id), h = mine.map(function (p) { return pollCardHTML(p, "event"); }).join("");
   var canStart = !isPast(e) && !isExhibit(e) && goDays(e, 1).length;
   var interest = canStart ? pollInterest(e.id) : null;
-  if (canStart && interest) CREWS.filter(function (c) { return !open.some(function (p) { return p.crew_id === c.id; }); }).forEach(function (c) {
-    var inf = interest.filter(function (x) { return x.crew_id === c.id; })[0]; if (!inf) return;
-    if (!inf.ready) { // not enough interest yet: say where it stands, and no button
-      h += '<p class="hint poll-wait">' + esc(c.name) + ": " + inf.shared + " of " + inf.members_total + " have shared interest in this event. A poll opens once more than half have.</p>";
-      return;
-    }
-    var key = esc(e.id + "-" + c.id), on = !!POLL_OPEN[e.id + "-" + c.id];
-    h += '<div class="poll-start"><button class="btn ghost poll-toggle" type="button" data-poll-act="start-open" data-key="' + key + '" aria-expanded="' + on + '" aria-controls="poll-form-' + key + '">Open poll for this event with “' + esc(c.name) + "”</button>" +
-      (on ? pollFormHTML(e, c) : "") + "</div>";
+  if (interest) CREWS.filter(function (c) { return !mine.some(function (p) { return p.crew_id === c.id; }); }).forEach(function (c) {
+    var inf = interest.filter(function (x) { return x.crew_id === c.id; })[0];
+    if (inf && !inf.ready) h += '<p class="hint poll-wait">' + esc(c.name) + ": " + inf.shared + " of " + inf.members_total + " have shared interest in this event. A poll opens by itself once more than half have.</p>";
   });
   return h ? '<section class="polls" aria-label="Date polls">' + h + "</section>" : "";
 }
@@ -155,44 +149,27 @@ function pollOptions(e, from, to) { // [{date, time}] for every show in the wind
   }
   return out;
 }
-function pollFormHTML(e, c) {
-  var w = pollWindow(e), id = esc(e.id + "-" + c.id); if (!w) return "";
-  return '<form class="poll-form panel" id="poll-form-' + id + '" data-poll-form="' + id + '" data-event="' + esc(e.id) + '" novalidate>' +
-    '<p>Crew: <strong>' + esc(c.name) + '</strong><input type="hidden" id="poll-crew-' + id + '" value="' + esc(c.id) + '"></p>' +
-    '<div class="row"><label>From<input type="date" id="poll-from-' + id + '" value="' + w[0] + '" min="' + isoDate(T) + '"></label>' +
-    '<label>To<input type="date" id="poll-to-' + id + '" value="' + w[1] + '"></label></div>' +
-    '<p class="hint" id="poll-n-' + id + '" role="status"></p><ul class="poll-preview" id="poll-list-' + id + '" aria-label="The showtimes in this poll"></ul>' +
-    '<div class="row"><button class="btn" type="submit">Start the poll</button><button class="btn ghost" type="button" data-poll-act="start-close" data-key="' + id + '">Cancel</button></div>' +
-    '<p class="form-error" role="alert" id="poll-ferr-' + id + '"></p></form>';
+// A poll opens by itself: the API lists the events a crew has a majority for and no poll yet, and the first member's page that sees one
+// starts it (the browser knows an event's showtimes). The server allows one poll for each crew and event, so a second page just gets a 409.
+function pollAutoStart(r) {
+  var key = r.crew_id + "-" + r.event_id; POLL_AUTO[key] = true;
+  return api("/events/" + encodeURIComponent(r.event_id)).then(readJSON).then(function (res) {
+    if (!res.ok) return false;
+    var e = toEvent(res.body), w = (!isPast(e) && !isExhibit(e)) ? pollWindow(e) : null; if (!w) return false;
+    var opts = pollOptions(e, w[0], w[1]).slice(0, 40); if (!opts.length) return false;
+    return api("/crews/" + encodeURIComponent(r.crew_id) + "/polls", { method: "POST", body: { event_id: r.event_id, window_from: w[0], window_to: opts[opts.length - 1].date, options: opts } })
+      .then(readJSON).then(function (made) { if (made.ok) pollPut(made.body); return made.ok; });
+  }).catch(function () { return false; });
 }
-function pollFormCount(form) {
-  var id = form.getAttribute("data-poll-form"), eid = form.getAttribute("data-event"), e = KNOWN[eid] || EV.e; if (!e) return [];
-  var opts = pollOptions(e, $("poll-from-" + id).value, $("poll-to-" + id).value), n = $("poll-n-" + id);
-  var days = {}; opts.forEach(function (o) { (days[o.date] = days[o.date] || []).push(o.time ? clockText(o.time) : "Any time"); });
-  $("poll-list-" + id).innerHTML = Object.keys(days).map(function (k) { return "<li><strong>" + esc(goingDay(k)) + "</strong>: " + esc(days[k].join(", ")) + "</li>"; }).join("");
-  n.textContent = !opts.length ? "No showtimes in that window." : opts.length > 40 ? "That’s " + opts.length + " showtimes: choose a shorter window (40 at most)." :
-    plural(opts.length, "showtime", "showtimes") + " on " + plural(Object.keys(days).length, "day", "days") + " for your crew to choose from.";
-  return opts;
+function pollAutoCheck() {
+  if (!AUTH.user) return Promise.resolve();
+  return api("/crews/poll-ready").then(readJSON).then(function (res) {
+    if (!res.ok) return;
+    return Promise.all(res.body.filter(function (r) { return !POLL_AUTO[r.crew_id + "-" + r.event_id]; }).slice(0, 5).map(pollAutoStart)).then(function (made) {
+      if (made.some(Boolean)) pollsRepaint();
+    });
+  }, function () {});
 }
-document.addEventListener("input", function (ev) {
-  var f = ev.target.closest && ev.target.closest("[data-poll-form]"); if (f && ev.target.type === "date") pollFormCount(f);
-});
-document.addEventListener("submit", function (ev) {
-  var f = ev.target.closest && ev.target.closest("[data-poll-form]"); if (!f) return;
-  ev.preventDefault();
-  var id = f.getAttribute("data-poll-form"), eid = f.getAttribute("data-event"), opts = pollFormCount(f), err = $("poll-ferr-" + id), btn = f.querySelector('[type="submit"]');
-  err.textContent = "";
-  if (!opts.length || opts.length > 40) { err.textContent = checkThis($("poll-n-" + id).textContent); return; }
-  var crewId = $("poll-crew-" + id).value; btn.disabled = true;
-  api("/crews/" + encodeURIComponent(crewId) + "/polls", { method: "POST", body: { event_id: +eid, window_from: $("poll-from-" + id).value, window_to: $("poll-to-" + id).value, options: opts } })
-    .then(readJSON).then(function (res) {
-      if (!res.ok) { btn.disabled = false; err.textContent = checkThis(errorText(res)); return; }
-      pollPut(res.body); POLL_SHOW[res.body.id] = true; delete POLL_OPEN[id]; renderEventView();
-      $("myplan-live").textContent = "Poll started for " + res.body.crew_name + ".";
-      var h = pollFocus('[data-poll-card="' + res.body.id + '"] .poll-h'); if (h) h.setAttribute("tabindex", "-1");
-    }, function () { btn.disabled = false; err.textContent = checkThis(errorText(null)); });
-});
-
 // ---------- actions ----------
 function pollRedraw(p, focusSel) {
   pollPut(p); pollsRepaint(); paintPending();
@@ -242,15 +219,7 @@ function pollCommit(p, b) {
 }
 document.addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-poll-act]"); if (!b || !AUTH.user) return;
-  var act = b.getAttribute("data-poll-act"), p = pollById(b.getAttribute("data-poll")), eid = b.getAttribute("data-key");
-  if (act === "start-open" || act === "start-close") {
-    if (act === "start-open") POLL_OPEN[eid] = !POLL_OPEN[eid]; else delete POLL_OPEN[eid];
-    renderEventView();
-    var fm = document.querySelector('[data-poll-form="' + eid + '"]'); if (fm) pollFormCount(fm); // say how many showtimes at once
-    var f = act === "start-open" && POLL_OPEN[eid] ? $("poll-from-" + eid) : document.querySelector('[data-key="' + eid + '"][data-poll-act="start-open"]');
-    if (f) f.focus();
-    return;
-  }
+  var act = b.getAttribute("data-poll-act"), p = pollById(b.getAttribute("data-poll"));
   if (!p) return;
   if (act === "toggle") {
     POLL_SHOW[p.id] = !POLL_SHOW[p.id]; pollsRepaint();
@@ -274,11 +243,12 @@ document.addEventListener("click", function (ev) {
   else if (act === "commit") pollCommit(p, b);
 });
 // ---------- on the crew's page, and under Waiting for you ----------
-function pollsCrewHTML(c) { // the crew page's dropdown for its polls
-  var mine = pollsOfCrew(c.id);
+function pollsCrewHTML(c) { // the crew page's dropdown for its polls that are still open
+  var mine = pollsOfCrew(c.id).filter(function (p) { return p.status === "open"; });
   return crewDD(c, "poll", "The Crew Commits!", mine.length ? String(mine.length) : "", "Polls only appear once a majority of the crew has shown interest.",
-    mine.length ? mine.map(function (p) { return pollCardHTML(p, "crew"); }).join("") : '<p class="crew-none">No polls yet.</p>');
+    mine.length ? mine.map(function (p) { return pollCardHTML(p, "crew"); }).join("") : '<p class="crew-none">No open polls.</p>');
 }
+function pollsLockedHTML(c) { return pollsOfCrew(c.id).filter(function (p) { return p.status === "locked"; }); } // locked in: they sit on the Shared Calendar
 function pollsWaitingHTML() {
   return pollsWaiting().map(function (p) {
     return '<div class="pending" data-poll-waiting="' + esc(p.id) + '"><p><span><strong>' + esc(p.started_by) + "</strong> is finding a date for <strong>" + esc(p.event_title) +

@@ -88,7 +88,7 @@ html = g.crewHTML(c);
 has(html, 'aria-expanded="true" aria-controls="crew-d-7"');
 // CC-297: four dropdowns: Shared Calendar (someone's going), What interest’s y’all (only interested), the polls, and the members
 has(html, '<details class="crew-dd" data-dd="7:cal"><summary class="crew-sub"><span>Shared Calendar</span><span class="crew-sub-n">1</span>');
-has(html, '<p class="crew-sub-t">This is what your crew has committed to!</p>');
+has(html, '<p class="crew-sub-t">Events that either other crew members or the crew as a whole have committed to!</p>');
 has(html, '<details class="crew-dd" data-dd="7:int"><summary class="crew-sub"><span>What interest’s y’all</span><span class="crew-sub-n">1</span>');
 const calendar = html.slice(html.indexOf('data-dd="7:cal"'), html.indexOf('data-dd="7:int"'));
 assert.strictEqual((calendar.match(/<li class="crew-plan"/g) || []).length, 1, "the going plan is on the calendar");

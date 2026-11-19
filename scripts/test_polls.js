@@ -39,6 +39,12 @@ run("POLL_SHOW = {}; POLL_EDIT = {}; POLL_DRAFT = {}");
 let html = run("pollCardHTML(" + JSON.stringify(poll()) + ", 'event')");
 assert(html.includes("Open poll for this event with “Thursday Theater”") && html.includes('aria-expanded="false"'), "the button names the crew");
 assert(!html.includes("data-poll-act=\"tick\"") && !html.includes("poll-best"), "nothing shown until it is opened");
+// A poll nobody has answered yet is new, and shimmers; once you've answered it's just open
+html = run("pollCardHTML(" + JSON.stringify(poll({ you_answered: false })) + ", 'event')");
+assert(html.includes("New poll for this event with “Thursday Theater”") && html.includes("poll-new"), "a new poll");
+assert(run("pollCardHTML(" + JSON.stringify(poll({ you_answered: false })) + ", 'crew')").includes("New poll for “Hamlet”"));
+assert(!run("pollCardHTML(" + JSON.stringify(poll()) + ", 'event')").includes("poll-new"), "no shimmer once you've answered");
+assert(!run("pollCardHTML(" + JSON.stringify(poll()) + ", 'event')").includes("started by"), "no starter: polls open by themselves");
 // Opened and not yet answered: only the showtimes (no best time, no counts), with Submit and None work
 const fresh = poll({ you_answered: false, options: poll().options.map((o) => Object.assign({}, o, { yours: false })) });
 run("POLL_SHOW[7] = true");
@@ -85,8 +91,9 @@ run("CREW_DD = {}; POLLS = " + JSON.stringify([poll({ you_answered: false }), po
 const waiting = run("pollsWaitingHTML()");
 assert.strictEqual((waiting.match(/data-poll-waiting/g) || []).length, 1, "one poll waits for you");
 assert(waiting.includes("Hamlet") && waiting.includes('href="#e/9"'));
-assert(run("pollsCrewHTML({ id: 4 })").includes("The Crew Commits!") && run("pollsCrewHTML({ id: 4 })").includes("Polls only appear once a majority") && run("pollsCrewHTML({ id: 4 })").includes("data-poll-card"), "a crew's polls");
-assert(run("pollsCrewHTML({ id: 99 })").includes("No polls yet") && !run("pollsCrewHTML({ id: 99 })").includes("data-poll-card"), "nothing of another crew's");
+assert(run("pollsCrewHTML({ id: 4 })").includes("The Crew Commits!") && run("pollsCrewHTML({ id: 4 })").includes("Polls only appear once a majority") && run("pollsCrewHTML({ id: 4 })").includes("data-poll-card") && !run("pollsCrewHTML({ id: 4 })").includes("Locked in"), "a crew's open polls");
+assert.strictEqual(run("pollsLockedHTML({ id: 4 }).length"), 1, "the locked one goes on the Shared Calendar");
+assert(run("pollsCrewHTML({ id: 99 })").includes("No open polls") && !run("pollsCrewHTML({ id: 99 })").includes("data-poll-card"), "nothing of another crew's");
 run("AUTH.user = null");
 assert.strictEqual(run("pollsWaitingHTML()"), "", "nothing signed out");
 run("AUTH.user = { id: 'u-ana' }");
@@ -102,11 +109,10 @@ assert.deepStrictEqual(JSON.parse(JSON.stringify(run("pollWindow(__ev)"))), [d(2
 const ids = (h) => (h.match(/ id="[^"]+"/g) || []);
 const both = ids(run("pollCardHTML(" + JSON.stringify(poll()) + ", 'event')")).concat(ids(run("pollCardHTML(" + JSON.stringify(poll()) + ", 'crew')")));
 assert.strictEqual(new Set(both).size, both.length, "unique ids across views");
-// A crew's poll can be started once more than half of it has shared interest; before that, only where it stands
-run("POLLS = []; CREWS = [{ id: 4, name: 'Thursday Theater' }]; POLL_OPEN = {}; POLL_INT = { 9: { at: Date.now(), list: [{ crew_id: 4, shared: 2, members_total: 5, ready: false }] } }");
+// A poll opens by itself once a majority has shared interest; before that the event page only says where it stands
+run("POLLS = []; CREWS = [{ id: 4, name: 'Thursday Theater' }]; POLL_INT = { 9: { at: Date.now(), list: [{ crew_id: 4, shared: 2, members_total: 5, ready: false }] } }");
 html = run("pollsEventHTML(__ev)");
-assert(html.includes("2 of 5 have shared interest") && html.includes("more than half") && !html.includes("start-open"), "no button below a majority");
+assert(html.includes("2 of 5 have shared interest") && html.includes("opens by itself") && !html.includes("start-open"), "no start button, even below a majority");
 run("POLL_INT[9].list[0].ready = true; POLL_INT[9].list[0].shared = 3");
-html = run("pollsEventHTML(__ev)");
-assert(html.includes('data-poll-act="start-open"') && html.includes("Open poll for this event with “Thursday Theater”") && !html.includes("more than half"), "the button at a majority");
+assert(!run("pollsEventHTML(__ev)").includes("have shared interest"), "nothing to say at a majority: the poll is opened for you");
 console.log("ok: test_polls");
