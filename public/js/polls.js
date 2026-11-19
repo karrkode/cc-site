@@ -82,19 +82,19 @@ function pollCardHTML(p, where) {
   var h = '<div class="poll poll-' + esc(p.status) + '" data-poll-card="' + id + '">';
   if (p.status === "open") {
     var shown = !!POLL_SHOW[p.id], body = "poll-body-" + esc(where) + "-" + id;
-    h += '<button class="btn ghost poll-toggle" type="button" data-poll-act="toggle" data-poll="' + id + '" aria-expanded="' + shown + '" aria-controls="' + body + '">' +
-      (where === "event" ? "Open poll for this event with “" + esc(p.crew_name) + "”" : "Open poll for “" + esc(p.event_title) + "”" + (where === "crew" ? "" : " with “" + esc(p.crew_name) + "”")) + "</button>";
+    var what = where === "event" ? " this event with “" + esc(p.crew_name) + "”" : where === "crew" ? " “" + esc(p.event_title) + "”" : " “" + esc(p.event_title) + "” with “" + esc(p.crew_name) + "”";
+    h += '<button class="btn ghost poll-toggle" type="button" data-poll-act="toggle" data-poll="' + id + '" aria-expanded="' + shown + '" aria-controls="' + body + '">' + (shown ? "Close poll for" : "Open poll for") + what + "</button>";
     h += '<div class="poll-body" id="' + body + '"' + (shown ? "" : " hidden") + ">";
     if (shown) {
-      h += "<" + lv + ' class="poll-h" id="poll-h-' + where + "-" + id + '">Date poll: ' + esc(head) + "</" + lv + ">" +
+      h += "<" + lv + ' class="poll-h sr-only" id="poll-h-' + where + "-" + id + '">Date poll: ' + esc(head) + "</" + lv + ">" +
         '<p class="poll-count">' + p.answered_count + " of " + p.members_total + " have answered · started by " + esc(p.started_by) + "</p>";
       if (pollEditing(p)) h += '<p class="hint">Tick the times that work for you, then Submit.</p>' + pollGridHTML(p, where);
       else h += '<div class="poll-result">' + pollBestHTML(p) + pollManageHTML(p, where) +
-        '<div class="row"><button class="btn ghost" type="button" data-poll-act="modify" data-poll="' + id + '">Modify</button><a class="btn" href="#crews">Go to my crews</a></div></div>';
+        '<div class="row"><button class="btn ghost" type="button" data-poll-act="modify" data-poll="' + id + '">Modify</button>' + (where === "crew" ? "" : '<a class="btn" href="#crews">Go to my crews</a>') + "</div></div>";
     }
     h += "</div>";
   } else {
-    h += "<" + lv + ' class="poll-h" id="poll-h-' + where + "-" + id + '">Date poll: ' + esc(head) + "</" + lv + ">";
+    h += "<" + lv + ' class="poll-h" id="poll-h-' + where + "-" + id + '">' + esc(head) + "</" + lv + ">"; // locked, cancelled or ended: the name says which poll it was
     if (p.status === "locked" && p.locked) {
       h += '<p class="poll-lockedline"><strong>Locked in: ' + esc(pollWhen(p.locked)) + "</strong> · " + esc(pollNames(p.locked.names)) + " can make it.</p>";
       if (p.locked.yours) {
@@ -187,7 +187,7 @@ document.addEventListener("submit", function (ev) {
   api("/crews/" + encodeURIComponent(crewId) + "/polls", { method: "POST", body: { event_id: +eid, window_from: $("poll-from-" + id).value, window_to: $("poll-to-" + id).value, options: opts } })
     .then(readJSON).then(function (res) {
       if (!res.ok) { btn.disabled = false; err.textContent = checkThis(errorText(res)); return; }
-      pollPut(res.body); delete POLL_OPEN[id]; renderEventView();
+      pollPut(res.body); POLL_SHOW[res.body.id] = true; delete POLL_OPEN[id]; renderEventView();
       $("myplan-live").textContent = "Poll started for " + res.body.crew_name + ".";
       var h = pollFocus('[data-poll-card="' + res.body.id + '"] .poll-h'); if (h) h.setAttribute("tabindex", "-1");
     }, function () { btn.disabled = false; err.textContent = checkThis(errorText(null)); });
@@ -274,12 +274,10 @@ document.addEventListener("click", function (ev) {
   else if (act === "commit") pollCommit(p, b);
 });
 // ---------- on the crew's page, and under Waiting for you ----------
-function pollsCrewHTML(c) { // the crew page's third part, always there: "Let's lock in"
+function pollsCrewHTML(c) { // the crew page's dropdown for its polls
   var mine = pollsOfCrew(c.id);
-  return '<section class="crew-col crew-polls" aria-labelledby="crew-dp-' + esc(c.id) + '">' + crewSubHTML("crew-dp-" + c.id, "Let’s lock in", "") +
-    crewSubText("Use this poll to commit with your crew for the best date possible!") +
-    (mine.length ? mine.map(function (p) { return pollCardHTML(p, "crew"); }).join("") :
-      '<p class="crew-none">No polls yet. Open one from an event page once more than half of your crew has shared interest.</p>') + "</section>";
+  return crewDD(c, "poll", "The Crew Commits!", mine.length ? String(mine.length) : "", "Polls only appear once a majority of the crew has shown interest.",
+    mine.length ? mine.map(function (p) { return pollCardHTML(p, "crew"); }).join("") : '<p class="crew-none">No polls yet.</p>');
 }
 function pollsWaitingHTML() {
   return pollsWaiting().map(function (p) {

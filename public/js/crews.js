@@ -110,19 +110,17 @@ function crewSubHTML(id, label, note) {
 // then Manage crew. Roles are words, not pills.
 function crewDetailHTML(c) {
   var id = esc(c.id), manage = CREW_MANAGE === String(c.id), room = c.max_members - c.members.length;
+  var going = c.plans.filter(crewRowGoing), only = c.plans.filter(function (r) { return !crewRowGoing(r); });
   return '<div class="crew-detail" id="crew-d-' + id + '" data-drop><div class="crew-cols">' +
-    // CC-297: three parts: what the crew has committed to, what they are only interested in, and the poll to settle a date
-    '<section class="crew-col" aria-labelledby="crew-p-' + id + '">' + crewSubHTML("crew-p-" + id, "Shared Calendar", "") + crewSubText("This is what your crew has committed to!") +
-    crewPlansHTML(c, c.plans.filter(crewRowGoing), "Nothing committed to yet.") + "</section>" +
-    '<section class="crew-col" aria-labelledby="crew-i-' + id + '">' + crewSubHTML("crew-i-" + id, "What interest’s y’all", "") +
-    crewPlansHTML(c, c.plans.filter(function (r) { return !crewRowGoing(r); }), "No plans shared yet. Use “Invite your Crew?” on an event you’re interested in.") + "</section>" +
+    // CC-297: four dropdowns: what the crew has committed to, what they are only interested in, the poll to settle a date, and who's in
+    crewDD(c, "cal", "Shared Calendar", going.length ? String(going.length) : "", "This is what your crew has committed to!", crewPlansHTML(c, going, "Nothing committed to yet.")) +
+    crewDD(c, "int", "What interest’s y’all", only.length ? String(only.length) : "", "", crewPlansHTML(c, only, "No plans shared yet. Use “Invite your Crew?” on an event you’re interested in.")) +
     (typeof pollsCrewHTML === "function" ? pollsCrewHTML(c) : "") +
-    '<section class="crew-col" aria-labelledby="crew-m-' + id + '">' +
-    crewSubHTML("crew-m-" + id, plural(c.members.length, "member", "members"), room > 0 ? "room for " + room + " more" : "full") +
-    '<ul class="crew-members">' + c.members.map(function (m) {
-      var role = [m.owner ? "Crew leader" : "", m.you ? "you" : ""].filter(Boolean).join(" · ");
-      return "<li>" + crewDotHTML(m.name, m.you, "face-l") + '<span class="who">' + esc(m.name) + "</span>" + (role ? '<span class="crew-role">' + role + "</span>" : "") + "</li>";
-    }).join("") + "</ul></section></div>" +
+    crewDD(c, "mem", plural(c.members.length, "member", "members"), room > 0 ? "room for " + room + " more" : "full", "",
+      '<ul class="crew-members">' + c.members.map(function (m) {
+        var role = [m.owner ? "Crew leader" : "", m.you ? "you" : ""].filter(Boolean).join(" · ");
+        return "<li>" + crewDotHTML(m.name, m.you, "face-l") + '<span class="who">' + esc(m.name) + "</span>" + (role ? '<span class="crew-role">' + role + "</span>" : "") + "</li>";
+      }).join("") + "</ul>") + "</div>" +
     '<div class="crew-manage-wrap"><button class="crew-manage-btn" type="button" data-crew-act="manage" data-crew="' + id + '" aria-expanded="' + manage +
     '" aria-controls="crew-mg-' + id + '">Manage crew' + CREW_CARET + "</button>" +
     (manage ? crewManageHTML(c) : '<div id="crew-mg-' + id + '" data-drop hidden></div>') + "</div></div>";
@@ -247,6 +245,13 @@ function beenLineHTML(been) {
 // venue and dates, and the lines follow it.
 var CREW_PLAN_DOTS = 4;
 function crewRowGoing(row) { return row.people.some(function (p) { return p.status === "going"; }); }
+var CREW_DD = {}; // "crewId:part" -> open? (a dropdown stays as you left it when the page redraws)
+function crewDD(c, key, label, note, text, body) { // a dropdown part of an open crew: its name and a count on the rule, then what's inside
+  var k = c.id + ":" + key;
+  return '<details class="crew-dd" data-dd="' + esc(k) + '"' + (CREW_DD[k] ? " open" : "") + '><summary class="crew-sub"><span>' + esc(label) + "</span>" +
+    (note ? '<span class="crew-sub-n">' + esc(note) + "</span>" : "") + CREW_CARET + "</summary>" + (text ? crewSubText(text) : "") + body + "</details>";
+}
+document.addEventListener("toggle", function (ev) { var d = ev.target; if (d.getAttribute && d.getAttribute("data-dd")) CREW_DD[d.getAttribute("data-dd")] = d.open; }, true);
 function crewSubText(t) { return '<p class="crew-sub-t">' + esc(t) + "</p>"; }
 function crewPlansHTML(c, rows, none) {
   if (!rows.length) return '<p class="crew-none">' + esc(none) + "</p>";

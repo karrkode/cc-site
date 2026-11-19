@@ -86,13 +86,15 @@ has(html, '<span class="face tone-' + g.crewTone("Yours Truly") + '" data-you ti
 set("CREW_OPEN = '7';");
 html = g.crewHTML(c);
 has(html, 'aria-expanded="true" aria-controls="crew-d-7"');
-// CC-297: three parts: Shared Calendar (someone's going), What interest’s y’all (only interested), Let’s lock in (the polls)
-has(html, '<h4 class="crew-sub" id="crew-p-7"><span>Shared Calendar</span></h4><p class="crew-sub-t">This is what your crew has committed to!</p>');
-has(html, '<h4 class="crew-sub" id="crew-i-7"><span>What interest’s y’all</span></h4>');
-const calendar = html.slice(html.indexOf('id="crew-p-7"'), html.indexOf('id="crew-i-7"'));
+// CC-297: four dropdowns: Shared Calendar (someone's going), What interest’s y’all (only interested), the polls, and the members
+has(html, '<details class="crew-dd" data-dd="7:cal"><summary class="crew-sub"><span>Shared Calendar</span><span class="crew-sub-n">1</span>');
+has(html, '<p class="crew-sub-t">This is what your crew has committed to!</p>');
+has(html, '<details class="crew-dd" data-dd="7:int"><summary class="crew-sub"><span>What interest’s y’all</span><span class="crew-sub-n">1</span>');
+const calendar = html.slice(html.indexOf('data-dd="7:cal"'), html.indexOf('data-dd="7:int"'));
 assert.strictEqual((calendar.match(/<li class="crew-plan"/g) || []).length, 1, "the going plan is on the calendar");
-assert.strictEqual((html.slice(html.indexOf('id="crew-i-7"')).match(/<li class="crew-plan"/g) || []).length, 1, "the interested-only one is under interest");
-has(html, '<h4 class="crew-sub" id="crew-m-7"><span>3 members</span><span class="crew-sub-n">room for 22 more</span></h4>');
+assert.strictEqual((html.slice(html.indexOf('data-dd="7:int"')).match(/<li class="crew-plan"/g) || []).length, 1, "the interested-only one is under interest");
+has(html, '<details class="crew-dd" data-dd="7:mem"><summary class="crew-sub"><span>3 members</span><span class="crew-sub-n">room for 22 more</span>');
+set("CREW_DD['7:mem'] = true;"); has(g.crewHTML(c), 'data-dd="7:mem" open>', "a dropdown stays open when the page redraws"); set("CREW_DD = {};");
 has(html, '<span class="who">Yours Truly</span><span class="crew-role">Crew leader · you</span>');
 lacks(html, '<span class="who">Maya Chen</span><span class="crew-role">', "no role, no words");
 has(g.crewHTML(crew({ max_members: 3 })), '<span class="crew-sub-n">full</span>');

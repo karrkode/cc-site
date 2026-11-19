@@ -53,6 +53,11 @@ assert(html.includes('data-poll-act="modify"') && html.includes('href="#crews"')
 assert(!html.includes('data-poll-act="submit"') && !html.includes("None work") && !html.includes('data-poll-act="tick"'));
 assert(html.includes('data-poll-act="lock"') && html.includes("Cancel poll"), "the starter can lock in and cancel");
 assert(!html.includes("@"), "no email");
+assert(html.includes("Close poll for this event with") && !html.includes("Open poll for"), "an open card offers Close");
+assert(html.includes('class="poll-h sr-only"'), "the Date poll line isn't shown");
+html = run("pollCardHTML(" + JSON.stringify(poll()) + ", 'crew')");
+assert(html.includes("Close poll for “Hamlet”") && html.includes('data-poll-act="modify"') && !html.includes("Go to my crews"), "no link to the crews page from the crews page");
+html = run("pollCardHTML(" + JSON.stringify(poll()) + ", 'event')");
 // Modify brings the grid back with your saved ticks pressed
 run("POLL_EDIT[7] = true; POLL_DRAFT = {}");
 html = run("pollCardHTML(" + JSON.stringify(poll()) + ", 'event')");
@@ -76,11 +81,11 @@ assert(run("pollCardHTML(" + JSON.stringify(poll({ status: "cancelled" })) + ", 
 assert(run("pollCardHTML(" + JSON.stringify(poll({ status: "ended" })) + ", 'event')").includes("has passed"));
 
 // Waiting for you: only open polls you haven't answered; and on the crew's page
-run("POLLS = " + JSON.stringify([poll({ you_answered: false }), poll({ id: 8, you_answered: true }), poll({ id: 9, status: "locked", you_answered: false, locked: option(1, 2, "19:30", ["Ana"]) })]));
+run("CREW_DD = {}; POLLS = " + JSON.stringify([poll({ you_answered: false }), poll({ id: 8, you_answered: true }), poll({ id: 9, status: "locked", you_answered: false, locked: option(1, 2, "19:30", ["Ana"]) })]));
 const waiting = run("pollsWaitingHTML()");
 assert.strictEqual((waiting.match(/data-poll-waiting/g) || []).length, 1, "one poll waits for you");
 assert(waiting.includes("Hamlet") && waiting.includes('href="#e/9"'));
-assert(run("pollsCrewHTML({ id: 4 })").includes("Let’s lock in") && run("pollsCrewHTML({ id: 4 })").includes("data-poll-card"), "a crew's polls");
+assert(run("pollsCrewHTML({ id: 4 })").includes("The Crew Commits!") && run("pollsCrewHTML({ id: 4 })").includes("Polls only appear once a majority") && run("pollsCrewHTML({ id: 4 })").includes("data-poll-card"), "a crew's polls");
 assert(run("pollsCrewHTML({ id: 99 })").includes("No polls yet") && !run("pollsCrewHTML({ id: 99 })").includes("data-poll-card"), "nothing of another crew's");
 run("AUTH.user = null");
 assert.strictEqual(run("pollsWaitingHTML()"), "", "nothing signed out");
