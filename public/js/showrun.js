@@ -351,7 +351,9 @@ function srOff() {
 function editorDates(e) {
   var mode = ED_MODE, body = {};
   if (mode === "showrun" || mode === "dates") {
-    var got = readShowRun(); if (got.error) return got;
+    // CC-301: only a changed run is checked; found shows (6+ a day) must not block saving the title or price
+    var same = showRunBody(SR.before, SR.shows); // {} when unchanged
+    var got = Object.keys(same).length ? readShowRun() : { show_run: SR.before }; if (got.error) return got;
     body = showRunBody(SR.before, got.show_run); // the API sets its Opens and Closes, and takes away any show days
     if (e.openRun) body.open_run = false;
     return { body: body };
