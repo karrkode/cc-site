@@ -1,5 +1,5 @@
 // Checks run in CI before the site deploys (CC-297): crew date polls in public/js/polls.js. The showtime grid
-// (aria-pressed cells, one per option), the results ("3 of 5 have answered", best with first names, Lock in only for the starter),
+// (aria-pressed cells, one per option), the results ("3 of 5 have answered", best with first names, Lock in only for the crew leader),
 // the locked and closed states, the poll on the crew's page and under Waiting for you, and unique ids.
 //
 //     node scripts/test_polls.js
@@ -51,7 +51,7 @@ html = run("pollCardHTML(" + JSON.stringify(poll()) + ", 'event')");
 assert(html.includes("3 of 5 have answered") && html.includes("Ana, Ben") && html.includes("poll-tag"), "best time with first names");
 assert(html.includes('data-poll-act="modify"') && html.includes('href="#crews"') && html.includes("Go to my crews"));
 assert(!html.includes('data-poll-act="submit"') && !html.includes("None work") && !html.includes('data-poll-act="tick"'));
-assert(html.includes('data-poll-act="lock"') && html.includes("Cancel poll"), "the starter can lock in and cancel");
+assert(html.includes('data-poll-act="lock"') && html.includes("Cancel poll"), "the leader can lock in and cancel");
 assert(!html.includes("@"), "no email");
 assert(html.includes("Close poll for this event with") && !html.includes("Open poll for"), "an open card offers Close");
 assert(html.includes('class="poll-h sr-only"'), "the Date poll line isn't shown");
@@ -63,9 +63,9 @@ run("POLL_EDIT[7] = true; POLL_DRAFT = {}");
 html = run("pollCardHTML(" + JSON.stringify(poll()) + ", 'event')");
 assert.strictEqual((html.match(/aria-pressed="true"/g) || []).length, 1, "only your tick is pressed");
 run("POLL_EDIT = {}; POLL_DRAFT = {}");
-// Someone who isn't the starter can't manage
+// Anyone but the crew leader can't manage
 html = run("pollCardHTML(" + JSON.stringify(poll({ can_manage: false })) + ", 'crew')");
-assert(!html.includes("data-poll-act=\"lock") && !html.includes("Cancel poll"), "only the starter manages");
+assert(!html.includes("data-poll-act=\"lock") && !html.includes("Cancel poll"), "only the leader manages");
 // Everyone can make it
 html = run("pollCardHTML(" + JSON.stringify(poll({ best: [{ option_id: 1, date: d(2), time: "19:30", count: 5, names: ["Ana", "Ben", "Cy", "Dee", "Eli"], everyone: true }] })) + ", 'crew')");
 assert(html.includes("all 5 of you"));

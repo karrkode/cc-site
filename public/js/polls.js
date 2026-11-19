@@ -1,5 +1,5 @@
 // Chi Culture Crew site: crew date polls (CC-297). A member starts a poll for a performance from one of their crews;
-// crew-mates tick the showtimes that work; the poll shows the best time with first names; the starter locks one in, and
+// crew-mates tick the showtimes that work; the poll shows the best time with first names; the crew leader locks one in, and
 // each member who said yes can Commit to it (Going, shared with the crew). Loaded after crews.js (index.html); they share
 // one global scope. Data: GET /crews/polls (every poll of your crews, open or closed in the last two weeks).
 "use strict";

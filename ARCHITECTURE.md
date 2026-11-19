@@ -113,7 +113,7 @@ their older names (`/plans`, `by_admin`, `/auth/login`): the site's names are no
 | Marking an event Going | The button says **Commit to** a day (and **Commit!** in a day's list); once done, the event is Going. | |
 | The admin's own picks | **Yours truly**. In code a **dolphin** is the symbol, and "dolphins account" is an internal code name for the admin's account; visitors never see it. | "host", "hosting", "The Culture Crew" as a person |
 | A group of friends | **Crew** (`crews.js`, `#crews`). A person in one is a **crew-mate**. Always lowercase, never "Culture Crew" for it. | team, group, "Culture crew" |
-| A crew picking a date | **Date poll** (`polls.js`, `poll-*` classes): a crew-mate starts one from a performance's page with **Find a date with my crew**; members tick showtimes, the starter **Lock in**s one, and each member who said yes can **Commit to** it. | vote, survey, Doodle |
+| A crew picking a date | **Date poll** (`polls.js`, `poll-*` classes): a crew-mate starts one from a performance's page with **Find a date with my crew**; members tick showtimes, the crew leader **Lock in**s one, and each member who said yes can **Commit to** it. | vote, survey, Doodle |
 | Where you've been | **I've been**, and your **Cultural journal** (`#journal`). | attended (in the API only) |
 | Signing in | **Sign in**, and the one phrase **Sign in or create an account**. Prose: sign in, signed in. Code: `signIn`, `signOut`; ids and classes: `signin-*`. | login, log in, make an account, register (the `/auth/register` route keeps its name) |
 
