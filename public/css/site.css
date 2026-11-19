@@ -1394,6 +1394,7 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 .crew-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
 .crew-dd > summary { cursor: pointer; list-style: none; align-items: center; min-height: 44px; }
 .crew-dd > summary::-webkit-details-marker { display: none; }
+.crew-dd > summary > span:first-child { flex: 1; min-width: 0; } /* the count sits against the caret, so every row lines up */
 .crew-dd > summary .crew-caret { flex: none; }
 .crew-dd[open] > summary .crew-caret { transform: rotate(180deg); }
 .crew-dd[open] { padding-bottom: 12px; }
