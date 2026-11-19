@@ -34,21 +34,33 @@ function poll(over) {
   }, over);
 }
 
-// An open poll: the count, the best time with names, one pressed/unpressed cell for each option, "None of these work"
+// An open poll starts closed: one button named for the crew, and nothing else until it's opened
+run("POLL_SHOW = {}; POLL_EDIT = {}; POLL_DRAFT = {}");
 let html = run("pollCardHTML(" + JSON.stringify(poll()) + ", 'event')");
-assert(html.includes("3 of 5 have answered"), "the answered count");
-assert(html.includes("Ana, Ben") && html.includes("poll-tag"), "best time with first names");
+assert(html.includes("Open poll for this event with “Thursday Theater”") && html.includes('aria-expanded="false"'), "the button names the crew");
+assert(!html.includes("data-poll-act=\"tick\"") && !html.includes("poll-best"), "nothing shown until it is opened");
+// Opened and not yet answered: only the showtimes (no best time, no counts), with Submit and None work
+const fresh = poll({ you_answered: false, options: poll().options.map((o) => Object.assign({}, o, { yours: false })) });
+run("POLL_SHOW[7] = true");
+html = run("pollCardHTML(" + JSON.stringify(fresh) + ", 'event')");
 assert.strictEqual((html.match(/data-poll-act="tick"/g) || []).length, 3, "a cell for each option");
-assert.strictEqual((html.match(/aria-pressed="true"/g) || []).length, 1, "only your tick is pressed");
-assert(html.includes("None of these work"), "the none button");
+assert(!html.includes("poll-best") && !html.includes("poll-tag") && !html.includes("poll-cell-n"), "no best time or counts before you answer");
+assert(html.includes('data-poll-act="submit"') && html.includes("None work") && !html.includes("Modify"));
+// Answered: the best time with first names, and Modify and Go to my crews instead of Submit and None work
+html = run("pollCardHTML(" + JSON.stringify(poll()) + ", 'event')");
+assert(html.includes("3 of 5 have answered") && html.includes("Ana, Ben") && html.includes("poll-tag"), "best time with first names");
+assert(html.includes('data-poll-act="modify"') && html.includes('href="#crews"') && html.includes("Go to my crews"));
+assert(!html.includes('data-poll-act="submit"') && !html.includes("None work") && !html.includes('data-poll-act="tick"'));
 assert(html.includes('data-poll-act="lock"') && html.includes("Cancel poll"), "the starter can lock in and cancel");
 assert(!html.includes("@"), "no email");
+// Modify brings the grid back with your saved ticks pressed
+run("POLL_EDIT[7] = true; POLL_DRAFT = {}");
+html = run("pollCardHTML(" + JSON.stringify(poll()) + ", 'event')");
+assert.strictEqual((html.match(/aria-pressed="true"/g) || []).length, 1, "only your tick is pressed");
+run("POLL_EDIT = {}; POLL_DRAFT = {}");
 // Someone who isn't the starter can't manage
 html = run("pollCardHTML(" + JSON.stringify(poll({ can_manage: false })) + ", 'crew')");
 assert(!html.includes("data-poll-act=\"lock") && !html.includes("Cancel poll"), "only the starter manages");
-// "None of these work" is pressed once answered with nothing ticked
-const none = poll({ options: poll().options.map((o) => Object.assign({}, o, { yours: false })) });
-assert(run("pollCardHTML(" + JSON.stringify(none) + ", 'crew')").includes('data-poll-act="none" data-poll="7" aria-pressed="true"'));
 // Everyone can make it
 html = run("pollCardHTML(" + JSON.stringify(poll({ best: [{ option_id: 1, date: d(2), time: "19:30", count: 5, names: ["Ana", "Ben", "Cy", "Dee", "Eli"], everyone: true }] })) + ", 'crew')");
 assert(html.includes("all 5 of you"));
