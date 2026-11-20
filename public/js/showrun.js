@@ -342,9 +342,17 @@ function srOpen(e) {
   setRunKindLabels(true);
   srRefresh(); SR.mode0 = ED_MODE;
 }
+// CC-308: the approve form for a found event (found.js) shows the same calendar. i: the found item; shows: where it starts.
+function srOpenFound(i, shows) {
+  var own = Object.keys(i.weekly || {}).length, found = (i.performances || []).length > 0;
+  srOpen({ showRun: shows, openRun: !!(i.open_run && !i.end_date), exactRun: found && !SHOW_TYPES[$("ed-category").value], begin: i.begin_date || "", end: i.end_date || "",
+    sched: { dates_from: found ? "found" : "", weekly: own ? i.weekly : i.venue_show_times || {}, weekly_from: own ? "event" : "venue", weeks: own ? i.weeks || {} : {} } });
+}
+// The form was opened for a found event (srOpenFound), or the calendar is the one showing: what to approve with.
+function foundCalendarOn() { return ED_MODE === "showrun" || ED_MODE === "dates"; }
 // Called by foundMode when the form approves a found event: dates there work as before.
 function srOff() {
-  ED_MODE = null; SR.day = "";
+  ED_MODE = null; SR.day = ""; $("sr-found-note").hidden = true; // CC-308: its note is for the approve form only
   $("ed-showrun").hidden = true; $("ed-end-field").hidden = false; setRunKindLabels(false);
 }
 // The date fields to save from the edit form: {body}, or {error, id, date} (a field's id, or a day of the Show Run).
