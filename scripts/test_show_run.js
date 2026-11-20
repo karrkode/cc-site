@@ -359,7 +359,7 @@ has(fs0, '<legend>Show Run</legend>'); has(fs0, '<table class="sr-grid" id="sr-g
 assert.strictEqual((fs0.match(/<th scope="col" abbr="/g) || []).length, 7, "seven column headings, Monday first"); assert.ok(fs0.indexOf('abbr="Monday"') < fs0.indexOf('abbr="Sunday"'));
 has(fs0, 'id="sr-prev" aria-label="Previous month"'); has(fs0, 'id="sr-next" aria-label="Next month"');
 has(fs0, '<div class="sr-panel" id="sr-panel" role="group" aria-labelledby="sr-panel-h" hidden>'); has(fs0, 'Add another show'); has(fs0, 'No show this day'); has(fs0, '<summary>Fill a pattern</summary>');
-has(fs0, 'id="ed-pat-days"'); has(fs0, 'id="ed-pat-weekly"'); has(fs0, 'for="sr-pat-from">From</label>'); has(fs0, 'for="sr-pat-to">To</label>');
+has(fs0, 'id="ed-pat-days"'); has(fs0, 'id="ed-pat-weekly"'); has(fs0, 'for="sr-pat-from">Start date</label>'); has(fs0, 'for="sr-pat-to">End date</label>');
 has(fs0, "Open run: every week, no closing date"); has(fs0, 'id="sr-msg" role="alert"');
 has(html, '<p class="sr-only" id="edit-live" role="status"></p>', "announcements go to the page's live region");
 has(html, '<div class="field" id="ed-end-field"><label for="ed-end">Closes</label>', "Closes can hide");

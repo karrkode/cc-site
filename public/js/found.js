@@ -278,15 +278,21 @@ function shortRun(i) {
   }
   return days;
 }
+// CC-308: the Show Run calendar starts with the dates the source found, and empty when it found none (a range alone is not
+// shows): the admin adds days in the calendar, or fills a pattern between the start and end dates.
+function foundShows(i) {
+  return (i.performances || []).length ? sortShows(i.performances.map(srCopy)) : [];
+}
 function openFoundEditor(i, opener, done) { // done (CC-207): what to do once it's approved, for a list other than Found events
   EDITING = { e: { id: "found-" + i.id }, found: i, opener: opener, done: done };
   foundMode(i);
-  var run = shortRun(i); // found events come with their own dates; a longer one's fixed run is set after (CC-96)
+  var calendar = i.kind !== "permanent", run = calendar ? [] : shortRun(i); // CC-308: the Show Run calendar takes the dates (showrun.js)
   setRun("ed", run); $("ed-runkind").hidden = !run.length; $("ed-dates-note").hidden = true;
   $("ed-heading").textContent = "Approve " + i.title;
-  $("ed-found").textContent = "Found on " + i.source_name + ". Check the details, then approve to add it to the catalog." +
+  var intro = "Found on " + i.source_name + ". Check the details, then approve to add it to the catalog." +
     (!i.venue_id ? " The venue is new to us, so check its name and neighborhood; it's added when you approve." : "") +
-    (!foundType(i).category ? " Choose a type first." : "") +
+    (!foundType(i).category ? " Choose a type first." : "");
+  $("ed-found").textContent = intro +
     (i.needs === "date" ? " Its page doesn't give a date yet: add when it opens." :
       run.length ? " It's on for under a week, so it's set to those days: give a start time for each, or leave them all blank." :
       i.needs === "show_days" ? " Its page doesn't say when the shows are: choose the days, and give a start time for each." : "");
@@ -301,9 +307,15 @@ function openFoundEditor(i, opener, done) { // done (CC-207): what to do once it
   SHOW_DAYS.ed.from = { weekly: {}, weeks: {} }; SHOW_DAYS.ed.venue = venueTimes;
   $("ed-sched-hint").textContent = own ? "From the venue's page; check them." : Object.keys(venueTimes).length ?
     "These are the venue's usual show times; change them if this show is different." : "Choose the days, and give a start time for each.";
+  if (calendar) { // CC-308: after the type and the dates are in the form
+    var shows = foundShows(i); srOpenFound(i, shows);
+    var dn = $("sr-found-note"); dn.textContent = i.dates_note || ""; dn.hidden = !i.dates_note; dn.style.whiteSpace = "pre-line";
+    if (foundCalendarOn()) $("ed-found").textContent = intro + (shows.length ? " The calendar starts with its dates: change, add or remove shows before approving." :
+      " No exact dates yet: add its shows to the calendar, or fill a pattern between the start and end dates.");
+  }
   $("ed-error").textContent = ""; $("ed-confirm").hidden = true; setEditorBusy(false);
   openDialog($("edit-dialog"));
-  (i.needs === "date" ? $("ed-begin") : run.length && !run[0].time ? $("ed-run-list").querySelector("[data-run-time]") :
+  (calendar && foundCalendarOn() ? $("ed-title") : i.needs === "date" ? $("ed-begin") : run.length && !run[0].time ? $("ed-run-list").querySelector("[data-run-time]") :
     i.needs === "show_days" ? $("ed-days").firstElementChild : $("ed-title")).focus(); // what's missing first
 }
 // CC-257: Delay… in the form: hide it for 1 week, 1 month or 2 months without saving the form's edits. It returns by itself.
@@ -337,7 +349,13 @@ function approveFromEditor() {
   var title = $("ed-title").value.trim(), venue = $("ed-venue").value.trim(), hood = $("ed-hood").value.trim(), type = $("ed-category").value;
   var begin = $("ed-begin").value || null, end = $("ed-end").value || null, url = $("ed-url").value.trim(), cost = $("ed-cost").value.trim();
   // CC-212: a short run's days; with no times at all it goes in as its first to last date, as before
-  var fixed = isFixedRun("ed"), untimed = fixed && RUN.ed.length && !RUN.ed.some(function (r) { return r.time || r.end_time; });
+  var cal = foundCalendarOn(), shows = cal ? readShowRun() : null; // CC-308: the calendar is the dates
+  if (cal) {
+    if (shows.error) { editorFail(null, null, shows.error); srFocusDay(shows.date); return; }
+    if (!shows.show_run.length) { editorFail(null, null, "Add at least one show to the calendar."); $("sr-prev").focus(); return; }
+    begin = shows.show_run[0].date; end = shows.show_run[shows.show_run.length - 1].date;
+  }
+  var fixed = !cal && isFixedRun("ed"), untimed = fixed && RUN.ed.length && !RUN.ed.some(function (r) { return r.time || r.end_time; });
   if (fixed && RUN.ed.length) { begin = RUN.ed[0].date; end = RUN.ed[RUN.ed.length - 1].date; }
   var at = $("ed-publish-at").value ? new Date($("ed-publish-at").value) : null, review = $("ed-status").value === "pending";
   var bad = !title ? ["ed-title", "Give the event's name."] : !type ? ["ed-category", "Choose a type."] : !venue ? ["ed-venue", "Say where it's happening."] :
@@ -347,11 +365,11 @@ function approveFromEditor() {
   if (bad) { editorFail(null, bad[0], bad[1]); return; }
   var run = fixed && !untimed ? readRun("ed") : { run_dates: [] };
   if (run.error) { editorFail(null, run.id, run.error); return; }
-  var days = $("ed-sched").hidden ? { weekly: {}, weeks: {} } : readShowDays("ed");
+  var days = cal || $("ed-sched").hidden ? { weekly: {}, weeks: {} } : readShowDays("ed");
   if (days.error) { editorFail(null, days.id, days.error); return; }
   var venueOwn = sameHours(days.weekly, i.venue_show_times || {}) && !Object.keys(days.weeks).length; // the venue's times stay the venue's
   var weekly = venueOwn ? {} : days.weekly;
-  var missing = stillNeeds(i, type, begin, end, $("ed-open-run").checked && !end, days.weekly, run.run_dates.length);
+  var missing = cal ? "" : stillNeeds(i, type, begin, end, $("ed-open-run").checked && !end, days.weekly, run.run_dates.length);
   if (missing) {
     if (fixed && missing !== "date") { editorFail(null, null, "Give a start time for each date."); $("ed-run-list").querySelector("[data-run-time]").focus(); return; }
     editorFail(null, missing === "date" ? (fixed ? "ed-run-day" : "ed-begin") : null, missing === "date" ? "Add the date it opens." : "Choose the days it's on, with a start time for each.");
@@ -362,6 +380,7 @@ function approveFromEditor() {
     cost_text: cost, min_price: cost === (i.cost_text || "") && cost ? i.min_price : minPrice(cost), url: url,
     publish: review ? "review" : at && at > new Date() ? "later" : "now" };
   if (body.publish === "later") body.publish_at = at.toISOString();
+  if (cal) { body.show_run = shows.show_run; body.open_run = false; } // the API sets its opening and closing from the first and last show
   setEditorBusy(true); $("ed-error").textContent = "";
   var sameVenue = i.venue_id && venue.toLowerCase() === i.venue_name.toLowerCase() && hood.toLowerCase() === (i.neighborhood || "").toLowerCase();
   (sameVenue ? Promise.resolve(i.venue_id) : venueIdFor(venue, hood)).then(function (venueId) {

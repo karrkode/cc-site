@@ -330,7 +330,7 @@ function srOpen(e) {
   SR.e = e; SR.before = shows.map(srCopy); SR.shows = shows.map(srCopy); SR.kept = {}; SR.day = ""; SR.dayRefs = []; SR.snap = null;
   SR.last = ""; SR.shows.forEach(function (s) { SR.kept[s.date] = true; if (s.time) SR.last = s.time; });
   SR.open = !!e.openRun; SR.kind = e.exactRun ? "dates" : "range"; SR.found = e.sched.dates_from === "found" && shows.length > 0;
-  var next = SR.shows.filter(function (s) { return s.date >= now; })[0], at = next ? next.date : SR.shows.length ? SR.shows[SR.shows.length - 1].date : now;
+  var next = e.firstMonth ? SR.shows[0] : SR.shows.filter(function (s) { return s.date >= now; })[0], at = next ? next.date : SR.shows.length ? SR.shows[SR.shows.length - 1].date : e.firstMonth && e.begin ? e.begin : now;
   SR.focus = at; SR.month = new Date(+at.slice(0, 4), +at.slice(5, 7) - 1, 1);
   var radio = document.querySelector('input[name="ed-runkind"][value="' + (SR.kind === "dates" ? "fixed" : "range") + '"]'); if (radio) radio.checked = true;
   $("ed-sr-open").checked = $("ed-open-run").checked = SR.open;
@@ -342,9 +342,17 @@ function srOpen(e) {
   setRunKindLabels(true);
   srRefresh(); SR.mode0 = ED_MODE;
 }
+// CC-308: the approve form for a found event (found.js) shows the same calendar. i: the found item; shows: where it starts.
+function srOpenFound(i, shows) {
+  var own = Object.keys(i.weekly || {}).length, found = (i.performances || []).length > 0;
+  srOpen({ firstMonth: true, showRun: shows, openRun: !!(i.open_run && !i.end_date), exactRun: found && !SHOW_TYPES[$("ed-category").value], begin: i.begin_date || "", end: i.end_date || "",
+    sched: { dates_from: found ? "found" : "", weekly: own ? i.weekly : i.venue_show_times || {}, weekly_from: own ? "event" : "venue", weeks: own ? i.weeks || {} : {} } });
+}
+// The form was opened for a found event (srOpenFound), or the calendar is the one showing: what to approve with.
+function foundCalendarOn() { return ED_MODE === "showrun" || ED_MODE === "dates"; }
 // Called by foundMode when the form approves a found event: dates there work as before.
 function srOff() {
-  ED_MODE = null; SR.day = "";
+  ED_MODE = null; SR.day = ""; $("sr-found-note").hidden = true; // CC-308: its note is for the approve form only
   $("ed-showrun").hidden = true; $("ed-end-field").hidden = false; setRunKindLabels(false);
 }
 // The date fields to save from the edit form: {body}, or {error, id, date} (a field's id, or a day of the Show Run).
