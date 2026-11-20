@@ -1014,6 +1014,11 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 .alt-meta.dup { color: var(--on-info-soft); background: var(--info-soft); display: inline-block; padding: 2px 8px; border-radius: var(--r-ctl); margin-top: 4px; }
 .changes { margin: 6px 0 0; padding-left: 18px; font-size: 1rem; }
 .changes li { margin: 2px 0; }
+.changes .perf-change { margin: 6px 0; } /* CC-307 */
+.perf-list { display: block; margin: 2px 0 4px; }
+.perf-list summary { cursor: pointer; color: var(--link, inherit); text-decoration: underline; }
+.perf-list ul { margin: 2px 0 6px; padding-left: 16px; font-variant-numeric: tabular-nums; }
+.dates-note { overflow-wrap: anywhere; }
 .skip-form { flex-basis: 100%; display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; }
 .skip-form fieldset { position: relative; /* holds its .sr-only legend, which is otherwise as wide as the page and scrolls it sideways */ border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; }
 /* CC-78: venue hours */
