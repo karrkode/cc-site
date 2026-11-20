@@ -12,7 +12,7 @@ var FOUND_KINDS = { production: "Production", exhibition: "Exhibition", concert:
   tour: "Tour", program: "Program", class: "Class", rental: "Rental", members_only: "Members only", recurring: "Recurring",
   permanent: "Permanent gallery", other: "Other" };
 var FOUND_STATES = { update: "Update", approved: "Approved", rejected: "Rejected", skipped: "Left out", listed: "Already listed", hidden: "Hidden" };
-var CHANGE_NAMES = { cost_text: "Price", min_price: "Lowest price", begin_date: "Opens", end_date: "Closes", weekly: "Show days", weeks: "Weeks of the month" };
+var CHANGE_NAMES = { cost_text: "Price", min_price: "Lowest price", begin_date: "Opens", end_date: "Closes", weekly: "Show days", weeks: "Weeks of the month", performances: "Dates" };
 var FOUND_NEEDS = { date: "Needs a date", show_days: "Needs show days" }; // CC-88: approving asks for these
 
 function openFound(focusSel) { if (!isAdmin()) { openAccount(); return; } show("found"); loadFoundSources(); loadFound(false, focusSel); loadRules(); }
@@ -75,6 +75,16 @@ function changeValue(field, v) {
   if (field === "weeks") return HOUR_DAYS.filter(function (d) { return v && v[d[0]]; }).map(function (d) { return weeksText(v[d[0]]) + d[1].slice(0, 3); }).join(", ") || "every week";
   return v;
 }
+function performanceHTML(v) { // CC-307: {date: [times]} as "3 dates, Dec 5 to Dec 12" and a collapsible list; "none" when empty
+  var days = Object.keys(v || {}).sort();
+  if (!days.length) return "none";
+  var first = short(parseISO(days[0])), last = short(parseISO(days[days.length - 1]));
+  return esc(plural(days.length, "date", "dates") + ", " + (days.length > 1 ? first + " to " + last : first)) +
+    '<details class="perf-list"><summary>Show dates</summary><ul>' + days.map(function (d) {
+      var times = (v[d] || []).map(function (t) { return t ? clockText(t) : "no time yet"; }).join(", ") || "no time yet";
+      return "<li>" + esc(short(parseISO(d)) + ": " + times) + "</li>";
+    }).join("") + "</ul></details>";
+}
 function foundItemHTML(i) { return foundRowHTML(i, foundActions(i, esc(i.id), esc(i.title))); }
 function foundRowHTML(i, actions, pick) { // CC-207: Event Sourcing's list shows the same row, with its own buttons (CC-208: and a tick box)
   var id = esc(i.id), title = esc(i.title), state = i.status === "hidden" && i.back_on ? "Back on " + short(parseISO(i.back_on)) : // CC-257: a delayed one says when it returns
@@ -90,10 +100,12 @@ function foundRowHTML(i, actions, pick) { // CC-207: Event Sourcing's list shows
     (Object.keys(i.weekly || {}).length ? '<p class="alt-meta">Shows: ' + esc(showDaysText(i.weekly, i.weeks)) + "</p>" : "") +
     (i.needs && i.status !== "hidden" ? '<p class="alt-meta">' + esc(lookedText(i)) + "</p>" : "") + // CC-207: not read while hidden
     (i.possible_duplicate ? '<p class="alt-meta dup">Possibly already listed as “' + esc(i.possible_duplicate.title) + "”</p>" : "") +
+    (i.dates_note ? '<p class="alt-meta dates-note">' + esc(i.dates_note).replace(/\r?\n/g, "<br>") + "</p>" : "") + // CC-307: one line per try; the address comes from a page, so escaped
     (i.skip_reason && i.status !== "approved" ? '<p class="alt-meta">Why: ' + esc(i.skip_reason) + "</p>" : "");
   if (i.status === "update") {
     var shown = i.proposed.filter(function (c) { return c.field !== "min_price" || !i.proposed.some(function (x) { return x.field === "cost_text"; }); });
     html += '<ul class="changes" aria-label="Proposed changes to ' + esc(i.event ? i.event.title : i.title) + '">' + shown.map(function (c) {
+      if (c.field === "performances") return '<li class="perf-change">' + esc(CHANGE_NAMES[c.field]) + ":<br>Listed: " + performanceHTML(c.listed) + "<br><strong>Found: " + performanceHTML(c.found) + "</strong></li>";
       return "<li>" + esc(CHANGE_NAMES[c.field] || c.field) + ": " + esc(changeValue(c.field, c.listed)) + ' <span aria-hidden="true">→</span><span class="sr-only">becomes</span> <strong>' + esc(changeValue(c.field, c.found)) + "</strong></li>";
     }).join("") + "</ul>";
   }
