@@ -51,6 +51,7 @@ function isExhibit(e) { return isArt(e) && !e.sched.dates.length; } // a talk or
 // Start times on day d ("" = a date without a time), or null when there's no schedule to go by.
 function timesOn(e, d) {
   var iso = isoDate(d), dates = e.sched.dates, weekly = e.sched.weekly || {};
+  if (e.exactRun) return dates.filter(function (p) { return p.date === iso; }).map(function (p) { return p.time || ""; }); // CC-301: its Show Run, never the weekly pattern
   if (dates.length && iso >= dates[0].date && iso <= dates[dates.length - 1].date) {
     return dates.filter(function (p) { return p.date === iso; }).map(function (p) { return p.time || ""; });
   }
@@ -68,7 +69,7 @@ function hoursOn(e, d) { // [opens, closes, known] or null when closed
   if (!Object.prototype.hasOwnProperty.call(h, k)) return [USUAL[0], USUAL[1], false];
   return h[k] ? [h[k][0], h[k][1], true] : null;
 }
-// CC-260: can you go on day d (Pick a day in My Week, and every Going picker)? In this order: a fixed run's listed dates (and, up to the last of them,
+// CC-260: can you go on day d (Pick a day in My Week, and every Going picker)? In this order: a Show Run's dates (CC-301) (and, up to the last of them,
 // the dates read from its venue's site); else the event's own show days; else its venue's, by the venue's category (CC-258's
 // rule): Visual Art by its opening hours (a day marked Closed is out; a day not filled in counts as open, as above),
 // Theater and Music by its usual show times, a venue with no category by either; with nothing known, any day of its run.
@@ -80,7 +81,7 @@ function canGoOn(e, d) {
   if (s.weekly_from === "event") return onWeekOf(s.weeks, d) && !!(s.weekly[k] || []).length;
   return venueDayOK(e, k);
 }
-function byListedDates(e, iso) { var dates = e.sched.dates; return !!e.runDates.length || (!!dates.length && iso <= dates[dates.length - 1].date); }
+function byListedDates(e, iso) { var dates = e.sched.dates; return e.exactRun || (!!dates.length && iso <= dates[dates.length - 1].date); }
 function venueDayOK(e, k) { // the venue's step, for weekday k
   var s = e.sched, shows = s.weekly_from === "venue" ? s.weekly || {} : {}, hours = s.hours || {};
   var byShows = Object.keys(shows).length > 0 && VENUE_HOURS.indexOf(e.venueType) < 0;

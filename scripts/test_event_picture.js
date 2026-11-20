@@ -46,7 +46,8 @@ const g = {
   URL: { createObjectURL: () => "blob:" + ++URLS, revokeObjectURL() {} },
   TYPE_ORDER: ["Theater", "Music", "Visual Art"], KNOWN: {}, VENUES: [], VIEWS: {}, visible: () => false, isAdmin: () => true,
   foundMode() {}, edLinkSync() {}, localInputValue: () => "", fillWeekly() {}, setRun() {}, datesToLookUp: () => false,
-  isFixedRun: () => false, readRun: () => ({ run_dates: [] }), weeklyChange: () => null, minPrice: () => null,
+  srOpen() {}, editorDates: () => ({ body: {} }), srFocusDay() {}, // CC-301: the dates are showrun.js's (scripts/test_show_run.js)
+  minPrice: () => null,
   openDialog: (d) => { d.open = true; }, closeDialog: (d) => { d.open = false; d.fire("close"); },
   paintWater() {}, listingImageSrc: (u) => u, waterHTML: () => "<water>", catClass: (t) => " cat-" + String(t).toLowerCase(),
   api(p, o) {
@@ -64,7 +65,7 @@ const g = {
 vm.createContext(g);
 vm.runInContext(admin.slice(admin.indexOf("var EDITING = null"), admin.indexOf('$("ed-withdraw").addEventListener')), g);
 const EVENT = { id: 1, title: "Hamlet", type: "Theater", status: "approved", venue: "Goodman Theatre", hood: "Loop",
-  runDates: [], imageUrl: "/event-images/1/old.webp" };
+  showRun: null, imageUrl: "/event-images/1/old.webp" };
 const flush = async () => { for (let i = 0; i < 6; i++) await new Promise((r) => setTimeout(r, 0)); };
 const open = (over) => { CALLS.length = 0; CHANGED.length = 0; g.openEditor(Object.assign({}, EVENT, over), null); };
 const choose = (type, size) => { $("ed-image-file").files = [{ type, size }]; $("ed-image-file").fire("change"); };

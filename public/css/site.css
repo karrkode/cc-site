@@ -2073,6 +2073,53 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
   .poll-day { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* CC-301 Show Run: a month calendar of every performance, in the event edit form (showrun.js). Tokens only: a day with a show is
+   the pressed chip (page on ink); a past day is muted; the focus ring sits outside the cell, over the page. At 480px and below a
+   cell shows the date and a dot or a count, and the times are in the day's panel. */
+.editor .show-run { display: grid; gap: 12px; }
+.sr-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sr-month { font-family: var(--sign); font-weight: 700; font-size: var(--step-1); line-height: 1.1; text-align: center; flex: 1 1 auto; }
+.editor .sr-nav .btn { min-width: 44px; padding: 0 14px; }
+.sr-grid { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
+.sr-grid th { padding: 4px 0 6px; font-family: var(--sign); font-weight: 700; font-size: 1.0625rem; color: var(--muted); text-align: center; }
+.sr-cell, .sr-blank { padding: 2px; }
+.sr-day { position: relative; display: grid; align-content: center; justify-items: center; gap: 2px; width: 100%; min-width: 44px; min-height: 56px; padding: 4px 2px;
+  background: var(--page); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-ctl); cursor: pointer; line-height: 1.1; }
+.sr-day:hover { background: var(--info-soft); }
+.sr-day .sr-n { font-weight: 700; font-variant-numeric: tabular-nums; }
+.sr-day .sr-t { font-size: 1rem; font-weight: 400; overflow-wrap: anywhere; text-align: center; min-height: 1.1em; }
+.sr-day .sr-dot { display: none; }
+.sr-day.sr-today .sr-n { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.sr-day.sr-has { background: var(--text); color: var(--page); border-color: var(--text); }
+.sr-day.sr-has:hover { background: var(--text); }
+.sr-day.sr-past { color: var(--muted); }
+.sr-day.sr-past.sr-has { background: var(--muted); color: var(--page); border-color: var(--muted); }
+.sr-day[aria-disabled="true"] { cursor: not-allowed; background: transparent; border-color: transparent; }
+.sr-day:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; z-index: 1; }
+.sr-summary { font-weight: 600; }
+.sr-panel { display: grid; gap: 12px; padding: 14px 16px; border: 1.5px solid var(--text); border-radius: var(--r-ctl); background: var(--surface); }
+.sr-panel h4 { margin: 0; font-family: var(--sign); font-weight: 700; font-size: var(--step-0); }
+.sr-show { display: flex; flex-wrap: wrap; align-items: end; gap: 8px 16px; }
+.sr-show .field { flex: 0 1 11rem; }
+.sr-show input[type="time"] { min-height: 44px; }
+.sr-panel .hint { margin: 0; }
+.sr-pattern, .sr-pattern .details-body { display: grid; gap: 12px; }
+.sr-pattern > summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; font-family: var(--sign); font-weight: 700; font-size: 1.0625rem; }
+.sr-pattern[open] > summary { margin-bottom: 4px; }
+.sr-pattern > summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.sr-pattern .hint { margin: 0 0 8px; }
+#sr-notes { display: grid; gap: 8px; }
+#sr-notes:empty { display: none; }
+@media (max-width: 480px) {
+  .sr-grid { width: calc(100% + 24px); margin-inline: -12px; } /* the calendar uses the dialog's padding, so a day stays 44px wide */
+  .sr-cell, .sr-blank { padding: 1px; }
+  .sr-day { min-height: 48px; }
+  .sr-day .sr-t { display: none; }
+  .sr-day .sr-dot { display: block; font-size: 0.75rem; min-height: 1em; }
+  .sr-nav .btn { padding: 0 10px; }
+  .sr-month { font-size: var(--step-0); }
+}
+
 /* CC-126: the invite QR code fills the screen to be scanned from the admin's phone. CC-147: always paper-white, in
    both themes, under a small flag band: the code is deep lake ink on white, which any phone can scan. The colours are
    fixed here, not tokens, so "Lights down" doesn't reach them. */
