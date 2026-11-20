@@ -278,21 +278,10 @@ function shortRun(i) {
   }
   return days;
 }
-// CC-308: the Show Run calendar starts with every date found; else every day from today (or its opening) to its closing, on its
-// show days when it has them, each with the first time its page or its venue gives. [] with no closing date or past the API's limit.
+// CC-308: the Show Run calendar starts with the dates the source found, and empty when it found none (a range alone is not
+// shows): the admin adds days in the calendar, or fills a pattern between the start and end dates.
 function foundShows(i) {
-  if ((i.performances || []).length) return sortShows(i.performances.map(srCopy));
-  var b = parseISO(i.begin_date), n = parseISO(i.end_date), now = isoDate(T);
-  if (!b || !n || n < b) return [];
-  if (i.begin_date < now) b = parseISO(now); // a day that has passed can't be added
-  var weekly = i.weekly || {}, venue = i.venue_show_times || {}, own = Object.keys(weekly).length, days = [];
-  if (n < b || diff(n, b) + 1 > SHOWRUN_MAX) return [];
-  if (own) { var got = patternDates(isoDate(b), i.end_date, weekly, i.weeks || {}); return got.length > SHOWRUN_MAX ? [] : got; } // its show days, and the weeks of the month they're on
-  for (var d = b; d <= n; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
-    var dow = DOW[d.getDay()];
-    if (!own || weekly[dow]) days.push({ date: isoDate(d), time: (weekly[dow] || venue[dow] || [])[0] || "", end_time: "" });
-  }
-  return days;
+  return (i.performances || []).length ? sortShows(i.performances.map(srCopy)) : [];
 }
 function openFoundEditor(i, opener, done) { // done (CC-207): what to do once it's approved, for a list other than Found events
   EDITING = { e: { id: "found-" + i.id }, found: i, opener: opener, done: done };
@@ -322,7 +311,7 @@ function openFoundEditor(i, opener, done) { // done (CC-207): what to do once it
     var shows = foundShows(i); srOpenFound(i, shows);
     var dn = $("sr-found-note"); dn.textContent = i.dates_note || ""; dn.hidden = !i.dates_note; dn.style.whiteSpace = "pre-line";
     if (foundCalendarOn()) $("ed-found").textContent = intro + (shows.length ? " The calendar starts with its dates: change, add or remove shows before approving." :
-      " No exact dates yet: add its shows to the calendar.");
+      " No exact dates yet: add its shows to the calendar, or fill a pattern between the start and end dates.");
   }
   $("ed-error").textContent = ""; $("ed-confirm").hidden = true; setEditorBusy(false);
   openDialog($("edit-dialog"));
