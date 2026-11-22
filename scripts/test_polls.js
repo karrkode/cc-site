@@ -153,7 +153,7 @@ assert(!html.includes('data-poll-act="btick"'), "the grid is gone once you've an
 const hlocked = hpoll({ status: "locked", you_answered: true, locked: { id: 11, date: d(2), time: "10:00", end: "12:00", count: 2, names: ["Ana", "Ben"], yours: true } });
 html = run("pollCardHTML(" + JSON.stringify(hlocked) + ", 'event')");
 assert(html.includes("Locked in:") && html.includes("10:00 AM–12:00 PM") && html.includes("Commit to"), "locked range with Commit to");
-assert(run("pollCardHTML(" + JSON.stringify(hpoll({ status: "locked", you_answered: true, locked: { id: 11, date: d(2), time: "10:00", end: "12:00", count: 0, names: [], yours: false } })) + ", 'event')").includes("nobody is free for all of it"));
+assert(run("pollCardHTML(" + JSON.stringify(hpoll({ status: "locked", you_answered: true, locked: { id: 11, date: d(2), time: "10:00", end: "12:00", count: 0, names: [], yours: false } })) + ", 'event')").includes("Nobody is free for all of it"));
 run("MYPLANS[9] = { status: 'going', date: '" + d(2) + "', time: '10:00', crews: [4] }");
 assert(run("pollCardHTML(" + JSON.stringify(hlocked) + ", 'event')").includes("You’re going on this date"), "going at the range's start counts as committed");
 run("MYPLANS = {}");
@@ -174,7 +174,7 @@ assert(html.includes("5 of 5 days chosen") && !/data-poll-act="startdays"[^>]*di
 assert.strictEqual((html.match(/data-poll-act="pickday"[^>]*disabled/g) || []).length, choices.length - 5, "a sixth can't be chosen");
 assert.strictEqual((html.match(/aria-pressed="true"/g) || []).length, 5);
 // On the event page: a crew that's ready gets the picker; one that isn't, where it stands. Waiting for you lists the ready one.
-run("POLLS = []; POLL_DAYS = {}; CREWS = [{ id: 4, name: 'Art Crew' }, { id: 5, name: 'Other' }]; POLL_INT = { 9: { at: Date.now(), list: [{ crew_id: 4, shared: 3, members_total: 5, ready: true }, { crew_id: 5, shared: 1, members_total: 5, ready: false }] } }");
+run("POLLS = []; POLL_DAYS = {}; POLL_READY_HOURS = [{ crew_id: 4, event_id: 9, kind: 'hours', event_title: 'Sue the T. rex', crew_name: 'Art Crew' }]; CREWS = [{ id: 4, name: 'Art Crew' }, { id: 5, name: 'Other' }]; POLL_INT = { 9: { at: Date.now(), list: [{ crew_id: 4, shared: 3, members_total: 5, ready: true }, { crew_id: 5, shared: 1, members_total: 5, ready: false }] } }");
 html = run("pollsEventHTML(__ex)");
 assert(html.includes("data-poll-pick") && html.includes("1 of 5 have shared interest") && html.includes("a member picks its days"));
 run("POLL_READY_HOURS = [{ crew_id: 4, event_id: 9, kind: 'hours', event_title: 'Sue the T. rex', crew_name: 'Art Crew' }]");
@@ -183,4 +183,6 @@ assert(html.includes("data-poll-ready") && html.includes("Sue the T. rex") && ht
 assert.strictEqual(run("pollsWaiting().length"), 1);
 run("POLLS = [" + JSON.stringify(hpoll({ crew_id: 4, event_id: 9 })) + "]; POLL_READY_HOURS = [{ crew_id: 4, event_id: 9, kind: 'hours', event_title: 'x', crew_name: 'y' }]");
 assert.strictEqual(run("pollsReadyHours().length"), 0, "once the poll exists it isn't also listed as ready");
+run("POLLS = []; POLL_READY_HOURS = []");
+assert(!run("pollsEventHTML(__ex)").includes("data-poll-pick"), "no picker once the server no longer lists the crew as ready (its poll was locked or cancelled long ago)");
 console.log("ok: test_polls");

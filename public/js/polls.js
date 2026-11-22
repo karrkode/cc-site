@@ -45,7 +45,7 @@ function pollBestHTML(p) {
     var all = b.everyone ? "all " + b.count + " of you" : b.count + " of " + p.members_total;
     return '<li><span class="poll-best-t">' + (i === 0 ? '<span class="poll-tag">Best</span> ' : "") + esc(pollWhen(b)) + "</span> " +
       '<span class="poll-best-n">' + esc(all) + ": " + esc(pollNames(b.names)) + "</span>" +
-      (p.can_manage && p.status === "open" ? ' <button class="btn ghost poll-lock" type="button" data-poll-act="lock" data-poll="' + p.id + '" data-option="' + b.option_id + (b.end ? '" data-start="' + b.time + '" data-end="' + b.end : "") +
+      (p.can_manage && p.status === "open" ? ' <button class="btn ghost poll-lock" type="button" data-poll-act="lock" data-poll="' + p.id + '" data-option="' + b.option_id + (b.end ? '" data-start="' + esc(b.time) + '" data-end="' + esc(b.end) : "") +
         '" aria-label="Lock in ' + esc(pollWhen(b)) + '">Lock in</button>' : "") + "</li>";
   }).join("") + "</ol>";
 }
@@ -67,14 +67,14 @@ function pollHoursGridHTML(p, where) { // days side by side; on a phone one day 
     '<span class="poll-hnav-n" aria-live="polite">Day ' + (cur + 1) + " of " + n + '</span><button class="btn ghost" type="button" data-poll-act="day-next" data-poll="' + p.id + '"' + (cur >= n - 1 ? " disabled" : "") + ">Next day</button></div>" +
     '<div class="poll-hdays">' + p.options.map(function (o, i) {
       var label = "poll-hl-" + esc(where) + "-" + p.id + "-" + o.id, off = o.date < past;
-      return '<section class="poll-hday' + (i === cur ? " is-cur" : "") + '" aria-labelledby="' + label + '"><h' + (where === "crew" ? "6" : "3") + ' class="poll-hday-l" id="' + label + '">' + esc(goingDay(o.date)) +
+      return '<div role="group" class="poll-hday' + (i === cur ? " is-cur" : "") + '" aria-labelledby="' + label + '"><h' + (where === "crew" ? "6" : "3") + ' class="poll-hday-l" id="' + label + '">' + esc(goingDay(o.date)) +
         ' <span class="poll-hday-h">' + esc(clockText(o.opens)) + "\u2013" + esc(clockText(o.closes)) + '</span></h' + (where === "crew" ? "6" : "3") + '><div class="row poll-hday-all">' +
         '<button class="textbtn" type="button" data-poll-act="day-all" data-poll="' + p.id + '" data-option="' + o.id + '"' + (off ? " disabled" : "") + ">Free all day</button>" +
         '<button class="textbtn" type="button" data-poll-act="day-none" data-poll="' + p.id + '" data-option="' + o.id + '"' + (off ? " disabled" : "") + ">Clear day</button></div>" +
         '<div class="poll-blocks">' + o.blocks.map(function (b) {
-          return '<button class="poll-cell poll-block" type="button" data-poll-act="btick" data-poll="' + p.id + '" data-option="' + o.id + '" data-start="' + b.start + '" aria-pressed="' + (draft.indexOf(o.id + "|" + b.start) >= 0) +
+          return '<button class="poll-cell poll-block" type="button" data-poll-act="btick" data-poll="' + p.id + '" data-option="' + o.id + '" data-start="' + esc(b.start) + '" aria-pressed="' + (draft.indexOf(o.id + "|" + b.start) >= 0) +
             '" aria-label="' + esc(goingDay(o.date) + ", " + clockText(b.start)) + '"' + (off ? " disabled" : "") + ">" + esc(clockText(b.start)) + "</button>";
-        }).join("") + "</div></section>";
+        }).join("") + "</div></div>";
     }).join("") + "</div>" +
     '<div class="row"><button class="btn" type="button" data-poll-act="submit" data-poll="' + p.id + '">Submit</button>' +
     '<button class="btn ghost" type="button" data-poll-act="none" data-poll="' + p.id + '">None work</button></div></div>';
@@ -104,7 +104,7 @@ function pollSlots(o) { // the half-hour starts of a day option
 }
 function pollEndOf(start) { var m = +start.slice(0, 2) * 60 + +start.slice(3) + 30; return ("0" + Math.floor(m / 60)).slice(-2) + ":" + ("0" + (m % 60)).slice(-2); }
 function pollEnds(o, start) { return pollSlots(o).map(pollEndOf).filter(function (t) { return (+t.slice(0, 2) * 60 + +t.slice(3)) - (+start.slice(0, 2) * 60 + +start.slice(3)) >= 60; }); }
-function pollTimeOptions(list, chosen) { return list.map(function (t) { return '<option value="' + t + '"' + (t === chosen ? " selected" : "") + ">" + esc(clockText(t)) + "</option>"; }).join(""); }
+function pollTimeOptions(list, chosen) { return list.map(function (t) { return '<option value="' + esc(t) + '"' + (t === chosen ? " selected" : "") + ">" + esc(clockText(t)) + "</option>"; }).join(""); }
 function pollGridHTML(p, where) {
   if (p.kind === "hours") return pollHoursGridHTML(p, where); // dates as rows, times as buttons (on a phone the rows stack: a list of days with time chips). Ticks are kept until Submit.
   var days = [], by = {}, draft = pollDraft(p);
@@ -126,9 +126,9 @@ function pollManageHTML(p, where) {
       '<button class="btn ghost" type="button" data-poll-act="cancel-no" data-poll="' + p.id + '">Keep it</button></div>';
   }
   if (p.kind === "hours") {
-    var o0 = p.options[0], st = pollSlots(o0), s0 = st[0], ends = pollEnds(o0, s0), pre = "poll-pick-" + where + "-" + p.id;
+    var upcoming = p.options.filter(function (o) { return o.date >= isoDate(T); }), o0 = upcoming[0] || p.options[0], st = pollSlots(o0), s0 = st[0] || "", ends = s0 ? pollEnds(o0, s0) : [], pre = "poll-pick-" + where + "-" + p.id;
     return '<div class="row poll-manage poll-manage-hours"><span class="poll-other" id="' + pre + '-l">Lock in another time</span><span role="group" aria-labelledby="' + pre + '-l" class="row">' +
-      '<label class="sr-only" for="' + pre + '-d">Day</label><select id="' + pre + '-d" data-poll-lock-sel="day" data-poll="' + p.id + '">' + p.options.map(function (o) { return '<option value="' + o.id + '">' + esc(goingDay(o.date)) + "</option>"; }).join("") + "</select>" +
+      '<label class="sr-only" for="' + pre + '-d">Day</label><select id="' + pre + '-d" data-poll-lock-sel="day" data-poll="' + p.id + '">' + (upcoming.length ? upcoming : p.options).map(function (o) { return '<option value="' + o.id + '">' + esc(goingDay(o.date)) + "</option>"; }).join("") + "</select>" +
       '<label class="sr-only" for="' + pre + '-s">From</label><select id="' + pre + '-s" data-poll-lock-sel="start" data-poll="' + p.id + '">' + pollTimeOptions(st.slice(0, -1), s0) + "</select>" +
       '<label class="sr-only" for="' + pre + '-e">To</label><select id="' + pre + '-e" data-poll-lock-sel="end" data-poll="' + p.id + '">' + pollTimeOptions(ends, ends[0]) + "</select></span>" +
       '<button class="btn ghost" type="button" data-poll-act="lock-pick" data-poll="' + p.id + '">Lock in</button>' +
@@ -164,7 +164,7 @@ function pollCardHTML(p, where) {
   } else {
     h += "<" + lv + ' class="poll-h" id="poll-h-' + where + "-" + id + '">' + esc(head) + "</" + lv + ">"; // locked, cancelled or ended: the name says which poll it was
     if (p.status === "locked" && p.locked) {
-      h += '<p class="poll-lockedline"><strong>Locked in: ' + esc(pollWhen(p.locked)) + "</strong> · " + esc(pollNames(p.locked.names)) + (p.locked.names.length ? " can make it." : " (nobody is free for all of it).") + "</p>";
+      h += '<p class="poll-lockedline"><strong>Locked in: ' + esc(pollWhen(p.locked)) + "</strong> \u00b7 " + (p.kind === "hours" && !p.locked.names.length ? "Nobody is free for all of it." : esc(pollNames(p.locked.names)) + " can make it.") + "</p>";
       if (p.locked.yours) {
         h += pollCommitted(p) ? '<p class="hint">You’re going on this date.</p>' :
           '<div class="row"><button class="btn" type="button" data-poll-act="commit" data-poll="' + id + '">Commit to ' + esc(pollWhen(p.locked)) + "</button></div>";
@@ -196,7 +196,7 @@ function pollsEventHTML(e) { // the crews' polls for this event; a poll opens by
   var interest = canStart ? pollInterest(e.id) : null;
   if (interest) CREWS.filter(function (c) { return !mine.some(function (p) { return p.crew_id === c.id; }); }).forEach(function (c) {
     var inf = interest.filter(function (x) { return x.crew_id === c.id; })[0];
-    if (inf && inf.ready && exhibit) h += pollDayPickHTML(c, e, "event"); // CC-298: someone has to choose the days
+    if (inf && inf.ready && exhibit) h += pollsReadyHours().some(function (r) { return r.crew_id === c.id && String(r.event_id) === String(e.id); }) ? pollDayPickHTML(c, e, "event") : ""; // CC-298: someone has to choose the days; only while the server lists it (a locked or cancelled poll leaves the list, and the picker with it)
     else if (inf && !inf.ready) h += '<p class="hint poll-wait">' + esc(c.name) + ": " + inf.shared + " of " + inf.members_total + " have shared interest in this event. A poll opens " + (exhibit ? "once more than half have, and a member picks its days" : "by itself once more than half have") + ".</p>";
   });
   return h ? '<section class="polls" aria-label="Date polls">' + h + "</section>" : "";
@@ -346,7 +346,7 @@ document.addEventListener("click", function (ev) {
     $("myplan-live").textContent = (act === "day-all" ? "Marked free all day: " : "Cleared: ") + goingDay(dopt.date);
   } else if (act === "day-prev" || act === "day-next") {
     POLL_DAY[p.id] = pollDayIndex(p) + (act === "day-next" ? 1 : -1); pollsRepaint();
-    pollFocus('.poll-hday.is-cur .poll-hday-l');
+    pollFocus('[data-poll-card="' + p.id + '"] .poll-hday.is-cur .poll-hday-l');
   } else if (act === "submit" && p.kind === "hours") {
     var bl = pollBlockDraft(p).map(function (k) { return { option_id: +k.split("|")[0], start: k.split("|")[1] }; });
     if (!bl.length) { POLL_ERR[p.id] = "Check this: tick at least one half-hour, or choose None work."; pollsRepaint(); pollFocus('[data-poll-card="' + p.id + '"] [data-poll-act="submit"]'); return; }
