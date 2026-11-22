@@ -2077,27 +2077,37 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 @media (max-width: 640px) {
   .poll-day { grid-template-columns: minmax(0, 1fr); }
 }
-/* CC-298: an exhibition poll. The days to choose from are chips; each day's half-hours are chips in a grid. Days sit side by side
-   on a wide screen; at 640px and below one day shows at a time, with Previous and Next. Tokens only. */
-.poll-pickdays { display: flex; flex-wrap: wrap; gap: 8px; }
+/* CC-298: an exhibition poll. A timetable: a column of times, then a column of square cells for each day, one square per half-hour.
+   A chosen square turns green (the Sources grid's "ok" green) with a tick. Rows are the union of the days' hours, so the days line up; a
+   half-hour when the venue is closed is a blank. At 640px and below one day shows at a time, with Previous and Next. Tokens only. */
+.poll-pickday-wrap, .poll-pickdays { display: flex; flex-wrap: wrap; gap: 6px; }
+.poll-sq { display: flex; align-items: center; justify-content: center; margin: 0; padding: 0; background: var(--surface); color: var(--on-src); border: 1px solid var(--field-line); border-radius: 0; font: inherit; cursor: pointer; }
+.poll-sq:hover { border-color: var(--rule); }
+.poll-sq[aria-pressed="true"] { background: var(--src-ok-deep); border-color: var(--gauge-ok); }
+.poll-sq[aria-pressed="true"]::after { content: "\2713"; font-weight: 700; line-height: 1; }
+.poll-sq:disabled { opacity: 0.5; cursor: not-allowed; }
+.poll-pickday { min-height: 44px; padding: 6px 14px; }
 .poll-hours { display: grid; gap: 12px; }
 .poll-hnav { display: none; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; gap: 8px; }
 .poll-hnav-n { font-weight: 700; grid-column: 1 / -1; order: -1; text-align: center; }
 .poll-hnav .btn { min-width: 0; width: 100%; }
-.poll-hdays { display: grid; grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr)); gap: 12px; align-items: start; }
-.poll-hday { display: grid; gap: 8px; min-width: 0; }
+.poll-tt { display: grid; grid-auto-flow: column; grid-template-columns: 3.75rem repeat(var(--n), minmax(5.5rem, 1fr)); grid-template-rows: auto repeat(var(--rows), 30px); column-gap: 6px; overflow-x: auto; }
+.poll-tt-t { display: flex; align-items: flex-start; justify-content: flex-end; padding-right: 6px; font-size: 0.8125rem; color: var(--muted); line-height: 1; transform: translateY(-0.4em); }
+.poll-tt-h { display: grid; align-content: end; gap: 2px; padding-bottom: 6px; min-width: 0; }
 .poll-hday-l { margin: 0; font-size: 1rem; }
 .poll-hday-l:focus { outline: none; }
-.poll-hday-h { display: block; font-weight: 400; color: var(--muted); font-size: 0.875rem; }
-.poll-hday-all { gap: 4px 12px; }
-.poll-blocks { display: grid; gap: 6px; }
-.poll-block { width: 100%; padding: 6px 8px; }
+.poll-hday-h { color: var(--muted); font-size: 0.8125rem; }
+.poll-hday-all { display: flex; flex-wrap: wrap; gap: 0 10px; }
+.poll-tt-x { background: var(--line); opacity: 0.45; }
+.poll-block { width: 100%; height: 100%; border-top-width: 0; }
+.poll-block.poll-tt-hr { border-top-width: 1px; }
 .poll-manage-hours select { min-height: 44px; }
 @media (max-width: 640px) {
   .poll-hnav { display: grid; }
-  .poll-hday:not(.is-cur) { display: none; }
-  .poll-hdays { grid-template-columns: minmax(0, 1fr); }
-  .poll-blocks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .poll-tt { grid-template-columns: 3.75rem minmax(0, 1fr); }
+  .poll-tt-d:not(.is-cur) { display: none; }
+  .poll-tt-h { padding-bottom: 8px; }
+  .poll-block { grid-row: auto; }
 }
 
 /* CC-301 Show Run: a month calendar of every performance, in the event edit form (showrun.js). Tokens only: a day with a show is

@@ -60,23 +60,29 @@ function pollBlockDraft(p) { // "optionId|13:30" for each half-hour ticked but n
   return POLL_DRAFT[p.id];
 }
 function pollDayIndex(p) { var i = POLL_DAY[p.id] || 0; return Math.max(0, Math.min(i, p.options.length - 1)); }
-function pollHoursGridHTML(p, where) { // days side by side; on a phone one day at a time (the CSS hides the others), with Previous and Next
-  var draft = pollBlockDraft(p), cur = pollDayIndex(p), n = p.options.length, past = isoDate(T);
-  return '<div class="poll-hours" role="group" aria-label="Half-hours that work for you">' +
+function pollMin(t) { return +t.slice(0, 2) * 60 + +t.slice(3); }
+function pollHoursGridHTML(p, where) { // a timetable: a column of times, then a column of squares for each day, one square per half-hour (rows are the union of the days' hours, so the days line up). On a phone one day shows at a time, with Previous and Next.
+  var draft = pollBlockDraft(p), cur = pollDayIndex(p), n = p.options.length, past = isoDate(T), h3 = where === "crew" ? "h6" : "h3";
+  var first = 1440, last = 0;
+  p.options.forEach(function (o) { var sl = pollSlots(o); if (sl.length) { first = Math.min(first, pollMin(sl[0])); last = Math.max(last, pollMin(sl[sl.length - 1]) + 30); } });
+  var rows = []; for (var m = first; m < last; m += 30) rows.push(("0" + Math.floor(m / 60)).slice(-2) + ":" + ("0" + (m % 60)).slice(-2));
+  var h = '<div class="poll-hours" role="group" aria-label="Half-hours that work for you">' +
     '<div class="poll-hnav row"><button class="btn ghost" type="button" data-poll-act="day-prev" data-poll="' + p.id + '"' + (cur === 0 ? " disabled" : "") + ">Previous day</button>" +
     '<span class="poll-hnav-n" aria-live="polite">Day ' + (cur + 1) + " of " + n + '</span><button class="btn ghost" type="button" data-poll-act="day-next" data-poll="' + p.id + '"' + (cur >= n - 1 ? " disabled" : "") + ">Next day</button></div>" +
-    '<div class="poll-hdays">' + p.options.map(function (o, i) {
-      var label = "poll-hl-" + esc(where) + "-" + p.id + "-" + o.id, off = o.date < past;
-      return '<div role="group" class="poll-hday' + (i === cur ? " is-cur" : "") + '" aria-labelledby="' + label + '"><h' + (where === "crew" ? "6" : "3") + ' class="poll-hday-l" id="' + label + '">' + esc(goingDay(o.date)) +
-        ' <span class="poll-hday-h">' + esc(clockText(o.opens)) + "\u2013" + esc(clockText(o.closes)) + '</span></h' + (where === "crew" ? "6" : "3") + '><div class="row poll-hday-all">' +
-        '<button class="textbtn" type="button" data-poll-act="day-all" data-poll="' + p.id + '" data-option="' + o.id + '"' + (off ? " disabled" : "") + ">Free all day</button>" +
-        '<button class="textbtn" type="button" data-poll-act="day-none" data-poll="' + p.id + '" data-option="' + o.id + '"' + (off ? " disabled" : "") + ">Clear day</button></div>" +
-        '<div class="poll-blocks">' + o.blocks.map(function (b) {
-          return '<button class="poll-cell poll-block" type="button" data-poll-act="btick" data-poll="' + p.id + '" data-option="' + o.id + '" data-start="' + esc(b.start) + '" aria-pressed="' + (draft.indexOf(o.id + "|" + b.start) >= 0) +
-            '" aria-label="' + esc(goingDay(o.date) + ", " + clockText(b.start)) + '"' + (off ? " disabled" : "") + ">" + esc(clockText(b.start)) + "</button>";
-        }).join("") + "</div></div>";
-    }).join("") + "</div>" +
-    '<div class="row"><button class="btn" type="button" data-poll-act="submit" data-poll="' + p.id + '">Submit</button>' +
+    '<div class="poll-tt" style="--n:' + n + "; --rows:" + rows.length + '"><div class="poll-tt-c" aria-hidden="true"></div>' + rows.map(function (t) { return '<div class="poll-tt-t" aria-hidden="true">' + (t.slice(3) === "00" ? esc(clockText(t)) : "") + "</div>"; }).join("");
+  p.options.forEach(function (o, i) {
+    var label = "poll-hl-" + esc(where) + "-" + p.id + "-" + o.id, off = o.date < past, grid = {}, cls = "poll-tt-d" + (i === cur ? " is-cur" : "");
+    pollSlots(o).forEach(function (t) { grid[t] = 1; });
+    h += '<div class="poll-tt-h ' + cls + '"><' + h3 + ' class="poll-hday-l" id="' + label + '">' + esc(goingDay(o.date)) + '</' + h3 + '><span class="poll-hday-h">' + esc(clockText(o.opens)) + "\u2013" + esc(clockText(o.closes)) + '</span>' +
+      '<span class="poll-hday-all"><button class="textbtn" type="button" data-poll-act="day-all" data-poll="' + p.id + '" data-option="' + o.id + '"' + (off ? " disabled" : "") + ">Free all day</button>" +
+      '<button class="textbtn" type="button" data-poll-act="day-none" data-poll="' + p.id + '" data-option="' + o.id + '"' + (off ? " disabled" : "") + ">Clear day</button></span></div>";
+    rows.forEach(function (t) {
+      if (!grid[t]) { h += '<div class="poll-tt-x ' + cls + '" aria-hidden="true"></div>'; return; } // the venue is closed
+      h += '<button class="poll-sq poll-block ' + cls + (t.slice(3) === "00" ? " poll-tt-hr" : "") + '" type="button" data-poll-act="btick" data-poll="' + p.id + '" data-option="' + o.id + '" data-start="' + esc(t) + '" aria-pressed="' + (draft.indexOf(o.id + "|" + t) >= 0) +
+        '" aria-label="' + esc(goingDay(o.date) + ", " + clockText(t)) + '"' + (off ? " disabled" : "") + "></button>";
+    });
+  });
+  return h + '</div><div class="row"><button class="btn" type="button" data-poll-act="submit" data-poll="' + p.id + '">Submit</button>' +
     '<button class="btn ghost" type="button" data-poll-act="none" data-poll="' + p.id + '">None work</button></div></div>';
 }
 function pollDayPickHTML(c, e, where) { // the crew is ready and there's no poll: any member picks up to five days; that starts the poll
@@ -85,7 +91,7 @@ function pollDayPickHTML(c, e, where) { // the crew is ready and there's no poll
   if (!days.length) return h + '<p class="hint">No open days in the next 30 days.</p></div>';
   h += '<div class="poll-pickdays" role="group" aria-label="Days for the poll">' + days.map(function (iso) {
     var on = mine.indexOf(iso) >= 0;
-    return '<button class="poll-cell poll-pickday" type="button" data-poll-act="pickday" data-key="' + id + '" data-day="' + iso + '" aria-pressed="' + on + '"' + (!on && mine.length >= POLL_DAYS_MAX ? " disabled" : "") + ">" + esc(goingDay(iso)) + "</button>";
+    return '<button class="poll-sq poll-pickday" type="button" data-poll-act="pickday" data-key="' + id + '" data-day="' + iso + '" aria-pressed="' + on + '"' + (!on && mine.length >= POLL_DAYS_MAX ? " disabled" : "") + ">" + esc(goingDay(iso)) + "</button>";
   }).join("") + "</div>" +
     '<p class="poll-count" aria-live="polite">' + mine.length + " of " + POLL_DAYS_MAX + ' days chosen</p><p class="form-error" role="alert" data-poll-pick-err="' + id + '">' + esc(POLL_ERR["pick-" + key] || "") + "</p>" +
     '<div class="row"><button class="btn" type="button" data-poll-act="startdays" data-crew="' + esc(c.id) + '" data-event="' + esc(e.id) + '"' + (mine.length ? "" : " disabled") + ">Start the poll</button></div></div>";
@@ -346,7 +352,7 @@ document.addEventListener("click", function (ev) {
     $("myplan-live").textContent = (act === "day-all" ? "Marked free all day: " : "Cleared: ") + goingDay(dopt.date);
   } else if (act === "day-prev" || act === "day-next") {
     POLL_DAY[p.id] = pollDayIndex(p) + (act === "day-next" ? 1 : -1); pollsRepaint();
-    pollFocus('[data-poll-card="' + p.id + '"] .poll-hday.is-cur .poll-hday-l');
+    pollFocus('[data-poll-card="' + p.id + '"] .poll-tt-h.is-cur .poll-hday-l');
   } else if (act === "submit" && p.kind === "hours") {
     var bl = pollBlockDraft(p).map(function (k) { return { option_id: +k.split("|")[0], start: k.split("|")[1] }; });
     if (!bl.length) { POLL_ERR[p.id] = "Check this: tick at least one half-hour, or choose None work."; pollsRepaint(); pollFocus('[data-poll-card="' + p.id + '"] [data-poll-act="submit"]'); return; }

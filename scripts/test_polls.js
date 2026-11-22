@@ -133,7 +133,8 @@ assert.strictEqual((html.match(/data-poll-act="btick"/g) || []).length, 8, "a bu
 assert.strictEqual((html.match(/aria-pressed="true"/g) || []).length, 1, "your saved half-hour starts pressed");
 assert(html.includes(`aria-label="${run("goingDay('" + d(2) + "')")}, 10:30 AM"`), "each half-hour is named with its day");
 assert(html.includes("Day 1 of 2") && html.includes('data-poll-act="day-next"') && /data-poll-act="day-prev"[^>]*disabled/.test(html), "one day at a time on a phone, Previous disabled on the first");
-assert.strictEqual((html.match(/poll-hday is-cur/g) || []).length, 1, "only one day is the current one");
+assert.strictEqual((html.match(/poll-tt-h poll-tt-d is-cur/g) || []).length, 1, "only one day is the current one");
+assert(!html.includes("poll-cell poll-block") && html.includes("poll-sq poll-block"), "squares, not pills");
 assert(html.includes("Free all day") && html.includes("Clear day") && html.includes("None work") && html.includes('data-poll-act="submit"'));
 assert(html.includes("10 AM–12 PM"), "each day shows its hours");
 run("POLL_DAY[7] = 1");
