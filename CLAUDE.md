@@ -11,6 +11,9 @@ serves this site locally on http://localhost:4173.
   adding it.
 - `start.js` routes on the URL hash (`#account`, `#submit`, `#approvals`, ...). Links in emails use these.
 - Colors are theme tokens. Check new UI in both light and dark themes and at phone width.
+- **No pills or rounded chips, ever.** A tag ("Best"), a toggle, a day or time cell is a box with sharp corners (`border-radius: 0`)
+  and the slight shadow `box-shadow: var(--lift)`. A chosen cell turns green (`--src-ok-deep`, `--gauge-ok` border) with a tick.
+  `design/lakefront-brief.md` (Shape) has the rule; circles stay for people only.
 
 ## Accessibility
 

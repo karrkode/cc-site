@@ -19,6 +19,7 @@
   --info-soft: #E6F2F8; --on-info-soft: #0E2A40;
   --danger-soft: #FBE9E7; --on-danger-soft: #0E2A40;
   --focus: #0F5E8C;
+  --lift: 0 1px 3px rgb(14 42 64 / 0.3); /* CC-298: the slight shadow on a tag, chip or toggle: a square box, never a pill */
   --cat-theater: #B9472E; --cat-music: #5B3E9E; --cat-art: #2F7A5B;
   --veil: .18; /* CC-238: how much of the page colour lies over a card at the back of the home stack */
   --gauge-ok: #1B8258; --gauge-warn: #B3730A; --gauge-stop: #C8102E; /* CC-207: the budget dial's zones, and nothing else */
@@ -38,6 +39,7 @@
   --info-soft: #12304A; --on-info-soft: #EAF2F7;
   --danger-soft: #3A1C22; --on-danger-soft: #EAF2F7;
   --focus: #9CD3EF;
+  --lift: 0 1px 3px rgb(0 0 0 / 0.65);
   --cat-theater: #B9472E; --cat-music: #7A5AD0; --cat-art: #2F7A5B; /* music is lighter at night, so tiles don't vanish */
   --veil: .11; /* the veil is the page colour, so at night less of it does the same job */
   --gauge-ok: #4FB08A; --gauge-warn: #E3A73C; --gauge-stop: #FF5C70;
@@ -2049,12 +2051,12 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 .poll-best { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
 .poll-best li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
 .poll-best-t { font-weight: 700; }
-.poll-tag { display: inline-block; padding: 0 8px; border: 2px solid var(--rule); border-radius: 999px; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.poll-tag { display: inline-block; padding: 0 8px; border: 2px solid var(--rule); border-radius: 0; box-shadow: var(--lift); background: var(--surface); font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.04em; }
 .poll-days { margin: 0; padding: 0; list-style: none; display: grid; gap: 0; border-top: 1px solid var(--line); }
 .poll-day { display: grid; grid-template-columns: minmax(8.5rem, 11rem) minmax(0, 1fr); align-items: center; gap: 6px 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .poll-day-l { font-weight: 700; }
 .poll-times { display: flex; flex-wrap: wrap; gap: 8px; }
-.poll-cell { min-height: 44px; min-width: 44px; padding: 6px 14px; background: transparent; color: var(--text); border: 1px solid var(--field-line); border-radius: 999px; font: inherit; cursor: pointer; }
+.poll-cell { min-height: 44px; min-width: 44px; padding: 6px 14px; background: transparent; color: var(--text); border: 1px solid var(--field-line); border-radius: 0; box-shadow: var(--lift); font: inherit; cursor: pointer; }
 .poll-cell[aria-pressed="true"] { background: var(--rule); color: var(--page); border-color: var(--rule); }
 .poll-cell-n { margin-left: 6px; font-variant-numeric: tabular-nums; opacity: 0.8; }
 .poll-new { position: relative; overflow: hidden; }
@@ -2076,6 +2078,38 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 .poll-form label { display: grid; gap: 4px; }
 @media (max-width: 640px) {
   .poll-day { grid-template-columns: minmax(0, 1fr); }
+}
+/* CC-298: an exhibition poll. A timetable: a column of times, then a column of square cells for each day, one square per half-hour.
+   A chosen square turns green (the Sources grid's "ok" green) with a tick. Rows are the union of the days' hours, so the days line up; a
+   half-hour when the venue is closed is a blank. At 640px and below one day shows at a time, with Previous and Next. Tokens only. */
+.poll-pickday-wrap, .poll-pickdays { display: flex; flex-wrap: wrap; gap: 6px; }
+.poll-sq { display: flex; align-items: center; justify-content: center; margin: 0; padding: 0; background: var(--surface); color: var(--on-src); border: 1px solid var(--field-line); border-radius: 0; font: inherit; cursor: pointer; }
+.poll-sq:hover { border-color: var(--rule); }
+.poll-sq[aria-pressed="true"] { background: var(--src-ok-deep); border-color: var(--gauge-ok); }
+.poll-sq[aria-pressed="true"]::after { content: "\2713"; font-weight: 700; line-height: 1; }
+.poll-sq:disabled { opacity: 0.5; cursor: not-allowed; }
+.poll-pickday { min-height: 44px; padding: 6px 14px; box-shadow: var(--lift); } /* a lone box lifts; the timetable's flush cells stay flat */
+.poll-hours { display: grid; gap: 12px; }
+.poll-hnav { display: none; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; gap: 8px; }
+.poll-hnav-n { font-weight: 700; grid-column: 1 / -1; order: -1; text-align: center; }
+.poll-hnav .btn { min-width: 0; width: 100%; }
+.poll-tt { display: grid; grid-auto-flow: column; grid-template-columns: 3.75rem repeat(var(--n), minmax(5.5rem, 1fr)); grid-template-rows: auto repeat(var(--rows), 30px); column-gap: 6px; overflow-x: auto; }
+.poll-tt-t { display: flex; align-items: flex-start; justify-content: flex-end; padding-right: 6px; font-size: 0.8125rem; color: var(--muted); line-height: 1; transform: translateY(-0.4em); }
+.poll-tt-h { display: grid; align-content: end; gap: 2px; padding-bottom: 6px; min-width: 0; }
+.poll-hday-l { margin: 0; font-size: 1rem; }
+.poll-hday-l:focus { outline: none; }
+.poll-hday-h { color: var(--muted); font-size: 0.8125rem; }
+.poll-hday-all { display: flex; flex-wrap: wrap; gap: 0 10px; }
+.poll-tt-x { background: var(--line); opacity: 0.45; }
+.poll-block { width: 100%; height: 100%; border-top-width: 0; }
+.poll-block.poll-tt-hr { border-top-width: 1px; }
+.poll-manage-hours select { min-height: 44px; }
+@media (max-width: 640px) {
+  .poll-hnav { display: grid; }
+  .poll-tt { grid-template-columns: 3.75rem minmax(0, 1fr); }
+  .poll-tt-d:not(.is-cur) { display: none; }
+  .poll-tt-h { padding-bottom: 8px; }
+  .poll-block { grid-row: auto; }
 }
 
 /* CC-301 Show Run: a month calendar of every performance, in the event edit form (showrun.js). Tokens only: a day with a show is
