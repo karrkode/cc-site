@@ -22,6 +22,7 @@ serves this site locally on http://localhost:4173.
   and admin accounts, no skips allowed, and put the result in the PR's test plan. Any failure blocks the PR, unless it passes on two reruns of only that state
   (`A11Y_ONLY=<state>`): then it is flaky, and it is listed in the PR instead. Also run it before
   a release. Setup and options are at the top of the file. It prints violations only.
+- `scripts/check_contrast_over.js` (CC-295) checks text contrast by pixels where axe can't: the masthead's lake in every season and dusk, tiles, posters and photo credits. Same needs as the scan (running site, Chrome, `npm ci` in `scripts/a11y`); run it after changing any of those or a colour token. On a story's own port the site must serve photos from its own origin (the site only takes same-origin or https images).
 - Rows and cards draw their focus ring on the whole row (`:has(a:focus-visible)`), so the link itself shows no outline.
 
 ## Checking in the browser pane
