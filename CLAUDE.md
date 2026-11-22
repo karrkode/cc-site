@@ -17,8 +17,10 @@ serves this site locally on http://localhost:4173.
 ## Accessibility
 
 - `node scripts/test_skip_link.js` runs in CI: the skip link, and unique ids. `scripts/scan_a11y.js` is the full axe scan
-  (every page, and the open menus and dialogs with their focus in and out, light and dark, desktop and phone width). It needs a running site and Chrome, so run it before a release
-  and after changing a page. Setup and options are at the top of the file. It prints violations only.
+  (every page, and the open menus and dialogs with their focus in and out, light and dark, desktop and phone width). It needs a running site and Chrome, so it isn't
+  a CI job. It is a required check before every PR that touches `public/` (CC-294): run it on the story's preview with the member
+  and admin accounts, no skips allowed, and put the result in the PR's test plan. Any failure blocks the PR. Also run it before
+  a release. Setup and options are at the top of the file. It prints violations only.
 - Rows and cards draw their focus ring on the whole row (`:has(a:focus-visible)`), so the link itself shows no outline.
 
 ## Checking in the browser pane
