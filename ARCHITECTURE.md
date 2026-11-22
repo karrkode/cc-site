@@ -266,6 +266,7 @@ GitHub Actions tests each pull request.
 For the site, the "Page checks" job does these checks:
 - The pages parse, and each element that the scripts use is in the page.
 - Each colour pair meets WCAG AA in both themes (`scripts/check_contrast.py`, CC-136). The check reads the tokens from `site.css`. If you change a token, the check examines the new value.
+- Not in CI (it needs the API and Chrome, like `scan_a11y.js`): `scripts/check_contrast_over.js` (CC-295) measures the pixels behind text on the masthead's lake (all eight lake looks), the tiles, the poster and a photo's credit, light and dark, desktop and phone. Run it before a release and after changing the masthead, a tile, a poster or a token; it prints failures and anything it couldn't check.
 - The Node tests in `scripts/`: the water, the listing rows, the event poster, the home page and the motion.
 - The asset links can be stamped, and each script has correct JavaScript syntax.
 
