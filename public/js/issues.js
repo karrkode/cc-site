@@ -227,6 +227,13 @@ function loadJiraStates(req, linked) {
     linked.forEach(function (i) { var st = document.querySelector('[data-jira-for="' + i.id + '"] [data-jira-state]'); if (st) { st.textContent = "Jira status unavailable"; st.className = "state needs"; } });
   });
 }
+// CC-293: "Create Jira ticket" is disabled while the draft loads, which drops keyboard focus to the page, so the dialog has nothing
+// to give focus back to when it closes. It goes back here, to the button, unless the list has been redrawn without it.
+var JIRA_OPENER = null;
+$("jira-dialog").addEventListener("close", function () {
+  var o = JIRA_OPENER; JIRA_OPENER = null;
+  if (o && o.isConnected && o.getClientRects().length) o.focus();
+});
 $("issues-list").addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-jira-make]"); if (!b) return;
   var i = ISSUES_ITEMS[b.getAttribute("data-jira-make")]; if (!i) return;
@@ -241,7 +248,7 @@ $("issues-list").addEventListener("click", function (ev) {
     var hasMW = typeof d.member_words === "string";  // an older API has none: the description holds the text, nothing to send back
     $("jr-member-field").hidden = !hasMW; $("jr-member").value = hasMW ? d.member_words : "";
     $("jr-offline").hidden = d.connected; $("jr-error").textContent = ""; $("jr-send").disabled = false;
-    openDialog($("jira-dialog"), b); $("jr-summary").focus();
+    JIRA_OPENER = b; openDialog($("jira-dialog"), b); $("jr-summary").focus();
   }, function () { b.disabled = false; $("issues-status").textContent = errorText(null); });
 });
 $("jr-cancel").addEventListener("click", function () { closeDialog($("jira-dialog")); });
