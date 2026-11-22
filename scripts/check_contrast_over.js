@@ -15,10 +15,10 @@
 //     CONTRAST_VERBOSE=1 node scripts/check_contrast_over.js     # also the worst ratio per page and state
 //
 // What it covers: light and dark, at 1280px and 375px. The masthead (full on home, compact on the catalog) in all eight
-// lake looks (winter, spring, summer, autumn, each by day and at dusk, shown with ?lake=). The tiles, the home stack, the
+// lake looks (winter, spring, summer, autumn, each by day and at dusk, shown with ?lake=). The tiles, the
 // poster and a photo's credit in the clock's own look (their water doesn't change with the season). Motion is off, so the
 // water holds still. Signed-out pages only. A page that doesn't show what it should fails the run, like in scan_a11y.js.
-// Prints failures only, grouped by text, and exits 1 if there is one. The test data needs an event with a photo and a credit.
+// Prints failures, grouped by text, and anything it could not check (NOT CHECKED), and exits 1 if there is one. The test data needs an event with a photo and a credit.
 "use strict";
 const path = require("path");
 const { createRequire } = require("module");
@@ -91,7 +91,7 @@ function collect({ onlyMast, maxY }) {
 // and water that the letters don't touch), and B gives what is behind each of them.
 function measure(arg) {
   const { pngA, pngB, items, width, height } = arg;
-  const load = (png) => new Promise((resolve) => {
+  const load = (png) => new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
       const cv = document.createElement("canvas");
@@ -100,6 +100,7 @@ function measure(arg) {
       ctx.drawImage(img, 0, 0);
       resolve(ctx);
     };
+    img.onerror = () => reject(new Error("the screenshot could not be read"));
     img.src = "data:image/png;base64," + png;
   });
   return Promise.all([load(pngA), load(pngB)]).then(([A, B]) => {
@@ -132,7 +133,8 @@ function measure(arg) {
   const failures = new Map(); // "where: text" -> {ratio, need, states:[]}
   const notShown = [], table = [];
   for (const [theme, w, h] of VIEWS) {
-    const ctx = await browser.newContext({ viewport: { width: w, height: h }, colorScheme: theme, reducedMotion: "reduce", deviceScaleFactor: 1, bypassCSP: true });
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, reducedMotion: "reduce", deviceScaleFactor: 1, bypassCSP: true });
+    await ctx.addInitScript((t) => { try { localStorage.setItem("cc_theme", t); } catch (e) {} }, theme); // the site reads its theme from here, not from the browser's setting
     for (const p of PAGES) {
       if (ONLY && !ONLY.includes(p.name)) continue;
       const looks = [""].concat(p.lakes ? LAKES : []); // "" is the clock's own look: everything is measured; the others, the masthead only
@@ -141,26 +143,35 @@ function measure(arg) {
         const id = p.name === "event-photo" ? ids.photo : ids.event;
         if (!id && /\{(event|photo)\}/.test(p.path)) { notShown.push(state + ": no event" + (p.name === "event-photo" ? " with a photo and a credit" : "")); continue; }
         const url = BASE + (look ? "/?lake=" + look : "") + p.path.replace("{event}", id).replace("{photo}", id);
-        for (let attempt = 1; attempt <= 2; attempt++) {
+        for (let attempt = 1; attempt <= 3; attempt++) {
         const page = await ctx.newPage();
         try {
           await page.goto(url);
           await page.waitForSelector(p.ready, { state: "visible", timeout: 15000 });
+          await page.waitForTimeout(1500); // the water's first paint, the view transition, the rest of the listings
           await page.evaluate(() => document.querySelectorAll("img[loading=lazy]").forEach((i) => { i.loading = "eager"; }));
-          await page.waitForFunction(() => Array.from(document.images).every((i) => i.complete), null, { timeout: 8000 }).catch(() => {});
-          await page.waitForTimeout(1500); // the water's first paint, the view transition
+          await page.waitForFunction(() => Array.from(document.images).every((i) => !i.getAttribute("src") || i.complete), null, { timeout: 15000 }).catch(() => {}); // a photo that still hasn't loaded is reported below
+          await page.waitForTimeout(300);
+          const [season, dusk] = look.split(",");
+          const applied = await page.evaluate(() => ({ theme: document.documentElement.dataset.theme, season: (document.getElementById("mast") || {}).dataset && document.getElementById("mast").dataset.season, dusk: !!document.getElementById("mast") && document.getElementById("mast").hasAttribute("data-dusk"), broken: Array.from(document.images).filter((i) => i.getAttribute("src") && !i.naturalWidth).length }));
+          if (applied.theme !== theme) throw new Error("the " + theme + " theme wasn't applied (data-theme is " + applied.theme + ")");
+          if (look && (applied.season !== season || applied.dusk !== !!dusk)) throw new Error("?lake=" + look + " wasn't applied (the masthead shows " + applied.season + (applied.dusk ? ",dusk" : "") + ")");
+          if (applied.broken) throw new Error(applied.broken + " photo(s) didn't load");
+          await page.evaluate(() => { window.scrollTo(0, 0); return document.fonts.ready; });
           const items = await page.evaluate(collect, { onlyMast: !!look, maxY: MAX_Y });
           if (!items.length) throw new Error("no text found to check");
           const docH = await page.evaluate(() => document.documentElement.scrollHeight);
           const height = Math.min(MAX_Y, docH), clip = { x: 0, y: 0, width: w, height };
           const pngA = (await page.screenshot({ fullPage: true, clip })).toString("base64");
           await page.addStyleTag({ content: "*, *::before, *::after { color: transparent !important; -webkit-text-fill-color: transparent !important; caret-color: transparent !important; }" });
+          await page.waitForTimeout(250); // a colour transition would leave glyphs half there
           const pngB = (await page.screenshot({ fullPage: true, clip })).toString("base64");
           const got = await page.evaluate(measure, { pngA, pngB, items, width: w, height });
+          const unmeasured = [];
           let low = Infinity;
           got.forEach((g, i) => {
-            if (g.n === 0) return;
             const it = items[i], need = it.large ? LARGE : TEXT;
+            if (g.n === 0) { unmeasured.push(state + ": " + it.name + ' "' + it.text + '" has no glyph pixels to measure (hidden, covered, or the same colour as what is behind it)'); return; }
             low = Math.min(low, g.p1);
             if (g.p1 >= need) return;
             const key = it.name + ' "' + it.text + '" (' + (it.large ? "large, 3:1" : "4.5:1") + ")";
@@ -168,11 +179,12 @@ function measure(arg) {
             f.states.push(state); f.worst = Math.min(f.worst, g.worst); f.p1 = Math.min(f.p1, g.p1);
             failures.set(key, f);
           });
+          unmeasured.forEach((m) => notShown.push(m));
           table.push([state, items.length + " texts, lowest " + (low === Infinity ? "-" : low.toFixed(2) + ":1")]);
           await page.close();
           break;
-        } catch (e) { // a slow API now and then: one more try before it counts as not checked
-          if (attempt === 2) notShown.push(state + ": " + e.message.split("\n")[0]);
+        } catch (e) { // a slow API now and then: two more tries before it counts as not checked
+          if (attempt === 3) notShown.push(state + ": " + e.message.split("\n")[0]);
         }
         await page.close();
         }
