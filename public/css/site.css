@@ -2077,6 +2077,28 @@ a.cal-link { display: inline-flex; align-items: center; } /* CC-170: a link amon
 @media (max-width: 640px) {
   .poll-day { grid-template-columns: minmax(0, 1fr); }
 }
+/* CC-298: an exhibition poll. The days to choose from are chips; each day's half-hours are chips in a grid. Days sit side by side
+   on a wide screen; at 640px and below one day shows at a time, with Previous and Next. Tokens only. */
+.poll-pickdays { display: flex; flex-wrap: wrap; gap: 8px; }
+.poll-hours { display: grid; gap: 12px; }
+.poll-hnav { display: none; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; gap: 8px; }
+.poll-hnav-n { font-weight: 700; grid-column: 1 / -1; order: -1; text-align: center; }
+.poll-hnav .btn { min-width: 0; width: 100%; }
+.poll-hdays { display: grid; grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr)); gap: 12px; align-items: start; }
+.poll-hday { display: grid; gap: 8px; min-width: 0; }
+.poll-hday-l { margin: 0; font-size: 1rem; }
+.poll-hday-l:focus { outline: none; }
+.poll-hday-h { display: block; font-weight: 400; color: var(--muted); font-size: 0.875rem; }
+.poll-hday-all { gap: 4px 12px; }
+.poll-blocks { display: grid; gap: 6px; }
+.poll-block { width: 100%; padding: 6px 8px; }
+.poll-manage-hours select { min-height: 44px; }
+@media (max-width: 640px) {
+  .poll-hnav { display: grid; }
+  .poll-hday:not(.is-cur) { display: none; }
+  .poll-hdays { grid-template-columns: minmax(0, 1fr); }
+  .poll-blocks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 
 /* CC-301 Show Run: a month calendar of every performance, in the event edit form (showrun.js). Tokens only: a day with a show is
    the pressed chip (page on ink); a past day is muted; the focus ring sits outside the cell, over the page. At 480px and below a
