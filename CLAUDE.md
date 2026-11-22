@@ -6,9 +6,8 @@ serves this site locally on http://localhost:4173.
 
 ## Code
 
-- `public/js/*.js` are plain scripts loaded in order (core, util, water, listings, catalog, leadstack, outing, account, crews, submit, admin,
-  hours, showrun, found, sourcegrid, issues, photos, approvals, hubs, sourcing, health, start). They share one global scope, so check that a name is free before
-  adding it.
+- `public/js/*.js` are plain scripts, loaded in the order of the `<script>` tags in `public/index.html`. They share
+  one global scope, so check that a name is free before adding it.
 - `start.js` routes on the URL hash (`#account`, `#submit`, `#approvals`, ...). Links in emails use these.
 - Colors are theme tokens. Check new UI in both light and dark themes and at phone width.
 - **No pills or rounded chips, ever.** A tag ("Best"), a toggle, a day or time cell is a box with sharp corners (`border-radius: 0`)
