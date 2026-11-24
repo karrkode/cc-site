@@ -164,7 +164,8 @@ const exhibit = run("toEvent(" + JSON.stringify({ id: 9, title: "Sue the T. rex"
 g.__ex = exhibit;
 assert.strictEqual(run("isExhibit(__ex)"), true);
 const choices = JSON.parse(JSON.stringify(run("pollDayChoices(__ex)")));
-assert(choices.length >= 25 && choices.length <= 30 && choices[0] === d(0) && choices[choices.length - 1] <= d(29), "today and the 29 days after, minus Mondays");
+const openDays = Array.from({ length: 30 }, (_, i) => d(i)).filter((iso) => new Date(iso + "T12:00:00").getDay() !== 1);
+assert.deepStrictEqual(choices, openDays, "today and the 29 days after, minus Mondays");
 assert(choices.every((iso) => new Date(iso + "T12:00:00").getDay() !== 1), "a day marked Closed isn't offered");
 run("POLL_DAYS = {}; POLL_ERR = {}");
 html = run("pollDayPickHTML({ id: 4, name: 'Art Crew' }, __ex, 'event')");

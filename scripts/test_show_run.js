@@ -148,11 +148,13 @@ const ev0 = (over) => g.fromApi(Object.assign({ id: 5, title: "Hamlet", category
   schedule: { dates: [], dates_from: "", weekly: {}, weeks: {}, weekly_from: "", hours: {} } }, over));
 const note = (e, before, shows, found) => plain(g.showRunNotes(e, before, shows, found)).join(" | ");
 assert.match(note(ev0(), [], [], false), /No shows yet: it is listed as Dates not posted/);
-assert.match(note(ev0({ begin_date: "2027-11-01", end_date: "2028-03-01" }), [], [], false), /Listed now as Nov 1, 2027 – Mar 1, 2028\. Add shows/);
-assert.match(note(ev0({ begin_date: "2027-11-01", end_date: "2028-03-01" }), [], [S("2027-11-06"), S("2028-01-11")], false), /Listed now as .*; saving the Show Run sets .*Nov 6, 2027 – Jan 11, 2028/);
-assert.strictEqual(note(ev0({ begin_date: "2027-11-06", end_date: "2028-01-11" }), [S("2027-11-06"), S("2028-01-11")], [S("2027-11-06"), S("2028-01-11")], false), "", "first and last match: no note");
-assert.match(note(ev0(), [S("2027-11-06")], [], false), /No shows: saving lists it as Dates not posted/);
-assert.match(note(ev0(), [S("2027-11-06")], [S("2027-11-06")], true), /These dates came from the venue's website\. Changing them makes this Show Run its only dates/);
+const Y = g.T.getFullYear() + 1; // a run from next year into the one after: both years are always written
+const RUN = { begin_date: Y + "-11-01", end_date: Y + 1 + "-03-01" }, NOV = Y + "-11-06", JAN = Y + 1 + "-01-11";
+assert.match(note(ev0(RUN), [], [], false), new RegExp("Listed now as Nov 1, " + Y + " – Mar 1, " + (Y + 1) + "\\. Add shows"));
+assert.match(note(ev0(RUN), [], [S(NOV), S(JAN)], false), new RegExp("Listed now as .*; saving the Show Run sets .*Nov 6, " + Y + " – Jan 11, " + (Y + 1)));
+assert.strictEqual(note(ev0({ begin_date: NOV, end_date: JAN }), [S(NOV), S(JAN)], [S(NOV), S(JAN)], false), "", "first and last match: no note");
+assert.match(note(ev0(), [S(NOV)], [], false), /No shows: saving lists it as Dates not posted/);
+assert.match(note(ev0(), [S(NOV)], [S(NOV)], true), /These dates came from the venue's website\. Changing them makes this Show Run its only dates/);
 
 // 8. Find an outing: an exact Show Run is those dates only, with no weekly fallback
 const sched = (over) => Object.assign({ dates: [], dates_from: "", weekly: {}, weeks: {}, weekly_from: "", hours: {} }, over);
@@ -233,6 +235,7 @@ assert.match($("sr-notes").innerHTML, /^$|class="notice"/);
 // 11. the day panel: add, retime, Remove, No show this day, Escape
 open(ev0({ begin_date: iso(1), end_date: iso(2), show_run: [S(iso(1), "20:00"), S(iso(2), "15:00")], schedule: sched({ dates_from: "event" }) }));
 const free = iso(5);
+g.srFocusDay(free); // to its month, as the admin would be: five days on can be next month
 FOCUS = null; g.srDayClick(free);
 assert.strictEqual(g.SR.shows.length, 3, "an empty day gets a show at the last time used");
 assert.strictEqual(g.SR.shows.find((s) => s.date === free).time, "15:00");
