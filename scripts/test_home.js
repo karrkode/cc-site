@@ -48,6 +48,11 @@ function ev(over) {
 const going = (days, over) => ev(Object.assign({ pick: { status: "going", date: days === null ? null : iso(g.add(g.T, days)), by: "Andrew" } }, over));
 const interested = (over) => ev(Object.assign({ pick: { status: "interested", date: null, by: "Andrew" } }, over));
 
+// A date in another year than today's is written with its year, so a pattern for a date that moves with today allows both.
+const MD = "\\w{3} \\d+(?:, \\d{4})?"; // "Nov 26" or "Jan 3, 2027"
+const WMD = "(?:\\w{3}, \\w{3} \\d+|\\w{3} \\d+, \\d{4})"; // "Fri, Nov 27" or "Jan 3, 2027"
+const re = (...parts) => new RegExp(parts.join(""));
+
 // --- the data rule (CC-238: the admin's picks, in order, at most 10) ---
 const ids = (list) => Array.from(list, (e) => e.id);
 const soon = going(3), later = going(9), gone = going(-2);
@@ -68,7 +73,7 @@ assert.deepStrictEqual(ids(g.leadPicks(many, [running])), ids(many.slice(0, 10))
 const run = going(3, { begin_date: iso(g.add(g.T, 2)), end_date: iso(g.add(g.T, 40)),
   crew_plans: [{ crew_id: 1, crew_name: "A", going: ["Maya Chen", "Ben King"], interested: ["Tess Ell"], been: [] },
     { crew_id: 2, crew_name: "B", going: ["Jo Park"], interested: ["Maya Chen"], been: ["Lee Fox"] }] });
-assert.match(g.leadDeck(run), /^At Biograph Theater in Lincoln Park, \w{3} \d+ to \w{3} \d+/, "signed out: where, then the run");
+assert.match(g.leadDeck(run), re("^At Biograph Theater in Lincoln Park, ", MD, " to ", MD, "\\.$"), "signed out: where, then the run");
 g.AUTH.user = { id: 7, dolphins: false };
 assert.strictEqual(g.leadDeck(run), "At Biograph Theater in Lincoln Park. 3 from your crew are going, and 1 is interested.",
   "signed in: names count once, going wins over interested, been doesn't count");
@@ -76,7 +81,7 @@ const one = interested({ begin_date: iso(g.add(g.T, 4)), end_date: iso(g.add(g.T
   crew_plans: [{ crew_id: 1, crew_name: "A", going: [], interested: ["Maya Chen"], been: [] }] });
 assert.strictEqual(g.leadDeck(one), "At Symphony Center. 1 from your crew is interested.");
 one.crewPlans = [];
-assert.match(g.leadDeck(one), /^At Symphony Center on \w{3}, \w{3} \d+\.$/, "one night, no crew-mates");
+assert.match(g.leadDeck(one), re("^At Symphony Center on ", WMD, "\\.$"), "one night, no crew-mates");
 g.AUTH.user = null;
 
 // --- the lead pick's markup ---
@@ -91,8 +96,8 @@ const shot = g.leadHTML(interested({ image_url: "https://example.com/a.webp" }))
 assert.match(shot, /<span class="lead-sea water-field cat-theater"><canvas class="water"[^>]*><\/canvas><img class="listing-image" src="https:\/\/example\.com\/a\.webp"[^>]*><\/span><span class="lead-in">/);
 assert.doesNotMatch(g.leadHTML(interested({ image_url: "http://elsewhere.example/a.webp" })), /listing-image/, "only https or the site's own");
 assert.match(html, /<span class="lead-k">Yours Truly · Theater<\/span><h2 class="lead-t">Event \d+<\/h2>/);
-assert.match(html, /class="mark mark-host" role="img" aria-label="Andrew is going to see this on \w+day, \w+ \d+\."/);
-assert.match(html, /<span>Going \w{3}, \w{3} \d+ · \w{3} \d+ – \w{3} \d+ · \$28–\$98<\/span>/);
+assert.match(html, /class="mark mark-host" role="img" aria-label="Andrew is going to see this on \w+day, \w+ \d+(?:, \d{4})?\."/);
+assert.match(html, re("<span>Going ", WMD, " · ", MD, " – ", MD, " · \\$28–\\$98</span>"));
 const fallback = g.leadHTML(interested({ title: "A <b>" }));
 assert.match(fallback, /<h2 class="lead-t">A &lt;b&gt;<\/h2>/, "titles are escaped");
 assert.match(fallback, /<span>Interested · /);
