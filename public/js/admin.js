@@ -808,15 +808,17 @@ function forgetEditorPicture() {
   if (EDITING && EDITING.picture && EDITING.picture.url) URL.revokeObjectURL(EDITING.picture.url);
 }
 function paintEditorPicture() {
-  if (!EDITING || !EDITING.picture || EDITING.found) return;
+  if (!EDITING || !EDITING.picture) return; // CC-310: a found event's picture is edited here too
   var p = EDITING.picture, e = EDITING.e;
   var look = Object.assign({}, e, { type: $("ed-category").value || e.type });
   var src = p.mode === "upload" ? p.url : p.mode === "remove" ? "" : listingImageSrc(e.imageUrl);
   $("ed-picture-preview").innerHTML = '<span class="tile water-field' + catClass(look.type) + '">' +
     waterHTML(look, "tile") + (src ? '<img class="listing-image" src="' + esc(src) + '" alt="" decoding="async">' : "") + "</span>";
-  $("ed-image-note").textContent = p.mode === "upload" ? "New picture selected. Save changes to use it." :
-    p.mode === "remove" ? "Default water selected. Save changes to remove the picture." :
-    e.imageUrl ? "Current event picture." : "Default category water (no picture).";
+  var found = !!EDITING.found, act = found ? "Approve" : "Save changes";
+  $("ed-image-note").textContent = p.mode === "upload" ? "New picture selected. " + act + " to use it." :
+    p.mode === "remove" ? "Default water selected. " + act + " to remove the picture." :
+    e.imageUrl ? (found ? "Picture found on its page. Replace or remove it before approving." : "Current event picture.") :
+    found && EDITING.found.image_note ? EDITING.found.image_note + ". It will use the default water unless you upload a picture." : "Default category water (no picture).";
   $("ed-image-remove").disabled = !e.imageUrl && p.mode !== "upload";
   $("ed-image-undo").hidden = p.mode === "keep";
   paintWater($("ed-picture-preview"));
@@ -880,9 +882,9 @@ document.addEventListener("click", function (ev) {
 });
 $("ed-cancel").addEventListener("click", closeEditor);
 $("ed-url").addEventListener("input", edLinkSync);
-$("ed-category").addEventListener("change", function () { if (EDITING && !EDITING.found) paintEditorPicture(); });
+$("ed-category").addEventListener("change", function () { if (EDITING) paintEditorPicture(); });
 $("ed-image-file").addEventListener("change", function () {
-  if (!EDITING || EDITING.found || !this.files.length) return;
+  if (!EDITING || !this.files.length) return;
   var file = this.files[0];
   if (!/^(image\/jpeg|image\/png|image\/webp|image\/gif|image\/avif)$/.test(file.type) || !file.size || file.size > ED_IMAGE_LIMIT) {
     $("ed-error").textContent = "Choose a JPEG, PNG, WebP, GIF or AVIF file smaller than 3.8 MB.";
@@ -895,7 +897,7 @@ $("ed-image-file").addEventListener("change", function () {
   paintEditorPicture();
 });
 $("ed-image-remove").addEventListener("click", function () {
-  if (!EDITING || EDITING.found) return;
+  if (!EDITING) return;
   forgetEditorPicture(); EDITING.picture = { mode: "remove", file: null, url: "" };
   $("ed-image-file").value = "";
   paintEditorPicture();
