@@ -65,6 +65,8 @@ jobs:
         run: node scripts/test_region_map.js
       - name: The withdrawn Comedy and Educational list deletes one event or all of them, after a confirm
         run: node scripts/test_removed.js
+      - name: Review lists the live events that need show times, with a count and Edit on each (CC-311)
+        run: node scripts/test_needs_times.js
       - name: The skip link comes first and points at the page's main, and ids are unique (CC-291)
         run: node scripts/test_skip_link.js
       - name: Out of town clean-up (CC-217)
