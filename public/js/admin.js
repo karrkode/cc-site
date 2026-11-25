@@ -33,7 +33,7 @@ function updateReviewCount(n) {
 var EMPTY = { "review-list": "Nothing waiting for review.", "scheduled-list": "Nothing scheduled.", "withdrawn-list": "Nothing withdrawn.",
   "caught-list": "Nothing caught." };
 function renderReview() {
-  renderScheduled(); renderWithdrawn(); renderCaught(); loadSubmissionRules(); loadRoundups(); renderOtherTypes(); renderRemoved();
+  renderScheduled(); renderNeedsTimes(); renderWithdrawn(); renderCaught(); loadSubmissionRules(); loadRoundups(); renderOtherTypes(); renderRemoved();
   $("review-list").innerHTML = '<p class="hint">Loading…</p>';
   api("/admin/events?limit=500").then(readJSON).then(function (res) {
     if (!res.ok) { $("review-list").innerHTML = '<p class="form-error">' + esc(errorText(res)) + "</p>"; return; }
@@ -176,6 +176,19 @@ function renderOtherTypes() {
     $("othertypes").hidden = !list.length;
     $("othertypes-note").textContent = plural(list.length, "event has", "events have") + " a type that isn't Theater, Music or Visual Art. Edit each to choose one.";
     $("othertypes-list").innerHTML = list.map(function (raw) { var e = toEvent(raw); return queueItemHTML(e, stateHTML(e) + editButtonHTML(e, "btn ghost")); }).join("");
+    refocusAfterEdit();
+  }, function () {});
+}
+// CC-311: current events that still have no start time for any upcoming show, closing soonest first. Hidden when none.
+function renderNeedsTimes() {
+  api("/admin/events?needs_show_times=true&limit=500").then(readJSON).then(function (res) {
+    var items = res.ok ? res.body.items : [];
+    $("needstimes").hidden = !items.length;
+    $("needstimes-n").textContent = items.length ? String(res.body.total) : "";
+    $("needstimes-list").innerHTML = items.map(function (raw) {
+      var e = toEvent(raw);
+      return queueItemHTML(e, editButtonHTML(e, "btn ghost"));
+    }).join("") + (res.ok && res.body.total > items.length ? '<p class="hint">Showing the first ' + items.length + " of " + res.body.total + ".</p>" : "");
     refocusAfterEdit();
   }, function () {});
 }
