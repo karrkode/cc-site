@@ -817,7 +817,7 @@ function paintEditorPicture() {
   var found = !!EDITING.found, act = found ? "Approve" : "Save changes";
   $("ed-image-note").textContent = p.mode === "upload" ? "New picture selected. " + act + " to use it." :
     p.mode === "remove" ? "Default water selected. " + act + " to remove the picture." :
-    e.imageUrl ? (found ? "Picture found on its page. Replace or remove it before approving." : "Current event picture.") :
+    e.imageUrl ? (found ? "A picture was found for it. Replace or remove it before approving." : "Current event picture.") :
     found && EDITING.found.image_note ? EDITING.found.image_note + ". It will use the default water unless you upload a picture." : "Default category water (no picture).";
   $("ed-image-remove").disabled = !e.imageUrl && p.mode !== "upload";
   $("ed-image-undo").hidden = p.mode === "keep";

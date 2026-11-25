@@ -361,7 +361,7 @@ function savePictureFirst(i) {
   if (!pic || pic.mode === "keep") return Promise.resolve();
   var req = pic.mode === "remove" ? { method: "DELETE" } : { method: "PUT", raw: pic.file };
   return api("/admin/discovery/items/" + i.id + "/image", req).then(readJSON).then(function (res) {
-    if (!res.ok) throw res;
+    if (!res.ok) { editorFail(res, pic.mode === "upload" ? "ed-image-file" : null); throw { handled: true }; } // the form shows why; focus goes to the file
     i.image_url = res.body.image_url; i.image_override = true; i.image_note = "";
     EDITING.e.imageUrl = i.image_url || ""; resetEditorPicture();
   });
@@ -416,5 +416,5 @@ function approveFromEditor() {
       body.publish === "later" ? "Scheduled " + title + "." : "Added " + title + " to the catalog.");
     EDITING = null; closeEditor(); reloadEvents(); if (review) updateReviewCount();
     if (done) done(said); else if (row) foundDone(row, said); else $("edit-live").textContent = said;
-  }).catch(function (res) { editorFail(res && res.status ? res : null, "ed-venue"); });
+  }).catch(function (res) { if (res && res.handled) return; editorFail(res && res.status ? res : null, "ed-venue"); });
 }
