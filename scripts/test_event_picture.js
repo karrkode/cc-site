@@ -1,7 +1,8 @@
 // Checks run in CI before the site deploys (CC-265): an admin removes or replaces an event's picture in the edit
 // dialog. The dialog shows the current picture or the category water; a new file previews first, and nothing reaches
 // the API until Save. Save sends DELETE or PUT /events/<id>/image, then the other changes; Cancel sends nothing; a
-// refused file keeps the old picture and says why; a found event being approved has no picture controls.
+// refused file keeps the old picture and says why; a found event being approved has the same picture controls (CC-310),
+// saved on the found item just before it is approved.
 //
 //     node scripts/test_event_picture.js
 "use strict";
@@ -21,7 +22,8 @@ has(dlg, '<fieldset id="ed-picture-controls" class="ed-picture">');
 has(dlg, '<label for="ed-image-file">Upload a new picture</label>');
 has(dlg, 'accept="image/jpeg,image/png,image/webp,image/gif,image/avif"', "the API's five types");
 has(dlg, '<button class="btn ghost" type="button" id="ed-image-remove">Remove picture</button>');
-has(found, '$("ed-picture-controls").hidden = on;', "approving a found event has no picture controls");
+has(found, '$("ed-picture-controls").hidden = false;', "approving a found event has picture controls (CC-310)");
+has(found, 'api("/admin/discovery/items/" + i.id + "/image", req)', "the found item's picture is saved before approval (CC-310)");
 // the styles sit with the other dialog rules, before the QR screen (test_invite.js keeps that one token-free)
 const at = css.indexOf("/* CC-265: admin image changes");
 assert.ok(at > 0 && at < css.indexOf("/* CC-126: the invite QR code fills the screen"), "the CC-265 rules come before the QR screen");

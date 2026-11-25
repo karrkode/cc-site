@@ -100,6 +100,7 @@ function foundRowHTML(i, actions, pick) { // CC-207: Event Sourcing's list shows
     (Object.keys(i.weekly || {}).length ? '<p class="alt-meta">Shows: ' + esc(showDaysText(i.weekly, i.weeks)) + "</p>" : "") +
     (i.needs && i.status !== "hidden" ? '<p class="alt-meta">' + esc(lookedText(i)) + "</p>" : "") + // CC-207: not read while hidden
     (i.possible_duplicate ? '<p class="alt-meta dup">Possibly already listed as “' + esc(i.possible_duplicate.title) + "”</p>" : "") +
+    foundPictureHTML(i) +
     (i.dates_note ? '<p class="alt-meta dates-note">' + esc(i.dates_note).replace(/\r?\n/g, "<br>") + "</p>" : "") + // CC-307: one line per try; the address comes from a page, so escaped
     (i.skip_reason && i.status !== "approved" ? '<p class="alt-meta">Why: ' + esc(i.skip_reason) + "</p>" : "");
   if (i.status === "update") {
@@ -111,6 +112,13 @@ function foundRowHTML(i, actions, pick) { // CC-207: Event Sourcing's list shows
   }
   html += "</div>" + '<div class="row">' + actions + "</div></div>";
   return html;
+}
+function foundPictureHTML(i) { // CC-310: the candidate picture (ours), or why there isn't one
+  if (i.status === "approved" || i.status === "update" || i.status === "listed") return "";
+  var src = listingImageSrc(i.image_url);
+  return src ? '<p class="alt-meta found-pic"><img class="found-thumb" src="' + esc(src) + '" alt="Picture found for ' + esc(i.title) + '" loading="lazy" decoding="async"></p>' :
+    '<p class="alt-meta">No picture: ' + esc(i.image_note ? i.image_note.replace(/^Still trying: /, "still trying: ").replace(/^./, function (c) { return c.toLowerCase(); }) :
+      i.image_override ? "removed by you" : "not looked for yet") + "</p>";
 }
 function lookedText(i) { // CC-88: how its page is being read again for what's missing
   var looked = (i.looked_on || []).map(function (d) { return short(parseISO(d)); });
@@ -252,7 +260,7 @@ $("rules-list").addEventListener("click", function (ev) {
 function foundMode(i) { // i: the found item, or null for the ordinary edit form
   var on = !!i, sel = $("ed-category"), blank = sel.querySelector('option[value=""]');
   srOff(); // dates work as before here; the ordinary edit form's Show Run modes start after this (CC-301, showrun.js)
-  $("ed-found").hidden = !on; $("ed-remove").hidden = on; $("ed-picture-controls").hidden = on;
+  $("ed-found").hidden = !on; $("ed-remove").hidden = on; $("ed-picture-controls").hidden = false; // CC-310: a found event has a picture to check too
   $("ed-save").textContent = on ? "Approve" : "Save changes";
   $("ed-delay").hidden = !on; $("ed-delay").setAttribute("aria-expanded", "false"); $("ed-delay-choices").hidden = true; $("ed-delay-hint").hidden = true; // CC-257
   Array.prototype.forEach.call($("ed-status").options, function (o) { o.hidden = on && o.value !== "approved" && o.value !== "pending"; });
@@ -284,7 +292,8 @@ function foundShows(i) {
   return (i.performances || []).length ? sortShows(i.performances.map(srCopy)) : [];
 }
 function openFoundEditor(i, opener, done) { // done (CC-207): what to do once it's approved, for a list other than Found events
-  EDITING = { e: { id: "found-" + i.id }, found: i, opener: opener, done: done };
+  EDITING = { e: { id: "found-" + i.id, title: i.title, type: foundType(i).category || "", imageUrl: i.image_url || "" }, found: i, opener: opener, done: done,
+    picture: { mode: "keep", file: null, url: "" } }; // CC-310
   foundMode(i);
   var calendar = i.kind !== "permanent", run = calendar ? [] : shortRun(i); // CC-308: the Show Run calendar takes the dates (showrun.js)
   setRun("ed", run); $("ed-runkind").hidden = !run.length; $("ed-dates-note").hidden = true;
@@ -314,7 +323,8 @@ function openFoundEditor(i, opener, done) { // done (CC-207): what to do once it
       " No exact dates yet: add its shows to the calendar, or fill a pattern between the start and end dates.");
   }
   $("ed-error").textContent = ""; $("ed-confirm").hidden = true; setEditorBusy(false);
-  openDialog($("edit-dialog"));
+  resetEditorPicture();
+  openDialog($("edit-dialog")); paintWater($("ed-picture-preview"));
   (calendar && foundCalendarOn() ? $("ed-title") : i.needs === "date" ? $("ed-begin") : run.length && !run[0].time ? $("ed-run-list").querySelector("[data-run-time]") :
     i.needs === "show_days" ? $("ed-days").firstElementChild : $("ed-title")).focus(); // what's missing first
 }
@@ -343,6 +353,18 @@ function stillNeeds(i, type, begin, end, openRun, weekly, runTimed) {
   if (!SHOW_TYPES[type]) return dated || openRun ? "" : "date";
   if (!dated && !(openRun && timed)) return "date";
   return timed ? "" : "show_days";
+}
+// CC-310: the admin's upload or removal is saved on the found item before it's approved, so the event is made with it. Once
+// saved it stays saved: a failed approval, tried again, doesn't send it twice.
+function savePictureFirst(i) {
+  var pic = EDITING && EDITING.picture;
+  if (!pic || pic.mode === "keep") return Promise.resolve();
+  var req = pic.mode === "remove" ? { method: "DELETE" } : { method: "PUT", raw: pic.file };
+  return api("/admin/discovery/items/" + i.id + "/image", req).then(readJSON).then(function (res) {
+    if (!res.ok) { editorFail(res, pic.mode === "upload" ? "ed-image-file" : null); throw { handled: true }; } // the form shows why; focus goes to the file
+    i.image_url = res.body.image_url; i.image_override = true; i.image_note = "";
+    EDITING.e.imageUrl = i.image_url || ""; resetEditorPicture();
+  });
 }
 function approveFromEditor() {
   var i = EDITING.found, done = EDITING.done;
@@ -385,6 +407,8 @@ function approveFromEditor() {
   var sameVenue = i.venue_id && venue.toLowerCase() === i.venue_name.toLowerCase() && hood.toLowerCase() === (i.neighborhood || "").toLowerCase();
   (sameVenue ? Promise.resolve(i.venue_id) : venueIdFor(venue, hood)).then(function (venueId) {
     body.venue_id = venueId;
+    return savePictureFirst(i).then(function () { return venueId; });
+  }).then(function () {
     return api("/admin/discovery/items/" + i.id + "/approve", { method: "POST", body: body }).then(readJSON);
   }).then(function (res) {
     if (!res.ok) { editorFail(res); return; }
@@ -392,5 +416,5 @@ function approveFromEditor() {
       body.publish === "later" ? "Scheduled " + title + "." : "Added " + title + " to the catalog.");
     EDITING = null; closeEditor(); reloadEvents(); if (review) updateReviewCount();
     if (done) done(said); else if (row) foundDone(row, said); else $("edit-live").textContent = said;
-  }).catch(function (res) { editorFail(res && res.status ? res : null, "ed-venue"); });
+  }).catch(function (res) { if (res && res.handled) return; editorFail(res && res.status ? res : null, "ed-venue"); });
 }

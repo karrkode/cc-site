@@ -2202,3 +2202,7 @@ dialog.dialog-leaving { display: block; position: fixed; z-index: 101; margin: 0
 .vs-more summary { cursor: pointer; margin-top: 8px; }
 .submit-thanks { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 28px; font-style: italic; }
 .submit-thanks .mark { width: 39px; height: 26px; }
+
+/* CC-310: a found event's candidate picture in the review list */
+.found-pic { margin-top: 6px; }
+.found-thumb { display: block; width: 168px; max-width: 100%; height: auto; max-height: 112px; object-fit: cover; border: 1.5px solid var(--rule); border-radius: var(--r-ctl); }
