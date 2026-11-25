@@ -27,5 +27,16 @@ for (const f of fs.readdirSync(js).filter((n) => n.endsWith(".js"))) {
   if (f !== "crews.js") check(!/["'`]<style/.test(code), `js/${f}: writes a <style> into the page`);
 }
 
+// CC-268: the fonts are served from /fonts/, so no page or stylesheet may name Google, and every font file a rule names must exist
+for (const f of fs.readdirSync(PUB).filter((n) => n.endsWith(".html")))
+  check(!/googleapis|gstatic/.test(fs.readFileSync(path.join(PUB, f), "utf8")), `${f}: loads fonts from Google (use css/fonts.css)`);
+for (const f of fs.readdirSync(path.join(PUB, "css"))) {
+  const css = fs.readFileSync(path.join(PUB, "css", f), "utf8");
+  check(!/googleapis|gstatic/.test(css), `css/${f}: loads fonts from Google`);
+  for (const m of css.matchAll(/url\("(\/fonts\/[^"]+)"\)/g)) check(fs.existsSync(path.join(PUB, m[1])), `css/${f}: ${m[1]} is missing`);
+}
+for (const f of ["index.html", "404.html"])
+  check(/css\/fonts\.css\?v=dev/.test(fs.readFileSync(path.join(PUB, f), "utf8")), `${f}: doesn't link css/fonts.css`);
+
 if (failed) process.exit(1);
 console.log("test_csp: ok");
