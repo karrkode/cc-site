@@ -187,4 +187,61 @@ run("POLLS = [" + JSON.stringify(hpoll({ crew_id: 4, event_id: 9 })) + "]; POLL_
 assert.strictEqual(run("pollsReadyHours().length"), 0, "once the poll exists it isn't also listed as ready");
 run("POLLS = []; POLL_READY_HOURS = []");
 assert(!run("pollsEventHTML(__ex)").includes("data-poll-pick"), "no picker once the server no longer lists the crew as ready (its poll was locked or cancelled long ago)");
-console.log("ok: test_polls");
+
+// CC-315: a different member in the same tab sees nothing of the last member's polls, even when an earlier request answers late
+run("visible = function () { return false; }; paintPending = function () {}; renderEventView = function () {}; paintCrews = function () {}; EV = { e: null };");
+let inflight = []; // requests that haven't answered yet: path -> resolve(body)
+run("readJSON = function (r) { return Promise.resolve(r); };");
+g.api = (p, o) => new Promise((res) => inflight.push({ p, o, res: (body) => res({ ok: true, body }) }));
+const answer = (path, body) => { const w = inflight.filter((x) => x.p.startsWith(path)); inflight = inflight.filter((x) => !w.includes(x)); w.forEach((x) => x.res(body)); return new Promise((r) => setTimeout(r, 0)); };
+const tick = () => new Promise((r) => setTimeout(r, 0));
+// onAuthChange is what runs on every change of member: it must empty the polls before it draws anything
+const authChange = read("account.js").split("function onAuthChange() {")[1].split("\n")[1];
+assert(/^\s*pollsSync\(\)/.test(authChange), "onAuthChange begins by calling pollsSync()");
+(async () => {
+  const ana = { id: "u-ana" }, ben = { id: "u-ben" };
+  const readyRow = { crew_id: 4, event_id: 10, kind: "hours", event_title: "Sue the T. rex", crew_name: "Art Crew" };
+  // Ana's polls and everything per-member that hangs off them
+  run("AUTH.user = { id: 'u-ana' }; pollsSync();");
+  run("POLLS = [" + JSON.stringify(poll()) + "]; POLL_READY_HOURS = [" + JSON.stringify(readyRow) + "]; POLL_SHOW = { 7: true }; POLL_EDIT = { 7: true }; POLL_DRAFT = { 7: [1] }; POLL_ERR = { 7: 'x' }; POLL_DAYS = { '4-10': ['d'] }; POLL_DAY = { 7: 1 }; POLL_BUSY = { 7: true }; POLL_INT = { 9: { at: 1, list: [] } }; POLL_ASK = 7; POLL_AUTO = { '4-10': true }");
+  assert(run("pollsWaiting().length") > 0 && run("pollsOfCrew(4).length") === 1, "Ana sees her polls");
+  // Another member signs in, in the same tab: (1) before any request answers, nothing of Ana's can be read
+  run("AUTH.user = { id: 'u-ben' }; pollsSync();");
+  assert.strictEqual(run("POLLS.length + POLL_READY_HOURS.length"), 0, "POLLS and POLL_READY_HOURS are empty");
+  assert.strictEqual(run("pollsWaiting().length + pollsOfCrew(4).length + pollsOfEvent(9).length + pollsReadyHours().length"), 0, "no reader finds Ana's polls");
+  assert.strictEqual(run("JSON.stringify([POLL_SHOW, POLL_EDIT, POLL_DRAFT, POLL_ERR, POLL_DAYS, POLL_DAY, POLL_BUSY, POLL_INT, POLL_AUTO, POLL_ASK])"), '[{},{},{},{},{},{},{},{},{},null]', "drafts, days, errors, interest and open or editing flags are empty");
+  // The same member again (a role change fires onAuthChange too) keeps what they have
+  run("POLLS = [" + JSON.stringify(poll()) + "]; pollsSync();");
+  assert.strictEqual(run("POLLS.length"), 1, "the same member isn't cleared");
+  run("POLLS = [];");
+
+  // (3) Requests that were on their way at sign-out: Ana's answers arrive after Ben has signed in
+  run("AUTH.user = { id: 'u-ana' }; pollsSync();");
+  const late = run("loadPolls()"); // asks /crews/polls as Ana
+  const lateReady = run("pollAutoCheck()");
+  run("pollInterest(9)");
+  const sub = run("pollSubmit(" + JSON.stringify(poll({ you_answered: false })) + ", [1])");
+  await tick();
+  run("AUTH.user = { id: 'u-ben' }; pollsSync();"); // Ana signs out, Ben signs in
+  await answer("/crews/polls", [poll()]);
+  await answer("/crews/poll-ready", [readyRow]);
+  await answer("/crews/poll-interest", [{ crew_id: 4, count: 3 }]);
+  await answer("/crews/4/polls/7/answer", poll());
+  await late; await lateReady;
+  assert.strictEqual(run("POLLS.length"), 0, "a poll list that answers late doesn't put Ana's polls back");
+  assert.strictEqual(run("POLL_READY_HOURS.length"), 0, "nor the exhibitions her crews are ready to poll");
+  assert.strictEqual(run("JSON.stringify(POLL_INT)"), "{}", "nor the interest counts");
+  assert.strictEqual(run("pollsWaiting().length"), 0);
+  // (2) Ben's own polls appear as before
+  const bens = run("loadPolls()");
+  await answer("/crews/polls", [poll({ id: 8, crew_name: "Ben's Crew" })]);
+  await answer("/crews/poll-ready", []);
+  await bens;
+  assert.strictEqual(run("POLLS.length"), 1);
+  assert.strictEqual(run("pollsWaiting().length"), 0 + run("POLLS.filter(function (p) { return p.status === 'open' && !p.you_answered; }).length"), "Ben's polls show");
+  assert.strictEqual(run("POLLS[0].id"), 8, "Ben's own poll");
+  // A failed request for the new member leaves nothing of Ana's behind either
+  run("AUTH.user = { id: 'u-cat' }; pollsSync();");
+  assert.strictEqual(run("POLLS.length + pollsWaiting().length"), 0, "after a switch with the request still unanswered");
+  console.log("ok: test_polls");
+})().catch((e) => { console.error(e); process.exit(1); });
