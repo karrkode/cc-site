@@ -169,6 +169,8 @@
     <h2 id="ed-heading">Edit event</h2>
     <p class="notice" id="ed-found" hidden></p>
     <p class="notice" id="ed-dates-note" hidden>Whoever sent this didn't know the dates. Add them if you can find them; it can go live without, as "Dates not posted".</p>
+    <div class="ed-cols"><!-- CC-327: two columns on a wide screen: what it is (left), when it is on (right) -->
+    <div class="ed-col" id="ed-col-what">
     <div class="field"><label for="ed-title">Event name</label><input id="ed-title" type="text" maxlength="300" required></div>
     <div class="fields">
       <div class="field"><label for="ed-category">Type</label>
@@ -181,6 +183,29 @@
       <div class="field"><label for="ed-venue">Venue</label><input id="ed-venue" type="text" maxlength="200" required autocomplete="off"></div>
       <div class="field"><label for="ed-hood">Neighborhood or town</label><input id="ed-hood" type="text" maxlength="120" aria-describedby="ed-venue-hint"><span class="hint small" id="ed-venue-hint">A venue we don't have yet is added.</span></div>
     </div>
+    <div class="fields">
+      <div class="field"><label for="ed-cost">Price</label><input id="ed-cost" type="text" maxlength="120" placeholder="$25–$60, or Free" aria-describedby="ed-cost-hint"><span class="hint small" id="ed-cost-hint">Leave blank if it isn't posted yet.</span></div>
+      <div class="field"><span class="field-lab" id="ed-url-lab">Link</span><input id="ed-url" type="url" maxlength="2000" placeholder="https://" aria-label="Link"></div>
+    </div>
+    <fieldset id="ed-picture-controls" class="ed-picture">
+      <legend>Event picture</legend>
+      <div class="ed-picture-layout">
+        <div class="ed-picture-preview" id="ed-picture-preview" role="img" aria-label="Event picture preview"></div>
+        <div class="ed-picture-actions">
+          <span class="hint small" id="ed-image-note">The event uses its default water when it has no picture.</span>
+          <div class="field"><label for="ed-image-file">Upload a new picture</label>
+            <input id="ed-image-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" aria-describedby="ed-image-hint">
+            <span class="hint small" id="ed-image-hint">JPEG, PNG, WebP, GIF or AVIF, smaller than 3.8 MB. Uploaded pictures become WebP.</span>
+          </div>
+          <div class="row">
+            <button class="btn ghost" type="button" id="ed-image-remove">Remove picture</button>
+            <button class="btn ghost" type="button" id="ed-image-undo" hidden>Undo picture change</button>
+          </div>
+        </div>
+      </div>
+    </fieldset>
+    </div>
+    <div class="ed-col" id="ed-col-when">
     <fieldset class="publish run-kind" id="ed-runkind"><legend>When is it on?</legend>
       <label class="radio"><input type="radio" name="ed-runkind" value="range" checked> <span id="ed-rk-range">Between an opening and a closing date</span></label>
       <label class="radio"><input type="radio" name="ed-runkind" value="fixed"> <span id="ed-rk-fixed">Only on chosen dates (a fixed run)</span></label>
@@ -233,33 +258,14 @@
       <label class="radio" id="sr-open-field"><input type="checkbox" id="ed-sr-open"> Open run: every week, no closing date</label>
       <p class="form-error" id="sr-msg" role="alert"></p>
     </fieldset>
-    <div class="fields">
-      <div class="field"><label for="ed-cost">Price</label><input id="ed-cost" type="text" maxlength="120" placeholder="$25–$60, or Free" aria-describedby="ed-cost-hint"><span class="hint small" id="ed-cost-hint">Leave blank if it isn't posted yet.</span></div>
-      <div class="field"><span class="field-lab" id="ed-url-lab">Link</span><input id="ed-url" type="url" maxlength="2000" placeholder="https://" aria-label="Link"></div>
-    </div>
     <fieldset class="hours show-days" id="ed-sched"><legend>Which days are there shows?</legend>
       <p class="hint small" id="ed-sched-hint"></p>
       <div class="day-picks" id="ed-days"></div>
       <div class="hours-grid" id="ed-weekly"></div>
     </fieldset>
     <div class="field"><label for="ed-publish-at">Goes live on</label><input id="ed-publish-at" type="datetime-local" aria-describedby="ed-publish-hint"><span class="hint small" id="ed-publish-hint">Leave blank to go live as soon as it's approved.</span></div>
-    <fieldset id="ed-picture-controls" class="ed-picture">
-      <legend>Event picture</legend>
-      <div class="ed-picture-layout">
-        <div class="ed-picture-preview" id="ed-picture-preview" role="img" aria-label="Event picture preview"></div>
-        <div class="ed-picture-actions">
-          <span class="hint small" id="ed-image-note">The event uses its default water when it has no picture.</span>
-          <div class="field"><label for="ed-image-file">Upload a new picture</label>
-            <input id="ed-image-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" aria-describedby="ed-image-hint">
-            <span class="hint small" id="ed-image-hint">JPEG, PNG, WebP, GIF or AVIF, smaller than 3.8 MB. Uploaded pictures become WebP.</span>
-          </div>
-          <div class="row">
-            <button class="btn ghost" type="button" id="ed-image-remove">Remove picture</button>
-            <button class="btn ghost" type="button" id="ed-image-undo" hidden>Undo picture change</button>
-          </div>
-        </div>
-      </div>
-    </fieldset>
+    </div>
+    </div>
     <p class="form-error" id="ed-error" role="alert"></p>
     <div class="row"><button class="btn" type="submit" id="ed-save">Save changes</button><button class="btn ghost" type="button" id="ed-cancel">Cancel</button><button class="btn ghost" type="button" id="ed-delay" aria-expanded="false" aria-controls="ed-delay-choices" hidden>Delay…</button></div>
     <div class="row" id="ed-delay-choices" role="group" aria-label="Delay for" hidden><button class="btn ghost" type="button" data-delay="1w">1 week</button><button class="btn ghost" type="button" data-delay="1m">1 month</button><button class="btn ghost" type="button" data-delay="2m">2 months</button></div>

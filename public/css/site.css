@@ -2206,3 +2206,12 @@ dialog.dialog-leaving { display: block; position: fixed; z-index: 101; margin: 0
 /* CC-310: a found event's candidate picture in the review list */
 .found-pic { margin-top: 6px; }
 .found-thumb { display: block; width: 168px; max-width: 100%; height: auto; max-height: 112px; object-fit: cover; border: 1.5px solid var(--rule); border-radius: var(--r-ctl); }
+
+/* CC-327: on a desktop the Edit/Approve dialog is wide and in two columns: what the event is (left), when it's on (right).
+   The heading, notices, error, buttons and Withdraw/Delete stay full width. Below 1000px it is the one column it was. */
+.ed-cols, .ed-col { display: grid; gap: 14px; align-content: start; }
+.ed-col > * { min-width: 0; }
+@media (min-width: 1000px) {
+  #edit-dialog.editor { width: min(1180px, calc(100% - 64px)); padding: 28px 32px; }
+  #edit-dialog .ed-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 40px; }
+}
