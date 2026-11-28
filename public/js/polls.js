@@ -15,6 +15,7 @@ function pollsSync() { // called from onAuthChange: a different member (or none)
   POLL_WHO = who; POLL_EPOCH++;
   POLLS = []; POLL_READY_HOURS = []; POLL_ASK = null; POLL_AUTO = {}; POLL_INT = {};
   POLL_BUSY = {}; POLL_ERR = {}; POLL_DAYS = {}; POLL_DAY = {}; POLL_SHOW = {}; POLL_EDIT = {}; POLL_DRAFT = {};
+  if (typeof visible === "function" && visible("event") && EV.e) renderEventView(); // CC-315: an event page showing the last member's cards is drawn again now, not when its own request answers
 }
 function pollsFor(test) { return AUTH.user ? POLLS.filter(test) : []; }
 function pollsOfEvent(id) { return pollsFor(function (p) { return String(p.event_id) === String(id); }); }
@@ -334,10 +335,11 @@ function pollCommit(p, b) {
   var ep = POLL_EPOCH; b.disabled = true;
   api("/me/plans/" + encodeURIComponent(id) + "?today=" + isoDate(T), { method: "PUT", body: { status: "going", date: l.date, time: l.time || null } }).then(readJSON).then(function (res) {
     if (!res.ok) throw res;
+    if (ep !== POLL_EPOCH) return null; // CC-315: a different member now: the second request would go out with their token
     return api("/me/plans/" + encodeURIComponent(id) + "/crews", { method: "PUT", body: { crews: crews } }).then(readJSON);
   }).then(function (res) {
+    if (ep !== POLL_EPOCH) return;
     if (!res.ok) throw res;
-    if (ep !== POLL_EPOCH) return; // CC-315: signed out meanwhile
     MYPLANS[id] = { status: "going", date: l.date, time: l.time || null, crews: crews };
     $("myplan-live").textContent = "Going: " + p.event_title + ", " + goWhen(l.date, l.time) + ". Shared with " + p.crew_name + ".";
     redrawCards(id).then(function () { pollsRepaint(); pollFocus('[data-poll-card="' + p.id + '"] .poll-h'); });

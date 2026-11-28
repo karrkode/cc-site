@@ -238,10 +238,27 @@ assert(/^\s*pollsSync\(\)/.test(authChange), "onAuthChange begins by calling pol
   await answer("/crews/poll-ready", []);
   await bens;
   assert.strictEqual(run("POLLS.length"), 1);
-  assert.strictEqual(run("pollsWaiting().length"), 0 + run("POLLS.filter(function (p) { return p.status === 'open' && !p.you_answered; }).length"), "Ben's polls show");
   assert.strictEqual(run("POLLS[0].id"), 8, "Ben's own poll");
-  // A failed request for the new member leaves nothing of Ana's behind either
-  run("AUTH.user = { id: 'u-cat' }; pollsSync();");
-  assert.strictEqual(run("POLLS.length + pollsWaiting().length"), 0, "after a switch with the request still unanswered");
+  // A request for the new member that fails leaves nothing of Ana's behind either
+  run("POLLS = [" + JSON.stringify(poll()) + "]; AUTH.user = { id: 'u-cat' }; pollsSync();");
+  g.api = () => Promise.reject(new Error("net"));
+  await run("loadPolls()"); await run("pollAutoCheck()");
+  assert.strictEqual(run("POLLS.length + pollsWaiting().length"), 0, "after a switch with the new member's request failing");
+  // Commit is two requests: when the member changes after the first answers, the second (Ana's crew list, Ben's token) is never sent
+  g.api = (p, o) => new Promise((res) => inflight.push({ p, o, res: (body) => res({ ok: true, body }) }));
+  inflight = [];
+  run("AUTH.user = { id: 'u-ana' }; pollsSync(); MYPLANS = {}; var __b = { disabled: false }");
+  run("pollCommit(" + JSON.stringify(poll({ status: "locked", locked: { date: d(2), time: "19:30" } })) + ", __b)");
+  await tick();
+  assert.strictEqual(inflight.length, 1, "the first request is on its way");
+  run("AUTH.user = { id: 'u-ben' }; pollsSync();");
+  await answer("/me/plans/9?today", {});
+  await tick();
+  assert.strictEqual(inflight.length, 0, "no second request goes out for the earlier member");
+  assert.strictEqual(run("JSON.stringify(MYPLANS)"), "{}", "and nothing is written to the new member's plans");
+  // The event page showing the last member's cards is drawn again as soon as the member changes
+  run("AUTH.user = { id: 'u-ana' }; pollsSync(); visible = function (n) { return n === 'event'; }; EV = { e: {} }; var __n = 0; renderEventView = function () { __n++; };");
+  run("AUTH.user = null; pollsSync();");
+  assert.strictEqual(run("__n"), 1, "the event page is redrawn");
   console.log("ok: test_polls");
 })().catch((e) => { console.error(e); process.exit(1); });
