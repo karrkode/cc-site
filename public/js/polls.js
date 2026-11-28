@@ -8,6 +8,15 @@ var POLLS = [], POLL_ASK = null, POLL_AUTO = {}; // POLL_ASK: a poll being cance
 var POLL_INT = {}; // by event id: {at, list}: per crew, how many members have shared interest in it (a poll can start once more than half have)
 var POLL_READY_HOURS = [], POLL_DAYS = {}, POLL_DAY = {}; // CC-298: exhibitions a crew is ready to poll (no poll yet); the days being chosen ("crew-event" -> [iso]); the day shown on a phone (poll id -> index)
 var POLL_SHOW = {}, POLL_EDIT = {}, POLL_DRAFT = {}; // by poll id: its card is expanded; you are (re)choosing times; the option ids ticked but not yet submitted
+var POLL_WHO = "", POLL_EPOCH = 0; // CC-315: whose polls these are, and a count that goes up each time that changes, so an answer to an earlier member's request is ignored
+function pollsSync() { // called from onAuthChange: a different member (or none) empties everything of the last member's
+  var who = AUTH.user ? String(AUTH.user.id) : "";
+  if (who === POLL_WHO) return;
+  POLL_WHO = who; POLL_EPOCH++;
+  POLLS = []; POLL_READY_HOURS = []; POLL_ASK = null; POLL_AUTO = {}; POLL_INT = {};
+  POLL_BUSY = {}; POLL_ERR = {}; POLL_DAYS = {}; POLL_DAY = {}; POLL_SHOW = {}; POLL_EDIT = {}; POLL_DRAFT = {};
+  if (typeof visible === "function" && visible("event") && EV.e) renderEventView(); // CC-315: an event page showing the last member's cards is drawn again now, not when its own request answers
+}
 function pollsFor(test) { return AUTH.user ? POLLS.filter(test) : []; }
 function pollsOfEvent(id) { return pollsFor(function (p) { return String(p.event_id) === String(id); }); }
 function pollsOfCrew(id) { return pollsFor(function (p) { return p.crew_id === id; }); }
@@ -19,7 +28,9 @@ function pollById(id) { return POLLS.filter(function (p) { return String(p.id) =
 
 function loadPolls() {
   if (!AUTH.user) { POLLS = []; return Promise.resolve(); }
+  var ep = POLL_EPOCH;
   return api("/crews/polls").then(readJSON).then(function (res) {
+    if (ep !== POLL_EPOCH) return;
     if (res.ok) { POLLS = res.body; pollsRepaint(); }
     return pollAutoCheck();
   }, function () {});
@@ -186,11 +197,12 @@ function pollCardHTML(p, where) {
 function pollInterest(id) { // the cached count for an event, fetched again in the background when it is more than a few seconds old
   var c = POLL_INT[id];
   if (!c || (!c.busy && Date.now() - c.at > 5000)) {
-    var keep = c ? c.list : null; POLL_INT[id] = { at: Date.now(), list: keep, busy: true };
+    var keep = c ? c.list : null, ep = POLL_EPOCH; POLL_INT[id] = { at: Date.now(), list: keep, busy: true };
     api("/crews/poll-interest?event_id=" + encodeURIComponent(id)).then(readJSON).then(function (res) {
+      if (ep !== POLL_EPOCH) return;
       POLL_INT[id] = { at: Date.now(), list: res.ok ? res.body : keep };
       if (res.ok && JSON.stringify(res.body) !== JSON.stringify(keep)) pollsRepaint();
-    }, function () { POLL_INT[id] = { at: Date.now(), list: keep }; });
+    }, function () { if (ep === POLL_EPOCH) POLL_INT[id] = { at: Date.now(), list: keep }; });
   }
   return POLL_INT[id].list;
 }
@@ -226,24 +238,25 @@ function pollOptions(e, from, to) { // [{date, time}] for every show in the wind
 // A poll opens by itself: the API lists the events a crew has a majority for and no poll yet, and the first member's page that sees one
 // starts it (the browser knows an event's showtimes). The server allows one poll for each crew and event, so a second page just gets a 409.
 function pollAutoStart(r) {
-  var key = r.crew_id + "-" + r.event_id; POLL_AUTO[key] = true;
+  var key = r.crew_id + "-" + r.event_id, ep = POLL_EPOCH; POLL_AUTO[key] = true;
   return api("/events/" + encodeURIComponent(r.event_id)).then(readJSON).then(function (res) {
-    if (!res.ok) return false;
+    if (!res.ok || ep !== POLL_EPOCH) return false;
     var e = toEvent(res.body), w = (!isPast(e) && !isExhibit(e)) ? pollWindow(e) : null; if (!w) return false;
     var opts = pollOptions(e, w[0], w[1]).slice(0, 40); if (!opts.length) return false;
     return api("/crews/" + encodeURIComponent(r.crew_id) + "/polls", { method: "POST", body: { event_id: r.event_id, window_from: w[0], window_to: opts[opts.length - 1].date, options: opts } })
-      .then(readJSON).then(function (made) { if (made.ok) pollPut(made.body); return made.ok; });
+      .then(readJSON).then(function (made) { if (ep !== POLL_EPOCH) return false; if (made.ok) pollPut(made.body); return made.ok; });
   }).catch(function () { return false; });
 }
 function pollAutoCheck() {
   if (!AUTH.user) return Promise.resolve();
+  var ep = POLL_EPOCH;
   return api("/crews/poll-ready").then(readJSON).then(function (res) {
-    if (!res.ok) return;
+    if (!res.ok || ep !== POLL_EPOCH) return;
     var before = JSON.stringify(POLL_READY_HOURS);
     POLL_READY_HOURS = res.body.filter(function (r) { return r.kind === "hours"; }); // an exhibition needs its days picked by a person, so it isn't started here
     if (JSON.stringify(POLL_READY_HOURS) !== before) pollsRepaint();
     return Promise.all(res.body.filter(function (r) { return r.kind !== "hours" && !POLL_AUTO[r.crew_id + "-" + r.event_id]; }).slice(0, 5).map(pollAutoStart)).then(function (made) {
-      if (made.some(Boolean)) pollsRepaint();
+      if (ep === POLL_EPOCH && made.some(Boolean)) pollsRepaint();
     });
   }, function () {});
 }
@@ -262,23 +275,25 @@ function pollFail(id, res) {
   loadPolls().then(function () { pollFocus('[data-poll-card="' + id + '"] .poll-h'); }); // it may have closed or ended meanwhile
 }
 function pollSend(p, path, body, said, focusSel) {
-  delete POLL_ERR[p.id];
+  var ep = POLL_EPOCH; delete POLL_ERR[p.id];
   return api("/crews/" + encodeURIComponent(p.crew_id) + "/polls/" + p.id + "/" + path, { method: path === "answer" ? "PUT" : "POST", body: body })
     .then(readJSON).then(function (res) {
+      if (ep !== POLL_EPOCH) return;
       if (!res.ok) { pollFail(p.id, res); return; }
       pollRedraw(res.body, focusSel); if (said) $("myplan-live").textContent = said;
-    }, function () { pollFail(p.id, null); });
+    }, function () { if (ep === POLL_EPOCH) pollFail(p.id, null); });
 }
 function pollSubmit(p, ids, said) { // save the times you ticked (none: an empty list), then the card turns into the results
   if (POLL_BUSY[p.id]) return;
-  POLL_BUSY[p.id] = true; delete POLL_ERR[p.id];
+  var ep = POLL_EPOCH; POLL_BUSY[p.id] = true; delete POLL_ERR[p.id];
   api("/crews/" + encodeURIComponent(p.crew_id) + "/polls/" + p.id + "/answer", { method: "PUT", body: p.kind === "hours" ? { blocks: ids } : { option_ids: ids } }).then(readJSON).then(function (res) {
+    if (ep !== POLL_EPOCH) return;
     delete POLL_BUSY[p.id];
     if (!res.ok) { pollFail(p.id, res); return; }
     delete POLL_EDIT[p.id]; delete POLL_DRAFT[p.id];
     pollPut(res.body); pollsRepaint(); $("myplan-live").textContent = said;
     pollFocus('[data-poll-card="' + p.id + '"] .poll-h');
-  }, function () { delete POLL_BUSY[p.id]; pollFail(p.id, null); });
+  }, function () { if (ep !== POLL_EPOCH) return; delete POLL_BUSY[p.id]; pollFail(p.id, null); });
 }
 function pollLockBody(p, option, start, end) { return p.kind === "hours" ? { option_id: +option, start: start, end: end } : { option_id: +option }; }
 function pollPickedLock(p, card) { // "Lock in another time": the selects in the card
@@ -305,27 +320,30 @@ function pollPickAct(act, b) { // CC-298: choosing the days of an exhibition pol
   }
   var crew = b.getAttribute("data-crew"), event = b.getAttribute("data-event"), k = crew + "-" + event, days = (POLL_DAYS[k] || []).slice().sort();
   if (!days.length || POLL_BUSY["pick-" + k]) return;
-  POLL_BUSY["pick-" + k] = true; b.disabled = true;
+  var ep = POLL_EPOCH; POLL_BUSY["pick-" + k] = true; b.disabled = true;
   api("/crews/" + encodeURIComponent(crew) + "/polls", { method: "POST", body: { event_id: +event, kind: "hours", days: days } }).then(readJSON).then(function (res) {
+    if (ep !== POLL_EPOCH) return;
     delete POLL_BUSY["pick-" + k];
     if (res.ok) { delete POLL_DAYS[k]; POLL_SHOW[res.body.id] = true; pollPut(res.body); pollsRepaint(); pollFocus('[data-poll-card="' + res.body.id + '"] .poll-cell'); $("myplan-live").textContent = "Poll started"; return; }
     POLL_ERR["pick-" + k] = checkThis(errorText(res)); // a 409 means someone started it a moment ago: it shows up on the reload
     loadPolls().then(function () { pollsRepaint(); });
-  }, function () { delete POLL_BUSY["pick-" + k]; POLL_ERR["pick-" + k] = "Check this: couldn\u2019t reach the server. Try again."; pollsRepaint(); });
+  }, function () { if (ep !== POLL_EPOCH) return; delete POLL_BUSY["pick-" + k]; POLL_ERR["pick-" + k] = "Check this: couldn\u2019t reach the server. Try again."; pollsRepaint(); });
 }
 function pollCommit(p, b) {
   var id = p.event_id, l = p.locked, prev = MYPLANS[id], crews = ((prev && prev.crews) || []).slice();
   if (crews.indexOf(p.crew_id) < 0) crews.push(p.crew_id);
-  b.disabled = true;
+  var ep = POLL_EPOCH; b.disabled = true;
   api("/me/plans/" + encodeURIComponent(id) + "?today=" + isoDate(T), { method: "PUT", body: { status: "going", date: l.date, time: l.time || null } }).then(readJSON).then(function (res) {
     if (!res.ok) throw res;
+    if (ep !== POLL_EPOCH) return null; // CC-315: a different member now: the second request would go out with their token
     return api("/me/plans/" + encodeURIComponent(id) + "/crews", { method: "PUT", body: { crews: crews } }).then(readJSON);
   }).then(function (res) {
+    if (ep !== POLL_EPOCH) return;
     if (!res.ok) throw res;
     MYPLANS[id] = { status: "going", date: l.date, time: l.time || null, crews: crews };
     $("myplan-live").textContent = "Going: " + p.event_title + ", " + goWhen(l.date, l.time) + ". Shared with " + p.crew_name + ".";
     redrawCards(id).then(function () { pollsRepaint(); pollFocus('[data-poll-card="' + p.id + '"] .poll-h'); });
-  }).catch(function (res) { b.disabled = false; pollFail(p.id, res && res.status ? res : null); });
+  }).catch(function (res) { if (ep !== POLL_EPOCH) return; b.disabled = false; pollFail(p.id, res && res.status ? res : null); });
 }
 document.addEventListener("click", function (ev) {
   var b = ev.target.closest("[data-poll-act]"); if (!b || !AUTH.user) return;

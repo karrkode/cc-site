@@ -14,6 +14,7 @@ function rerenderLists() {
   if (visible("event")) loadEventView(); // CC-117: signed in or out, the crews' plans change
 }
 function onAuthChange() {
+  pollsSync(); // CC-315: a different member (or none): the last one's crew date polls go before anything is drawn
   showReportLink(); // "Report an issue or request a feature" in the footer, signed in only (CC-84; issues.js)
   paintApproverRow(); // Photo approvals, for approvers and admins (CC-91; approvals.js)
   paintMeMenu(); // your name and its menu, or Sign in (CC-105)
