@@ -103,11 +103,27 @@ jobs:
         run: node scripts/test_journal_welcome.js
       - name: No inline style or script but the theme script, which the Content-Security-Policy allows by hash (CC-193)
         run: node scripts/test_csp.js
+      - name: The Edit/Approve dialog's two columns keep their fields (CC-327)
+        run: node scripts/test_edit_layout.js
+      - name: The edit dialog's Delete sends ?live=true only for a live event (CC-202)
+        run: node scripts/test_editor_delete.js
+      - name: The Site health page, its pie of non-200 responses and its wiring (CC-244)
+        run: node scripts/test_health.js
+      - name: Every scripts/test_*.js has a step above (CC-313)
+        run: |
+          missing=0
+          for f in scripts/test_*.js; do
+            if ! grep -qF "run: node $f" .github/workflows/ci-cd.yml; then
+              echo "::error::$f has no step in .github/workflows/ci-cd.yml" >&2
+              missing=1
+            fi
+          done
+          exit "$missing"
       - name: Asset links can be stamped for deploy
         run: python3 scripts/stamp_assets.py
       - name: JavaScript syntax
         run: |
-          for f in build/scripts/*.js; do node --check "$f" && echo "ok: $f"; done
+          for f in build/scripts/*.js; do node --check "$f" || exit 1; echo "ok: $f"; done
 
   deploy:
     name: Deploy to production
