@@ -105,7 +105,7 @@ jobs:
         run: node scripts/test_csp.js
       - name: The edit dialog's Delete sends ?live=true only for a live event (CC-202)
         run: node scripts/test_editor_delete.js
-      - name: The Site health page: the pie of non-200 responses and its wiring (CC-244)
+      - name: "The Site health page: the pie of non-200 responses and its wiring (CC-244)"
         run: node scripts/test_health.js
       - name: The Edit/Approve dialog keeps its fields in two columns (CC-327)
         run: node scripts/test_edit_layout.js
